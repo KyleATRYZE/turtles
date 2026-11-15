@@ -422,6 +422,24 @@ local function dropJunk()
   turtle.select(1)
 end
 
+-- Merge split stacks. Mined items land in the first empty slot, so after
+-- junk is dropped the same ore ends up spread over several slots.
+local function compact()
+  for s = 16, 2, -1 do
+    if turtle.getItemCount(s) > 0 then
+      turtle.select(s)
+      for t = 1, s - 1 do
+        if turtle.getItemCount(t) > 0 and turtle.getItemSpace(t) > 0
+          and turtle.compareTo(t) then
+          turtle.transferTo(t)
+          if turtle.getItemCount(s) == 0 then break end
+        end
+      end
+    end
+  end
+  turtle.select(1)
+end
+
 local function unload()
   face((st.homeD + 2) % 4)
   for s = 1, 16 do
@@ -459,6 +477,7 @@ local function housekeeping()
   end
   if emptySlots() < 2 then
     dropJunk()
+    compact()
     if emptySlots() < 3 then homeTrip("inventory full") end
   end
 end
