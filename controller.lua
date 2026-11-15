@@ -106,13 +106,16 @@ local function upload()
     return true
   end
   local code = failed and failed.getResponseCode()
-  if failed then failed.close() end
-  sha = nil -- fetch a fresh one next time
-  if code == 401 or code == 403 then
-    uploadNote = "GitHub refused the token (" .. code .. ")"
-  else
-    uploadNote = "upload failed: " .. tostring(code or err)
+  local reason
+  if failed then
+    -- GitHub explains the refusal in the response body
+    local okBody, data = pcall(textutils.unserialiseJSON, failed.readAll())
+    if okBody and type(data) == "table" then reason = data.message end
+    failed.close()
   end
+  sha = nil -- fetch a fresh one next time
+  uploadNote = "upload failed (" .. tostring(code or err) .. "): "
+    .. tostring(reason or err or "no reason given")
   return false
 end
 
