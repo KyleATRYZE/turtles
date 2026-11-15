@@ -411,12 +411,21 @@ local function emptySlots()
   return n
 end
 
+-- Kept (one stack only) even though it is junk: the factory smelts it into
+-- stone for building new turtles.
+local KEEP_ONE_STACK = "minecraft:cobblestone"
+
 local function dropJunk()
+  local kept = false
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     if d and JUNK[d.name] then
-      turtle.select(s)
-      turtle.dropDown()
+      if d.name == KEEP_ONE_STACK and not kept then
+        kept = true
+      else
+        turtle.select(s)
+        turtle.dropDown()
+      end
     end
   end
   turtle.select(1)
