@@ -47,6 +47,46 @@ local DIRS = {
 local pos = { x = 0, y = 0, z = 0 }
 local heading = 0
 local st -- saved job state
+local totalLayers = 0
+
+-- Status reporting to the controller (optional: works without swarm.lua)
+local okSwarm, swarm = pcall(require, "swarm")
+if not okSwarm then swarm = nil end
+
+local logLines = {}
+local rawPrint = print
+local function print(...)
+  rawPrint(...)
+  local parts = table.pack(...)
+  for i = 1, parts.n do parts[i] = tostring(parts[i]) end
+  logLines[#logLines + 1] = table.concat(parts, " ")
+  while #logLines > 6 do table.remove(logLines, 1) end
+end
+
+local lastReport = 0
+local function report(state)
+  lastReport = os.clock()
+  if not swarm then return end
+  local inv, free = {}, 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d then inv[d.name] = (inv[d.name] or 0) + d.count else free = free + 1 end
+  end
+  local f = turtle.getFuelLevel()
+  pcall(swarm.report, {
+    role = "miner",
+    state = state,
+    pos = { x = pos.x, y = pos.y, z = pos.z },
+    fuel = f == "unlimited" and -1 or f,
+    freeSlots = free,
+    inv = inv,
+    job = st and {
+      home = st.home, size = st.size, bottom = st.bottom,
+      layer = st.layer, layers = totalLayers, rowsDone = st.rowsDone,
+    } or nil,
+    log = logLines,
+  })
+end
 
 ---------------------------------------------------------------- basics
 
@@ -113,6 +153,7 @@ local function refuelAny(min)
     turtle.select(1)
     if fuel() < min then
       print(("Need fuel (%d/%d). Put coal in my inventory."):format(fuel(), min))
+      report("needs fuel")
       sleep(5)
     end
   end
@@ -326,6 +367,7 @@ local function goHome()
   while not atHome() do
     if tryHomeShaft() or tryHomeTop() then return end
     print("Path home is blocked, retrying...")
+    report("path blocked")
     sleep(5)
   end
 end
@@ -345,6 +387,7 @@ local function travelTo(lf, lr, y)
       return
     end
     print("Path to work is blocked, retrying...")
+    report("path blocked")
     sleep(5)
   end
 end
@@ -386,6 +429,7 @@ local function unload()
       turtle.select(s)
       if not turtle.drop() then
         print("Chest is full. Waiting...")
+        report("chest full")
         sleep(5)
       end
     end
@@ -397,11 +441,13 @@ local function homeTrip(reason)
   local lf, lr = toLocal()
   local y = pos.y
   print("Going home: " .. reason)
+  report("going home")
   goHome()
   refuelFromInventory(FUEL_TARGET)
   unload()
   refuelAny(tripFuel(y))
   print("Back to work.")
+  report("mining")
   travelTo(lf, lr, y)
 end
 
@@ -427,6 +473,7 @@ end
 local function mineStep()
   digUpDown()
   housekeeping()
+  if os.clock() - lastReport > 30 then report("mining") end
 end
 
 -- Mine one row (fixed lr) of the layer centred on y. False if blocked.
@@ -457,6 +504,8 @@ end
 
 local function run()
   local layers = buildLayers()
+  totalLayers = #layers
+  report("starting")
   if atHome() and st.layer <= #layers then
     refuelAny(tripFuel(layers[st.layer]))
     travelTo(1, 0, layers[st.layer])
@@ -473,6 +522,7 @@ local function run()
       local lr = st.rowDir == 1 and st.rowsDone or (st.size - 1 - st.rowsDone)
       print(("Layer %d/%d  row %d/%d  fuel %s"):format(
         st.layer, #layers, st.rowsDone + 1, st.size, tostring(fuel())))
+      report("mining")
       if not mineRow(lr, y) then print("Row blocked, skipping.") end
       st.rowsDone = st.rowsDone + 1
       save()
@@ -482,11 +532,13 @@ local function run()
     save()
   end
   print("Finished. Going home.")
+  report("going home")
   goHome()
   unload()
   face(st.homeD)
   fs.delete(STATE_FILE)
   print("Done.")
+  report("done")
 end
 
 ---------------------------------------------------------------- startup
@@ -553,6 +605,7 @@ local function main(args)
       print("I am outside my mining area.")
       print("Put me back at my home spot, or run:")
       print("  delete " .. STATE_FILE)
+      report("lost")
       return
     end
   else
@@ -563,7 +616,16 @@ local function main(args)
     return
   end
 
-  run()
+  local ok, err = pcall(run)
+  if not ok then
+    if err == "Terminated" then
+      print("Stopped by player.")
+      report("stopped")
+    else
+      print("ERROR: " .. tostring(err))
+      report("error")
+    end
+  end
 end
 
 main({ ... })

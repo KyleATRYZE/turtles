@@ -1,6 +1,18 @@
--- install.lua : one-time setup for a turtle.
+-- install.lua : one-time setup for a turtle or the controller computer.
 -- Run:  wget run https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua
 local BASE = "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/"
+
+-- Never touch a GPS host: replacing its startup would break GPS for everyone.
+if not turtle and fs.exists("startup.lua") then
+  local h = fs.open("startup.lua", "r")
+  local existing = h.readAll()
+  h.close()
+  if existing:find("gps", 1, true) then
+    print("This is a GPS computer. Leave it as it is.")
+    print("Run the installer on turtles and on the controller only.")
+    return
+  end
+end
 
 local r, err = http.get(BASE .. "update.lua?t=" .. os.epoch("utc"))
 if not r then
@@ -12,14 +24,25 @@ h.write(r.readAll())
 h.close()
 r.close()
 
--- On every boot: fetch the latest scripts, then carry on with any saved job.
+-- On every boot: fetch the latest scripts, then do this machine's job.
+local job
+if turtle then
+  job = 'shell.run("miner", "resume")'
+else
+  job = 'shell.run("controller")'
+end
 h = fs.open("startup.lua", "w")
-h.write('shell.run("update")\nshell.run("miner", "resume")\n')
+h.write('shell.run("update")\n' .. job .. '\n')
 h.close()
 
 shell.run("update")
 
-if fs.exists("miner.state") then
+if not turtle then
+  if not os.getComputerLabel() then os.setComputerLabel("controller") end
+  print("Installed as the controller. Rebooting...")
+  sleep(2)
+  os.reboot()
+elseif fs.exists("miner.state") then
   print("Installed. Rebooting to resume the saved job...")
   sleep(2)
   os.reboot()
