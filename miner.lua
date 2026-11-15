@@ -64,8 +64,10 @@ local function print(...)
 end
 
 local lastReport = 0
+local lastState = "idle"
 local function report(state)
   lastReport = os.clock()
+  lastState = state
   if not swarm then return end
   local inv, free = {}, 0
   for s = 1, 16 do
@@ -571,6 +573,82 @@ end
 
 ---------------------------------------------------------------- startup
 
+local function loadState()
+  if not fs.exists(STATE_FILE) then return false end
+  local h = fs.open(STATE_FILE, "r")
+  local t = textutils.unserialize(h.readAll())
+  h.close()
+  if type(t) ~= "table" then return false end
+  st = t
+  return true
+end
+
+-- Find out where we are and which way we face.
+-- False if we are somewhere outside the job area.
+local function relocate()
+  refuelAny(10)
+  heading = detectHeading()
+  pos.x, pos.y, pos.z = locate()
+  local lf, lr = toLocal()
+  local inPlot = lf >= 1 and lf <= st.size and lr >= 0 and lr < st.size
+    and pos.y <= st.home.y
+  if not (atHome() or inPlot) then
+    print("I am outside my mining area.")
+    print("Put me back at my home spot, or run:")
+    print("  delete " .. STATE_FILE)
+    report("lost")
+    return false
+  end
+  return true
+end
+
+local located = false   -- true only straight after a fresh GPS fix
+local idleState = "idle"
+
+-- Run fn, reporting any crash. Ctrl+T is passed through to the shell.
+local function guarded(fn)
+  local ok, err = pcall(fn)
+  if not ok then
+    if err == "Terminated" then
+      report("stopped by player")
+      error(err, 0)
+    end
+    print("ERROR: " .. tostring(err))
+    report("error")
+  end
+end
+
+local function jobTask()
+  guarded(function()
+    if not located and not relocate() then return end
+    located = false
+    run()
+    st = nil
+  end)
+end
+
+-- Go home, unload and wait there. The job is kept for a later "resume".
+local function homeTask()
+  guarded(function()
+    if not relocate() then return end
+    print("Ordered home.")
+    report("going home")
+    goHome()
+    unload()
+    face(st.homeD)
+    print("Parked at home.")
+    report("parked")
+  end)
+end
+
+local function idleTask()
+  print("Waiting for orders. (Hold Ctrl+T for the prompt.)")
+  while true do
+    report(idleState)
+    sleep(60)
+  end
+end
+
 local function main(args)
   if not turtle then
     print("This program only runs on a turtle.")
@@ -578,6 +656,7 @@ local function main(args)
   end
 
   local size = tonumber(args[1])
+  local task
 
   if size then
     -- new job
@@ -613,45 +692,91 @@ local function main(args)
     end
     print(("Mining %dx%d from Y %d down to Y %d."):format(
       size, size, pos.y - 1, bottom - 1))
-  elseif fs.exists(STATE_FILE) then
-    -- resume
-    local h = fs.open(STATE_FILE, "r")
-    st = textutils.unserialize(h.readAll())
-    h.close()
-    if type(st) ~= "table" then
-      print("Saved job is unreadable. Delete " .. STATE_FILE .. " and start again.")
-      return
-    end
-    print("Resuming saved job...")
-    refuelAny(10)
-    heading = detectHeading()
-    pos.x, pos.y, pos.z = locate()
-    local lf, lr = toLocal()
-    local inPlot = lf >= 1 and lf <= st.size and lr >= 0 and lr < st.size
-      and pos.y <= st.home.y
-    if not (atHome() or inPlot) then
-      print("I am outside my mining area.")
-      print("Put me back at my home spot, or run:")
-      print("  delete " .. STATE_FILE)
-      report("lost")
+    located = true
+    task = jobTask
+  elseif args[1] == nil or args[1] == "resume" or args[1] == "go" then
+    -- "resume" is what startup runs. "go" also un-parks a parked turtle.
+    if loadState() then
+      if args[1] == "go" and st.paused then
+        st.paused = nil
+        save()
+      end
+      if st.paused then
+        print("Parked by remote order. Run 'miner go' to carry on.")
+        idleState = "parked"
+        task = idleTask
+      else
+        print("Resuming saved job...")
+        task = jobTask
+      end
+    elseif args[1] == "resume" and swarm then
+      task = idleTask
+    else
+      if args[1] ~= "resume" then
+        print("Usage: miner <size> [bottomY]")
+        print("Chest behind me, mining area in front.")
+      end
       return
     end
   else
-    if args[1] ~= "resume" then
-      print("Usage: miner <size> [bottomY]")
-      print("Chest behind me, mining area in front.")
-    end
+    print("Usage: miner <size> [bottomY]")
     return
   end
 
-  local ok, err = pcall(run)
-  if not ok then
-    if err == "Terminated" then
-      print("Stopped by player.")
-      report("stopped")
-    else
-      print("ERROR: " .. tostring(err))
-      report("error")
+  if not swarm then
+    task()
+    return
+  end
+
+  -- Do the task while listening for remote orders.
+  while true do
+    local cmd = swarm.runWithCommands(task, function(c)
+      if c.cmd == "ping" then
+        report(lastState)
+        return true
+      end
+    end)
+    if not cmd then
+      -- the task ended by itself (finished, crashed, or parked at home)
+      if task == homeTask and st then
+        st.paused = true
+        save()
+        idleState = "parked"
+      else
+        idleState = st and lastState or "idle"
+      end
+      task = idleTask
+    elseif cmd.cmd == "reboot" then
+      print("Rebooting by remote order.")
+      report("rebooting")
+      os.reboot()
+    elseif cmd.cmd == "stop" then
+      print("Stopped by remote order.")
+      if st then
+        st.paused = true
+        save()
+      end
+      idleState = "stopped"
+      task = idleTask
+    elseif cmd.cmd == "home" then
+      if st or loadState() then
+        st.paused = true
+        save()
+        task = homeTask
+      else
+        task = idleTask
+      end
+    elseif cmd.cmd == "resume" then
+      if st or loadState() then
+        st.paused = nil
+        save()
+        located = false
+        print("Resuming by remote order.")
+        task = jobTask
+      else
+        idleState = "idle"
+        task = idleTask
+      end
     end
   end
 end

@@ -12,6 +12,10 @@ local INTERVAL   = 120   -- seconds between routine uploads
 local MIN_GAP    = 20    -- never upload more often than this
 
 local API = "https://api.github.com/repos/" .. REPO .. "/contents/" .. FILE
+local ORDERS_API = "https://api.github.com/repos/" .. REPO
+  .. "/contents/commands.json?ref=main"
+local ORDER_POLL = 20          -- seconds between checks for new orders
+local ORDER_LIFE = 5 * 60000   -- orders older than this (ms) are ignored
 
 ---------------------------------------------------------------- token
 
@@ -57,6 +61,7 @@ local units = {}        -- computer id (as text) -> latest report
 local urgent = false    -- something changed that is worth uploading soon
 local lastUpload = 0
 local uploadNote = "not uploaded yet"
+local orderNote = "no orders yet"
 local sha               -- GitHub's id for the current status file
 
 local function headers()
@@ -125,6 +130,7 @@ local function draw()
   term.clear()
   term.setCursorPos(1, 1)
   print("Turtle controller  |  " .. uploadNote)
+  print("Orders: " .. orderNote)
   print(("%-10s %-16s %-17s %s"):format("NAME", "STATE", "POSITION", "FUEL"))
   local ids = {}
   for id in pairs(units) do ids[#ids + 1] = id end
@@ -174,6 +180,45 @@ local function uploader()
   end
 end
 
+-- Fetch the orders file from GitHub and pass fresh orders on to the swarm.
+-- Each order is re-broadcast until it expires, so a turtle that was busy or
+-- out of range still gets it; turtles ignore orders they have already seen.
+local function fetchOrders()
+  local hdr = headers()
+  hdr["Accept"] = "application/vnd.github.raw"
+  local r = http.get({ url = ORDERS_API, headers = hdr })
+  if not r then return nil end
+  local okJson, data = pcall(textutils.unserialiseJSON, r.readAll())
+  r.close()
+  if okJson and type(data) == "table" and type(data.commands) == "table" then
+    return data.commands
+  end
+  return nil
+end
+
+local function orders()
+  while true do
+    local list = fetchOrders()
+    local now = os.epoch("utc")
+    local mine
+    for _, cmd in ipairs(list or {}) do
+      if type(cmd) == "table" and type(cmd.issued) == "number"
+        and now - cmd.issued < ORDER_LIFE then
+        rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
+        orderNote = ("#%d %s -> %s"):format(
+          cmd.id or 0, tostring(cmd.cmd), tostring(cmd.target))
+        if swarm.accept(cmd) then mine = cmd end
+      end
+    end
+    if mine and mine.cmd == "reboot" then
+      print("Rebooting by remote order.")
+      sleep(1)
+      os.reboot()
+    end
+    sleep(ORDER_POLL)
+  end
+end
+
 ---------------------------------------------------------------- start
 
 if not http then
@@ -186,4 +231,4 @@ if not swarm.open() then
 end
 token = loadToken()
 draw()
-parallel.waitForAny(receiver, uploader)
+parallel.waitForAny(receiver, uploader, orders)

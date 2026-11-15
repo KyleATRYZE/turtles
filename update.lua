@@ -42,3 +42,23 @@ for line in manifest:gmatch("[^\r\n]+") do
     end
   end
 end
+
+-- Keep startup.lua correct for this machine's job, so a change of job never
+-- needs the installer to be run again.
+local job
+if not turtle then
+  job = 'shell.run("controller")'
+elseif (os.getComputerLabel() or ""):match("^factory") then
+  job = 'shell.run("factory")'
+else
+  job = 'shell.run("miner", "resume")'
+end
+local wanted = 'shell.run("update")\n' .. job .. '\n'
+local current = readFile("startup.lua")
+-- never touch a GPS host
+if current ~= wanted and not (current and current:find("gps", 1, true)) then
+  local h = fs.open("startup.lua", "w")
+  h.write(wanted)
+  h.close()
+  print("Startup set: " .. job)
+end

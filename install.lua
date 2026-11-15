@@ -24,17 +24,8 @@ h.write(r.readAll())
 h.close()
 r.close()
 
--- On every boot: fetch the latest scripts, then do this machine's job.
-local job
-if turtle then
-  job = 'shell.run("miner", "resume")'
-else
-  job = 'shell.run("controller")'
-end
-h = fs.open("startup.lua", "w")
-h.write('shell.run("update")\n' .. job .. '\n')
-h.close()
-
+-- update.lua downloads everything and writes the right startup.lua
+-- for this machine (miner, factory or controller).
 shell.run("update")
 
 if not turtle then

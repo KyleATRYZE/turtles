@@ -27,4 +27,68 @@ function M.report(status)
   return true
 end
 
+---------------------------------------------------------------- orders
+-- Orders come from the controller (which reads them from GitHub).
+-- Each has: id (number, always increasing), target, cmd.
+
+M.CMD_PROTOCOL = "swarm_cmd"
+
+local LAST_CMD_FILE = ".lastcmd"
+
+local function lastCmd()
+  if not fs.exists(LAST_CMD_FILE) then return 0 end
+  local h = fs.open(LAST_CMD_FILE, "r")
+  local n = tonumber(h.readAll())
+  h.close()
+  return n or 0
+end
+
+local function setLastCmd(id)
+  local h = fs.open(LAST_CMD_FILE, "w")
+  h.write(tostring(id))
+  h.close()
+end
+
+-- Is this order addressed to this machine?
+function M.forMe(cmd)
+  local t = cmd.target
+  return t == "all" or t == os.getComputerID() or t == os.getComputerLabel()
+end
+
+-- True the first time an order for this machine is seen; false for repeats.
+function M.accept(cmd)
+  if type(cmd) ~= "table" or type(cmd.id) ~= "number" then return false end
+  if not M.forMe(cmd) or cmd.id <= lastCmd() then return false end
+  setLastCmd(cmd.id)
+  return true
+end
+
+-- Block until a new order for this machine arrives.
+function M.waitCommand()
+  if not open() then
+    while true do sleep(3600) end
+  end
+  while true do
+    local _, msg = rednet.receive(M.CMD_PROTOCOL)
+    if M.accept(msg) then return msg end
+  end
+end
+
+-- Run task() while listening for orders.
+-- inline(cmd) may handle an order without interrupting the task (return true).
+-- Returns the order that interrupted the task, or nil if the task finished.
+function M.runWithCommands(task, inline)
+  local cmd
+  parallel.waitForAny(function()
+    while true do
+      local c = M.waitCommand()
+      if not (inline and inline(c)) then
+        cmd = c
+        return
+      end
+    end
+  end, task)
+  return cmd
+end
+
 return M
