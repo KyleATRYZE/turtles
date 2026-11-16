@@ -408,6 +408,13 @@ FACE_STAND = {"east": 2, "south": 3, "west": 4, "north": 5}
 for (x, y, z), name in B.items():
     if name.startswith("computercraft:monitor") and "facing=" in name:
         STANDS["%d,%d,%d" % (x, y, z)] = FACE_STAND[name.split("facing=")[1].rstrip("]")]
+# so is anything of the store's whose front matters: a barrel put in from
+# above lies face up (a limited barrel's label and count on top, plain wood
+# to the room), and a chest opens towards whoever put it there
+FRONT_MATTERS = ("sophisticatedstorage:", "minecraft:barrel")
+for (x, y, z), name in B.items():
+    if name.startswith(FRONT_MATTERS) and "facing=" in name:
+        STANDS["%d,%d,%d" % (x, y, z)] = FACE_STAND[name.split("facing=")[1].rstrip("]")]
 # copper pipes running along the front of the smelting hall
 for x in range(1, 9):
     put(x, 7, HZ + 1, "minecraft:lightning_rod[facing=east]")
