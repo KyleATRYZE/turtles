@@ -1255,7 +1255,8 @@ collectEmpties = function()
   if want <= 0 then return end
   if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
   if not at(st.exit1) then return end
-  for _ = 1, 8 do
+  print("Asking the factory for empty buckets.")
+  for _ = 1, 20 do                     -- (it may be in the middle of a load)
     rednet.broadcast({ type = "empties_request", id = os.getComputerID(), n = want }, JOB_PROTOCOL)
     sleep(4)
     if countItem(BUCKET) > LAVA_RUN + 1 - want then break end
