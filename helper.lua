@@ -1827,6 +1827,8 @@ do
   end
 end
 
+if swarm and swarm.hello then pcall(swarm.hello, "helper") end   -- awake, and here (the modem is on by now)
+
 st = loadTable(STATE_FILE) or {}
 base = loadTable(BASE_FILE)
 if not base then error("No base details (.base).", 0) end

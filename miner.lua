@@ -103,6 +103,7 @@ local totalLayers = 0
 -- Status reporting to the controller (optional: works without swarm.lua)
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
+if swarm and swarm.hello and turtle then pcall(swarm.hello, "miner") end   -- awake, and here
 -- A Chunk Controller of its own (see swarm.lua) keeps a miner's chunk
 -- loaded wherever it is: worn in place of the pickaxe while it flies or
 -- waits; while it digs the pickaxe stays on and the controller goes on for

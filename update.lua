@@ -2,6 +2,21 @@
 -- Runs on every boot (from startup.lua). Safe to run by hand: update
 local REPO = "KyleATRYZE/turtles"
 
+-- Boot heartbeat (turtles): say where we are before the download, which can
+-- be slow or fail. See swarm.hello.
+if turtle then
+  pcall(function()
+    local role
+    if fs.exists(".role") then
+      local h = fs.open(".role", "r")
+      role = h.readAll():gsub("%s", "")
+      h.close()
+    end
+    local swarm = require("swarm")
+    if swarm.hello then swarm.hello(role) end
+  end)
+end
+
 -- Work out exactly which version to download. GitHub's file server can serve
 -- a copy up to five minutes old for "main", so we ask for a precise commit.
 local function latestRev()

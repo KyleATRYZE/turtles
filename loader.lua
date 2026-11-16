@@ -388,6 +388,7 @@ do
   h.write("loader")
   h.close()
 end
+if swarm and swarm.hello then pcall(swarm.hello, "loader") end   -- awake, and here
 
 local function task() parallel.waitForAny(guarded, listen) end
 if not swarm then

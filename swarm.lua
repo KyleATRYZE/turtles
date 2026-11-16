@@ -35,6 +35,10 @@ function M.pinVersion(cmd)
   end
 end
 
+-- When this program started (every report carries it: a start nobody
+-- ordered is a turtle whose chunk went to sleep and came back).
+local BOOTED = os.epoch and os.epoch("utc") or 0
+
 -- Broadcast a status table. Does nothing if there is no wireless modem.
 function M.report(status)
   if not open() then return false end
@@ -42,8 +46,30 @@ function M.report(status)
   status.label = os.getComputerLabel()
   status.time = os.epoch("utc")
   status.version = M.version()
+  status.booted = BOOTED
   rednet.broadcast(status, M.PROTOCOL)
   return true
+end
+
+-- Boot heartbeat: "I am awake, and here", said the moment a program starts,
+-- before the download and before anything else can go wrong. A turtle that
+-- froze in a chunk nobody was keeping loaded restarts when the chunk comes
+-- back: this is how it is found. (Said once per start: the updater and the
+-- program it then runs both call this.)
+function M.hello(role)
+  if _G.SWARM_HELLO and os.clock() - _G.SWARM_HELLO < 60 then return false end
+  if not open() then return false end
+  _G.SWARM_HELLO = os.clock()
+  local pos = { x = 0, y = 0, z = 0 }           -- (0, 0 = not known)
+  local line = "Woke up (no GPS fix)."
+  local ok, x, y, z = pcall(gps.locate, 2)
+  if ok and x then
+    pos = { x = math.floor(x + 0.5), y = math.floor(y + 0.5), z = math.floor(z + 0.5) }
+    line = ("Woke up at %d %d %d."):format(pos.x, pos.y, pos.z)
+  end
+  local f = turtle and turtle.getFuelLevel() or nil
+  return M.report({ role = role, state = "woke up", boot = true, pos = pos,
+    fuel = f == "unlimited" and -1 or f, log = { line } })
 end
 
 ---------------------------------------------------------------- own chunk loading
