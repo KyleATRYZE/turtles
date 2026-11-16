@@ -1022,6 +1022,12 @@ local function runFit()
     end
   end
 
+  -- what the plan leaves at each place it puts something
+  local finalAt = {}
+  for _, op in ipairs(m.ops) do
+    if op.k ~= "D" then finalAt[ck(op.x, op.y, op.z)] = m.pal[op.i] end
+  end
+
   local function act(verb, s)
     local sfx = s == 0 and "Down" or s == 1 and "Up" or ""
     return turtle[verb .. sfx]()
@@ -1086,6 +1092,17 @@ local function runFit()
     if op.s >= 2 then face(STAND_FACE[op.s]) end
     local there = see(op.s)
     if op.k == "D" then
+      -- a barrel, chest or monitor that is already what the plan puts here,
+      -- the right way round (a fit-out run again): leave it, its own job
+      -- will find it right. (Not glass: a window taken out to get in is
+      -- taken out again.)
+      local final = finalAt and finalAt[ck(op.x, op.y, op.z)]
+      if there and final and there.name == final.name and frontMatters(final.name)
+        and (not final.facing or facesSurely(there, final.facing)) and upright(there) then
+        st.undone[n] = nil
+        applyOp(op)
+        return true
+      end
       if there and holdsThings(op.s) then
         -- (dug, a chest spills what is in it: someone empties it first)
         return putOff("a " .. there.name:gsub("^.*:", "") .. " with things in it")
