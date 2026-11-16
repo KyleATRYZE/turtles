@@ -429,7 +429,9 @@ local function supplyRun(indices, reason, once)
         if DIRS[d].x == base.f.x - base.pad.x and DIRS[d].z == base.f.z - base.pad.z then
           for s = 1, 16 do
             local it = turtle.getItemDetail(s)
-            if it and it.name == "minecraft:bucket" then
+            -- (and, for the lab bench, everything it was not sent for)
+            local spare = st.lab and st.lab.keep and not st.lab.keep[it and it.name or ""]
+            if it and (it.name == "minecraft:bucket" or spare) then
               face(d)
               turtle.select(s)
               turtle.drop()
@@ -1306,7 +1308,8 @@ end
 -- report what happened. For finding out how a machine from another mod
 -- behaves before a whole routine is written around it. The order carries a
 -- list of steps, "verb|arg|arg;verb|arg;...":
---   fetch|name=n,name=n     get these from the factory
+--   fetch|name=n,name=n     get these from the factory (fetch|...|dump also hands
+--                           back everything else on board)
 --   goto|x|y|z   ground   up|n   down|n   fwd|n   back|n   turn|left/right/around
 --   place|item   placeUp|item   placeDown|item      dig   digUp   digDown
 --   drop|item|n  dropUp|item|n  dropDown|item|n     suck|n  suckUp|n  suckDown|n
@@ -1361,6 +1364,12 @@ local function runLab()
       if verb == "fetch" then
         local want = {}
         for name, n in a[2]:gmatch("([^,=]+)=(%d+)") do want[#want + 1] = { name, tonumber(n) } end
+        if a[3] == "dump" then
+          -- hand everything else back to the factory while on the pad
+          lab.keep = { ["minecraft:coal"] = true, ["minecraft:charcoal"] = true }
+          for _, w in ipairs(want) do lab.keep[w[1]] = true end
+          save()
+        end
         supplyRun(function()
           local items = {}
           for _, w in ipairs(want) do
@@ -1383,6 +1392,7 @@ local function runLab()
           got[#got + 1] = w[1]:gsub("^.*:", "") .. "=" .. have
         end
         res = table.concat(got, " ")
+        lab.keep = nil
       elseif verb == "goto" then
         local x, y, z = tonumber(a[2]), tonumber(a[3]), tonumber(a[4])
         local top = math.max(highway(), y + 2, pos.y)
