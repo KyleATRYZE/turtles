@@ -419,6 +419,32 @@ local function outputCount()
   return n
 end
 
+-- True if the chest in front is also one of the network storage chests
+-- (same contents, slot for slot). Finished miners must not go back into
+-- storage, where they would be mistaken for plain turtles.
+local function outputIsStorage()
+  local ok, front = pcall(peripheral.call, "front", "list")
+  if not ok or not front or next(front) == nil then return false end
+  for _, inv in ipairs(stores) do
+    local ok2, list = pcall(peripheral.call, inv, "list")
+    if ok2 and list then
+      local same = true
+      for slot, item in pairs(front) do
+        local other = list[slot]
+        if not other or other.name ~= item.name or other.count ~= item.count then
+          same = false
+          break
+        end
+      end
+      for slot in pairs(list) do
+        if not front[slot] then same = false break end
+      end
+      if same then return true end
+    end
+  end
+  return false
+end
+
 ---------------------------------------------------------------- main loop
 
 local function describeMissing(missing)
@@ -444,8 +470,20 @@ local function tryBuild()
     report("not ready")
     return false
   end
+  -- Turn to face the output chest (any chest beside me at my own level).
+  for _ = 1, 4 do
+    if peripheral.hasType("front", "inventory") then break end
+    turtle.turnRight()
+  end
   if not peripheral.hasType("front", "inventory") then
-    print("Put a chest in front of me for finished miners.")
+    print("Put a chest beside me for finished miners.")
+    report("not ready")
+    return false
+  end
+  if outputIsStorage() then
+    print("The chest beside me is my storage chest.")
+    print("Finished miners need a separate chest that is")
+    print("not touching the modem.")
     report("not ready")
     return false
   end
