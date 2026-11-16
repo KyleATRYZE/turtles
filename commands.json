@@ -1,16 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794872565,
-      "issued": 1794872565000,
-      "cmd": "resume",
-      "target": "Pushy"
-    },
-    {
-      "id": 1794872566,
-      "issued": 1794872565000,
-      "cmd": "reboot",
-      "target": "CommandBlock"
+      "id": 1794872628,
+      "issued": 1794872628000,
+      "cmd": "stop",
+      "target": "HopTo"
     }
   ]
 }
