@@ -174,6 +174,8 @@ local ALERTS = {
   ["waiting for parts"] = "is waiting for parts",
   ["launched one"] = "launched a new miner",
   ["out of coal"] = "has no coal: put coal in the storage chest",
+  ["hunting coal"] = "is out hunting coal with the Geo Scanner",
+  ["scanner problem"] = "cannot use the Geo Scanner",
   ["fleet full"] = "has built the whole fleet",
 }
 

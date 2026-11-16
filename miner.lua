@@ -584,27 +584,42 @@ local function leaveDock()
   toExitColumn()
   local out = outShaft()
   if over(st.exit2) then
-    axisMove("y", st.dock.y, true)   -- up off the launch pad if we were on it
+    -- from above the pad, or from the pad itself: straight across into the
+    -- out-shaft (never up through the space above the pad, which may be
+    -- taken by a miner on its way out)
     flyTo(out.x, out.z)
   end
   axisMove("y", outY(), true)
 end
 
--- Short of fuel with no coal on board: wait on the launch pad next to the
--- factory and ask it for some.
-local function fuelStop(needed)
-  if fuel() >= needed then return end
-  toExitColumn()
-  axisMove("y", st.exit2.y - 1, true)
+-- Service stop: wait directly above the factory turtle (it hands things up
+-- to us) until we have enough fuel and a bucket. Never blocks the base for
+-- long: after about 90 seconds, carry on if there is fuel for the round
+-- trip; if not, move onto the launch pad (off the main path) and wait there.
+local function serviceStop(needed)
+  local function wantBucket()
+    return not hasBucket() and (st.bucketTries or 0) < 3
+  end
+  if fuel() >= needed and not wantBucket() then return end
+  if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
+  local onPad = over(st.exit2) and pos.y == st.exit2.y - 1
+  if not (at(st.exit1) or onPad) then return end
   local tries = 0
-  while fuel() < needed do
-    print("Asking the factory for fuel.")
-    report("needs fuel")
-    rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+  while fuel() < needed or wantBucket() do
+    if fuel() < needed then
+      print("Asking the factory for fuel.")
+      report("needs fuel")
+      rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+    end
+    if wantBucket() then
+      print("Asking the factory for a bucket.")
+      rednet.broadcast({ type = "bucket_request", id = os.getComputerID() }, JOB_PROTOCOL)
+    end
     sleep(10)
+    tries = tries + 1
     for s = 1, 16 do
       local d = turtle.getItemDetail(s)
-      if d and d.name == SCANNER then
+      if d and d.name == SCANNER and not st.hunt and not st.huntFinished then
         -- the factory has no coal and handed over its Geo Scanner instead:
         -- go and find some
         st.hunt = true
@@ -612,18 +627,32 @@ local function fuelStop(needed)
         save()
         error("SWITCH_TO_HUNT", 0)
       end
-      if d then
+      if d and fuel() < needed then
         turtle.select(s)
         while fuel() < needed and turtle.refuel(1) do end
       end
     end
     turtle.select(1)
-    tries = tries + 1
-    -- the factory has nothing to give: if there is enough in the tank to
-    -- get to the plot and back, carry on rather than wait for ever
-    if tries >= 6 and st.back and fuel() >= 2 * dockDistance(st.back.y) + 60 then
-      print("No fuel on offer. Carrying on with what I have.")
-      return
+    if tries == 4 and wantBucket() then
+      st.bucketTries = (st.bucketTries or 0) + 1
+      save()
+    end
+    if tries >= 9 and not onPad then
+      local trip = st.back and (2 * dockDistance(st.back.y) + 60) or 200
+      if fuel() >= trip then
+        print("Nothing on offer. Carrying on with what I have.")
+        return
+      end
+      -- not enough to go anywhere: wait on the launch pad, out of the way
+      if fuel() >= 3 then
+        flyTo(st.exit2.x, st.exit2.z)
+        local ok, data = turtle.inspectDown()
+        if not (ok and type(data) == "table" and tostring(data.name):find("turtle", 1, true)) then
+          axisMove("y", st.exit2.y - 1, true)
+          onPad = true
+          print("Waiting for fuel on the launch pad.")
+        end
+      end
     end
   end
 end
@@ -634,21 +663,6 @@ local function inPlot()
     and pos.y <= st.home.y
 end
 
--- No bucket yet: wait on the launch pad and ask the factory for one. Gives
--- up after a short wait, and stops asking after a few failed tries.
-local function bucketStop()
-  if hasBucket() or (st.bucketTries or 0) >= 3 then return end
-  toExitColumn()
-  axisMove("y", st.exit2.y - 1, true)
-  print("Asking the factory for a bucket.")
-  for _ = 1, 8 do
-    rednet.broadcast({ type = "bucket_request", id = os.getComputerID() }, JOB_PROTOCOL)
-    sleep(5)
-    if hasBucket() then return end
-  end
-  st.bucketTries = (st.bucketTries or 0) + 1
-  save()
-end
 
 -- On the way out of the base: beside the factory, on the launch pad, or
 -- in the out-shaft.
@@ -788,8 +802,7 @@ local function finishUnload()
   toDockFromAnywhere()
   refuelFromInventory(FUEL_TARGET)
   unloadDock()
-  fuelStop(tripFuel(st.back.y))
-  bucketStop()
+  serviceStop(tripFuel(st.back.y))
   st.phase = "return"
   save()
 end
@@ -1016,10 +1029,7 @@ end
 local function leaveToHunt()
   toExitColumn()
   local out = outShaft()
-  if over(st.exit2) then
-    axisMove("y", st.dock.y, true)
-    flyTo(out.x, out.z)
-  end
+  if over(st.exit2) then flyTo(out.x, out.z) end
   axisMove("y", huntY(), true)
 end
 
@@ -1199,8 +1209,7 @@ local function run()
       save()
     end
     if at(st.dock) or onExitSide() then
-      fuelStop(600)
-      bucketStop()
+      serviceStop(600)
       -- ask for the next plot while still at the base, so we can go
       -- straight there along the out road
       local j = requestJob(6)
@@ -1309,15 +1318,17 @@ local function jobTask()
         st.phase, st.back = nil, nil
         save()
       end
-      if not located and not relocate() then return end
-      located = false
       local job, wasHunting = st, st.hunt
       local ok, err = pcall(function()
+        if not located and not relocate() then error("LOST", 0) end
+        located = false
         if st.hunt then hunt() else run() end
       end)
       if not ok then
+        if err == "LOST" then return end
         -- "SWITCH_TO_HUNT": handed a scanner mid-trip; go round again as a hunter
         if err ~= "SWITCH_TO_HUNT" then error(err, 0) end
+        located = false
       elseif wasHunting then
         -- the hunt covered its whole area: go round again and resume the plot
       elseif st == job then
@@ -1339,7 +1350,7 @@ local function homeTask()
       toDockFromAnywhere()
       refuelFromInventory(FUEL_TARGET)
       unloadDock()
-      fuelStop(tripFuel(st.home.y))
+      serviceStop(tripFuel(st.home.y))
       toShaftFromAnywhere()            -- wait at the top of our plot, off the roads
     else
       if not relocate() then return end

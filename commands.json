@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794793482,
-      "issued": 1794793482000,
+      "id": 1794793778,
+      "issued": 1794793778000,
       "cmd": "reboot",
-      "target": "MinerThreat"
+      "target": "all"
     }
   ]
 }

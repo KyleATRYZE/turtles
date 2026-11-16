@@ -679,11 +679,12 @@ local function collect()
   end
 end
 
--- Hand items to the turtle in front, without disturbing anything I hold.
--- sure = true when we know a turtle is there (we have just placed it; it
--- can take a moment to show up as a peripheral).
-local function giveToFront(item, amount, sure)
-  if not sure and not peripheral.hasType("front", "turtle") then return false end
+-- Hand items to a turtle in front of me or on top of me, without disturbing
+-- anything I hold. sure = true when we know a turtle is there (we have just
+-- placed it; it can take a moment to show up as a peripheral).
+local function giveTo(dir, item, amount, sure)
+  local side = dir == "up" and "top" or "front"
+  if not sure and not peripheral.hasType(side, "turtle") then return false end
   local slot
   for s = 16, 1, -1 do
     if turtle.getItemCount(s) == 0 then slot = s break end
@@ -692,10 +693,14 @@ local function giveToFront(item, amount, sure)
   pull(item, amount, slot)
   if turtle.getItemCount(slot) == 0 then return false end
   turtle.select(slot)
-  turtle.drop()
+  if dir == "up" then turtle.dropUp() else turtle.drop() end
   stashSlot(slot)
   turtle.select(1)
   return true
+end
+
+local function giveToFront(item, amount, sure)
+  return giveTo("front", item, amount, sure)
 end
 
 local function fuelTurtleInFront(amount, sure)
@@ -728,38 +733,42 @@ local function ensureStock(name, n)
   return true
 end
 
--- Serve miners waiting on the launch pad: coal for the empty, buckets for
--- those without one. canCraft = false while I am holding a finished miner.
+-- Serve miners waiting for things: on top of me (the usual service stop) or
+-- on the launch pad (where they wait if they cannot carry on). Coal for the
+-- empty, buckets for those without one. With no coal at all, the Geo Scanner
+-- goes to the first miner that asks, so it can hunt for coal.
+-- canCraft = false while I am holding a finished miner.
 local function serveRequests(canCraft)
   if not next(fuelQueue) and not next(bucketQueue) then return end
   if canCraft and next(bucketQueue) then
     pcall(ensureStock, BUCKET, 1)
   end
-  turnTo(base.padTurns)
-  if not peripheral.hasType("front", "turtle") then
-    fuelQueue, bucketQueue = {}, {}     -- whoever asked is not on the pad
-  else
-    if next(fuelQueue) then
-      if fuelTurtleInFront(16) then
-        fuelQueue = {}
-        print("Gave fuel to a miner.")
-      else
-        print("A miner needs fuel but I have no coal.")
-        report("out of coal")
-        -- no coal at all: hand it the Geo Scanner so it can go and find some
-        if not plots.hunter and giveToFront(SCANNER, 1) then
-          plots.hunter = true
-          saveTable(PLOTS_FILE, plots)
-          fuelQueue = {}
-          print("Gave it the Geo Scanner to hunt for coal.")
+  for _, dir in ipairs({ "up", "front" }) do
+    local side = "top"
+    if dir == "front" then
+      turnTo(base.padTurns)
+      side = "front"
+    end
+    if peripheral.hasType(side, "turtle") then
+      if next(fuelQueue) then
+        if giveTo(dir, "#fuel", 16) then
+          print("Gave fuel to a miner.")
+        else
+          print("A miner needs fuel but I have no coal.")
+          report("out of coal")
+          if not plots.hunter and giveTo(dir, SCANNER, 1) then
+            plots.hunter = true
+            saveTable(PLOTS_FILE, plots)
+            print("Gave it the Geo Scanner to hunt for coal.")
+          end
         end
       end
-    end
-    if next(bucketQueue) and giveToFront(BUCKET, 1) then
-      bucketQueue = {}
-      print("Gave a bucket to a miner.")
+      if next(bucketQueue) and giveTo(dir, BUCKET, 1) then
+        print("Gave a bucket to a miner.")
+      end
     end
   end
+  fuelQueue, bucketQueue = {}, {}
   turnTo(0)
 end
 
