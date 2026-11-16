@@ -579,10 +579,26 @@ local function hasBucket()
   return nil
 end
 
+-- By remote order ("openhole"): the next miner standing above the launch
+-- pad breaks the block over it, opening the builder's way in and out.
+local HOLE_FILE = ".openhole"
+local OPENABLE = { ["minecraft:stone"] = true, ["minecraft:cobblestone"] = true,
+  ["minecraft:dirt"] = true, ["minecraft:cobbled_deepslate"] = true }
+local function openHole()
+  if not fs.exists(HOLE_FILE) or not at(st.exit2) then return end
+  local ok, data = turtle.inspectUp()
+  if ok and OPENABLE[data.name] then
+    turtle.digUp()
+    print("Opened the hole above the launch pad.")
+  end
+  if not turtle.detectUp() then fs.delete(HOLE_FILE) end
+end
+
 -- Off the drop-off column, across to the exit column.
 local function toExitColumn()
   if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
   if at(st.exit1) then flyTo(st.exit2.x, st.exit2.z) end
+  openHole()
 end
 
 -- Leave the base: across to the out-shaft and down it to the out road.
@@ -1591,6 +1607,12 @@ local function main(args)
     local cmd = swarm.runWithCommands(task, function(c)
       if c.cmd == "ping" then
         report(lastState)
+        return true
+      end
+      if c.cmd == "openhole" then
+        local h = fs.open(HOLE_FILE, "w")
+        h.write("yes")
+        h.close()
         return true
       end
     end)

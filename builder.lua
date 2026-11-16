@@ -888,7 +888,7 @@ local function wayIn()
       if not index[name] then palette[#palette + 1] = name index[name] = #palette end
       cells[#cells + 1] = { x - f.x, y - f.y, z - f.z, index[name] }
     end
-    sendMap("door_area", { kind = "room", origin = f, palette = palette, cells = cells,
+    sendMap("entry_area", { kind = "room", origin = f, palette = palette, cells = cells,
       scanned = true, from = { x = pos.x - f.x, y = pos.y - f.y, z = pos.z - f.z } })
     return false
   end
@@ -903,9 +903,14 @@ local function wayIn()
   return true
 end
 
--- Out of the hut: to the doorway, then let the scanner find the way up
--- to open sky.
+-- Out of the hut: up the hole above the launch pad if it is open, else
+-- out through the doorway; the scanner finds the way up to open sky.
 local function goOutside()
+  local e = base.exit2
+  if goToCell(key(e.x, e.y, e.z)) then
+    useTool("scan")
+    if escape() then return true end
+  end
   local dk = doorKey()
   if not goToCell(dk) then return false, "cannot reach the door" end
   useTool("scan")
@@ -913,15 +918,22 @@ local function goOutside()
   return true
 end
 
--- Back in: walk to a spot a few blocks out from the doorway, then let the
--- scanner find the way into the room, then on to a room cell (the parking
--- spot unless told otherwise).
+-- Back in: to above the launch pad (or else just outside the doorway),
+-- let the scanner find the way into the room, then on to a room cell (the
+-- parking spot unless told otherwise).
 local function comeHome(target)
+  local e = base.exit2
   local _, d = doorKey()
-  local ox, oz = d.x + 3 * DIRS[DOOR_OUT].x, d.z + 3 * DIRS[DOOR_OUT].z
-  if not groundToSafely(ox, oz) then return false end
-  if not wayIn() then return false end
-  return goToCell(target or st.park)
+  local spots = {
+    { e.x, e.z },
+    { d.x + 3 * DIRS[DOOR_OUT].x, d.z + 3 * DIRS[DOOR_OUT].z },
+  }
+  for _, sp in ipairs(spots) do
+    if groundToSafely(sp[1], sp[2]) and wayIn() then
+      return goToCell(target or st.park)
+    end
+  end
+  return false
 end
 
 -- Ground map by scanning from points on a grid.
@@ -1632,12 +1644,16 @@ local function work()
   local inside = roomSet()[here] or here == st.padKey
     or (not st.done.room and inBox(pos.x, pos.y, pos.z) and pos.y <= base.f.y + 1)
   if not inside then
-    -- restarted outside: walk back to the hole and come in
+    -- restarted outside: find the way back in (keep trying for a while:
+    -- someone may open a way)
     print("Outside. Coming home.")
-    if not comeHome() then
+    local tries = 0
+    while not comeHome() do
+      tries = tries + 1
       print("I could not get back in.")
       report("stuck outside")
-      return
+      if tries >= 12 or fuel() < 150 then return end
+      sleep(120)
     end
   end
   if not st.done.room then roomSurvey() end
