@@ -1,22 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794870969,
-      "issued": 1794870969000,
+      "id": 1794871127,
+      "issued": 1794871127000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "ChunkNorris"
     },
     {
-      "id": 1794870970,
-      "issued": 1794870969000,
-      "cmd": "reboot",
-      "target": "LoadRunner"
-    },
-    {
-      "id": 1794870971,
-      "issued": 1794870969000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
+      "id": 1794871128,
+      "issued": 1794871127000,
+      "cmd": "park",
+      "target": "ChunkNorris"
     }
   ]
 }
