@@ -58,6 +58,7 @@ ROOMS = [
     {"name": "Tree farm", "box": [28, 1, 1, 43, 13, 29], "floor": "ground, double height"},
     {"name": "Builder workshop", "box": [1, 9, 1, 26, 13, 29], "floor": "upper"},
     {"name": "Control tower", "box": [46, 1, 21, 54, 22, 29], "floor": "three floors"},
+    {"name": "Drone lane", "box": [0, 1, 1, 44, 4, 4], "floor": "ground, along the back wall"},
 ]
 
 
@@ -69,7 +70,7 @@ def roof_h(x):
 
 # ---------------------------------------------------------------- floor
 fill(0, 0, 0, HX, 0, HZ, "minecraft:polished_deepslate")
-fill(28, 0, 1, 43, 0, 29, "minecraft:dirt")                 # tree farm soil
+fill(28, 0, 4, 43, 0, 29, "minecraft:dirt")                 # tree farm soil
 fill(TX1, 0, TZ1, TX2, 0, TZ2, "minecraft:polished_deepslate")
 
 # ---------------------------------------------------------------- hall walls
@@ -156,9 +157,45 @@ for x in (9, 18, 27):
 
 # the upper floor over smelting, storage and the launch bay
 fill(1, UPPER, 1, 26, UPPER, 29, "minecraft:polished_deepslate")
-# open stairwell (ladders) in the storage room
-clear(16, UPPER, 2, 17, UPPER, 2)
-fill(17, 1, 1, 17, UPPER + 1, 1, "minecraft:ladder[facing=south]")
+# ladder up to the workshop, in the storage room's south-east corner
+fill(17, 1, HZ - 1, 17, UPPER + 1, HZ - 1, "minecraft:ladder[facing=north]")
+
+# ---------------------------------------------------------------- the drone lane
+# Drones never cross the rooms: a two-track lane runs the full length of the
+# back wall behind a screen. The back track (z 1) runs west, the front track
+# (z 2) runs east, so nobody meets head-on. Gates in both end walls, each with
+# an IN and an OUT light; portholes through the partitions; hazard stripes on
+# the floor. The miners' pit stop sits on the back track in the launch bay.
+LANE = (1, 2)
+HAZARD = ("minecraft:raw_copper_block", "minecraft:obsidian")   # orange and black
+for x in range(0, HX + 1):
+    for z in LANE:
+        put(x, 0, z, HAZARD[0] if (x + z) % 4 < 2 else HAZARD[1])
+for x in (0, HX):                                   # the gates, framed
+    clear(x, 1, 1, x, 3, 2)
+    fill(x, 1, 3, x, 4, 3, "minecraft:polished_deepslate")
+for x in (9, 18, 27):                               # portholes, with a lintel
+    clear(x, 1, 1, x, 3, 2)
+    fill(x, 4, 1, x, 4, 2, "minecraft:polished_deepslate")
+# the screen: iron bars between polished deepslate posts (the launch bay has
+# the drone rack instead, below)
+POSTS = {1, 5, 8, 10, 14, 17, 28, 30, 34, 38, 42, 43}
+HATCH = 32                                          # the lumberjack's way into the farm
+for x in range(1, HX):
+    if x in (9, 18, 27) or 19 <= x <= 26:
+        continue
+    for y in range(1, 5):
+        if x == HATCH and y <= 2:
+            continue
+        put(x, y, 3, "minecraft:polished_deepslate" if x in POSTS else "minecraft:iron_bars")
+# gate lights: a monitor over each track, facing out. A track leaving the
+# building shows OUT, one coming in shows IN; they flash while a drone passes.
+LIGHTS = []
+for x, face, lights in ((0, "west", {1: "OUT", 2: "IN"}), (HX, "east", {1: "IN", 2: "OUT"})):
+    for z, word in lights.items():
+        put(x, 4, z, f"computercraft:monitor_advanced[facing={face}]")
+        LIGHTS.append({"pos": [x, 4, z], "face": face, "label": word,
+                       "color": "#3fbf6a" if word == "IN" else "#e5484d"})
 
 # ---------------------------------------------------------------- roof
 for x in range(0, HX + 1):
@@ -247,35 +284,41 @@ put(50, TOWER_TOP + 8, 25, "minecraft:lightning_rod")
 
 # ---------------------------------------------------------------- fittings
 # smelting hall: a bank of furnaces along the west wall, wired to the network
-for z in range(3, 28, 2):
+for z in range(5, 28, 2):
     put(2, 1, z, "minecraft:furnace[facing=east]")
+fill(1, 1, 4, 1, 1, 28, "computercraft:cable")
+for z in range(5, 28, 2):
     put(1, 1, z, "computercraft:wired_modem_full")
-fill(1, 1, 2, 1, 1, 28, "computercraft:cable")
-for z in range(3, 28, 2):
-    put(1, 1, z, "computercraft:wired_modem_full")
-# storage room: chest walls, three high, both sides, cable behind the floor line
-for z in range(2, 28):
+# storage room (docs/storage-plan.html): double chests three high down both
+# walls, a wired modem behind each pair and cable between, so the walls are
+# one network; the front desk (In chest, Sortnado, Out chest) at the south end
+STORE_DOOR = range(14, 17)
+STORE_Z = [z for z in range(4, 27) if z not in STORE_DOOR]
+for z in STORE_Z:
+    first = (z - (4 if z < 14 else 17)) % 2 == 0          # first half of a pair
     for y in (1, 2, 3):
-        put(10, y, z, "minecraft:chest[facing=east]")
+        put(11, y, z, "minecraft:chest[facing=east]")
         put(16, y, z, "minecraft:chest[facing=west]")
-put(13, 1, 28, "minecraft:chest[facing=north]")                # the drop-in / take-out chest
-put(14, 1, 28, "computercraft:computer_advanced")
-put(14, 2, 28, "computercraft:monitor_advanced")
-# launch bay: the factory, pad, drop-off chest and both shafts
-put(22, 1, 15, "computercraft:wired_modem_full")
-put(22, 2, 15, "computercraft:turtle_advanced")                # ForgeClooney
-put(21, 1, 15, "computercraft:disk_drive")                     # under the launch pad
-put(23, 1, 15, "minecraft:furnace[facing=south]")
-put(23, 2, 15, "minecraft:chest[facing=west]")                 # drop-off
-for y in range(0, 3):
-    B.pop((20, y, 15), None)                                   # out-shaft
-    B.pop((24, y, 15), None)                                   # in-shaft
-fill(19, 1, 15, 19, 1, 15, "computercraft:cable")
-# tree farm: 4 rows of birch saplings, a lumberjack turtle's track between
+        for x in (10, 17):
+            put(x, y, z, "computercraft:wired_modem_full" if first else "computercraft:cable")
+put(12, 1, HZ - 1, "minecraft:chest[facing=north]")            # In
+put(13, 1, HZ - 1, "computercraft:computer_advanced")          # Sortnado
+put(14, 1, HZ - 1, "minecraft:chest[facing=north]")            # Out
+fill(12, 2, HZ - 1, 14, 3, HZ - 1, "computercraft:monitor_advanced[facing=north]")
+# launch bay: the pit stop on the back track, against the back wall. Miners
+# come up the in-shaft (x 24), drop their load in the chest, get serviced
+# over ForgeClooney, pass the pad and drop down the out-shaft (x 20).
+put(21, 1, 1, "computercraft:disk_drive")                      # under the launch pad
+put(22, 1, 1, "computercraft:wired_modem_full")
+put(22, 2, 1, "computercraft:turtle_advanced")                 # ForgeClooney
+put(23, 1, 1, "minecraft:furnace[facing=south]")
+put(23, 2, 1, "minecraft:chest[facing=south]")                 # drop-off
+B.pop((20, 0, 1), None)                                        # out-shaft
+B.pop((24, 0, 1), None)                                        # in-shaft
+# tree farm: 5 rows of birch saplings, clear of the lane; aisles between
 for x in (30, 34, 38, 42):
-    for z in range(4, 28, 4):
+    for z in range(8, 28, 4):
         put(x, 1, z, "minecraft:birch_sapling")
-put(28, 1, 15, "computercraft:turtle_normal")                  # the lumberjack's home
 # control tower: the monitor wall on the north wall of the top floor
 for x in range(TX1 + 1, TX2):
     for y in range(17, 21):
@@ -283,11 +326,17 @@ for x in range(TX1 + 1, TX2):
 put(TX1 + 5, 17, TZ2 - 2, "computercraft:computer_advanced")   # GroundControl
 put(TX1 + 5, 18, TZ2 - 2, "advancedperipherals:chat_box")
 put(TX1 + 4, 17, TZ2 - 2, "advancedperipherals:player_detector")
-# drone docks: a copper pad for each drone along the east side of the launch
-# bay; a drone with nothing to do flies home and sits on its own pad
-DOCKS = [(26, 1, z) for z in (3, 5, 7, 9, 11, 13, 17, 19, 21, 23, 25, 27)]
-for (x, y, z) in DOCKS:
-    put(x, y, z, "minecraft:cut_copper_slab[type=bottom]")
+# the drone rack: 16 homes in two rows off the front track in the launch bay.
+# A drone with nothing to do slides in and sits on its copper pad. Bars at
+# the back so you can see them from the bay, and a name board over each.
+DOCKS = []
+for x in range(19, 27):
+    put(x, 0, 3, "minecraft:cut_copper")                       # lower pad, in the floor
+    put(x, 2, 3, "minecraft:cut_copper_slab[type=top]")        # upper pad
+    DOCKS += [(x, 0, 3), (x, 2, 3)]
+    fill(x, 1, 4, x, 3, 4, "minecraft:iron_bars")
+    put(x, 4, 4, "computercraft:monitor_advanced[facing=south]")
+    LIGHTS.append({"pos": [x, 4, 4], "face": "south", "label": "", "color": "#2bb3c8"})
 # touch panels (advanced monitors are touch screens): a 3 x 2 panel by
 # GroundControl in the tower, and a 2 x 2 one by the launch bay door
 PANELS = {
@@ -314,20 +363,20 @@ for (lx, ly, lz), chain in LANTERNS:
         put(cx_, cy_, cz_, "minecraft:chain")
 
 # ---------------------------------------------------------------- drone routes
-# (for the plan page) the base in the launch bay works like the hut today:
-# factory at (22, 2, 15), pad west of it, drop-off chest east; miners come up
-# the in-shaft (x 24), unload, refuel over the factory, go down the out-shaft
-# (x 20) to their roads 20 below; everyone else uses the arch door.
+# (for the plan page) everything rides the lane along the back wall
 ROAD_IN, ROAD_OUT = 2 - 16, 2 - 20
 ROUTES = [
-    {"name": "Miners coming home", "color": "#e0a030",
-     "points": [[60, ROAD_IN, 15], [24.5, ROAD_IN, 15.5], [24.5, 3.5, 15.5], [23.5, 3.5, 15.5], [22.5, 3.5, 15.5]]},
-    {"name": "Miners going out", "color": "#d0603a",
-     "points": [[22.5, 3.5, 15.5], [21.5, 3.5, 15.5], [20.5, 3.5, 15.5], [20.5, ROAD_OUT, 15.5], [-15, ROAD_OUT, 15.5]]},
-    {"name": "Builder, lumberjack, ChunkNorris", "color": "#2f8a74",
-     "points": [[26.5, 2.5, 7.5], [24.5, 2.5, 7.5], [22.5, 2.5, 24.5], [22.5, 2.5, 31.5], [22.5, 2.5, 38]]},
-    {"name": "Lumberjack to the tree farm", "color": "#7cb342",
-     "points": [[26.5, 2.5, 13.5], [24.5, 2.5, 15.5], [27.5, 2.5, 15.5], [29.5, 2.5, 15.5]]},
+    {"name": "Miners coming home: up the in-shaft to the pit stop", "color": "#e0a030",
+     "points": [[62, ROAD_IN, 1.5], [24.5, ROAD_IN, 1.5], [24.5, 3.5, 1.5], [23.5, 3.5, 1.5], [22.5, 3.5, 1.5]]},
+    {"name": "Miners going out: down the out-shaft", "color": "#d0603a",
+     "points": [[22.5, 3.5, 1.5], [21.5, 3.5, 1.5], [20.5, 3.5, 1.5], [20.5, ROAD_OUT, 1.5], [-16, ROAD_OUT, 1.5]]},
+    {"name": "Back track: westbound, in at the east gate, out at the west", "color": "#e5484d",
+     "points": [[50, 2.5, 1.5], [44.5, 2.5, 1.5], [26.5, 2.5, 1.5], [25.5, 3.5, 1.5], [19.5, 3.5, 1.5],
+                [18.5, 2.5, 1.5], [0.5, 2.5, 1.5], [-6, 2.5, 1.5]]},
+    {"name": "Front track: eastbound, in at the west gate, out at the east", "color": "#3fbf6a",
+     "points": [[-6, 1.6, 2.5], [0.5, 1.6, 2.5], [44.5, 1.6, 2.5], [50, 1.6, 2.5]]},
+    {"name": "Lumberjack: rack to the farm through its hatch", "color": "#7cb342",
+     "points": [[26.5, 1.5, 3.5], [26.5, 1.5, 2.5], [32.5, 1.5, 2.5], [32.5, 1.5, 3.5], [32.5, 1.5, 6.5]]},
 ]
 
 # ---------------------------------------------------------------- write out
@@ -350,6 +399,7 @@ out = {
     "docks": DOCKS,
     "panels": PANELS,
     "routes": ROUTES,
+    "lights": LIGHTS,
     "materials": dict(materials.most_common()),
 }
 os.makedirs(os.path.join(os.path.dirname(__file__), "..", "blueprints"), exist_ok=True)

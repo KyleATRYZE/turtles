@@ -132,6 +132,7 @@ section { display: grid; gap: 14px; }
       <button type="button" data-cut="7">Ground floor</button>
       <button type="button" data-cut="0">Floor plan</button>
       <button type="button" id="routes" aria-pressed="false">Drone routes</button>
+      <button type="button" id="lane">Down the lane</button>
       <button type="button" id="spin" aria-pressed="false">Turntable</button>
     </div>
     <ul class="legend" id="legend" hidden></ul>
@@ -148,36 +149,45 @@ section { display: grid; gap: 14px; }
     <article class="room">
       <h3>Smelting hall <span class="size">8 × 29</span></h3>
       <dl>
-        <dt>Inside</dt><dd>13 furnaces along the west wall, each on the wired network. The two chimneys rise from here.</dd>
+        <dt>Inside</dt><dd>12 furnaces along the west wall, each on the wired network. The two chimneys rise from here.</dd>
         <dt>How it works</dt><dd>ForgeClooney splits every smelting job across all the furnaces at once: cobblestone to stone, sand to glass, ores to ingots, logs to charcoal. Under the current single furnace, the building's smelting would take {{SMELT_HOURS_1}} hours; the bank does it in about {{SMELT_MIN_13}} minutes.</dd>
-        <dt>Needs</dt><dd>13 furnaces, modems and cable, and an update to the factory so it can use many furnaces.</dd>
+        <dt>Needs</dt><dd>12 furnaces, modems and cable. The factory already splits its smelting over every furnace it can see.</dd>
       </dl>
       <button type="button" data-room="0">Show in the model</button>
     </article>
     <article class="room">
       <h3>Storage room <span class="size">8 × 29</span></h3>
       <dl>
-        <dt>Inside</dt><dd>Chest walls three high down both sides (up to 156 chests, about 4,200 stacks), and one chest by the door with a storage computer and screen.</dd>
-        <dt>How it works</dt><dd>Anything dropped in the door chest is sorted away. Type what you want on the screen and it comes out into the same chest. The factory and BrickJagger take their materials from here too.</dd>
-        <dt>Needs</dt><dd>Starts with today's 13 chests moved in; grows as the tree farm supplies wood (2 logs per chest). A new storage program.</dd>
+        <dt>Inside</dt><dd>60 double chests three high down both walls (3,240 slots to start), each pair wired in behind; a front desk at the south end with an In chest, an Out chest, the sorting computer and a 3 × 2 touch screen.</dd>
+        <dt>How it works</dt><dd>Anything dropped in the In chest is sorted into colour-coded sections; ask on the screen or in chat and it lands in the Out chest. The chests can be upgraded in place to Sophisticated Storage tiers later for far more room. Full proposal: the storage plan page.</dd>
+        <dt>Needs</dt><dd>120 chests (2 logs each, from the tree farm), 60 modems and cable, and the storage program.</dd>
       </dl>
       <button type="button" data-room="1">Show in the model</button>
     </article>
     <article class="room">
       <h3>Launch bay <span class="size">8 × 29</span></h3>
       <dl>
-        <dt>Inside</dt><dd>ForgeClooney, the launch pad, the drop-off chest and the miners' two shafts down to their roads, behind the big arched door. Along the east wall, 12 copper docking pads: every drone has its own and sits on it when it has nothing to do. By the door, a 2 × 2 touch panel.</dd>
-        <dt>How it works</dt><dd>Miners never use the door: they come up the in-shaft from their road, unload and refuel exactly as in the hut today, then drop down the out-shaft to the road 20 blocks below. The builder, the lumberjack and ChunkNorris go in and out through the arch. Turn on <b>Drone routes</b> above to see the lot.</dd>
+        <dt>Inside</dt><dd>At the back, on the drone lane: the pit stop (in-shaft, drop-off chest, ForgeClooney, launch pad, out-shaft) and the drone rack, 16 homes in two rows with copper pads and a glowing name board over each, seen through bars from the bay. The rest of the bay is clear floor behind the big arched door, with a 2 × 2 touch panel by the door.</dd>
+        <dt>How it works</dt><dd>Miners come up the in-shaft, drop their load, get serviced over ForgeClooney and drop down the out-shaft, all without leaving the lane. A drone with nothing to do slides into its slot in the rack. Turn on <b>Drone routes</b> above to see the lot.</dd>
         <dt>Needs</dt><dd>Moves over last, once the rest works, so mining never stops. The miners switch to the new base on their next trip.</dd>
       </dl>
       <button type="button" data-room="2">Show in the model</button>
     </article>
+    <article class="room lane">
+      <h3>Drone lane <span class="size">45 × 2, along the back wall</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>A two-track lane the full length of the building behind a screen of iron bars, on an orange and black hazard-striped floor. Gates in both end walls, each with an IN and an OUT light over its tracks; portholes through the partitions.</dd>
+        <dt>How it works</dt><dd>The back track runs west and the front track runs east, so drones never meet head-on and never cross a room. The gate lights flash while a drone goes through. Everything the drones visit is on the lane: the pit stop, the rack, the farm hatch.</dd>
+        <dt>Needs</dt><dd>45 obsidian and 43 raw copper blocks (both in stock), 102 iron bars, 4 small monitors for the lights. If someone finds yellow dye, the stripes can be classic yellow and black instead.</dd>
+      </dl>
+      <button type="button" data-room="6">Show in the model</button>
+    </article>
     <article class="room">
       <h3>Tree farm <span class="size">16 × 29, double height</span></h3>
       <dl>
-        <dt>Inside</dt><dd>24 birch trees in four rows on dirt, under the glazed sawtooth roof, with a lumberjack turtle's track between them.</dd>
-        <dt>How it works</dt><dd>The lumberjack loops the rows, chops grown trees, replants and gathers saplings. Logs go to the smelting hall as charcoal (fuel the swarm makes itself) and to the factory as planks for chests.</dd>
-        <dt>Needs</dt><dd>464 dirt, 24 birch saplings from you, and a lumberjack turtle and program.</dd>
+        <dt>Inside</dt><dd>20 birch trees in four rows on dirt, under the glazed sawtooth roof, kept clear of the lane so leaves never block it.</dd>
+        <dt>How it works</dt><dd>The lumberjack comes along the lane from its rack slot and in through its own hatch, loops the aisles, chops grown trees and replants. On the way home it drops the logs at the pit stop: charcoal for fuel, planks for chests.</dd>
+        <dt>Needs</dt><dd>416 dirt, 20 birch saplings from you, and a lumberjack turtle and program.</dd>
       </dl>
       <button type="button" data-room="3">Show in the model</button>
     </article>
@@ -264,6 +274,7 @@ section { display: grid; gap: 14px; }
     <li>
       <div class="ph-head"><span class="ph-num">4</span><h3>Storage room</h3><span class="state">Planned</span></div>
       <ul>
+        <li>The drone lane: hazard floor, screen, gate lights and portholes, so the rooms stay clear from here on.</li>
         <li>Chest walls and network (BrickJagger right-clicks each modem on with the automata core).</li>
         <li>Storage program: sorting, search screen, the door chest.</li>
         <li>Today's chests and their contents move in.</li>
@@ -277,19 +288,19 @@ section { display: grid; gap: 14px; }
     <li>
       <div class="ph-head"><span class="ph-num">6</span><h3>Tree farm</h3><span class="state">Planned</span></div>
       <ul><li>Dirt floor, saplings, lumberjack turtle and program; logs to charcoal and to planks for chests.</li></ul>
-      <p class="who">You: 24 birch saplings.</p>
+      <p class="who">You: 20 birch saplings.</p>
     </li>
     <li>
       <div class="ph-head"><span class="ph-num">7</span><h3>Move the launch bay</h3><span class="state">Last</span></div>
       <ul>
-        <li>New shafts down to fresh roads, then ForgeClooney, the pad and the drop-off move across.</li>
+        <li>New shafts down to fresh roads at the back of the bay, then ForgeClooney, the pad and the drop-off move into the pit stop; the drones move into the rack.</li>
         <li>Miners switch base on their next trip; their plots move to around the new building.</li>
       </ul>
       <p class="who">You: carry ForgeClooney across.</p>
     </li>
     <li>
       <div class="ph-head"><span class="ph-num">8</span><h3>Finishing touches</h3><span class="state">Last</span></div>
-      <ul><li>22 lanterns, hung where a lighting check says they're needed so nothing can spawn inside: on chains under the tall roofs, about five blocks off the floor. Copper pipe runs, a path back to the hut.</li><li>An inspection pass: BrickJagger scans the finished building, compares it with this plan and fixes anything missing or out of place.</li></ul>
+      <ul><li>24 lanterns, hung where a lighting check says they're needed so nothing can spawn inside: on chains under the tall roofs, about five blocks off the floor. Copper pipe runs, a path back to the hut.</li><li>An inspection pass: BrickJagger scans the finished building, compares it with this plan and fixes anything missing or out of place.</li></ul>
     </li>
   </ol>
 </section>
@@ -334,14 +345,15 @@ section { display: grid; gap: 14px; }
     furnace: 0x6e6e70, lantern: 0xf5c05a, lightning_rod: 0xc77d4f, computer_advanced: 0xe0c46a,
     turtle_advanced: 0xd6b45c, turtle_normal: 0xbdbdbd, disk_drive: 0x9a9a9a,
     chat_box: 0x6aa6c8, player_detector: 0xb35050, chain: 0x5a5f66,
+    raw_copper_block: 0xd87a3a, obsidian: 0x1b1624, iron_bars: 0x8e959b,
   };
   // shapes: [width, height, depth, y-offset]
   const SHAPE = {
     cut_copper_slab: [1, 0.5, 1, -0.25], lantern: [0.4, 0.45, 0.4, 0.1], birch_sapling: [0.5, 0.6, 0.5, -0.2],
     ladder: [0.9, 1, 0.12, 0], cable: [0.35, 0.35, 0.35, 0], lightning_rod: [0.9, 0.22, 0.22, 0],
-    glass_pane: [1, 1, 1, 0], chain: [0.14, 1, 0.14, 0],
+    glass_pane: [1, 1, 1, 0], chain: [0.14, 1, 0.14, 0], iron_bars: [1, 1, 0.14, 0],
   };
-  const GLASS = { glass_pane: 0.32, glass: 0.4 };
+  const GLASS = { glass_pane: 0.32, glass: 0.4, iron_bars: 0.55 };
 
   const W = viewer.clientWidth, H = viewer.clientHeight;
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -406,6 +418,20 @@ section { display: grid; gap: 14px; }
     meshes.push(mesh);
   }
 
+  // screens that matter from outside: the gate lights (IN green, OUT red)
+  // and the rack's name boards, drawn as glowing faces on their monitors
+  const FACE = { west: [-1, 0], east: [1, 0], south: [0, 1], north: [0, -1] };
+  for (const l of BP.lights || []) {
+    const [dx, dz] = FACE[l.face];
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.86),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(l.color) }));
+    plane.position.set(l.pos[0] + 0.5 + dx * 0.51, l.pos[1] + 0.5, l.pos[2] + 0.5 + dz * 0.51);
+    plane.rotation.y = dx ? (dx > 0 ? Math.PI / 2 : -Math.PI / 2) : (dz > 0 ? 0 : Math.PI);
+    plane.userData.y = l.pos[1];
+    scene.add(plane);
+    meshes.push(plane);
+  }
+
   // room highlight
   const hl = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color(0x2f8a74));
   hl.visible = false;
@@ -417,6 +443,7 @@ section { display: grid; gap: 14px; }
     v = Number(v);
     range.value = v; out.textContent = v;
     for (const mesh of meshes) {
+      if (mesh.userData.y !== undefined) { mesh.visible = mesh.userData.y <= v; continue; }
       const ys = mesh.userData.ys;
       let n = 0;
       while (n < ys.length && ys[n] <= v) n++;
@@ -460,7 +487,7 @@ section { display: grid; gap: 14px; }
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 6, 20),
       new THREE.MeshBasicMaterial({ color: 0x2f8a74, depthTest: false }));
     ring.rotation.x = Math.PI / 2;
-    ring.position.set(d[0] + 0.5, d[1] + 0.6, d[2] + 0.5); ring.renderOrder = 6;
+    ring.position.set(d[0] + 0.5, d[1] + 1.06, d[2] + 0.5); ring.renderOrder = 6;
     routeGroup.add(ring);
   }
   { const li = document.createElement("li"); li.innerHTML = `<i style="background:#2f8a74;height:10px;width:10px;border-radius:50%"></i>Drone docks`; legend.appendChild(li); }
@@ -475,10 +502,18 @@ section { display: grid; gap: 14px; }
     ground.material.opacity = routeGroup.visible ? 0.35 : 1;
     ground.material.needsUpdate = true;
     if (routeGroup.visible) {
-      setCut(7);
-      camera.position.set(-6, 22, 58);
-      controls.target.set(22, -4, 16);
+      setCut(5);
+      camera.position.set(8, 30, 30);
+      controls.target.set(22, -3, 4);
     }
+  });
+
+  document.getElementById("lane").addEventListener("click", () => {
+    hl.visible = false;
+    setCut(31);
+    camera.position.set(-5, 3.6, 2);
+    controls.target.set(20, 1.6, 2);
+    viewer.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   const spinBtn = document.getElementById("spin");

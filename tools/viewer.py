@@ -46,6 +46,12 @@ for name, n in need.items():
         raw["cobblestone"] += n * 8
     elif b == "lantern":
         raw["iron_ingot"] += n            # 8 nuggets each, plus a torch
+    elif b == "iron_bars":
+        raw["iron_ingot"] += math.ceil(n / 16) * 6
+    elif b == "obsidian":
+        raw["obsidian"] += n
+    elif b == "raw_copper_block":
+        raw["raw_copper_block"] += n
     elif b == "chain":
         raw["iron_ingot"] += math.ceil(n * 11 / 9)
     elif b == "birch_sapling":
@@ -62,9 +68,11 @@ NICE = {
     "sand": ("Glass", "About 270 in stock (glass and sand): roughly 200 more sand to find"),
     "dirt": ("Dirt", "Tree farm soil: in stock from clearing the site"),
     "logs": ("Logs", "Chests and ladders: from the tree farm, once it is growing"),
-    "gold_ingot": ("Gold ingots", "Monitor wall: the factory has about 80 counting raw gold"),
-    "copper_ingot": ("Copper ingots", "Chimney caps and pipes: the factory has 450 raw copper"),
-    "iron_ingot": ("Iron ingots", "Lanterns and their chains: the factory has 88"),
+    "gold_ingot": ("Gold ingots", "Monitors: about 370 in stock counting raw gold"),
+    "copper_ingot": ("Copper ingots", "Chimney caps, pipes and drone pads: 512 ingots and 667 raw copper in stock"),
+    "iron_ingot": ("Iron ingots", "Lanterns, chains and the lane's iron bars: 88 ingots and about 900 raw iron in stock"),
+    "obsidian": ("Obsidian", "Black hazard stripes: 295 in stock"),
+    "raw_copper_block": ("Raw copper blocks", "Orange hazard stripes: 202 in stock"),
     "coal": ("Coal", "Fuel for all the smelting"),
     "birch_sapling": ("Birch saplings", "To start the tree farm: from you"),
 }
@@ -76,6 +84,7 @@ block_rows = [(LABEL(k), v) for k, v in need.most_common()]
 page_data = {
     "palette": bp["palette"], "blocks": bp["blocks"], "rooms": bp["rooms"],
     "size": bp["size"], "routes": bp.get("routes", []), "docks": bp.get("docks", []),
+    "lights": bp.get("lights", []),
 }
 
 html = open(os.path.join(os.path.dirname(__file__), "viewer_template.html")).read()
@@ -83,7 +92,7 @@ html = html.replace("/*DATA*/null", json.dumps(page_data, separators=(",", ":"))
 html = html.replace("{{TOTAL}}", f"{len(bp['blocks']):,}")
 html = html.replace("{{SMELTS}}", f"{total_smelts:,}")
 html = html.replace("{{SMELT_HOURS_1}}", f"{total_smelts * 10 / 3600:.0f}")
-html = html.replace("{{SMELT_MIN_13}}", f"{total_smelts * 10 / 60 / 13:.0f}")
+html = html.replace("{{SMELT_MIN_13}}", f"{total_smelts * 10 / 60 / 12:.0f}")
 html = html.replace("{{RAW_ROWS}}", "\n".join(
     f'<tr><td>{a}</td><td class="num">{b:,}</td><td>{c}</td></tr>' for a, b, c in raw_rows))
 html = html.replace("{{BLOCK_ROWS}}", "\n".join(
