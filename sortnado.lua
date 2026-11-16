@@ -287,11 +287,15 @@ end
 
 -- Put count of an item straight into the owner's inventory, through the
 -- Inventory Manager (it holds their memory card). The manager pulls from a
--- container it is told about: one on the wired network by name if it can,
--- otherwise the Out chest standing next to it ("@west": the side of the
--- manager the chest is on). Which of the two works is found out on the
--- first go and remembered. Returns how many arrived, and a note when some
--- did not.
+-- container it is told about: importItem(<where>, { name, count }), where
+-- <where> is a side of the manager ("@west") or, if this version takes it,
+-- a name on the wired network. Nobody tells Sortnado how the desk was put
+-- together, so it finds out on the first go and remembers:
+--   straight out of the store (the controller touching the manager, or a
+--     chest by name) if that works;
+--   otherwise by way of the Out chest standing against the manager.
+-- Only ever the one item asked for is moved, and the owner's inventory is
+-- never looked at. Returns how many arrived, and a note when some did not.
 local SIDES = { "@west", "@east", "@north", "@south", "@up", "@down" }
 local function import(from, name, count)
   local ok, n = pcall(peripheral.call, S.manager, "importItem", from, { name = name, count = count })
@@ -299,54 +303,121 @@ local function import(from, name, count)
   return nil, tostring(n)
 end
 
+-- How many of an item lie in the Out chest.
+local function inOut(name)
+  if not cfg.outbox then return 0 end
+  local ok, list = pcall(peripheral.call, cfg.outbox, "list")
+  local n = 0
+  if ok and type(list) == "table" then
+    for _, st in pairs(list) do if st.name == name then n = n + st.count end end
+  end
+  return n
+end
+
+-- Put count of an item that is lying in the Out chest back in the store.
+local function unstage(name, count)
+  local ok, list = pcall(peripheral.call, cfg.outbox, "list")
+  if not ok or type(list) ~= "table" then return end
+  local touched = {}
+  for slot, st in pairs(list) do
+    local dest = count > 0 and st.name == name and homeFor(name)
+    if dest then
+      local okPush, n = pcall(peripheral.call, cfg.outbox, "pushItems", dest, slot, count)
+      count = count - (okPush and tonumber(n) or 0)
+      touched[dest] = true
+    end
+  end
+  for dest in pairs(touched) do S.read(dest) end
+end
+
 function S.give(name, count)
   local it = S.items[name]
   if not it then return 0, "none in store" end
   if not S.manager then return 0, "no Inventory Manager on the storage network" end
   local want = math.min(count, it.total)
+  local one = S.backend == "controller"       -- one inventory holds it all
+  local waiting = inOut(name)                 -- (left in the Out chest from an earlier go)
   local got = 0
   if cfg.giveVia ~= "out" then
     -- straight from where it lies
-    local from = {}
-    for chest in pairs(it.at) do from[#from + 1] = chest end
-    table.sort(from)
-    for _, chest in ipairs(from) do
+    local sources = {}
+    if one and cfg.giveFrom then
+      sources = { cfg.giveFrom }
+    else
+      for chest in pairs(it.at) do sources[#sources + 1] = chest end
+      table.sort(sources)
+      if one and waiting == 0 then            -- (with none in the Out chest, only the store can answer)
+        for _, side in ipairs(SIDES) do
+          if side ~= cfg.outSide then sources[#sources + 1] = side end
+        end
+      end
+    end
+    local read = {}
+    for _, src in ipairs(sources) do
       if got >= want then break end
-      local n, err = import(chest, name, want - got)
-      if not n then S.giveError = err break end
-      got = got + n
-      S.read(chest)
-      if n == 0 then break end                -- inventory full, or the owner is away
+      local n, err = import(src, name, want - got)
+      if not n then
+        S.giveError = err
+      elseif n > 0 then
+        got = got + n
+        read[#read + 1] = one and S.order[1] or src
+        if one then
+          if cfg.giveFrom ~= src or cfg.giveVia ~= "direct" then
+            cfg.giveFrom, cfg.giveVia = src, "direct"
+            S.saveConfig()
+          end
+          break                               -- one store, one way in: no more would fit
+        elseif cfg.giveVia ~= "direct" then
+          cfg.giveVia = "direct"
+          S.saveConfig()
+        end
+      elseif cfg.giveVia == "direct" then
+        break                                 -- it works, so: inventory full, or the owner is away
+      end
     end
-    if got > 0 then
-      if cfg.giveVia ~= "direct" then cfg.giveVia = "direct" S.saveConfig() end
-      note("OUT", got, name)
-    end
+    for _, chest in ipairs(read) do S.read(chest) end
+    if got > 0 then note("OUT", got, name) end
     if got > 0 or cfg.giveVia == "direct" then
       return got, got < want and "your inventory took no more" or nil
     end
   end
   -- by way of the Out chest, which stands against the manager
   if not cfg.outbox then return 0, "no Out chest set up" end
-  local staged = S.take(name, want, cfg.outbox)
-  if staged == 0 then return 0, "the Out chest is full" end
+  local staged = waiting >= want and 0 or S.take(name, want - waiting, cfg.outbox)
+  local there = waiting + staged
+  if there == 0 then return 0, "the Out chest is full" end
   local sides = cfg.outSide and { cfg.outSide } or SIDES
   for _, side in ipairs(sides) do
-    local n, err = import(side, name, staged - got)
-    if n and n > 0 then
-      got = got + n
-      if cfg.outSide ~= side or cfg.giveVia ~= "out" then
-        cfg.outSide, cfg.giveVia = side, "out"
-        S.saveConfig()
+    if side ~= cfg.giveFrom then
+      local n, err = import(side, name, math.min(there, want))
+      if not n then
+        S.giveError = err
+      elseif n > 0 then
+        got = n
+        local now = inOut(name)
+        if now < there then                   -- it came out of the Out chest: this is its side
+          there = now
+          if cfg.outSide ~= side or cfg.giveVia ~= "out" then
+            cfg.outSide, cfg.giveVia = side, "out"
+            S.saveConfig()
+          end
+        else                                  -- it came out of the store itself, which touches the manager
+          cfg.giveFrom, cfg.giveVia = side, "direct"
+          S.saveConfig()
+          S.read(S.order[1])
+          note("OUT", got, name)
+          unstage(name, staged)               -- (what was staged is not needed)
+          there = inOut(name)
+        end
+        break
       end
-      break
     end
-    if not n then S.giveError = err end
   end
-  if got < staged then
-    S.ready = (staged - got) .. " " .. pretty(name) .. " left in the Out chest"
-    return got, (staged - got) .. " are in the Out chest (inventory full, or I cannot reach you)"
+  if there > 0 and got < want then
+    S.ready = there .. " " .. pretty(name) .. " left in the Out chest"
+    return got, there .. " are in the Out chest (inventory full, or I cannot reach you)"
   end
+  if got > 0 then S.ready = got .. " " .. pretty(name) .. " sent to the owner" end
   return got
 end
 
