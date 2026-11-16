@@ -1324,6 +1324,7 @@ local function requestJob(limit)
           h.write(textutils.serialize(msg.base))
           h.close()
         end
+        if type(msg.name) == "string" then os.setComputerLabel(msg.name) end
         fs.delete(STATE_FILE)
         print("New job: " .. msg.role .. ". Restarting.")
         sleep(1)

@@ -217,6 +217,9 @@ local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local FUEL_RESERVE = 256 -- coal never handed out to miners
+local HELPERS      = 2   -- builder's mates to make (mining turtles running helper.lua)
+local HELPER_NAMES = { "MortarKombat", "WallStreet", "BrickAstley", "HodStewart" }
+local launchingHelper = false
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local served = {}        -- the last order number served, by computer id
@@ -1161,16 +1164,23 @@ local function serveOrders()
       print("Load ready. Waiting for the builder.")
       return true
     end
+  end
+  do
+    -- every load is ready: hand over to whichever of them is on the pad
     turnTo(base.padTurns)
     local here = peripheral.hasType("front", "turtle") and frontId()
-    if here ~= id then
+    local order = here and orders[here]
+    if not order then
       turnTo(0)
-      if os.clock() - order.told > 60 then       -- remind it
-        order.told = os.clock()
-        rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
+      for id, o in pairs(orders) do
+        if os.clock() - o.told > 60 then         -- remind it
+          o.told = os.clock()
+          rednet.send(id, { type = "load_ready", forId = id, n = o.n }, JOB_PROTOCOL)
+        end
       end
       return false
     end
+    local id = here
     orders[id] = nil
     local given, missing = {}, {}
     for _, l in ipairs(order.lines) do
@@ -1251,6 +1261,20 @@ local function deploy()
     end
   else
     giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
+    if launchingHelper then
+      -- a builder's mate: note which turtle it is, so it gets that job
+      for _ = 1, 10 do
+        local okId, id = pcall(peripheral.call, "front", "getID")
+        if okId and id then
+          plots.helpers = plots.helpers or {}
+          plots.helpers[#plots.helpers + 1] = id
+          saveTable(PLOTS_FILE, plots)
+          print("That one is a builder's mate.")
+          break
+        end
+        sleep(0.5)
+      end
+    end
   end
   stashAll()
   for _ = 1, 10 do
@@ -1292,6 +1316,12 @@ local function jobFor(id)
   if plots.builderId and tostring(plots.builderId) == key then
     if pending > 0 then pending = pending - 1 end
     return { type = "role", role = "builder", forId = id, base = base }
+  end
+  for n, hid in ipairs(plots.helpers or {}) do
+    if tostring(hid) == key then
+      if pending > 0 then pending = pending - 1 end
+      return { type = "role", role = "helper", forId = id, base = base, name = HELPER_NAMES[n] }
+    end
   end
   local index = plots.byId[key]
   if not index then
@@ -1449,7 +1479,8 @@ local function tryBuild()
     end
   end
 
-  if activeCount() + pending >= MAX_MINERS then
+  local forHelper = #(plots.helpers or {}) < HELPERS
+  if not forHelper and activeCount() + pending >= MAX_MINERS then
     lastMissing = {}
     report("fleet full")
     return false
@@ -1477,7 +1508,9 @@ local function tryBuild()
   print("Assembling")
   assemble()
   print("Launching")
+  launchingHelper = forHelper
   deploy()
+  launchingHelper = false
   built = built + 1
   lastStock = stockTotals()
   print("Miner #" .. built .. " launched.")

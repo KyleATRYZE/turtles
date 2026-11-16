@@ -1467,6 +1467,11 @@ local function ask(b, items, fuelWanted, timeout)
 end
 
 -- What the next part of the list needs, up to a load.
+-- With helpers on the job, we only place our own strip of the plan.
+local function mine(b, e)
+  return (not b.xmin or e[1] >= b.xmin) and (not b.xmax or e[1] <= b.xmax)
+end
+
 local function nextLoad(b)
   local counts, order = {}, {}
   local short = b.short or {}
@@ -1480,7 +1485,7 @@ local function nextLoad(b)
   end
   for _, i in ipairs(indices) do
     local name = list.pal[list.blocks[i][4]].name
-    if not short[name] then                -- (out of stock: left for later)
+    if not short[name] and mine(b, list.blocks[i]) then   -- (out of stock: left for later)
       if not counts[name] then
         counts[name] = 0
         order[#order + 1] = name
@@ -1810,7 +1815,7 @@ local function placeShell(b)
     progress = { kind = "building", done = b.i - 1, total = #blocks, layer = blocks[b.i][2],
       skipped = #b.skips, later = b.later and #b.later or 0 }
     b.layer = blocks[b.i][2]
-    if doBlock(b.i, false) then
+    if not mine(b, blocks[b.i]) or doBlock(b.i, false) then
       b.i = b.i + 1
       if b.i % 8 == 0 then save() end
     end
@@ -2363,6 +2368,10 @@ while true do
         if st.build.stage == "done" then st.build.stage = "place" end
       end
       st.build.limit = tonumber(cmd.limit) and math.floor(tonumber(cmd.limit)) or nil
+      -- our strip of the plan when helpers share the job (share=all: the lot)
+      if tonumber(cmd.xmin) then st.build.xmin = math.floor(tonumber(cmd.xmin)) end
+      if tonumber(cmd.xmax) then st.build.xmax = math.floor(tonumber(cmd.xmax)) end
+      if cmd.share == "all" then st.build.xmin, st.build.xmax = nil, nil end
       if tostring(cmd.clear) == "0" and st.build.stage == "clear" then st.build.stage = "place" end
       if cmd.stage == "clear" or cmd.stage == "place" then
         st.build.stage = cmd.stage

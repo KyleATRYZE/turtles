@@ -91,7 +91,7 @@ print("Version " .. REV:sub(1, 7))
 local role = readFile(".role")
 if role then role = role:gsub("%s", "") end
 if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "builder"
-  and role ~= "loader" then
+  and role ~= "loader" and role ~= "helper" then
   if not turtle then
     role = "controller"
   elseif (os.getComputerLabel() or ""):match("^factory") then
@@ -114,6 +114,8 @@ elseif role == "builder" then
   job = 'shell.run("builder")'
 elseif role == "loader" then
   job = 'shell.run("loader")'
+elseif role == "helper" then
+  job = 'shell.run("helper")'
 else
   job = 'shell.run("miner", "resume")'
 end
