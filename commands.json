@@ -1,36 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794853298,
-      "issued": 1794853298000,
+      "id": 1794853541,
+      "issued": 1794853541000,
       "cmd": "reboot",
       "target": "BrickJagger"
-    },
-    {
-      "id": 1794853299,
-      "issued": 1794853298000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794853300,
-      "issued": 1794853298000,
-      "cmd": "build",
-      "target": "BrickJagger",
-      "xmax": 6
-    },
-    {
-      "id": 1794853301,
-      "issued": 1794853298000,
-      "cmd": "build",
-      "target": "MortarKombat",
-      "plan": "factory_shell",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "xmin": 7,
-      "xmax": 14,
-      "layer": 15
     }
   ]
 }
