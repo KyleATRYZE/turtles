@@ -58,6 +58,7 @@ local CORE     = "advancedperipherals:weak_automata_core"
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
+local PLAIN_MODEM = "computercraft:wireless_modem_normal"   -- (short range: for a chunk loader when ender modems run out)
 local PICKAXE  = "minecraft:diamond_pickaxe"
 local CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its chunk loaded
 
@@ -101,6 +102,10 @@ local RECIPES = {
   [MODEM] = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
+  },
+  [PLAIN_MODEM] = {
+    grid = { "S", "S", "S", "S", "E", "S", "S", "S", "S" },
+    key = { S = "minecraft:stone", E = "minecraft:ender_pearl" },
   },
   -- building blocks (2 x 2 recipes give 4)
   ["minecraft:polished_deepslate"] = {
@@ -448,6 +453,8 @@ local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
+local ctlQueue = {}      -- turtles asking for a Chunk Controller of their own to carry: id -> when
+local CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 local FUEL_RESERVE = 256 -- coal never handed out to miners
 local LOGS_KEPT = 320    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
@@ -458,8 +465,9 @@ local launchingHelper = false
 -- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
 -- while there are controllers in stock, up to this many. One stays at the
 -- base; the others go out with whoever is working far away.
-local LOADERS      = 2
-local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey" }
+local LOADERS      = 4
+local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey", "LoadZeppelin",
+  "ChunkSinatra", "LoadOfTheRings", "ChunkDaddy", "HeavyLoad" }
 local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
@@ -1295,10 +1303,12 @@ local function assemble()
       turtle.select(at)
       turtle.transferTo(1)
     end
-    if not pull(MODEM, 1, 2) then error("The ender modem went missing.", 0) end
+    -- (a chunk loader may be given a plain wireless modem: plots.loaderModem)
+    local modem = plots.makingLoader and plots.loaderModem or MODEM
+    if not pull(modem, 1, 2) then error("The " .. shortName(modem) .. " went missing.", 0) end
     turtle.select(16)
     local ok, err = turtle.craft()
-    if not ok then error("Could not fit the ender modem: " .. tostring(err), 0) end
+    if not ok then error("Could not fit the " .. shortName(modem) .. ": " .. tostring(err), 0) end
     setStage("ready")
   end
 end
@@ -1708,14 +1718,42 @@ local function ensureStock(name, n)
   return true
 end
 
+-- Chunk Controllers in stock beyond those the chunk loaders still to be
+-- built will need: these can go to turtles that carry their own.
+local function spareControllers(stock)
+  local forLoaders = plots.noLoaders and 0 or math.max(0, LOADERS - #(plots.loaders or {}))
+  return math.max(0, ((stock or lastStock or {})[CHUNKY] or 0) - forLoaders)
+end
+
+-- One controller to the turtle that asked for it (and to no other), standing
+-- on top of me or on the pad.
+local function giveController(dir, id)
+  if not ctlQueue[id] or spareControllers(stockTotals()) < 1 then return false end
+  if not giveTo(dir, CHUNKY, 1) then return false end
+  local key = tostring(id)
+  plots.ctlGiven = plots.ctlGiven or {}
+  plots.ctlGiven[key] = (plots.ctlGiven[key] or 0) + 1
+  saveTable(PLOTS_FILE, plots)
+  ctlQueue[id] = nil
+  print("Gave a Chunk Controller to turtle " .. key .. " to carry.")
+  return true
+end
+
 -- Serve miners waiting for things: on top of me (the usual service stop) or
 -- on the launch pad (where they wait if they cannot carry on). Coal for the
 -- empty, buckets for those without one. With no coal at all, the Geo Scanner
 -- goes to the first miner that asks, so it can hunt for coal.
 -- canCraft = false while I am holding a finished miner.
 local function serveRequests(canCraft)
+  -- (a controller is handed to a builder's mate with its load; here only to
+  -- a turtle that has just asked, waiting on top of me)
+  local ctlNow = false
+  for id, at in pairs(ctlQueue) do
+    if os.clock() - at > 1800 then ctlQueue[id] = nil
+    elseif os.clock() - at < 30 then ctlNow = true end
+  end
   if not next(fuelQueue) and not next(bucketQueue) and not next(emptiesQueue)
-    and not next(scannerQueue) then return end
+    and not next(scannerQueue) and not ctlNow then return end
   local wantEmpties = 0
   for _, n in pairs(emptiesQueue) do wantEmpties = math.max(wantEmpties, n) end
   if canCraft and wantEmpties > 0 then pcall(ensureStock, BUCKET, wantEmpties) end
@@ -1758,6 +1796,10 @@ local function serveRequests(canCraft)
       if next(scannerQueue) and giveTo(dir, SCANNER, 1) then
         print("Gave a Geo Scanner to a new hunter.")
         scannerQueue = {}
+      end
+      if ctlNow then
+        local okId, here = pcall(peripheral.call, side, "getID")
+        if okId and here then giveController(dir, here) end
       end
       if wantEmpties > 0 then
         local ok, moved = giveTo(dir, BUCKET, wantEmpties)
@@ -1914,6 +1956,7 @@ local function serveOrders()
         giveTo("front", "#fuel", math.min(64, coal, math.max(8, math.floor(have * 0.4))))
       end
     end
+    giveController("front", id)       -- (if it asked for one to carry)
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
       given = given, missing = missing, full = full }, JOB_PROTOCOL)
@@ -1987,7 +2030,7 @@ local function deploy()
       end
       sleep(0.5)
     end
-    plots.makingLoader = nil
+    plots.makingLoader, plots.loaderModem = nil, nil
     saveTable(PLOTS_FILE, plots)
   else
     giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
@@ -2088,6 +2131,129 @@ local function jobFor(id)
   }
 end
 
+---------------------------------------------------------------- pairing chunk loaders
+-- What every turtle last said in its status reports. From this the factory
+-- pairs chunk loaders with the turtles that need one: a loader parked at
+-- the base asks every minute (escort_request), and is sent out with the
+-- turtle working far away that needs company most. Never the last loader
+-- at the base. And a turtle too low on fuel to fetch its own (feed_request)
+-- has a builder's mate with nothing to do sent to it with coal.
+-- Both go out as direct orders (see swarm.accept).
+local fleet = {}          -- label (lower case) -> what it last said
+local escortGiven = {}    -- turtle (label, lower case) -> { loader = id, at = clock }
+local escortRest = {}     -- turtle -> not offered again before this (a loader found nothing there)
+local feedSent = {}       -- who asked (id) -> when a mate was last sent
+local ESCORT_FAR = 48     -- blocks from the factory (either way) beyond which a turtle is "far"
+local SILENT = 240        -- seconds without a word: far away, that is a turtle frozen in an unloaded chunk
+local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
+  ["waiting for a plot"] = true, ["stopped by player"] = true }
+
+local function noteStatus(id, msg)
+  if type(msg) ~= "table" or type(msg.label) ~= "string" or msg.role == "factory" then return end
+  local key = msg.label:lower()
+  local old = fleet[key] or {}
+  local p = type(msg.pos) == "table" and msg.pos or {}
+  local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
+  if not x or not z or (x == 0 and z == 0) then x, y, z = old.x, old.y, old.z end   -- (0, 0 = not known)
+  local job = type(msg.job) == "table" and msg.job or {}
+  local loader = msg.role == "loader"
+  fleet[key] = { id = id, label = msg.label, role = msg.role, state = tostring(msg.state),
+    x = x, y = y, z = z, at = os.clock(), fuel = tonumber(msg.fuel), chunky = msg.chunky,
+    mode = loader and job.mode or nil,
+    who = loader and type(job.who) == "string" and job.who:lower() or nil }
+end
+
+local function isFar(u)
+  return u.x ~= nil and base ~= nil and (math.abs(u.x - base.f.x) > ESCORT_FAR
+    or math.abs(u.z - base.f.z) > ESCORT_FAR)
+end
+
+local directSeq = 0
+local function direct(id, order)
+  directSeq = directSeq + 1
+  order.direct, order.forId = true, id
+  order.nonce = tostring(os.epoch("utc")) .. "-" .. directSeq
+  rednet.send(id, order, swarm.CMD_PROTOCOL)
+end
+
+-- A loader parked at the base asks whether anyone needs it.
+local function escortFor(id, msg)
+  if not base or not swarm then return end
+  local now = os.clock()
+  if type(msg.gaveUp) == "string" and not escortRest[msg.gaveUp:lower()] then
+    escortRest[msg.gaveUp:lower()] = now + 3600
+  end
+  -- another loader must be staying: at the base, heard from in the last
+  -- few minutes, and not itself just sent out
+  local kept = false
+  for _, u in pairs(fleet) do
+    if u.role == "loader" and u.id ~= id and (u.state == "parked" or u.state == "needs fuel")
+      and now - u.at < 300 and not isFar(u) then
+      local sent = false
+      for _, g in pairs(escortGiven) do
+        if g.loader == u.id and now - g.at < 300 then sent = true end
+      end
+      if not sent then kept = true end
+    end
+  end
+  if not kept then return end
+  local best, bestScore
+  for key, u in pairs(fleet) do
+    if (u.role == "miner" or u.role == "helper") and isFar(u) and not RESTING[u.state]
+      and not (escortRest[key] and now < escortRest[key]) then
+      local g = escortGiven[key]
+      local taken = g ~= nil and now - g.at < 300 and g.loader ~= id
+      for _, l in pairs(fleet) do
+        if l.role == "loader" and l.id ~= id and l.who == key and now - l.at < 600 then taken = true end
+      end
+      local silent = now - u.at > SILENT
+      -- a turtle that carries its own Chunk Controller looks after itself,
+      -- unless it has gone quiet all the same
+      if not taken and (silent or not u.chunky) then
+        local score = (silent and 1000 or 0)
+          + math.min(999, math.abs(u.x - base.f.x) + math.abs(u.z - base.f.z)) / 1000
+        if not best or score > bestScore then best, bestScore = u, score end
+      end
+    end
+  end
+  if not best then return end
+  escortGiven[best.label:lower()] = { loader = id, at = now }
+  print("Chunk loader " .. tostring(msg.label or id) .. " goes out with " .. best.label .. ".")
+  direct(id, { cmd = "escort", who = best.label, x = best.x, z = best.z, auto = true })
+end
+
+-- A turtle too low on fuel to fetch its own: send a builder's mate that is
+-- doing nothing (the one with most fuel) with coal, as the order "feed" does.
+local function feedFor(id, msg)
+  if not swarm then return end
+  local now = os.clock()
+  local x, y, z = tonumber(msg.x), tonumber(msg.y), tonumber(msg.z)
+  if not (x and y and z) or (feedSent[id] and now - feedSent[id] < 600) then return end
+  local best
+  for _, u in pairs(fleet) do
+    if u.role == "helper" and u.state == "idle" and now - u.at < 200 and u.id ~= id
+      and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
+  end
+  if not best then
+    print("No builder's mate free to take fuel to " .. tostring(msg.label or id) .. ".")
+    return
+  end
+  feedSent[id] = now
+  best.state = "sent with fuel"             -- (not sent twice before it says what it is doing)
+  print(best.label .. " takes fuel to " .. tostring(msg.label or id) .. ".")
+  direct(best.id, { cmd = "feed", x = math.floor(x), y = math.floor(y), z = math.floor(z) })
+end
+
+-- Listens to everyone's status reports (for the pairing above).
+local function statusListener()
+  if not swarm then while true do sleep(3600) end end
+  swarm.open()
+  while true do
+    local id, msg = rednet.receive(swarm.PROTOCOL)
+    if id then noteStatus(id, msg) end
+  end
+end
+
 -- Answers miners. Runs alongside the building work; uses no turtle moves.
 local function responder()
   if swarm then swarm.open() end
@@ -2113,6 +2279,18 @@ local function responder()
         bucketQueue[id] = true
       elseif msg.type == "scanner_request" then
         scannerQueue[id] = true
+      elseif msg.type == "escort_request" then
+        escortFor(id, msg)
+      elseif msg.type == "feed_request" then
+        feedFor(id, msg)
+      elseif msg.type == "controller_request" then
+        -- a turtle with room for a Chunk Controller of its own
+        local given = (plots.ctlGiven or {})[tostring(id)] or 0
+        if given < CTL_PER_TURTLE and spareControllers() > 0 then
+          ctlQueue[id] = os.clock()
+        else
+          rednet.send(id, { type = "controller_none", forId = id }, JOB_PROTOCOL)
+        end
       elseif msg.type == "empties_request" then
         emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
       elseif msg.type == "materials" and type(msg.items) == "table"
@@ -2311,17 +2489,25 @@ local function tryBuild()
 
   -- a chunk loader, while there is a Chunk Controller to put on one
   if #(plots.loaders or {}) < LOADERS and (lastStock[CHUNKY] or 0) > 0 and not plots.noLoaders then
-    local pretend = {}
-    for name, c in pairs(lastStock) do pretend[name] = c end
-    local steps, missing = {}, {}
-    plan(pretend, TURTLE, 1, steps, missing)
-    plan(pretend, MODEM, 1, steps, missing)
-    plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)
+    -- with an ender modem if one can be had; otherwise a plain wireless modem
+    -- (stone and an ender pearl) will do: a loader flies high, where even
+    -- that reaches far, and the others' ender modems hear it anywhere
+    local steps, missing, modem
+    for _, m in ipairs({ MODEM, PLAIN_MODEM }) do
+      local pretend = {}
+      for name, c in pairs(lastStock) do pretend[name] = c end
+      local st2, miss2 = {}, {}
+      plan(pretend, TURTLE, 1, st2, miss2)
+      plan(pretend, m, 1, st2, miss2)
+      plan(pretend, "#fuel", NEWBORN_COAL, st2, miss2)
+      if not missing or not next(miss2) then steps, missing, modem = st2, miss2, m end
+      if not next(miss2) then break end
+    end
     if not next(missing) then
-      print("Building a chunk loader...")
+      print("Building a chunk loader" .. (modem == PLAIN_MODEM and " (plain wireless modem)..." or "..."))
       report("building")
       runSteps(steps)
-      plots.makingLoader = true
+      plots.makingLoader, plots.loaderModem = true, modem
       saveTable(PLOTS_FILE, plots)
       local okFit, why = pcall(assemble)
       if not okFit then
@@ -2329,7 +2515,7 @@ local function tryBuild()
         if not getStage() then
           -- the controller would not go on: put the parts back and leave it
           -- (until .plots is edited), rather than trying for ever
-          plots.makingLoader, plots.noLoaders = nil, true
+          plots.makingLoader, plots.noLoaders, plots.loaderModem = nil, true, nil
           saveTable(PLOTS_FILE, plots)
           stashAll()
         end
@@ -2402,7 +2588,7 @@ local function buildLoop()
 end
 
 local function work()
-  parallel.waitForAny(buildLoop, responder)
+  parallel.waitForAny(buildLoop, responder, statusListener)
 end
 
 local function paused()

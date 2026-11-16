@@ -36,6 +36,11 @@ rednet.broadcast = function(m, p)
   elseif m.type == "empties_request" then EMPTYREQ = (EMPTYREQ or 0) + 1
   elseif m.type == "scanner_request" then SCANREQ = (SCANREQ or 0) + 1
     for i=1,16 do if not T.inv[i] then T.inv[i] = {name="advancedperipherals:geo_scanner", count=1} break end end
+  elseif m.type == "controller_request" then CTLREQ = (CTLREQ or 0) + 1
+    -- (GIVE_CTL: the factory hands a Chunk Controller over; otherwise it has none to spare)
+    if GIVE_CTL then
+      for i=1,16 do if not T.inv[i] then T.inv[i] = {name="advancedperipherals:chunk_controller", count=1} break end end
+    end
   elseif m.type == "fuel_request" then FUELREQ = FUELREQ + 1
     -- the factory answers by dropping coal into the turtle
     for i=1,16 do if not T.inv[i] then T.inv[i] = {name="minecraft:coal", count=16} break end end

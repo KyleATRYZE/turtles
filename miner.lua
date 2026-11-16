@@ -103,6 +103,25 @@ local totalLayers = 0
 -- Status reporting to the controller (optional: works without swarm.lua)
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
+if swarm and swarm.hello and turtle then pcall(swarm.hello, "miner") end   -- awake, and here
+-- A Chunk Controller of its own (see swarm.lua) keeps a miner's chunk
+-- loaded wherever it is: worn in place of the pickaxe while it flies or
+-- waits; while it digs the pickaxe stays on and the controller goes on for
+-- a moment in every new chunk and every few minutes. Every dig puts the
+-- pickaxe back on first. Without one on board none of this does anything.
+local CHUNKY = "advancedperipherals:chunk_controller"
+local chunky = swarm and swarm.chunky or nil
+if chunky and turtle and not turtle.chunkyDigs then
+  turtle.chunkyDigs = true
+  -- (and every swing at a mob in the way: that needs the pickaxe too)
+  for _, n in ipairs({ "dig", "digUp", "digDown", "attack", "attackUp", "attackDown" }) do
+    local raw = turtle[n]
+    turtle[n] = function(...)
+      chunky.tool()
+      return raw(...)
+    end
+  end
+end
 
 local logLines = {}
 local rawPrint = print
@@ -116,9 +135,12 @@ end
 
 local lastReport = 0
 local lastState = "idle"
+local reported = false
 local function report(state)
   lastReport = os.clock()
   lastState = state
+  reported = true
+  if chunky then chunky.keep(pos.x, pos.z) end   -- (covers long waits in one place)
   if not swarm then return end
   local inv, free = {}, 0
   for s = 1, 16 do
@@ -140,7 +162,17 @@ local function report(state)
       plot = st.index,
     } or nil,
     log = logLines,
+    chunky = chunky and chunky.have() and (chunky.isWorn() and "on" or "carried") or nil,
   })
+end
+
+-- Called after every move: a turtle with a Chunk Controller of its own
+-- keeps its chunk loaded, and everyone says where they are now and then on
+-- a long flight (a turtle that freezes in an unloaded chunk is then last
+-- seen close to where it stopped).
+local function keepAwake()
+  if chunky then chunky.keep(pos.x, pos.z) end
+  if reported and os.clock() - lastReport > 30 then report(lastState) end
 end
 
 ---------------------------------------------------------------- basics
@@ -334,6 +366,7 @@ local function forward(patient)
     turtle.drop) then
     pos.x = pos.x + DIRS[heading].x
     pos.z = pos.z + DIRS[heading].z
+    keepAwake()
     return true
   end
   return false
@@ -343,6 +376,7 @@ local function up(patient)
   if tryMove(turtle.up, turtle.detectUp, safeDigUp, turtle.attackUp, patient, turtle.inspectUp,
     turtle.dropUp) then
     pos.y = pos.y + 1
+    keepAwake()
     return true
   end
   return false
@@ -352,6 +386,7 @@ local function down(patient)
   if tryMove(turtle.down, turtle.detectDown, safeDigDown, turtle.attackDown, patient, turtle.inspectDown,
     turtle.dropDown) then
     pos.y = pos.y - 1
+    keepAwake()
     return true
   end
   return false
@@ -613,7 +648,7 @@ local function unloadDock()
           empties = empties + turtle.getItemCount(s)
           keep = true
         end
-      elseif d.name == SCANNER or d.name == PICKAXE then
+      elseif d.name == SCANNER or d.name == PICKAXE or d.name == CHUNKY then
         keep = true
       elseif d.name == KEEP_ONE_STACK and not keptCobble then
         keptCobble = true
@@ -884,7 +919,8 @@ local function unload()
   face((st.homeD + 2) % 4)
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
-    local keep = d and (d.name == BUCKET or d.name == LAVA_BUCKET)
+    local keep = d and (d.name == BUCKET or d.name == LAVA_BUCKET or d.name == CHUNKY
+      or d.name == PICKAXE)
     while not keep and turtle.getItemCount(s) > 0 do
       turtle.select(s)
       if not turtle.drop() then
@@ -1099,6 +1135,7 @@ local function fixTool()
     turtle.select(slot)
     if side == "left" then turtle.equipLeft() else turtle.equipRight() end
     turtle.select(1)
+    if chunky then chunky.forget() end
   end
 end
 
@@ -1107,6 +1144,7 @@ end
 local function scanForCoal(deep)
   local slot = findItem(SCANNER)
   if not slot then return nil, "I have no Geo Scanner" end
+  if chunky then chunky.tool() end        -- (the pickaxe is what the scanner swaps with)
   local side = toolSide()
   local equip = side == "left" and turtle.equipLeft or turtle.equipRight
   turtle.select(slot)
@@ -1135,6 +1173,7 @@ local function scanForCoal(deep)
   turtle.select(slot)
   equip()          -- pickaxe back on
   turtle.select(1)
+  if chunky then chunky.forget() end
   if not found then return nil, why or "scan failed" end
   local ores, lava = {}, {}
   for _, b in ipairs(found) do
@@ -1194,6 +1233,34 @@ local function leaveToHunt()
   axisMove("y", huntY(), true)
 end
 
+-- A miner with no Chunk Controller asks the factory for one to carry, on
+-- top of it (where it hands things over): a hunter each time it brings coal
+-- home, the others between plots. At most every 20 minutes, and not for an
+-- hour after being told there is none to spare.
+local ctlAsked, ctlNone = -10000, -10000
+local function askController()
+  if not chunky or chunky.have(true) then return end
+  if os.clock() - ctlAsked < 1200 or os.clock() - ctlNone < 3600 then return end
+  if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
+  if not at(st.exit1) then return end
+  ctlAsked = os.clock()
+  local me = os.getComputerID()
+  print("Asking the factory for a Chunk Controller to carry.")
+  for _ = 1, 6 do
+    rednet.broadcast({ type = "controller_request", id = me }, JOB_PROTOCOL)
+    local _, m = rednet.receive(JOB_PROTOCOL, 4)
+    if type(m) == "table" and m.type == "controller_none" and m.forId == me then
+      ctlNone = os.clock()
+      print("None to spare.")
+      return
+    end
+    if chunky.have(true) then
+      print("Got one.")
+      return
+    end
+  end
+end
+
 -- Take the coal home, then come back out.
 local function huntDeliver()
   print("Taking coal to the base.")
@@ -1221,6 +1288,7 @@ local function huntDeliver()
       end
     end
   end
+  askController()
   leaveToHunt()
   report("hunting coal")
 end
@@ -1251,6 +1319,12 @@ local function harvestHere(deep)
     local o = table.remove(ores, ni)
     digTo(o.x, o.y, o.z)
     if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+    -- rubble out before the inventory fills (coal dug with no room for it
+    -- falls on the ground; a controller on board takes a slot too)
+    if emptySlots() < 2 then
+      dropJunk()
+      compact()
+    end
   end
   axisMove("y", deep or huntY(), true)
   return n
@@ -1622,6 +1696,7 @@ local function run()
     end
     if at(st.dock) or onExitSide() then
       serviceStop(600)
+      askController()                 -- (a Chunk Controller of my own, if there is one to spare)
       -- ask for the next plot while still at the base, so we can go
       -- straight there along the out road
       local j = requestJob(6)

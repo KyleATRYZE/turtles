@@ -185,11 +185,18 @@ local function findSlot(name)
   end
 end
 
+-- (The turtle's own kit is not cargo: its pickaxe, or the Chunk Controller it
+-- wears in the pickaxe's place when it is not digging. One or the other is
+-- always in the inventory of a turtle that carries a controller.)
+local function isKit(name)
+  return name == "advancedperipherals:chunk_controller" or name:find("pickaxe", 1, true) ~= nil
+end
+
 local function aboard()
   local inv, total = {}, 0
   for slot = 1, 16 do
     local d = turtle.getItemDetail(slot)
-    if d then inv[d.name], total = (inv[d.name] or 0) + d.count, total + d.count end
+    if d and not isKit(d.name) then inv[d.name], total = (inv[d.name] or 0) + d.count, total + d.count end
   end
   return inv, total
 end

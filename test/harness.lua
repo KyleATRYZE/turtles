@@ -246,3 +246,4 @@ for _, n in ipairs({"dig","digUp","digDown"}) do
   local f = turtle[n]
   turtle[n] = function() if TOOL ~= "minecraft:diamond_pickaxe" then DUG_WITHOUT_PICK = (DUG_WITHOUT_PICK or 0) + 1 return false end return f() end
 end
+turtle.getSelectedSlot = turtle.getSelectedSlot or function() return T.sel or 1 end

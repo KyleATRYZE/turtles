@@ -254,10 +254,16 @@ fs={combine=function(a,b) return a.."/"..b end, exists=function(p) return FILES[
     open=function(p,m) if m=="w" then return {write=function(s) FILES[p]=s end, close=function() end} end return {readAll=function() return FILES[p] end, close=function() end} end}
 REPORTS={}
 rednet={open=function() end, broadcast=function(m) REPORTS[#REPORTS+1]=m end,
-  send=function(id, m, p) OUTBOX[#OUTBOX+1]={to=id, msg=m} end,
+  send=function(id, m, p) OUTBOX[#OUTBOX+1]={to=id, msg=m, p=p} end,
   receive=function(proto)
     while true do
-      if proto=="swarm_job" then local m=table.remove(INBOX,1) if m then return m.id, m.msg end
+      -- (STATUSQ: status reports the factory overhears, {id=, msg=, at=clock};
+      --  an INBOX message with wait=true is held until they have all been heard,
+      --  one with at=clock until then)
+      if proto=="swarm_job" then local m=INBOX[1]
+        if m and not (m.wait and STATUSQ and #STATUSQ>0) and CLOCK>=(m.at or 0) then table.remove(INBOX,1) return m.id, m.msg end
+      elseif proto=="swarm" then local m=STATUSQ and STATUSQ[1]
+        if m and CLOCK>=(m.at or 0) then table.remove(STATUSQ,1) return m.id, m.msg end
       else local c=CMDQ and CMDQ[1] if c and CLOCK>=c.at then table.remove(CMDQ,1) return 3,c.cmd end end
       coroutine.yield() end end}
 local function ser(v) if type(v)=="table" then local parts={} for k,val in pairs(v) do parts[#parts+1]="["..(type(k)=="string" and string.format("%q",k) or tostring(k)).."]="..ser(val) end return "{"..table.concat(parts,",").."}" elseif type(v)=="string" then return string.format("%q",v) else return tostring(v) end end
