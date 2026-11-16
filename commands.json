@@ -1,20 +1,30 @@
 {
   "commands": [
     {
-      "id": 1794862335,
-      "issued": 1794862335000,
-      "cmd": "search",
-      "target": "ChunkBerry",
-      "who": "CoalPorter",
-      "path": "-4377:1577;-4377:1593;-4361:1593;-4361:1561;-4393:1561;-4393:1609;-4361:1609;-4345:1609;-4345:1561"
+      "id": 1794862411,
+      "issued": 1794862411000,
+      "cmd": "reboot",
+      "target": "ChunkNorris"
     },
     {
-      "id": 1794862336,
-      "issued": 1794862335000,
-      "cmd": "escort",
-      "target": "LoadRunner",
-      "who": "MortarKombat",
-      "stay": 1
+      "id": 1794862412,
+      "issued": 1794862411000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794862413,
+      "issued": 1794862411000,
+      "cmd": "reboot",
+      "target": "WallStreet"
+    },
+    {
+      "id": 1794862414,
+      "issued": 1794862411000,
+      "cmd": "lab",
+      "target": "WallStreet",
+      "ops": "fetch|mekanismgenerators:heat_generator=1,minecraft:coal=8,minecraft:iron_ingot=4,minecraft:copper_ingot=2,alltheores:osmium_ingot=2,minecraft:redstone=8,sophisticatedstorage:chest=2,sophisticatedstorage:controller=1|dump;goto|-4452|80|1532;ground;inspect|front;call|front|getMode|ITEM|FRONT;call|front|getMode|ITEM|BACK;call|front|getMode|ITEM|LEFT;call|front|getMode|ITEM|RIGHT;call|front|getMode|ITEM|TOP;call|front|getMode|ITEM|BOTTOM;call|front|getMode|ENERGY|FRONT;call|front|getMode|ENERGY|BACK;call|front|getMode|ENERGY|LEFT;call|front|getMode|ENERGY|RIGHT;call|front|getMode|ENERGY|TOP;call|front|getMode|ENERGY|BOTTOM;call|front|isEjecting|ITEM;call|front|getInfuseType;call|front|getMaxEnergy;call|front|getEnergyUsage;inv",
+      "clear": 1
     }
   ]
 }
