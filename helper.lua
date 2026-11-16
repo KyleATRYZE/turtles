@@ -563,6 +563,10 @@ local function fell(x0, z0, leafRun, left)
     if math.abs(nx - base.f.x) <= KEEP_OFF and math.abs(nz - base.f.z) <= KEEP_OFF then return end
     if not turtle["dig" .. SUFFIX[dir]]() then return end
     left.n = left.n - 1
+    if left.n % 25 == 0 then
+      progress = { kind = "chopping", logs = countLogs(), left = left.n }
+      report("felling a tree")
+    end
     if not step(dir) then return end
     fell(x0, z0, log and 0 or leafRun + 1, left)
     if dir == "u" then step("d")

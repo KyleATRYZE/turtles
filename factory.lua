@@ -530,7 +530,7 @@ local BACKGROUND = {
   -- logs to charcoal first: it is fuel (8 charcoal for 1 burned), so this
   -- runs even when coal is short
   { fuel = true, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = 64, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, leave = 64, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
@@ -1218,7 +1218,11 @@ local function serveOrders()
       local name, want = line[1], math.floor(tonumber(line[2]) or 0)
       if (given[name] or 0) < want then missing[name] = want - (given[name] or 0) end
     end
-    if order.fuel > 0 then giveTo("front", "#fuel", math.min(64, order.fuel)) end
+    if order.fuel > 0 then
+      -- when fuel is short nobody gets more than a share of what there is
+      local have = countIn(stockTotals(), "#fuel")
+      giveTo("front", "#fuel", math.min(64, order.fuel, math.max(8, math.floor(have * 0.4))))
+    end
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
       given = given, missing = missing }, JOB_PROTOCOL)
