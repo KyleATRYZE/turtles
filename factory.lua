@@ -278,6 +278,7 @@ local launchingHelper = false
 -- base; the others go out with whoever is working far away.
 local LOADERS      = 2
 local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey" }
+local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local bootstrapFuel      -- defined further down (fuel from nothing)
@@ -1738,6 +1739,11 @@ local function tryBuild()
       lastStock = stockTotals()
       report("launched a loader")
       return true
+    end
+    local what = describeMissing(missing)
+    if what ~= lastLoaderWait then
+      print("A chunk loader is waiting for: " .. what)
+      lastLoaderWait = what
     end
   end
 
