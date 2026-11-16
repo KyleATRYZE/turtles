@@ -673,8 +673,10 @@ local function collect()
 end
 
 -- Hand coal to the turtle in front, without disturbing anything I hold.
-local function fuelTurtleInFront(amount)
-  if not peripheral.hasType("front", "turtle") then return false end
+-- sure = true when we know a turtle is there (we have just placed it; it
+-- can take a moment to show up as a peripheral).
+local function fuelTurtleInFront(amount, sure)
+  if not sure and not peripheral.hasType("front", "turtle") then return false end
   local slot
   for s = 16, 1, -1 do
     if turtle.getItemCount(s) == 0 then slot = s break end
@@ -736,9 +738,13 @@ local function deploy()
   if not turtle.place() then error("Could not place the new miner.", 0) end
   setStage(nil)
   pending = pending + 1
-  fuelTurtleInFront(NEWBORN_COAL)
+  sleep(0.5)
+  fuelTurtleInFront(NEWBORN_COAL, true)
   stashAll()
-  pcall(peripheral.call, "front", "turnOn")
+  for _ = 1, 10 do
+    if pcall(peripheral.call, "front", "turnOn") then break end
+    sleep(0.5)
+  end
   turnTo(0)
 end
 
