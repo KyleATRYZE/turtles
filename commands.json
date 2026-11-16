@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794867234,
-      "issued": 1794867234000,
+      "id": 1794869376,
+      "issued": 1794869376000,
       "cmd": "lab",
       "target": "MortarKombat",
-      "ops": "goto|-4456|90|1517;inspect|down;down|5;face|0;inspect|front;types|front;call|front|getLabel;call|front|reboot;inspect|up;inspect|down",
+      "ops": "fetch|sophisticatedstorage:chest=1,sophisticatedstorage:barrel=1;inv;handin|",
       "clear": 1
     }
   ]

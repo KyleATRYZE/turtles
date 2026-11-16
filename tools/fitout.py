@@ -28,7 +28,7 @@ from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-# fitout.py [<final.json> <shell.txt> <out.txt> <start x,y,z>]
+# fitout.py [<final.json> <shell.txt> <out.txt> <start x,y,z> [glass] [swaps] [redo] [box=...] [skip=...]]
 ARGS = sys.argv[1:]
 F_FINAL = ARGS[0] if ARGS else os.path.join(ROOT, "blueprints", "factory.json")
 F_SHELL = ARGS[1] if ARGS else os.path.join(ROOT, "blueprints", "factory_shell.txt")
@@ -63,6 +63,7 @@ SKIP = {"computercraft:turtle_advanced", "computercraft:turtle_normal",      # d
 if GLASS_TOO:
     SKIP -= {"minecraft:glass_pane", "minecraft:glass"}
 digs, puts, swaps = [], [], []
+BOX = None
 for c, (name, facing) in shell.items():
     if c[1] < 0:
         continue                                   # foundation
@@ -76,6 +77,22 @@ for c, (name, facing) in final.items():
         puts.append(c)
 if "swaps" in ARGS[4:]:                             # a floor job: nothing but the swaps
     digs, puts = [], []
+# one room only: box=x0,y0,z0,x1,y1,z1 keeps the jobs inside it; skip=name,name
+# leaves those blocks to be put in by hand (or by a lab run)
+for arg in ARGS[4:]:
+    if arg.startswith("skip="):
+        left_out = set(arg[5:].split(","))
+        puts = [c for c in puts if final[c][0] not in left_out]
+        swaps = [c for c in swaps if final[c][0] not in left_out]
+        SKIP |= left_out
+    if arg.startswith("box="):
+        bx = list(map(int, arg[4:].split(",")))
+        def inside(c):
+            return all(bx[k] <= c[k] <= bx[k + 3] for k in range(3))
+        digs, puts, swaps = [c for c in digs if inside(c)], [c for c in puts if inside(c)], [c for c in swaps if inside(c)]
+        BOX = inside
+if "redo" in ARGS[4:]:                              # a room refitted: what changes comes out first, then
+    digs, puts, swaps = digs + swaps, puts + swaps, []      # goes in like any other fitting
 print(f"{len(digs)} to dig out, {len(swaps)} to swap, {len(puts)} to put in")
 
 # ---------------------------------------------------------------- the space
@@ -231,6 +248,9 @@ for kind, c, i, s in ops:
         now[c] = pal[i]
 want = {c: v for c, v in final.items() if v[0] not in SKIP}
 have = {c: v for c, v in now.items() if c[1] >= 0}
+if BOX:                                             # (the rest of the building is not this plan's business)
+    want = {c: v for c, v in want.items() if BOX(c)}
+    have = {c: v for c, v in have.items() if BOX(c)}
 wrong = [c for c in want if have.get(c) != want[c] and c not in hidden]
 extra = [c for c in have if c not in final]
 print(f"replay: {len(ops)} jobs, {bad} out of reach, {len(wrong)} blocks wrong at the end, {len(extra)} left over")

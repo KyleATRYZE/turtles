@@ -248,7 +248,65 @@ end
 
 local ORDER_WORDS = { stop = true, home = true, resume = true, reboot = true, ping = true }
 
--- Listens for "swarm ..." typed in chat.
+-- "$get 64 iron ingot": ask the storage computer (Sortnado) to put items
+-- straight into the owner's inventory. Also "$get all cobblestone", and
+-- "$get diamond pickaxe" for one.
+local STORE_PROTOCOL = "swarm_store"
+local storePending, storeSeq = {}, 0
+
+local function parseGet(text)
+  local rest = text:match("^get%s+(.-)%s*$")
+  if not rest or rest == "" then return nil end
+  local count, item = rest:match("^(%S+)%s+(.+)$")
+  if count == "all" then return "all", item end
+  if count and tonumber(count) then return math.max(1, math.floor(tonumber(count))), item end
+  return 1, rest
+end
+
+local function askStore(count, item)
+  storeSeq = storeSeq + 1
+  local n = math.floor(os.epoch("utc") / 1000) % 100000 * 100 + storeSeq % 100
+  storePending[n] = { at = os.clock(), item = item }
+  rednet.broadcast({ type = "get", item = item, count = count, to = "player", n = n }, STORE_PROTOCOL)
+end
+
+-- What to say in chat about the storage computer's answer.
+local function storeLine(msg, asked)
+  local label = tostring(msg.label or asked or "that")
+  if not msg.item then
+    return msg.why and ("Storage could not do that: " .. tostring(msg.why))
+      or ("Storage has no '" .. tostring(asked) .. "'.")
+  end
+  local count, want = tonumber(msg.count) or 0, tonumber(msg.asked)
+  if count == 0 then
+    return ("Could not send %s: %s."):format(label, tostring(msg.why or "none left"))
+  end
+  local line = ("Sent %d %s to you"):format(count, label)
+  if want and count < want then
+    line = line .. (" (you asked for %d: %s)"):format(want, tostring(msg.why or "that is all there was"))
+  end
+  return line .. (". %d left in storage."):format(tonumber(msg.left) or 0)
+end
+
+-- Passes Sortnado's answers on, and says so when there is none.
+local function storeReplies()
+  while true do
+    local _, msg = rednet.receive(STORE_PROTOCOL, 2)
+    if type(msg) == "table" and msg.type == "got" and msg.n and storePending[msg.n] then
+      local asked = storePending[msg.n].item
+      storePending[msg.n] = nil
+      say(storeLine(msg, asked))
+    end
+    for n, p in pairs(storePending) do
+      if os.clock() - p.at > 20 then
+        storePending[n] = nil
+        say("Storage did not answer about '" .. p.item .. "'. Is Sortnado running?")
+      end
+    end
+  end
+end
+
+-- Listens for "swarm ..." and "get ..." typed in chat.
 local function chatOrders()
   while true do
     -- Advanced Peripherals 0.8: event, uuid, player name, message, hidden
@@ -257,6 +315,13 @@ local function chatOrders()
     chatDebug.lastHeard = tostring(user) .. ": " .. tostring(message)
     local text = type(message) == "string" and message:lower():gsub("^%$", "") or ""
     local word, arg = text:match("^swarm%s+(%S+)%s*(%S*)")
+    local getCount, getItem = parseGet(text)
+    -- (items only ever go to the owner: the Inventory Manager holds their card)
+    if getItem and owner == user then
+      askStore(getCount, getItem)
+    elseif getItem and not owner then
+      say("Say '$swarm status' once first, so I know who you are.")
+    end
     if word and (not owner or owner == user) then
       if not owner then
         owner = user
@@ -298,7 +363,7 @@ local function chatOrders()
         rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
         say("Order sent: " .. word .. " -> " .. tostring(target))
       else
-        say("Try: swarm status | swarm mark <name> | swarm stop/home/resume/reboot <name or all>")
+        say("Try: swarm status | swarm mark <name> | swarm stop/home/resume/reboot <name or all> | get <count> <item>")
       end
     end
   end
@@ -880,4 +945,4 @@ local function safe(fn)
     end
   end
 end
-parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, maps, mapListener, safe(wall), safe(wallTouch))
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, storeReplies, maps, mapListener, safe(wall), safe(wallTouch))

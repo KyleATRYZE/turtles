@@ -79,6 +79,7 @@ local function eq(S, pat, pred)
 end
 local ST,RS,GP,II,CO,CH,DI,SK,GO,EY="minecraft:stone","minecraft:redstone","minecraft:glass_pane","minecraft:iron_ingot","computercraft:computer_normal","minecraft:chest","minecraft:diamond","minecraft:stick","minecraft:gold_ingot","minecraft:ender_eye"
 local TU,PK,MO="computercraft:turtle_normal","minecraft:diamond_pickaxe","computercraft:wireless_modem_advanced"
+local LV,RT,OP,OS,SS="minecraft:lever","minecraft:redstone_torch","minecraft:oak_planks","minecraft:oak_slab","sophisticatedstorage:"
 CRAFTED={}
 FACING=0 OUT_DIR=OUT_DIR or 2 TURNS=0
 PAD_O = PAD_O or 3                 -- absolute orientation of the launch pad side
@@ -109,6 +110,7 @@ turtle = {
   transferTo=function(s) return move("turtle_3", SEL, "turtle_3", 64, s)>0 end,
   drop=function()
     if FACING==PAD_O and PAD_OCCUPIED then local it=INV.turtle_3.items[SEL] if not it then return false end
+      if PAD_FULL then return false end        -- the turtle on the pad has no free slot
       NEWBORN_FUEL[#NEWBORN_FUEL+1]=it.name.." x"..it.count INV.turtle_3.items[SEL]=nil return true end
     if FACING~=OUT_DIR then return false end
     return move("turtle_3", SEL, "front", 64)>0 end,
@@ -133,6 +135,35 @@ turtle = {
     elseif eq(S,{{"minecraft:copper_ingot","minecraft:copper_ingot","minecraft:copper_ingot"},{"minecraft:copper_ingot","minecraft:copper_ingot","minecraft:copper_ingot"},{"minecraft:copper_ingot","minecraft:copper_ingot","minecraft:copper_ingot"}}) then out,n="minecraft:copper_block",1
     elseif eq(S,{{"minecraft:copper_block","minecraft:copper_block"},{"minecraft:copper_block","minecraft:copper_block"}}) then out,n="minecraft:cut_copper",4
     elseif eq(S,{{"minecraft:cut_copper","minecraft:cut_copper","minecraft:cut_copper"}}) then out,n="minecraft:cut_copper_slab",6
+    -- Sophisticated Storage, from the mod's recipe provider (one wood throughout)
+    elseif eq(S,{{SK},{"minecraft:cobblestone"}}) then out,n=LV,1
+    elseif eq(S,{{RS},{SK}}) then out,n=RT,1
+    elseif eq(S,{{OP,OP,OP}}) then out,n=OS,6
+    elseif eq(S,{{OP,OS,OP},{OP,"",OP},{OP,OS,OP}}) then out,n="minecraft:barrel",1
+    elseif eq(S,{{OP,OP,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."chest",1
+    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OS,OP}}) then out,n=SS.."barrel",1
+    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."limited_barrel_1",1
+    elseif eq(S,{{OP,OP,OP},{OS,LV,OS},{OP,OP,OP}}) then out,n=SS.."limited_barrel_2",1
+    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OS,OP,OS}}) then out,n=SS.."limited_barrel_3",1
+    elseif eq(S,{{OS,OP,OS},{OP,LV,OP},{OS,OP,OS}}) then out,n=SS.."limited_barrel_4",1
+    elseif eq(S,{{II,II,II},{II,SS.."chest",II},{II,II,II}}) then out,n=SS.."iron_chest",1
+    elseif eq(S,{{GO,GO,GO},{GO,SS.."iron_chest",GO},{GO,GO,GO}}) then out,n=SS.."gold_chest",1
+    elseif eq(S,{{DI,DI,DI},{DI,SS.."gold_chest",DI},{DI,DI,DI}}) then out,n=SS.."diamond_chest",1
+    elseif eq(S,{{"",RT,""},{RT,"minecraft:quartz",RT},{ST,ST,ST}}) then out,n="minecraft:comparator",1
+    elseif eq(S,{{RT,RS,RT},{ST,ST,ST}}) then out,n="minecraft:repeater",1
+    elseif eq(S,{{ST,"minecraft:comparator",ST},{isPlank,SS.."barrel",isPlank},{ST,"minecraft:comparator",ST}}) then out,n=SS.."controller",1
+    elseif eq(S,{{"minecraft:ender_pearl",isPlank},{"minecraft:repeater",ST}}) then out,n=SS.."storage_link",1
+    elseif eq(S,{{"","minecraft:ender_pearl",II},{"",SK,RT},{SK,"",""}}) then out,n=SS.."storage_tool",1
+    elseif eq(S,{{"",SK,""},{SK,LV,SK},{"",SK,""}}) then out,n=SS.."basic_tier_upgrade",1
+    elseif eq(S,{{II,II,II},{II,LV,II},{II,II,II}}) then out,n=SS.."basic_to_iron_tier_upgrade",1
+    elseif eq(S,{{GO,GO,GO},{GO,LV,GO},{GO,GO,GO}}) then out,n=SS.."iron_to_gold_tier_upgrade",1
+    elseif eq(S,{{DI,DI,DI},{DI,LV,DI},{DI,DI,DI}}) then out,n=SS.."gold_to_diamond_tier_upgrade",1
+    elseif eq(S,{{isPlank,II,isPlank},{II,isPlank,II},{isPlank,II,isPlank}}) then out,n=SS.."upgrade_base",1
+    elseif eq(S,{{isLog,isLog,isLog},{isLog,SS.."upgrade_base",isLog},{isLog,isLog,isLog}}) then out,n=SS.."stack_upgrade_tier_1",1
+    elseif eq(S,{{II,II,II},{II,II,II},{II,II,II}}) then out,n="minecraft:iron_block",1
+    elseif eq(S,{{GO,GO,GO},{GO,GO,GO},{GO,GO,GO}}) then out,n="minecraft:gold_block",1
+    elseif eq(S,{{II,II,II},{II,SS.."stack_upgrade_tier_1",II},{"minecraft:iron_block",II,"minecraft:iron_block"}}) then out,n=SS.."stack_upgrade_tier_2",1
+    elseif eq(S,{{GO,GO,GO},{GO,SS.."stack_upgrade_tier_2",GO},{"minecraft:gold_block",GO,"minecraft:gold_block"}}) then out,n=SS.."stack_upgrade_tier_3",1
     elseif eq(S,{{"minecraft:blaze_rod"}}) then out,n="minecraft:blaze_powder",2
     elseif eq(S,{{"minecraft:ender_pearl","minecraft:blaze_powder"}}) then out,n=EY,1
     elseif eq(S,{{PK,TU}}) then

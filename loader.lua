@@ -230,8 +230,8 @@ local function fuelUp()
     if not move("d") then break end
   end
   if pos.y == base.pad.y then
-    for _ = 1, 24 do
-      if fuel() >= GOOD_FUEL then break end
+    for try = 1, 72 do                 -- (the factory may be busy: wait longer while really low)
+      if fuel() >= GOOD_FUEL or (try > 24 and fuel() >= LOW_FUEL) then break end
       rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, "swarm_job")
       sleep(5)
       refuel(GOOD_FUEL)
