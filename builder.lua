@@ -440,38 +440,69 @@ end
 
 ---------------------------------------------------------------- room map
 
--- Map the room with one scan: no walking needed.
+-- Map the room by scanning: no walking needed, except to get within reach
+-- of the launch pad if we start far from it.
 local function roomScan()
   print("Scanning the base room.")
   report("mapping the base")
-  local found, covered = scanHere()
-  if not found then return false, covered end
   local f = base.f
   local lanes = laneCells()
-  local seen = {}
-  for x = pos.x - SCAN_RADIUS, pos.x + SCAN_RADIUS do
-    for y = pos.y - SCAN_RADIUS, pos.y + SCAN_RADIUS do
-      for z = pos.z - SCAN_RADIUS, pos.z + SCAN_RADIUS do
-        if covered(x, y, z) then
-          seen[key(x, y, z)] = found[key(x, y, z)] or "air"
+  local padK = key(base.pad.x, base.pad.y, base.pad.z)
+  local seen, order, reached = {}, nil, nil
+
+  local function reachable()
+    local here = key(pos.x, pos.y, pos.z)
+    local list, set, head = { here }, { [here] = true }, 1
+    while head <= #list do
+      local x, y, z = unkey(list[head])
+      head = head + 1
+      for _, m in ipairs(ALL_MOVES) do
+        local nx, ny, nz = neighbour(x, y, z, m)
+        local nk = key(nx, ny, nz)
+        if not set[nk] and seen[nk] == "air" and not lanes[nk] and inBox(nx, ny, nz) then
+          set[nk] = true
+          list[#list + 1] = nk
         end
       end
     end
+    return list, set
   end
-  -- the open cells we can actually get to from here
-  local here = key(pos.x, pos.y, pos.z)
-  local order, reached, head = { here }, { [here] = true }, 1
-  while head <= #order do
-    local x, y, z = unkey(order[head])
-    head = head + 1
+
+  local function padNextTo(set)
     for _, m in ipairs(ALL_MOVES) do
-      local nx, ny, nz = neighbour(x, y, z, m)
-      local nk = key(nx, ny, nz)
-      if not reached[nk] and seen[nk] == "air" and not lanes[nk] and inBox(nx, ny, nz) then
-        reached[nk] = true
-        order[#order + 1] = nk
+      if set[key(neighbour(base.pad.x, base.pad.y, base.pad.z, m))] then return true end
+    end
+    return false
+  end
+
+  for attempt = 1, 4 do
+    local found, covered = scanHere()
+    if not found then
+      if attempt == 1 then return false, covered end
+      break
+    end
+    for x = pos.x - SCAN_RADIUS, pos.x + SCAN_RADIUS do
+      for y = pos.y - SCAN_RADIUS, pos.y + SCAN_RADIUS do
+        for z = pos.z - SCAN_RADIUS, pos.z + SCAN_RADIUS do
+          if covered(x, y, z) then seen[key(x, y, z)] = found[key(x, y, z)] or "air" end
+        end
       end
     end
+    order, reached = reachable()
+    if padNextTo(reached) then break end
+    -- too far from the pad to see it: move to the reachable spot nearest to
+    -- it and scan again
+    local best, bestD
+    local here = key(pos.x, pos.y, pos.z)
+    for _, k in ipairs(order) do
+      local x, y, z = unkey(k)
+      local d = math.abs(x - base.pad.x) + math.abs(y - base.pad.y) + math.abs(z - base.pad.z)
+      if not bestD or d < bestD then best, bestD = k, d end
+    end
+    if not best or best == here then break end
+    print("Moving closer to the launch pad.")
+    st.roomCells = order
+    if not goToCell(best) then break end
   end
 
   local palette, index, cells = {}, {}, {}
@@ -500,10 +531,11 @@ local function roomScan()
       if not bestD or d > bestD then best, bestD = k, d end
     end
   end
-  st.park = best or here
-  st.padKey = key(base.pad.x, base.pad.y, base.pad.z)
+  st.park = best or key(pos.x, pos.y, pos.z)
+  st.padKey = padK
   st.done.room = true
   save()
+  if not padNextTo(reached) then print("Warning: I cannot see a way to the launch pad.") end
   print(("Base room scanned: %d open spaces I can reach."):format(#order))
   return true
 end
