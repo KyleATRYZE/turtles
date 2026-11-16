@@ -1285,28 +1285,34 @@ local function digStep(b, dir)
   return step(dir)
 end
 
--- Fly to a spot on the site: up first, across, then down. Anything built
--- that is in the way is flown over.
+-- Fly to a spot on the site: up first, across, then down. If something
+-- built is in the way, try the other way round it, then go over the top of
+-- the whole building. Arrives exactly at x, y, z or returns false.
 local function flyTo(b, x, y, z)
-  for _ = 1, 6 do
-    while pos.y < y do if not digStep(b, "u") then break end end
-    local okX, okZ = true, true
-    while pos.x ~= x do
-      face(x > pos.x and 0 or 2)
-      if not digStep(b, "f") then okX = false break end
-    end
-    if okX then
-      while pos.z ~= z do
-        face(z > pos.z and 1 or 3)
-        if not digStep(b, "f") then okZ = false break end
+  local function across(order)
+    for _, axis in ipairs(order) do
+      while pos[axis] ~= (axis == "x" and x or z) do
+        if axis == "x" then face(x > pos.x and 0 or 2) else face(z > pos.z and 1 or 3) end
+        if not digStep(b, "f") then return false end
       end
     end
-    if okX and okZ then
-      while pos.y > y do if not digStep(b, "d") then break end end
-      if pos.y == y then return true end
+    return true
+  end
+  -- above everything this site will ever have on it (the factory is 32 tall)
+  local safe = b.oy + math.max(list.sy, 32) + 2
+  for _ = 1, 3 do
+    while pos.y < y and digStep(b, "u") do end
+    local ok = across({ "x", "z" }) or across({ "z", "x" })
+    if not ok then
+      while pos.y < safe and digStep(b, "u") do end
+      ok = across({ "x", "z" }) or across({ "z", "x" })
     end
-    if not digStep(b, "u") then return false end   -- over whatever it is
-    y = math.max(y, pos.y)
+    if ok then
+      while pos.y > y and digStep(b, "d") do end
+      while pos.y < y and digStep(b, "u") do end
+      if pos.x == x and pos.y == y and pos.z == z then return true end
+    end
+    if not digStep(b, "u") then return false end
   end
   return pos.x == x and pos.y == y and pos.z == z
 end
@@ -1599,6 +1605,61 @@ local function placeShell(b)
   local blocks, pal = list.blocks, list.pal
   local placedNow = 0
   useTool("pick")
+  b.skips = b.skips or {}
+
+  -- Try one block of the list. True when we are done with it (placed,
+  -- already there, or skipped); false to try the same one again (after a
+  -- supply run).
+  local function doBlock(idx, lastGo)
+    local e = blocks[idx]
+    local want = pal[e[4]]
+    local wx, wy, wz = b.ox + e[1], b.oy + e[2], b.oz + e[3]
+    local slot = findSlot(want.name)
+    local trip = math.abs(pos.x - st.doorX) + math.abs(pos.z - st.doorZ) + math.abs(pos.y - b.oy) + 50
+    if not slot then
+      supplyRun(b, "out of " .. want.name:gsub("^.*:", ""))
+      return false
+    elseif fuel() < FUEL_SPARE + trip then
+      supplyRun(b, "low on fuel")
+      return false
+    end
+    if not flyTo(b, wx, wy + 1, wz) then
+      print(("Cannot reach %d %d %d. %s"):format(wx, wy, wz,
+        lastGo and "Leaving it." or "I'll try again at the end."))
+      if not lastGo then b.skips[#b.skips + 1] = idx end
+      b.skipped = (b.skipped or 0) + 1
+      return true
+    end
+    local ok, data = turtle.inspectDown()
+    local done = ok and data.name == want.name
+      and (not want.facing or facingOf(data) == want.facing)
+    if not done then
+      if ok and (isNatural(data.name) or data.name == want.name) then
+        useTool("pick")
+        turtle.digDown()                         -- clutter, or our own block facing wrong
+      end
+      if want.facing then face((FACING[want.facing] + (b.turn or 0)) % 4) end
+      turtle.select(slot)
+      if turtle.placeDown() and want.facing then
+        local _, d2 = turtle.inspectDown()
+        local got = facingOf(d2)
+        if got and FACING[got] and got ~= want.facing then
+          -- learn how placing turns the block, then put it right
+          b.turn = ((b.turn or 0) + FACING[want.facing] - FACING[got]) % 4
+          useTool("pick")
+          turtle.select(1)
+          turtle.digDown()
+          turtle.select(slot)
+          face((FACING[want.facing] + b.turn) % 4)
+          turtle.placeDown()
+        end
+      end
+      turtle.select(1)
+      placedNow = placedNow + 1
+    end
+    return true
+  end
+
   while b.i <= #blocks do
     if b.limit and placedNow >= b.limit then
       print("Trial done: placed " .. placedNow .. " blocks.")
@@ -1607,52 +1668,22 @@ local function placeShell(b)
       save()
       return false
     end
-    local e = blocks[b.i]
-    local want = pal[e[4]]
-    local wx, wy, wz = b.ox + e[1], b.oy + e[2], b.oz + e[3]
-    progress = { kind = "building", done = b.i - 1, total = #blocks, layer = e[2] }
-    local slot = findSlot(want.name)
-    local trip = math.abs(pos.x - st.doorX) + math.abs(pos.z - st.doorZ) + math.abs(pos.y - b.oy) + 50
-    if not slot then
-      supplyRun(b, "out of " .. want.name:gsub("^.*:", ""))
-    elseif fuel() < FUEL_SPARE + trip then
-      supplyRun(b, "low on fuel")
-    else
-      if not flyTo(b, wx, wy + 1, wz) then
-        print(("Cannot reach %d %d %d. Skipping it."):format(wx, wy, wz))
-        b.skipped = (b.skipped or 0) + 1
-        b.i = b.i + 1
-      else
-        local ok, data = turtle.inspectDown()
-        local done = ok and data.name == want.name
-          and (not want.facing or facingOf(data) == want.facing)
-        if not done then
-          if ok and (isNatural(data.name) or data.name == want.name) then
-            useTool("pick")
-            turtle.digDown()                         -- clutter, or our own block facing wrong
-          end
-          if want.facing then face((FACING[want.facing] + (b.turn or 0)) % 4) end
-          turtle.select(slot)
-          if turtle.placeDown() and want.facing then
-            local _, d2 = turtle.inspectDown()
-            local got = facingOf(d2)
-            if got and FACING[got] and got ~= want.facing then
-              -- learn how placing turns the block, then put it right
-              b.turn = ((b.turn or 0) + FACING[want.facing] - FACING[got]) % 4
-              useTool("pick")
-              turtle.select(1)
-              turtle.digDown()
-              turtle.select(slot)
-              face((FACING[want.facing] + b.turn) % 4)
-              turtle.placeDown()
-            end
-          end
-          turtle.select(1)
-          placedNow = placedNow + 1
-        end
-        b.i = b.i + 1
-        if b.i % 8 == 0 then save() end
-      end
+    progress = { kind = "building", done = b.i - 1, total = #blocks, layer = blocks[b.i][2],
+      skipped = #b.skips }
+    if doBlock(b.i, false) then
+      b.i = b.i + 1
+      if b.i % 8 == 0 then save() end
+    end
+    if freeSlots() < 2 then dropJunk(b, true) end
+    tick("building")
+  end
+  -- one more go at the ones that could not be reached the first time
+  if #b.skips > 0 then print(("Going back for %d I skipped."):format(#b.skips)) end
+  while #b.skips > 0 do
+    progress = { kind = "building", done = #blocks, total = #blocks, retry = #b.skips }
+    if doBlock(b.skips[1], true) then
+      table.remove(b.skips, 1)
+      save()
     end
     if freeSlots() < 2 then dropJunk(b, true) end
     tick("building")
@@ -1838,6 +1869,10 @@ while true do
     end
     if st.build then
       st.build.paused = nil
+      if tostring(cmd.redo) == "1" then
+        st.build.i, st.build.skips = 1, {}
+        if st.build.stage == "done" then st.build.stage = "place" end
+      end
       st.build.limit = tonumber(cmd.limit) and math.floor(tonumber(cmd.limit)) or nil
       if tostring(cmd.clear) == "0" and st.build.stage == "clear" then st.build.stage = "place" end
       if cmd.stage == "clear" or cmd.stage == "place" then
