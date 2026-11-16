@@ -1,25 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794866684,
-      "issued": 1794866684000,
-      "cmd": "reboot",
-      "target": "SteelyDan"
-    },
-    {
-      "id": 1794866685,
-      "issued": 1794866684000,
-      "cmd": "lab",
-      "target": "SteelyDan",
-      "ops": "fetch|minecraft:redstone=24,minecraft:raw_iron=9;site|-4448|71|1518|factory_asfit2|factory_foundryfloor;walk|40|1|12;face|0;inspect|front;place|mekanism:enrichment_chamber;expect|front|enrichment_chamber;types|front;call|front|getDirection;call|front|getMode|ITEM|LEFT;call|front|getMode|ITEM|RIGHT;call|front|getMode|ITEM|TOP;call|front|getMode|ITEM|BACK;call|front|isEjecting|ITEM;call|front|setEjecting|ITEM|true;drop|minecraft:redstone|12;call|front|getEnergy;walk|40|1|11;face|0;place|mekanism:energized_smelter;expect|front|energized_smelter;call|front|getDirection;call|front|getMode|ITEM|LEFT;call|front|getMode|ITEM|RIGHT;call|front|getMode|ITEM|BACK;drop|minecraft:redstone|12;call|front|getEnergy;walk|41|2|12;expect|down|enrichment_chamber;dropDown|minecraft:raw_iron|9;wait|40;call|bottom|getOutput;call|bottom|getInput;walk|41|1|10;face|1;expect|front|energized_smelter;call|front|getInput;call|front|getOutput;wait|40;call|front|getOutput;suck|64;inv",
-      "clear": 1
-    },
-    {
-      "id": 1794866686,
-      "issued": 1794866684000,
+      "id": 1794866957,
+      "issued": 1794866957000,
       "cmd": "lab",
       "target": "MortarKombat",
-      "ops": "goto|-4456|84|1517;face|0;inspect|front;call|front|isOn;call|front|reboot",
+      "ops": "inspect|up;types|top;call|top|reboot;up|30",
       "clear": 1
     }
   ]
