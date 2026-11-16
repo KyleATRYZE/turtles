@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swarm Factory Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column; the model fills the top, the plan reads below it in panels. */
+:root {
+  --paper: #ecebe7;
+  --panel: #f7f6f3;
+  --ink: #23242a;
+  --muted: #5e6068;
+  --line: #d3d1cb;
+  --copper: #2f8a74;
+  --copper-soft: #d8ebe5;
+  --brick: #8a8c92;
+  --warn: #a35a1f;
+  --sky-top: #c9dde6;
+  --sky-low: #e8ece6;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #17181c; --panel: #202127; --ink: #e9e8e4; --muted: #a2a3aa; --line: #34353d;
+    --copper: #5cc0a6; --copper-soft: #1f3a33; --brick: #9a9ca2; --warn: #e09a5c;
+    --sky-top: #1d2630; --sky-low: #262a2f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #17181c; --panel: #202127; --ink: #e9e8e4; --muted: #a2a3aa; --line: #34353d;
+  --copper: #5cc0a6; --copper-soft: #1f3a33; --brick: #9a9ca2; --warn: #e09a5c;
+  --sky-top: #1d2630; --sky-low: #262a2f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 16px/1.6 var(--body); }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 64px; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: 0.01em; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(36px, 6vw, 56px); text-transform: uppercase; }
+h2 { font-size: 30px; text-transform: uppercase; }
+h3 { font-size: 22px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 17px; }
+header { display: grid; gap: 10px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 13px/1 var(--mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+.chip.draft { border-color: var(--warn); color: var(--warn); }
+
+/* the model */
+.viewer { position: relative; height: min(64vh, 620px); min-height: 360px; border-radius: 10px; overflow: hidden;
+  background: linear-gradient(var(--sky-top), var(--sky-low)); border: 1px solid var(--line); }
+.viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint { position: absolute; left: 12px; bottom: 10px; font: 12px var(--mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 4px 8px; border-radius: 6px; }
+.compass { position: absolute; right: 12px; top: 10px; font: 600 12px var(--mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 4px 8px; border-radius: 6px; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font: 14px var(--mono); color: var(--muted); }
+.controls { display: grid; gap: 12px; }
+.views { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: 500 14px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+button:hover { border-color: var(--copper); }
+button[aria-pressed="true"] { background: var(--copper-soft); border-color: var(--copper); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.cut { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.cut input { flex: 1; accent-color: var(--copper); }
+.cut output { font: 500 14px var(--mono); color: var(--ink); min-width: 5ch; text-align: right; }
+
+/* rooms */
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.room { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; border-top: 4px solid var(--brick); }
+.room h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.room .size { font: 500 13px var(--mono); color: var(--muted); white-space: nowrap; }
+.room dl { margin: 0; display: grid; gap: 6px; font-size: 15px; }
+.room dt { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.room dd { margin: 0 0 4px; }
+.room button { justify-self: start; }
+
+/* tables */
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: start; }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.callout { border-left: 4px solid var(--warn); padding: 10px 14px; background: var(--panel); border-radius: 0 8px 8px 0; font-size: 15px; }
+
+/* phases */
+ol.phases { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: ph; }
+ol.phases > li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; }
+.ph-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.ph-num { font: 800 26px var(--display); color: var(--copper); min-width: 1.6ch; }
+.state { font: 500 12px var(--mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.state.now { color: var(--copper); border-color: var(--copper); }
+ol.phases ul { margin: 0; padding-left: 20px; display: grid; gap: 3px; font-size: 15px; }
+.who { font-size: 14px; color: var(--muted); }
+section { display: grid; gap: 14px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Swarm Factory</h1>
+  <p class="lede">The new HQ for the turtle swarm: a stone-brick hall with a sawtooth roof, a control tower and chimneys, built by BrickJagger from the stone the miners dig. Spin the model, cut through it floor by floor, then read how each part works and what it takes to build.</p>
+  <div class="facts">
+    <span class="chip">Hall 45 × 31 · tower 11 × 11</span>
+    <span class="chip">{{TOTAL}} blocks</span>
+    <span class="chip">2 floors + 3-storey tower</span>
+    <span class="chip draft">Draft: placed on the meadow once the site map is in</span>
+  </div>
+</header>
+
+<section aria-label="3D model">
+  <div class="viewer" id="viewer">
+    <div class="loading" id="loading">Loading the model…</div>
+    <span class="compass">Front faces south ↓</span>
+    <span class="hint">Drag to spin · scroll or pinch to zoom · right-drag to pan</span>
+  </div>
+  <div class="controls">
+    <div class="views" role="group" aria-label="Show">
+      <button type="button" data-cut="31" aria-pressed="true">Whole building</button>
+      <button type="button" data-cut="13">Without the roof</button>
+      <button type="button" data-cut="7">Ground floor</button>
+      <button type="button" data-cut="0">Floor plan</button>
+      <button type="button" id="spin" aria-pressed="false">Turntable</button>
+    </div>
+    <label class="cut" for="cutRange">Cut at height
+      <input type="range" id="cutRange" min="0" max="31" value="31">
+      <output id="cutOut" for="cutRange">31</output>
+    </label>
+  </div>
+</section>
+
+<section aria-labelledby="rooms-h">
+  <h2 id="rooms-h">The rooms</h2>
+  <div class="rooms">
+    <article class="room">
+      <h3>Smelting hall <span class="size">8 × 29</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>13 furnaces along the west wall, each on the wired network. The two chimneys rise from here.</dd>
+        <dt>How it works</dt><dd>ForgeClooney splits every smelting job across all the furnaces at once: cobblestone to stone, sand to glass, ores to ingots, logs to charcoal. Under the current single furnace, the building's smelting would take {{SMELT_HOURS_1}} hours; the bank does it in about {{SMELT_MIN_13}} minutes.</dd>
+        <dt>Needs</dt><dd>13 furnaces, modems and cable, and an update to the factory so it can use many furnaces.</dd>
+      </dl>
+      <button type="button" data-room="0">Show in the model</button>
+    </article>
+    <article class="room">
+      <h3>Storage room <span class="size">8 × 29</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>Chest walls three high down both sides (up to 156 chests, about 4,200 stacks), and one chest by the door with a storage computer and screen.</dd>
+        <dt>How it works</dt><dd>Anything dropped in the door chest is sorted away. Type what you want on the screen and it comes out into the same chest. The factory and BrickJagger take their materials from here too.</dd>
+        <dt>Needs</dt><dd>Starts with today's 13 chests moved in; grows as the tree farm supplies wood (2 logs per chest). A new storage program.</dd>
+      </dl>
+      <button type="button" data-room="1">Show in the model</button>
+    </article>
+    <article class="room">
+      <h3>Launch bay <span class="size">8 × 29</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>ForgeClooney, the launch pad, the drop-off chest and the miners' two shafts down to their roads, behind the big arched door.</dd>
+        <dt>How it works</dt><dd>Exactly as in the hut today: miners come up one shaft, unload, refuel above the factory and go down the other.</dd>
+        <dt>Needs</dt><dd>Moves over last, once the rest works, so mining never stops. The miners switch to the new base on their next trip.</dd>
+      </dl>
+      <button type="button" data-room="2">Show in the model</button>
+    </article>
+    <article class="room">
+      <h3>Tree farm <span class="size">16 × 29, double height</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>24 birch trees in four rows on dirt, under the glazed sawtooth roof, with a lumberjack turtle's track between them.</dd>
+        <dt>How it works</dt><dd>The lumberjack loops the rows, chops grown trees, replants and gathers saplings. Logs go to the smelting hall as charcoal (fuel the swarm makes itself) and to the factory as planks for chests.</dd>
+        <dt>Needs</dt><dd>464 dirt, 24 birch saplings from you, and a lumberjack turtle and program.</dd>
+      </dl>
+      <button type="button" data-room="3">Show in the model</button>
+    </article>
+    <article class="room">
+      <h3>Builder workshop <span class="size">26 × 29, upper floor</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>BrickJagger's home: where materials for the next job are laid out, and where it parks. A glass wall looks down over the tree farm.</dd>
+        <dt>How it works</dt><dd>Spare floor space for storage to grow into, and for a second builder if one helps.</dd>
+        <dt>Needs</dt><dd>Nothing extra: it comes with the shell.</dd>
+      </dl>
+      <button type="button" data-room="4">Show in the model</button>
+    </article>
+    <article class="room">
+      <h3>Control tower <span class="size">11 × 11, 24 tall</span></h3>
+      <dl>
+        <dt>Inside</dt><dd>Top floor: a 9 × 4 wall of advanced monitors, GroundControl with the Chat Box and Player Detector, and a big window looking south over the site. Lower floors: the other computers, reached by ladder.</dd>
+        <dt>How it works</dt><dd>The monitor wall shows the live fleet map, storage levels and the factory's queue.</dd>
+        <dt>Needs</dt><dd>36 advanced monitors (63 gold), a dashboard program, and GroundControl moved in.</dd>
+      </dl>
+      <button type="button" data-room="5">Show in the model</button>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="mat-h">
+  <h2 id="mat-h">Materials</h2>
+  <p>Counted block by block from the model, then traced back through the crafting to what the miners dig. Deepslate needs only crafting; stone bricks, glass and copper need smelting: {{SMELTS}} furnace jobs in all.</p>
+  <div class="callout">Sand is the one thing the swarm cannot find: about 475 for the glass. A desert or beach run, or a crusher turning cobblestone into sand, covers it.</div>
+  <div class="tables">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Raw material</th><th>Amount</th><th>Where from</th></tr></thead>
+        <tbody>
+{{RAW_ROWS}}
+        </tbody>
+      </table>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Blocks in the building</th><th>Count</th></tr></thead>
+        <tbody>
+{{BLOCK_ROWS}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="plan-h">
+  <h2 id="plan-h">Build order</h2>
+  <p>Each phase leaves everything working, so the swarm keeps mining throughout. The tools come first, because a builder that can't fetch its own materials would need you at every step.</p>
+  <ol class="phases">
+    <li>
+      <div class="ph-head"><span class="ph-num">0</span><h3>Gather and map</h3><span class="state now">Running now</span></div>
+      <ul>
+        <li>Miners haul two stacks each of cobblestone and cobbled deepslate home every trip.</li>
+        <li>BrickJagger maps the meadow, so the building can be placed on flat ground.</li>
+        <li>CoalPorter keeps the coal coming.</li>
+      </ul>
+      <p class="who">You: if you can spare them, put a few extra furnaces on the network. Smelting is the slow part.</p>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">1</span><h3>Teach the turtles to build</h3><span class="state">Next</span></div>
+      <ul>
+        <li>ForgeClooney: smelt on every furnace at once; craft in bulk (deepslate to polished, bricks and tiles; stairs; panes; cut copper); take material orders.</li>
+        <li>BrickJagger: gets a pickaxe (3 diamonds, in stock); learns build mode: clear and level the site, then place the plan layer by layer, collecting each load of materials from the factory and facing stairs the right way.</li>
+        <li>Each tested in simulation first, then on a small trial build next to the hut.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">2</span><h3>The shell</h3><span class="state">Planned</span></div>
+      <ul>
+        <li>Level the site and lay the floor.</li>
+        <li>Walls and pillars to the first floor, the upper floor slab, walls to the eaves.</li>
+        <li>Sawtooth roof, chimneys and the control tower.</li>
+      </ul>
+      <p class="who">About 9,300 placements. BrickJagger works through it in loads of about 900 blocks; a second builder would halve the time.</p>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">3</span><h3>Smelting hall</h3><span class="state">Planned</span></div>
+      <ul><li>Furnace bank and network, wired back to the factory's chests. Everything after this goes faster.</li></ul>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">4</span><h3>Storage room</h3><span class="state">Planned</span></div>
+      <ul>
+        <li>Chest walls and network (BrickJagger right-clicks each modem on with the automata core).</li>
+        <li>Storage program: sorting, search screen, the door chest.</li>
+        <li>Today's chests and their contents move in.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">5</span><h3>Control tower</h3><span class="state">Planned</span></div>
+      <ul><li>Monitor wall and dashboard program; GroundControl, the Chat Box and the Player Detector move in.</li></ul>
+      <p class="who">You: carry GroundControl across (computers keep their programs when broken and placed).</p>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">6</span><h3>Tree farm</h3><span class="state">Planned</span></div>
+      <ul><li>Dirt floor, saplings, lumberjack turtle and program; logs to charcoal and to planks for chests.</li></ul>
+      <p class="who">You: 24 birch saplings.</p>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">7</span><h3>Move the launch bay</h3><span class="state">Last</span></div>
+      <ul>
+        <li>New shafts down to fresh roads, then ForgeClooney, the pad and the drop-off move across.</li>
+        <li>Miners switch base on their next trip; their plots move to around the new building.</li>
+      </ul>
+      <p class="who">You: carry ForgeClooney across.</p>
+    </li>
+    <li>
+      <div class="ph-head"><span class="ph-num">8</span><h3>Finishing touches</h3><span class="state">Last</span></div>
+      <ul><li>Lanterns, copper pipe runs, a path back to the hut, landscaping around the walls.</li></ul>
+    </li>
+  </ol>
+</section>
+
+<section aria-labelledby="prog-h">
+  <h2 id="prog-h">New programs</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Program</th><th>Runs on</th><th>What it does</th><th>Phase</th></tr></thead>
+      <tbody>
+        <tr><td>Build mode</td><td>BrickJagger</td><td>Reads the plan, levels ground, places blocks layer by layer, orders materials, faces stairs, switches modems on.</td><td class="num">1</td></tr>
+        <tr><td>Bulk crafting and smelting</td><td>ForgeClooney</td><td>Turns hauled stone into every block the plan needs; splits smelting over all furnaces.</td><td class="num">1</td></tr>
+        <tr><td>Storage</td><td>Storage computer</td><td>Sorts, searches and hands out items; one door chest for you.</td><td class="num">4</td></tr>
+        <tr><td>Dashboard</td><td>GroundControl</td><td>The monitor wall: fleet map, storage, factory queue.</td><td class="num">5</td></tr>
+        <tr><td>Lumberjack</td><td>New turtle</td><td>Tends the tree farm; logs to charcoal and planks.</td><td class="num">6</td></tr>
+        <tr><td>Base move</td><td>All miners</td><td>Switch to the new launch bay without losing a trip.</td><td class="num">7</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  const BP = /*DATA*/null;
+  const viewer = document.getElementById("viewer");
+  const loading = document.getElementById("loading");
+  if (!window.THREE || !THREE.OrbitControls) {
+    loading.textContent = "The 3D viewer could not load. The plan below still applies.";
+    return;
+  }
+
+  // colours by block, roughly as they look in game
+  const COLOR = {
+    stone_bricks: 0x8e8e8e, cracked_stone_bricks: 0x7d7d7d,
+    polished_deepslate: 0x4c4c54, deepslate_tiles: 0x36363e, deepslate_tile_stairs: 0x3b3b43,
+    deepslate_bricks: 0x46464d, glass_pane: 0xa8d6e8, glass: 0xbfe4f2, dirt: 0x7a5535,
+    chest: 0xa8742c, monitor_advanced: 0xd9b347, cut_copper: 0x4f9e86, cut_copper_slab: 0x4f9e86,
+    ladder: 0x8a6a3a, birch_sapling: 0x8fc255, cable: 0xd8d2c0, wired_modem_full: 0xcfc8b8,
+    furnace: 0x6e6e70, lantern: 0xf5c05a, lightning_rod: 0xc77d4f, computer_advanced: 0xe0c46a,
+    turtle_advanced: 0xd6b45c, turtle_normal: 0xbdbdbd, disk_drive: 0x9a9a9a,
+    chat_box: 0x6aa6c8, player_detector: 0xb35050,
+  };
+  // shapes: [width, height, depth, y-offset]
+  const SHAPE = {
+    cut_copper_slab: [1, 0.5, 1, -0.25], lantern: [0.4, 0.45, 0.4, 0.1], birch_sapling: [0.5, 0.6, 0.5, -0.2],
+    ladder: [0.9, 1, 0.12, 0], cable: [0.35, 0.35, 0.35, 0], lightning_rod: [0.9, 0.22, 0.22, 0],
+    glass_pane: [1, 1, 1, 0],
+  };
+  const GLASS = { glass_pane: 0.32, glass: 0.4 };
+
+  const W = viewer.clientWidth, H = viewer.clientHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  viewer.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, W / H, 0.5, 600);
+  const cx = BP.size.x / 2, cz = BP.size.z / 2;
+  camera.position.set(cx + 48, 42, cz + 70);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(cx, 8, cz);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.minDistance = 10;
+  controls.maxDistance = 220;
+
+  scene.add(new THREE.HemisphereLight(0xf2f5ff, 0x5a5040, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
+  sun.position.set(-40, 80, 60);
+  scene.add(sun);
+
+  // ground
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 140),
+    new THREE.MeshLambertMaterial({ color: 0x5f8f3d }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(cx, -0.51, cz);
+  scene.add(ground);
+
+  // group the blocks by kind; blocks arrive sorted by height, so each group
+  // can be cut by just drawing its first N instances
+  const groups = {};
+  for (const [x, y, z, i] of BP.blocks) {
+    const name = BP.palette[i].split("[")[0].split(":")[1];
+    (groups[name] = groups[name] || []).push([x, y, z]);
+  }
+  const meshes = [];
+  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  function shade(x, y, z) {               // a little variation, like a texture
+    const h = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+    return 0.92 + (h - Math.floor(h)) * 0.14;
+  }
+  for (const name in groups) {
+    const list = groups[name];
+    const s = SHAPE[name] || [1, 1, 1, 0];
+    const geo = new THREE.BoxGeometry(s[0], s[1], s[2]);
+    const opts = { color: 0xffffff };
+    if (GLASS[name]) { opts.transparent = true; opts.opacity = GLASS[name]; opts.depthWrite = false; }
+    if (name === "lantern") opts.emissive = new THREE.Color(0x7a5410);
+    const mat = new THREE.MeshLambertMaterial(opts);
+    const mesh = new THREE.InstancedMesh(geo, mat, list.length);
+    const base = new THREE.Color(COLOR[name] ?? 0x999999);
+    list.forEach(([x, y, z], k) => {
+      m4.makeTranslation(x + 0.5, y + 0.5 + s[3], z + 0.5);
+      mesh.setMatrixAt(k, m4);
+      col.copy(base).multiplyScalar(GLASS[name] ? 1 : shade(x, y, z));
+      mesh.setColorAt(k, col);
+    });
+    mesh.userData.ys = list.map(b => b[1]);
+    if (GLASS[name]) mesh.renderOrder = 2;
+    scene.add(mesh);
+    meshes.push(mesh);
+  }
+
+  // room highlight
+  const hl = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color(0x2f8a74));
+  hl.visible = false;
+  scene.add(hl);
+
+  const range = document.getElementById("cutRange"), out = document.getElementById("cutOut");
+  const viewButtons = [...document.querySelectorAll("[data-cut]")];
+  function setCut(v) {
+    v = Number(v);
+    range.value = v; out.textContent = v;
+    for (const mesh of meshes) {
+      const ys = mesh.userData.ys;
+      let n = 0;
+      while (n < ys.length && ys[n] <= v) n++;
+      mesh.count = n;
+    }
+    viewButtons.forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.cut) === v)));
+  }
+  range.addEventListener("input", () => setCut(range.value));
+  viewButtons.forEach(b => b.addEventListener("click", () => { hl.visible = false; setCut(b.dataset.cut); }));
+
+  document.querySelectorAll("[data-room]").forEach(b => b.addEventListener("click", () => {
+    const r = BP.rooms[Number(b.dataset.room)].box;
+    hl.box.set(new THREE.Vector3(r[0], r[1], r[2]), new THREE.Vector3(r[3] + 1, r[4] + 1, r[5] + 1));
+    hl.visible = true;
+    setCut(r[4] >= 13 ? Math.min(r[4], 22) : r[4]);
+    controls.target.set((r[0] + r[3] + 1) / 2, (r[1] + r[4]) / 2, (r[2] + r[5] + 1) / 2);
+    viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+
+  const spinBtn = document.getElementById("spin");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  spinBtn.addEventListener("click", () => {
+    controls.autoRotate = !controls.autoRotate;
+    spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
+  });
+  controls.autoRotateSpeed = 0.8;
+
+  function resize() {
+    const w = viewer.clientWidth, h = viewer.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+  setCut(31);
+  loading.remove();
+  (function loop() {
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  })();
+  if (reduce) controls.autoRotate = false;
+})();
+</script>
+</body>
+</html>
