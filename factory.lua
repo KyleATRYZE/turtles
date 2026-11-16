@@ -584,6 +584,10 @@ local BACKGROUND = {
   { fuel = true, leave = 64, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:jungle_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
   { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
@@ -595,7 +599,7 @@ local BACKGROUND = {
 }
 
 local function keepFurnacesBusy(stock)
-  if next(orders) then return end          -- a builder load is being made
+  local busy = next(orders) ~= nil         -- a builder load is being made: only fuel is cooked
   -- cooking ahead is a luxury: not when coal is short
   local shortOfCoal = (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < FUEL_RESERVE + 144
   for _, f in ipairs(furnaces) do
@@ -604,9 +608,9 @@ local function keepFurnacesBusy(stock)
       for _, job in ipairs(BACKGROUND) do
         local have = stock[job.output] or 0
         local raw = stock[job.input] or 0
-        local minRaw = job.input == "minecraft:stone_bricks" and 128 or 16
+        local minRaw = job.input == "minecraft:stone_bricks" and 128 or (job.fuel and 3 or 16)
         -- leave = raw kept back for building turtles
-        if (job.fuel or not shortOfCoal) and have < job.keep
+        if (job.fuel or not (shortOfCoal or busy)) and have < job.keep
           and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
           local okLoad, got = pcall(loadFurnace, f, job.input, 64)
           if okLoad and got and got > 0 then
@@ -1227,8 +1231,12 @@ local function serveOrders()
       report("preparing materials")
       stashAll()
       local lines, steps = fitLoad(order.items)
-      local okRun, err = pcall(runSteps, steps)
-      if not okRun then print("Problem: " .. tostring(err)) end
+      -- one step failing (no coal for a smelt, say) must not cost the rest
+      -- of the load
+      for _, step in ipairs(steps) do
+        local okRun, err = pcall(runSteps, { step })
+        if not okRun then print("Problem: " .. tostring(err)) end
+      end
       order.lines, order.ready, order.told = lines, true, os.clock()
       rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
       print("Load ready. Waiting for the builder.")
