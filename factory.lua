@@ -147,6 +147,28 @@ local RECIPES = {
     grid = { "P", "P", "P", "P", "T", "P", "P", "P", "P" },
     key = { P = "#planks", T = "minecraft:redstone_torch" },
   },
+  -- Mekanism parts. Steel dust, control circuits and infused alloy come out
+  -- of the Metallurgic Infuser (a helper runs it and hands them in); the
+  -- rest is crafted here.
+  ["alltheores:steel_ingot"] = { smelt = "alltheores:steel_dust" },
+  ["mekanism:steel_casing"] = {
+    grid = { "S", "G", "S", "G", "O", "G", "S", "G", "S" },
+    key = { S = "alltheores:steel_ingot", G = "minecraft:glass", O = "alltheores:osmium_ingot" },
+  },
+  ["mekanism:energized_smelter"] = {
+    grid = { "R", "C", "R", "G", "K", "G", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", G = "minecraft:glass",
+      K = "mekanism:steel_casing" },
+  },
+  ["mekanism:enrichment_chamber"] = {
+    grid = { "R", "C", "R", "I", "K", "I", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", I = "minecraft:iron_ingot",
+      K = "mekanism:steel_casing" },
+  },
+  ["mekanism:basic_universal_cable"] = {
+    yield = 8, grid = { "S", "R", "S", "", "", "", "", "", "" },
+    key = { S = "alltheores:steel_ingot", R = "minecraft:redstone" },
+  },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
   ["mekanism:metallurgic_infuser"] = {

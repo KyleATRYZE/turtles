@@ -397,6 +397,7 @@ local function supplyRun(indices, reason, once)
     local coal = math.min(64, math.max(0, math.ceil((FULL_TANK - fuel()) / 80)))
     if st.feed then coal = 26 end       -- fuel to carry out to a stranded turtle
     if st.lab and fuel() > 600 then coal = 0 end   -- (lab parts only: coal on board is not for burning)
+    if st.lab and st.lab.handin then coal = math.max(coal, 1) end   -- (a reason to be called onto the pad)
     if #items == 0 and coal == 0 then return true end
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
@@ -1326,6 +1327,8 @@ end
 --   inv   fuel   wait|seconds   home   note|text
 --   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
 --   expect|front/up/down|text   (stop unless the block that way has text in its name)
+--   until|side|method|n|seconds (wait for a machine's count to reach n)
+--   handin|keep,keep            (everything else on board back to the factory)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -1472,6 +1475,28 @@ local function runLab()
         else
           res = "left alone: " .. name
         end
+      elseif verb == "until" then
+        -- wait for a machine: until|side|method|n|seconds (a count, or a number)
+        local want, limit = tonumber(a[4]) or 1, tonumber(a[5]) or 180
+        local t0, got = os.clock(), nil
+        repeat
+          local okCall, v = pcall(peripheral.call, a[2], a[3])
+          got = okCall and (type(v) == "table" and tonumber(v.count) or tonumber(v)) or nil
+          if got and got >= want then break end
+          sleep(3)
+          tick("lab: waiting for the machine")
+        until os.clock() - t0 > limit
+        res = ("%s after %d s"):format(tostring(got), math.floor(os.clock() - t0))
+        stop = not (got and got >= want)
+      elseif verb == "handin" then
+        -- everything on board (but what is named, and fuel) back to the factory
+        lab.keep = { ["minecraft:coal"] = true, ["minecraft:charcoal"] = true }
+        for name in (a[2] or ""):gmatch("[^,]+") do lab.keep[name] = true end
+        lab.handin = true
+        save()
+        supplyRun(function() return {} end, "handing in what the lab made", true)
+        lab.keep, lab.handin = nil, nil
+        res = "handed in"
       elseif verb == "expect" then
         -- stop here unless the block that way is what the steps assume
         local s = a[2] == "up" and "Up" or a[2] == "down" and "Down" or ""
