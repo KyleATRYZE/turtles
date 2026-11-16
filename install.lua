@@ -28,15 +28,9 @@ r.close()
 -- for this machine (miner, factory or controller).
 shell.run("update")
 
-if not turtle then
-  if not os.getComputerLabel() then os.setComputerLabel("controller") end
-  print("Installed as the controller. Rebooting...")
-  sleep(2)
-  os.reboot()
-elseif fs.exists("miner.state") then
-  print("Installed. Rebooting to resume the saved job...")
-  sleep(2)
-  os.reboot()
-else
-  print("Installed. Start a job with:  miner <size>")
+if not turtle and not os.getComputerLabel() then
+  os.setComputerLabel("controller")
 end
+print("Installed. Rebooting...")
+sleep(2)
+os.reboot()

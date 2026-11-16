@@ -1,8 +1,14 @@
--- factory.lua : builds mining turtles from raw materials.
+-- factory.lua : builds mining turtles from raw materials and runs the base.
 --
--- Runs on a Crafty Turtle (with an ender modem) that sits against a wired
--- modem. Chests and a furnace on the same wired network are its storage and
--- smelter. Finished miners are dropped into the chest in front of it.
+-- Runs on a Crafty Turtle (with an ender modem) that sits on a wired modem.
+-- Chests and a furnace on the same wired network are its storage and smelter.
+--
+-- It also runs the base for the swarm:
+--   * places each new miner on the launch pad (the space above the disk
+--     drive), fuels it and switches it on; the disk installs its software
+--   * hands every miner its own plot to dig
+--   * empties the drop-off chest beside it (where miners unload) into storage
+--   * gives fuel to a miner that has run out
 --
 -- It smelts and crafts every intermediate part itself:
 --   cobblestone -> stone, raw iron -> ingots, sand -> glass -> panes,
@@ -11,9 +17,38 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local MAX_STOCK   = 8     -- stop when this many finished miners are waiting
-local CHECK_EVERY = 30    -- seconds between checks when idle
-local PAUSE_FILE  = ".factory_paused"
+local MAX_MINERS   = 6     -- size of the fleet this base will run
+local CHECK_EVERY  = 10    -- seconds between checks when idle
+local NEWBORN_COAL = 24    -- coal given to each new miner
+local PLOT_SIZE    = 8     -- each plot is this many blocks square
+local KEEP_OUT     = 24    -- no plot comes closer to the factory than this
+local TOP_Y_MAX    = 50    -- plots are dug from this height down
+local BOTTOM_Y     = -58
+local CRUISE_UP    = 45    -- miners fly this far above the factory (+ plot no.)
+
+local PAUSE_FILE   = ".factory_paused"
+local BASE_FILE    = ".base"
+local PLOTS_FILE   = ".plots"
+local STAGE_FILE   = ".assembling"
+local JOB_PROTOCOL = "swarm_job"
+
+local DIRS = {
+  [0] = { x = 1, z = 0 }, [1] = { x = 0, z = 1 },
+  [2] = { x = -1, z = 0 }, [3] = { x = 0, z = -1 },
+}
+
+-- Written onto the floppy disk. A brand-new turtle placed on the launch pad
+-- boots from it and installs itself; anything already set up boots normally.
+local DISK_STARTUP = [[
+-- Written by the factory. Do not edit: it is rewritten automatically.
+if fs.exists("/startup.lua") then
+  shell.run("/startup.lua")
+  return
+end
+if not turtle then return end
+os.setComputerLabel("miner-" .. os.getComputerID())
+shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua")
+]]
 
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
@@ -104,6 +139,33 @@ local lastStock = {}
 local lastMissing = {}
 local lastNetwork = {}
 
+-- saved tables
+local function loadTable(file)
+  if not fs.exists(file) then return nil end
+  local h = fs.open(file, "r")
+  local t = textutils.unserialize(h.readAll())
+  h.close()
+  if type(t) == "table" then return t end
+  return nil
+end
+
+local function saveTable(file, t)
+  local h = fs.open(file, "w")
+  h.write(textutils.serialize(t))
+  h.close()
+end
+
+local base = loadTable(BASE_FILE)                 -- where everything is
+local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
+local pending = 0        -- miners launched that have not asked for a plot yet
+local fuelQueue = {}     -- miners waiting on the launch pad for fuel
+
+local function activeCount()
+  local n = 0
+  for _ in pairs(plots.byId) do n = n + 1 end
+  return n
+end
+
 local function report(state)
   lastState = state
   if not swarm then return end
@@ -114,6 +176,9 @@ local function report(state)
     inv = lastStock,
     missing = lastMissing,
     network = lastNetwork,
+    base = base,
+    fleet = { active = activeCount(), launching = pending, max = MAX_MINERS,
+      plotsDone = plots.done, nextPlot = plots.next, byId = plots.byId },
     log = logLines,
   })
 end
@@ -382,50 +447,67 @@ local function smelt(name, n)
   drainFurnace(f)
 end
 
--- Put the pickaxe and the modem onto a plain turtle, then drop the finished
--- miner into the chest in front.
-local function assemble()
-  stashAll()
-  -- [pickaxe][turtle] : the tool goes on the turtle's left side
-  if not (pull(PICKAXE, 1, 1) and pull(TURTLE, 1, 2)) then
-    error("Parts went missing before assembly.", 0)
+local function setStage(stage)
+  if stage then
+    local h = fs.open(STAGE_FILE, "w")
+    h.write(stage)
+    h.close()
+  else
+    fs.delete(STAGE_FILE)
   end
-  turtle.select(16)
-  local ok, err = turtle.craft()
-  if not ok then error("Could not fit the pickaxe: " .. tostring(err), 0) end
-
-  -- find the mining turtle and move it to slot 1 : [turtle][modem]
-  local at
-  for slot = 1, 16 do
-    if turtle.getItemCount(slot) > 0 then at = slot break end
-  end
-  if not at then error("The mining turtle vanished after crafting.", 0) end
-  if at ~= 1 then
-    turtle.select(at)
-    turtle.transferTo(1)
-  end
-  if not pull(MODEM, 1, 2) then error("The ender modem went missing.", 0) end
-  turtle.select(16)
-  ok, err = turtle.craft()
-  if not ok then error("Could not fit the ender modem: " .. tostring(err), 0) end
-
-  for slot = 1, 16 do
-    if turtle.getItemCount(slot) > 0 then
-      turtle.select(slot)
-      if not turtle.drop() then
-        error("The output chest is full.", 0)
-      end
-    end
-  end
-  turtle.select(1)
 end
 
-local function outputCount()
-  local ok, list = pcall(peripheral.call, "front", "list")
-  if not ok or not list then return 0 end
-  local n = 0
-  for _, item in pairs(list) do n = n + item.count end
-  return n
+local function getStage()
+  if not fs.exists(STAGE_FILE) then return nil end
+  local h = fs.open(STAGE_FILE, "r")
+  local stage = h.readAll()
+  h.close()
+  return stage
+end
+
+-- The first slot holding anything, or nil.
+local function heldSlot()
+  for slot = 1, 16 do
+    if turtle.getItemCount(slot) > 0 then return slot end
+  end
+  return nil
+end
+
+-- Put the pickaxe and the modem onto a plain turtle. The finished miner is
+-- left in this turtle's inventory. Progress is saved (STAGE_FILE) so that a
+-- half-assembled miner is never put back into storage, where it would be
+-- mistaken for a plain turtle.
+local function assemble()
+  local stage = getStage()
+  if not heldSlot() then stage = nil end
+
+  if not stage then
+    stashAll()
+    -- [pickaxe][turtle] : the tool goes on the turtle's left side
+    if not (pull(PICKAXE, 1, 1) and pull(TURTLE, 1, 2)) then
+      error("Parts went missing before assembly.", 0)
+    end
+    turtle.select(16)
+    local ok, err = turtle.craft()
+    if not ok then error("Could not fit the pickaxe: " .. tostring(err), 0) end
+    stage = "pickaxe"
+    setStage(stage)
+  end
+
+  if stage == "pickaxe" then
+    -- move the mining turtle to slot 1 : [turtle][modem]
+    local at = heldSlot()
+    if not at then error("The mining turtle vanished after crafting.", 0) end
+    if at ~= 1 then
+      turtle.select(at)
+      turtle.transferTo(1)
+    end
+    if not pull(MODEM, 1, 2) then error("The ender modem went missing.", 0) end
+    turtle.select(16)
+    local ok, err = turtle.craft()
+    if not ok then error("Could not fit the ender modem: " .. tostring(err), 0) end
+    setStage("ready")
+  end
 end
 
 -- True if the chest in front is also one of the network storage chests
@@ -454,6 +536,260 @@ local function outputIsStorage()
   return false
 end
 
+---------------------------------------------------------------- the base
+
+-- Which way the turtle faces, counted in right turns from the drop-off
+-- chest (0 = facing the chest). nil = not known yet.
+local facing
+
+local function turnTo(n)
+  while facing ~= n do
+    turtle.turnRight()
+    facing = (facing + 1) % 4
+  end
+end
+
+local function frontIsChest()
+  return peripheral.hasType("front", "inventory")
+    and not peripheral.hasType("front", "turtle")
+end
+
+-- Turn until the drop-off chest is in front.
+local function findDropChest()
+  for _ = 1, 4 do
+    if frontIsChest() then
+      facing = 0
+      return true
+    end
+    turtle.turnRight()
+  end
+  facing = nil
+  return false
+end
+
+local function gpsFix()
+  local x, y, z = gps.locate(3)
+  if not x then return nil end
+  return { x = math.floor(x + 0.5), y = math.floor(y + 0.5), z = math.floor(z + 0.5) }
+end
+
+local function ensureFuel(n)
+  local f = turtle.getFuelLevel()
+  if f == "unlimited" or f >= n then return true end
+  stashAll()
+  if pull("#fuel", 1, 1) then
+    turtle.select(1)
+    turtle.refuel(1)
+  end
+  stashAll()
+  f = turtle.getFuelLevel()
+  return f == "unlimited" or f >= n
+end
+
+-- Work out where everything is: my position, the launch pad (the space
+-- above the disk drive) and the drop-off chest. Done once, then saved.
+local function survey()
+  local f = gpsFix()
+  if not f then return nil, "no GPS signal" end
+  if base and base.f.x == f.x and base.f.y == f.y and base.f.z == f.z then
+    return base
+  end
+  if not ensureFuel(8) then
+    return nil, "put some coal in the storage chest so I can look around"
+  end
+  -- step out on each free side and look down for the disk drive
+  local found
+  for t = 1, 3 do
+    turnTo(t)
+    if not found and not turtle.detect() and turtle.forward() then
+      local ok, data = turtle.inspectDown()
+      local p = gpsFix()
+      local back = false
+      for _ = 1, 20 do
+        if turtle.back() then back = true break end
+        sleep(0.5)
+      end
+      if not back then error("I stepped off my modem and cannot get back.", 0) end
+      if ok and data.name:find("disk_drive", 1, true) and p then
+        found = { t = t, p = p }
+      end
+    end
+  end
+  turnTo(0)
+  if not found then
+    return nil, "no disk drive found: put one on the floor touching the "
+      .. "modem, and keep the space above it empty"
+  end
+  local p = found.p
+  local dx, dz = p.x - f.x, p.z - f.z
+  local hp = dx == 1 and 0 or dz == 1 and 1 or dx == -1 and 2 or 3
+  local hd = (hp - found.t) % 4
+  base = {
+    f = f,
+    pad = p,
+    padTurns = found.t,
+    dock = { x = f.x + DIRS[hd].x, y = f.y + 1, z = f.z + DIRS[hd].z },
+    exit1 = { x = f.x, y = f.y + 1, z = f.z },
+    exit2 = { x = p.x, y = p.y + 1, z = p.z },
+  }
+  saveTable(BASE_FILE, base)
+  print(("Base mapped. I am at %d, %d, %d."):format(f.x, f.y, f.z))
+  return base
+end
+
+-- Make sure the floppy disk will set up new turtles.
+local function prepareDisk()
+  local drive = peripheral.find("drive")
+  if not drive then return false, "the disk drive is not on the network" end
+  if not drive.isDiskPresent() or not drive.hasData() then
+    return false, "put a floppy disk in the disk drive"
+  end
+  local path = drive.getMountPath()
+  if not path then return false, "the floppy disk is not readable" end
+  local file = fs.combine(path, "startup.lua")
+  local current
+  if fs.exists(file) then
+    local h = fs.open(file, "r")
+    current = h.readAll()
+    h.close()
+  end
+  if current ~= DISK_STARTUP then
+    local h = fs.open(file, "w")
+    h.write(DISK_STARTUP)
+    h.close()
+  end
+  return true
+end
+
+-- Empty the drop-off chest into storage.
+local function collect()
+  turnTo(0)
+  stashAll()
+  for _ = 1, 60 do
+    turtle.select(1)
+    if not turtle.suck() then break end
+    stashAll()
+  end
+end
+
+-- Give coal to a miner waiting on the launch pad.
+local function serveFuel()
+  if not next(fuelQueue) then return end
+  fuelQueue = {}
+  turnTo(base.padTurns)
+  if peripheral.hasType("front", "turtle") then
+    stashAll()
+    pull("#fuel", 16, 1)
+    if turtle.getItemCount(1) > 0 then
+      turtle.select(1)
+      turtle.drop()
+      print("Gave fuel to a miner.")
+    end
+    stashAll()
+  end
+  turnTo(0)
+end
+
+-- Put the finished miner on the launch pad, fuel it and switch it on.
+local function deploy()
+  local slot = heldSlot()
+  if not slot then error("Nothing to launch.", 0) end
+  turnTo(base.padTurns)
+  local waited = 0
+  while turtle.detect() do
+    if waited % 6 == 0 then
+      print("Launch pad is busy, waiting...")
+      report("launch pad busy")
+    end
+    waited = waited + 1
+    sleep(5)
+  end
+  turtle.select(slot)
+  if not turtle.place() then error("Could not place the new miner.", 0) end
+  setStage(nil)
+  pending = pending + 1
+  pull("#fuel", NEWBORN_COAL, 1)
+  if turtle.getItemCount(1) > 0 then
+    turtle.select(1)
+    turtle.drop()
+  end
+  stashAll()
+  pcall(peripheral.call, "front", "turnOn")
+  turnTo(0)
+end
+
+---------------------------------------------------------------- plots
+
+-- Plots are a grid of squares around the factory, handed out from the
+-- inside outwards, skipping any that come within KEEP_OUT of the factory.
+local function plotOrigin(index)
+  local n = 0
+  for r = 0, 80 do
+    for gx = -r, r do
+      for gz = -r, r do
+        if math.max(math.abs(gx), math.abs(gz)) == r then
+          local x0 = base.f.x + gx * PLOT_SIZE
+          local z0 = base.f.z + gz * PLOT_SIZE
+          local clear = base.f.x < x0 - KEEP_OUT
+            or base.f.x > x0 + PLOT_SIZE - 1 + KEEP_OUT
+            or base.f.z < z0 - KEEP_OUT
+            or base.f.z > z0 + PLOT_SIZE - 1 + KEEP_OUT
+          if clear then
+            n = n + 1
+            if n == index then return x0, z0 end
+          end
+        end
+      end
+    end
+  end
+end
+
+-- The job for a miner: its current plot, or a new one if it has none.
+local function jobFor(id)
+  local key = tostring(id)
+  local index = plots.byId[key]
+  if not index then
+    if activeCount() >= MAX_MINERS then return nil end
+    index = plots.next
+    plots.next = index + 1
+    plots.byId[key] = index
+    saveTable(PLOTS_FILE, plots)
+    if pending > 0 then pending = pending - 1 end
+  end
+  local x0, z0 = plotOrigin(index)
+  return {
+    type = "job", forId = id, index = index,
+    x0 = x0, z0 = z0, size = PLOT_SIZE,
+    topY = math.min(TOP_Y_MAX, base.f.y - 10), bottom = BOTTOM_Y,
+    cruise = base.f.y + CRUISE_UP + ((index - 1) % 40),
+    dock = base.dock, exit1 = base.exit1, exit2 = base.exit2,
+  }
+end
+
+-- Answers miners. Runs alongside the building work; uses no turtle moves.
+local function responder()
+  if swarm then swarm.open() end
+  while true do
+    local id, msg = rednet.receive(JOB_PROTOCOL)
+    if type(msg) == "table" and id then
+      if msg.type == "need_job" then
+        if base then
+          local job = jobFor(id)
+          if job then rednet.send(id, job, JOB_PROTOCOL) end
+        end
+      elseif msg.type == "job_done" then
+        if plots.byId[tostring(id)] == msg.index then
+          plots.byId[tostring(id)] = nil
+          plots.done = (plots.done or 0) + 1
+          saveTable(PLOTS_FILE, plots)
+        end
+      elseif msg.type == "fuel_request" then
+        fuelQueue[id] = true
+      end
+    end
+  end
+end
+
 ---------------------------------------------------------------- main loop
 
 local function describeMissing(missing)
@@ -465,45 +801,58 @@ local function describeMissing(missing)
   return table.concat(parts, ", ")
 end
 
--- One pass: build a miner if we can. Returns true if one was built.
+local function notReady(why)
+  print("Not ready: " .. why)
+  lastMissing = {}
+  report("not ready")
+  return false
+end
+
+-- One pass of base duties. Returns true if a miner was launched.
 local function tryBuild()
   local ok, why = discover()
-  if not ok then
-    print("Not ready: " .. why)
-    lastMissing = {}
-    report("not ready")
-    return false
-  end
+  if not ok then return notReady(why) end
   if not turtle.craft then
-    print("I need a crafting table upgrade (Crafty Turtle).")
-    report("not ready")
-    return false
+    return notReady("I need a crafting table upgrade (Crafty Turtle)")
   end
-  -- Turn to face the output chest (any chest beside me at my own level).
-  for _ = 1, 4 do
-    if peripheral.hasType("front", "inventory") then break end
-    turtle.turnRight()
-  end
-  if not peripheral.hasType("front", "inventory") then
-    print("Put a chest beside me for finished miners.")
-    report("not ready")
-    return false
+  if not findDropChest() then
+    return notReady("put a chest beside me, sitting on the furnace")
   end
   if outputIsStorage() then
-    print("The chest beside me is my storage chest.")
-    print("Finished miners need a separate chest that is")
-    print("not touching the modem.")
-    report("not ready")
-    return false
+    return notReady("the chest beside me is my storage chest; the drop-off "
+      .. "chest must be a separate one that does not touch the modem")
   end
 
-  stashAll()
+  -- a miner finished earlier but never launched (e.g. interrupted)
+  local held = getStage() and heldSlot()
+  if not held then
+    setStage(nil)
+    stashAll()
+  end
   for _, f in ipairs(furnaces) do drainFurnace(f) end
+
+  local b
+  b, why = survey()
+  if not b then return notReady(why) end
+  ok, why = prepareDisk()
+  if not ok then return notReady(why) end
+
+  if not held then collect() end
+  serveFuel()
   lastStock = stockTotals()
 
-  if outputCount() >= MAX_STOCK then
+  if held then
+    print("Finishing a miner from earlier...")
+    assemble()
+    deploy()
+    built = built + 1
+    report("launched one")
+    return true
+  end
+
+  if activeCount() + pending >= MAX_MINERS then
     lastMissing = {}
-    report("output full")
+    report("fleet full")
     return false
   end
 
@@ -536,14 +885,16 @@ local function tryBuild()
   end
   print("Assembling")
   assemble()
+  print("Launching")
+  deploy()
   built = built + 1
   lastStock = stockTotals()
-  print("Miner #" .. built .. " is in the output chest.")
-  report("built one")
+  print("Miner #" .. built .. " launched.")
+  report("launched one")
   return true
 end
 
-local function work()
+local function buildLoop()
   while true do
     local ok, result = pcall(tryBuild)
     if not ok then
@@ -554,6 +905,10 @@ local function work()
     end
     if not result then sleep(CHECK_EVERY) end
   end
+end
+
+local function work()
+  parallel.waitForAny(buildLoop, responder)
 end
 
 local function paused()
