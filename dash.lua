@@ -575,7 +575,7 @@ function D.wall(mon, data, frame)
   for k, u in ipairs(fleet) do
     if u.pos and u.role ~= "factory" then
       local xx = col0 + (k - 1) * step
-      local d = gy(u.pos.y)
+      local d = max(0, min(GH * 3 - 1, gy(u.pos.y)))   -- (a loader flies far above the gauge's top)
       for yy = min(d, gy(floorY)), max(d, gy(floorY)) do
         if (yy + frame) % 2 == 0 then set(g, xx, yy, C.dim) end
       end
