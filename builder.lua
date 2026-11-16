@@ -1304,6 +1304,11 @@ end
 
 -- One step that may dig a natural block out of the way, inside the site.
 local lastBlocker            -- what stopped the last move on the site
+
+-- Is the block there the one the plan wants? (Dirt grows grass.)
+local function sameBlock(have, want)
+  return have == want or (want == "minecraft:dirt" and have == "minecraft:grass_block")
+end
 local function digStep(b, dir)
   if step(dir) then return true end
   local x, y, z = pos.x, pos.y, pos.z
@@ -1316,6 +1321,11 @@ local function digStep(b, dir)
     return false
   end
   if not ok or not isNatural(data.name) then return false end
+  -- never dig out a block the plan put there (dirt of the bank, say)
+  if list and list.at and list.at[key(x, y, z)] and sameBlock(data.name, list.at[key(x, y, z)]) then
+    lastBlocker = data.name .. " (part of the plan)"
+    return false
+  end
   useTool("pick")
   local dig = dir == "u" and turtle.digUp or dir == "d" and turtle.digDown or turtle.dig
   for _ = 1, 6 do              -- sand and gravel may fall in again
@@ -1331,6 +1341,7 @@ end
 -- built is in the way, try the other way round it, then go over the top of
 -- the whole building. Arrives exactly at x, y, z or returns false.
 local function flyTo(b, x, y, z)
+  lastBlocker = nil
   local function across(order)
     for _, axis in ipairs(order) do
       while pos[axis] ~= (axis == "x" and x or z) do
@@ -1666,6 +1677,24 @@ local function placeShell(b)
       return false
     end
     if not flyTo(b, wx, wy + 1, wz) then
+      if not b.sentBlockedMap and useTool("scan") then
+        -- once: a picture of the spot, for working out what is in the way
+        b.sentBlockedMap = true
+        local found = scanHere()
+        if found then
+          local f = base.f
+          local palette, index, cells = {}, {}, {}
+          for k, name in pairs(found) do
+            local x, y, z = unkey(k)
+            if not index[name] then palette[#palette + 1] = name index[name] = #palette end
+            cells[#cells + 1] = { x - f.x, y - f.y, z - f.z, index[name] }
+          end
+          sendMap("blocked_spot", { kind = "room", origin = f, palette = palette, cells = cells,
+            scanned = true, from = { x = pos.x - f.x, y = pos.y - f.y, z = pos.z - f.z },
+            target = { x = wx - f.x, y = wy + 1 - f.y, z = wz - f.z } })
+        end
+        useTool("pick")
+      end
       print(("Cannot reach %d %d %d (%s). %s"):format(wx, wy, wz,
         tostring(lastBlocker):gsub("^minecraft:", ""),
         lastGo and "Leaving it." or "I'll try again at the end."))
@@ -1674,7 +1703,7 @@ local function placeShell(b)
       return true
     end
     local ok, data = turtle.inspectDown()
-    local done = ok and data.name == want.name
+    local done = ok and sameBlock(data.name, want.name)
       and (not want.facing or facingOf(data) == want.facing)
     if not done then
       if ok and (isNatural(data.name) or data.name == want.name) then
@@ -1741,6 +1770,12 @@ end
 local function runBuild()
   local b = st.build
   loadList(b)
+  if not list.at then
+    list.at = {}
+    for _, e in ipairs(list.blocks) do
+      list.at[key(b.ox + e[1], b.oy + e[2], b.oz + e[3])] = list.pal[e[4]].name
+    end
+  end
   local _, d = doorKey()
   st.doorX, st.doorZ = d.x, d.z
   local here = key(pos.x, pos.y, pos.z)

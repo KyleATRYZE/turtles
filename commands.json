@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794822154,
-      "issued": 1794822154000,
-      "cmd": "build",
-      "target": "BrickJagger",
-      "plan": "factory_terraform",
-      "redo": 1
+      "id": 1794823324,
+      "issued": 1794823324000,
+      "cmd": "reboot",
+      "target": "BrickJagger"
     }
   ]
 }
