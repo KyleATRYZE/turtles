@@ -660,6 +660,17 @@ local function toGroundLevel()
   for _ = 1, ABOVE_GROUND do if not step("u") then break end end
 end
 
+-- Running low a long way from home: take what we have back and wait there
+-- for a fuel-up, however long it takes (hovering costs nothing).
+local function homeForFuel()
+  if fuel() >= 250 then return false end
+  burnLogs()
+  print("Low on fuel. Going home for some.")
+  if countLogs() > 0 then deliver() else riseTo(highway()) goHover() end
+  supplyRun(function() return {} end, "fuel")
+  return true
+end
+
 local function runForage()
   local a = st.job.area
   local x1, x2 = math.min(a[1], a[3]), math.max(a[1], a[3])
@@ -672,6 +683,7 @@ local function runForage()
     local east = st.row % 2 == 0
     local from, to = east and x1 or x2, east and x2 or x1
     if st.rowX then from = st.rowX end
+    homeForFuel()
     report("looking for trees")
     riseTo(highway())
     across(from, z, top)
@@ -695,11 +707,13 @@ local function runForage()
           burnLogs()
           progress = { kind = "foraging", done = st.row, total = rows, logs = countLogs() }
           tick("looking for trees")
-          if countLogs() >= CHOP_LOAD or freeSlots() < 3 then
+          if countLogs() >= CHOP_LOAD or freeSlots() < 3 or fuel() < 250 then
             st.rowX = pos.x
             save()
-            deliver()
-            if fuel() < 1200 then supplyRun(function() return {} end, "fuel", true) end
+            if not homeForFuel() then
+              deliver()
+              if fuel() < 1200 then supplyRun(function() return {} end, "fuel", true) end
+            end
             riseTo(highway())
             across(st.rowX, z, top)
             toGroundLevel()
