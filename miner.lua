@@ -103,12 +103,24 @@ local totalLayers = 0
 -- Status reporting to the controller (optional: works without swarm.lua)
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
--- A Chunk Controller of its own (see swarm.lua) keeps a coal hunter's chunk
--- loaded far from the base: the pickaxe stays on (it digs its way along),
--- and the controller goes on for a moment in every new chunk and every few
--- minutes. Without one on board none of this does anything.
+-- A Chunk Controller of its own (see swarm.lua) keeps a miner's chunk
+-- loaded wherever it is: worn in place of the pickaxe while it flies or
+-- waits; while it digs the pickaxe stays on and the controller goes on for
+-- a moment in every new chunk and every few minutes. Every dig puts the
+-- pickaxe back on first. Without one on board none of this does anything.
 local CHUNKY = "advancedperipherals:chunk_controller"
 local chunky = swarm and swarm.chunky or nil
+if chunky and turtle and not turtle.chunkyDigs then
+  turtle.chunkyDigs = true
+  -- (and every swing at a mob in the way: that needs the pickaxe too)
+  for _, n in ipairs({ "dig", "digUp", "digDown", "attack", "attackUp", "attackDown" }) do
+    local raw = turtle[n]
+    turtle[n] = function(...)
+      chunky.tool()
+      return raw(...)
+    end
+  end
+end
 
 local logLines = {}
 local rawPrint = print
@@ -127,7 +139,7 @@ local function report(state)
   lastReport = os.clock()
   lastState = state
   reported = true
-  if chunky and st and st.hunt then chunky.touch(pos.x, pos.z) end   -- (covers long waits in one place)
+  if chunky then chunky.keep(pos.x, pos.z) end   -- (covers long waits in one place)
   if not swarm then return end
   local inv, free = {}, 0
   for s = 1, 16 do
@@ -149,15 +161,16 @@ local function report(state)
       plot = st.index,
     } or nil,
     log = logLines,
-    chunky = chunky and chunky.have() and "carried" or nil,
+    chunky = chunky and chunky.have() and (chunky.isWorn() and "on" or "carried") or nil,
   })
 end
 
--- Called after every move: a hunter refreshes its chunk, and everyone says
--- where they are now and then on a long flight (a turtle that freezes in an
--- unloaded chunk is then last seen close to where it stopped).
+-- Called after every move: a turtle with a Chunk Controller of its own
+-- keeps its chunk loaded, and everyone says where they are now and then on
+-- a long flight (a turtle that freezes in an unloaded chunk is then last
+-- seen close to where it stopped).
 local function keepAwake()
-  if chunky and st and st.hunt then chunky.touch(pos.x, pos.z) end
+  if chunky then chunky.keep(pos.x, pos.z) end
   if reported and os.clock() - lastReport > 30 then report(lastState) end
 end
 
@@ -905,7 +918,8 @@ local function unload()
   face((st.homeD + 2) % 4)
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
-    local keep = d and (d.name == BUCKET or d.name == LAVA_BUCKET or d.name == CHUNKY)
+    local keep = d and (d.name == BUCKET or d.name == LAVA_BUCKET or d.name == CHUNKY
+      or d.name == PICKAXE)
     while not keep and turtle.getItemCount(s) > 0 do
       turtle.select(s)
       if not turtle.drop() then
@@ -1120,6 +1134,7 @@ local function fixTool()
     turtle.select(slot)
     if side == "left" then turtle.equipLeft() else turtle.equipRight() end
     turtle.select(1)
+    if chunky then chunky.forget() end
   end
 end
 
@@ -1217,9 +1232,10 @@ local function leaveToHunt()
   axisMove("y", huntY(), true)
 end
 
--- A hunter with no Chunk Controller asks the factory for one to carry, on
--- top of it (where it hands things over): at most every 20 minutes, and not
--- for an hour after being told there is none to spare.
+-- A miner with no Chunk Controller asks the factory for one to carry, on
+-- top of it (where it hands things over): a hunter each time it brings coal
+-- home, the others between plots. At most every 20 minutes, and not for an
+-- hour after being told there is none to spare.
 local ctlAsked, ctlNone = -10000, -10000
 local function askController()
   if not chunky or chunky.have(true) then return end
@@ -1679,6 +1695,7 @@ local function run()
     end
     if at(st.dock) or onExitSide() then
       serviceStop(600)
+      askController()                 -- (a Chunk Controller of my own, if there is one to spare)
       -- ask for the next plot while still at the base, so we can go
       -- straight there along the out road
       local j = requestJob(6)

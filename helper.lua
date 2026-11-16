@@ -21,7 +21,8 @@ local CHUNKY = "advancedperipherals:chunk_controller"
 local chunky = swarm and swarm.chunky or nil
 if chunky and turtle and not turtle.chunkyDigs then
   turtle.chunkyDigs = true
-  for _, n in ipairs({ "dig", "digUp", "digDown" }) do
+  -- (and every swing at a mob in the way: that needs the pickaxe too)
+  for _, n in ipairs({ "dig", "digUp", "digDown", "attack", "attackUp", "attackDown" }) do
     local raw = turtle[n]
     turtle[n] = function(...)
       chunky.tool()
@@ -82,7 +83,7 @@ local function report(state)
   end
   -- not digging just now: the controller goes on (the lab bench swaps tools
   -- by hand, so not there)
-  if chunky and not (st and st.lab) and chunky.have() then chunky.wear() end
+  if chunky and not (st and st.lab) then chunky.keep(pos.x, pos.z) end
   if not swarm then return end
   local f = turtle.getFuelLevel()
   local inv = {}

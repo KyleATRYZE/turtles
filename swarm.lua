@@ -52,13 +52,17 @@ end
 -- goes on the TOOL side, in place of the pickaxe, never on the modem side.
 -- Worn, it loads the chunk the turtle is in; taken off, the chunk stays
 -- loaded until it has gone unrefreshed for chunkLoadValidTime (600 seconds
--- as the mod ships). So: wear it whenever not digging, put the pickaxe back
--- to dig, and put it on again every HOLD seconds and in every new chunk.
+-- as the mod ships). So: wear it whenever not digging (flying, waiting,
+-- parked: C.keep does this), put the pickaxe back to dig (C.tool, before
+-- every dig), and while digging put it on for a moment every HOLD seconds
+-- and in every new chunk (C.touch). Only that last part leans on the chunk
+-- staying loaded after the controller comes off: flying and waiting do not.
 -- With no controller on board every function here does nothing.
 M.chunky = {}
 local C = M.chunky
 C.ITEM = "advancedperipherals:chunk_controller"
 C.HOLD = 180        -- seconds a chunk is trusted to stay loaded once the controller is off
+C.IDLE = 6          -- seconds without a dig before the controller goes back on to stay
 
 local function slotOf(match)
   for s = 1, 16 do
@@ -123,6 +127,7 @@ function C.isWorn() return turtle ~= nil and look().worn end
 function C.forget() known.at = -1000 end
 
 local lastOn, lastChunk
+local lastDig = -1000     -- when the pickaxe was last wanted (C.tool)
 
 -- The order "chunky" with on = false stops a turtle wearing its controller
 -- (kept in a file, so it holds across restarts); on = true starts it again.
@@ -172,6 +177,7 @@ end
 -- Put the pickaxe back on (before digging). True if the pickaxe is on.
 function C.tool()
   if not turtle then return true end
+  lastDig = os.clock()
   if not look().worn then return true end           -- (cheap: called before every dig)
   local k = look(true)
   if not k.worn then return true end
@@ -206,6 +212,28 @@ function C.touch(x, z)
   C.tool()
   lastOn, lastChunk = os.clock(), key
   return true
+end
+
+-- The one call for a working turtle, after every move and in every report
+-- (x, z = where it is). Not dug for a few seconds (flying, waiting, parked):
+-- the controller goes on and stays on. Digging: the pickaxe stays on and
+-- the controller is put on for a moment in each new chunk and every HOLD
+-- seconds. Cheap when there is nothing to do.
+function C.keep(x, z)
+  if not turtle or not look().has then return false end
+  local key = x and (math.floor(x / 16) .. "," .. math.floor(z / 16)) or lastChunk
+  if look().worn then
+    lastOn, lastChunk = os.clock(), key
+    return true
+  end
+  if os.clock() - lastDig >= C.IDLE then
+    if C.wear() then
+      lastChunk = key
+      return true
+    end
+    return false
+  end
+  return C.touch(x, z)
 end
 
 ---------------------------------------------------------------- orders

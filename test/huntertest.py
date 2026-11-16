@@ -82,3 +82,18 @@ KILL_AT=900''')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"new hunter")
 g=L.globals()
 print("   scanner asked for:", g.SCANREQ, "times | label:", g.LABEL, "| scans:", g.SCANS, "| on board:", [i.name.split(':')[1] for i in g.T.inv.values() if i])
+
+# G) a hunter carrying a Chunk Controller of its own: worn while it flies, the
+# pickaxe back for every dig and every scan, and never a dig without it
+L=fresh(2500, -4480, 25, 1480, coal=40)
+L.execute('''T.inv[4]={name="advancedperipherals:chunk_controller",count=1}
+WORN_MOVES, PICK_MOVES = 0, 0
+for _, n in ipairs({"forward","up","down"}) do
+  local f = turtle[n]
+  turtle[n] = function() local r = f() if r then if TOOL == "advancedperipherals:chunk_controller" then WORN_MOVES = WORN_MOVES + 1 else PICK_MOVES = PICK_MOVES + 1 end end return r end
+end
+KILL_AT=2500''')
+print(list(L.eval('{runMiner("resume")}').values())); show(L,"own controller")
+g=L.globals()
+print("   dug without the pickaxe:", g.DUG_WITHOUT_PICK, "| moves with the controller on:", g.WORN_MOVES, "| with the pickaxe on:", g.PICK_MOVES,
+      "| fitted now:", g.TOOL, "| on board:", sorted(set(i.name.split(':')[1] for i in g.T.inv.values() if i)))
