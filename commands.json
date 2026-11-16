@@ -1,53 +1,19 @@
 {
   "commands": [
     {
-      "id": 1794865617,
-      "issued": 1794865617000,
+      "id": 1794865900,
+      "issued": 1794865900000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "LoadRunner"
     },
     {
-      "id": 1794865618,
-      "issued": 1794865617000,
-      "cmd": "reboot",
-      "target": "DiggyStardust"
-    },
-    {
-      "id": 1794865619,
-      "issued": 1794865617000,
-      "cmd": "hunt",
-      "target": "DiggyStardust",
-      "name": "NatKingCoal"
-    },
-    {
-      "id": 1794865620,
-      "issued": 1794865617000,
-      "cmd": "escort",
-      "target": "ChunkBerry",
-      "who": "NatKingCoal",
-      "stay": 1,
-      "x": -4421,
-      "z": 1561
-    },
-    {
-      "id": 1794865621,
-      "issued": 1794865617000,
-      "cmd": "stop",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794865622,
-      "issued": 1794865617000,
-      "cmd": "reboot",
-      "target": "TimberLake"
-    },
-    {
-      "id": 1794865623,
-      "issued": 1794865617000,
-      "cmd": "lab",
-      "target": "TimberLake",
-      "ops": "fetch|advancedperipherals:chunk_controller=1;types|left;equip|left|advancedperipherals:chunk_controller;types|left;methods|left;goto|-4392|140|1440;note|with the controller on;wait|40;fuel;wait|40;fuel;wait|40;fuel;wait|40;fuel;equip|left|minecraft:diamond_pickaxe;types|left;note|controller in the bag;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;equip|left|advancedperipherals:chunk_controller;note|controller back on;home;equip|left|minecraft:diamond_pickaxe;inv",
-      "clear": 1
+      "id": 1794865901,
+      "issued": 1794865900000,
+      "cmd": "search",
+      "target": "LoadRunner",
+      "who": "CoalPorter",
+      "path": "-4409:1575;-4345:1575;-4345:1591;-4409:1591;-4409:1559;-4345:1559;-4345:1543;-4409:1543;-4409:1607;-4345:1607",
+      "dwell": 75
     }
   ]
 }
