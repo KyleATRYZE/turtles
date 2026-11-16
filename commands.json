@@ -1,11 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794860030,
-      "issued": 1794860030000,
+      "id": 1794860238,
+      "issued": 1794860238000,
       "cmd": "lab",
-      "target": "TimberLake",
-      "ops": "inspect|up;inspect|down;inspect|front;turn|right;inspect|front;turn|right;inspect|front;turn|right;inspect|front;up|3;inspect|up;inspect|front;turn|right;inspect|front;turn|right;inspect|front;turn|right;inspect|front"
+      "target": "WallStreet",
+      "ops": "goto|-4452|80|1532;ground;inspect|front;call|front|getConfigurableTypes;call|front|help|getMode;call|front|help|setMode;call|front|help|getSupportedModes;call|front|help|setEjecting;call|front|getInput;call|front|getInfuseTypeItem;call|front|getEnergyNeeded;turn|right;inspect|front;call|front|getConfiguration;call|front|importItem|{name='minecraft:redstone',count=1}|@east;call|front|importItem|{name='minecraft:redstone',count=1}|east;inv;home",
+      "clear": 1
     }
   ]
 }
