@@ -242,7 +242,7 @@ local function face(d)
 end
 
 -- patient = true: keep trying forever. false: give up if truly blocked.
-local function tryMove(moveFn, detectFn, digFn, attackFn, patient)
+local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn)
   local stuck = 0
   while not moveFn() do
     if fuel() == 0 then
@@ -264,7 +264,12 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient)
     if stuck > 8 then
       if not patient then return false end
       if stuck % 15 == 9 then
-        print("Something is in my way. Waiting...")
+        local what = "something"
+        if inspectFn then
+          local ok, data = inspectFn()
+          if ok and type(data) == "table" and data.name then what = data.name end
+        end
+        print("Blocked by " .. what .. ". Waiting...")
         report("path blocked")
       end
       sleep(2)
@@ -274,7 +279,7 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient)
 end
 
 local function forward(patient)
-  if tryMove(turtle.forward, turtle.detect, safeDig, turtle.attack, patient) then
+  if tryMove(turtle.forward, turtle.detect, safeDig, turtle.attack, patient, turtle.inspect) then
     pos.x = pos.x + DIRS[heading].x
     pos.z = pos.z + DIRS[heading].z
     return true
@@ -283,7 +288,7 @@ local function forward(patient)
 end
 
 local function up(patient)
-  if tryMove(turtle.up, turtle.detectUp, safeDigUp, turtle.attackUp, patient) then
+  if tryMove(turtle.up, turtle.detectUp, safeDigUp, turtle.attackUp, patient, turtle.inspectUp) then
     pos.y = pos.y + 1
     return true
   end
@@ -291,7 +296,7 @@ local function up(patient)
 end
 
 local function down(patient)
-  if tryMove(turtle.down, turtle.detectDown, safeDigDown, turtle.attackDown, patient) then
+  if tryMove(turtle.down, turtle.detectDown, safeDigDown, turtle.attackDown, patient, turtle.inspectDown) then
     pos.y = pos.y - 1
     return true
   end
