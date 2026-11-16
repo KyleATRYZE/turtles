@@ -1195,6 +1195,7 @@ end
 local DEEP_PTS = { { 14, 14 }, { 14, -14 }, { -14, 14 }, { -14, -14 } }
 local function lavaStep()
   if countItem(BUCKET) < 2 then return false end       -- (one is its own)
+  if st.lavaTry ~= 2 then st.lavaDry, st.lavaTry = {}, 2 end   -- (the first go said nothing about why)
   st.lavaDry = st.lavaDry or {}
   for i, p in ipairs(DEEP_PTS) do
     if not st.lavaDry[i] then
@@ -1207,6 +1208,7 @@ local function lavaStep()
       local filled = 0
       if there and axisMove("y", level, false) then
         local _, lava = scanForCoal(level)
+        local seen, flowing, missed = type(lava) == "table" and #lava or -1, 0, 0
         if type(lava) == "table" then
           table.sort(lava, function(a, b)
             return math.abs(a.x - x) + math.abs(a.z - z) + math.abs(a.y - level)
@@ -1219,12 +1221,17 @@ local function lavaStep()
               local ok, data = turtle.inspectDown()
               if ok and data.name == "minecraft:lava" and data.state and data.state.level == 0 then
                 turtle.select(findItem(BUCKET))
-                if turtle.placeDown() then filled = filled + 1 end
+                if turtle.placeDown() then filled = filled + 1 else missed = missed + 1 end
                 turtle.select(1)
+              else
+                flowing = flowing + 1
               end
+            else
+              missed = missed + 1
             end
           end
         end
+        print(("Lava at y %d: %d blocks seen, %d not full, %d missed."):format(level, seen, flowing, missed))
         digTo(x, level, z)
         axisMove("y", huntY(), true)
       end

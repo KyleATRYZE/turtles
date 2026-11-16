@@ -62,8 +62,13 @@ local function report(state)
   end
   if not swarm then return end
   local f = turtle.getFuelLevel()
+  local inv = {}
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d then inv[d.name] = (inv[d.name] or 0) + d.count end
+  end
   pcall(swarm.report, {
-    role = "helper", state = lastState,
+    role = "helper", state = lastState, inv = inv,
     pos = { x = pos.x, y = pos.y, z = pos.z },
     fuel = f == "unlimited" and -1 or f,
     progress = progress, log = logLines,
@@ -1213,22 +1218,38 @@ local function runFeed()
   report("taking fuel out")
   local top = math.max(highway(), t.y + 4)
   riseTo(top)
-  local given = 0
+  local given, why = 0, "could not fly there"
   if across(t.x, t.z, top + 12) then
     while pos.y > t.y + 1 and step("d") do end
     local ok, data = turtle.inspectDown()
-    if pos.y == t.y + 1 and ok and data.name:find("computercraft:turtle", 1, true) then
-      for s = 1, 16 do
-        local it = turtle.getItemDetail(s)
-        if it and isCoal(it.name) then
-          turtle.select(s)
-          if turtle.dropDown() then given = given + it.count end
+    if pos.y ~= t.y + 1 then
+      why = "stopped at height " .. pos.y
+    elseif not (ok and data.name:find("computercraft:turtle", 1, true)) then
+      why = "below me is " .. tostring(ok and data.name or "nothing")
+    else
+      why = "it would not take the fuel"
+      for pass = 1, 2 do
+        for s = 1, 16 do
+          local it = turtle.getItemDetail(s)
+          if it and isCoal(it.name) then
+            turtle.select(s)
+            if turtle.dropDown() then given = given + it.count end
+          end
+        end
+        if given > 0 then break end
+        -- its inventory is full: take one stack off it to make room
+        for s = 1, 16 do
+          if turtle.getItemCount(s) == 0 then
+            turtle.select(s)
+            turtle.suckDown()
+            break
+          end
         end
       end
       turtle.select(1)
     end
   end
-  print(given > 0 and ("Fuel handed over (" .. given .. ").") or "Could not reach the stranded turtle.")
+  print(given > 0 and ("Fuel handed over (" .. given .. ").") or ("Fuel not handed over: " .. why .. "."))
   st.feed = nil
   save()
   riseTo(top)
