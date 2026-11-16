@@ -293,8 +293,18 @@ function M.forMe(cmd)
 end
 
 -- True the first time an order for this machine is seen; false for repeats.
+local lastNonce
 function M.accept(cmd)
-  if type(cmd) ~= "table" or type(cmd.id) ~= "number" then return false end
+  if type(cmd) ~= "table" then return false end
+  -- A direct order: from the factory to this one machine (a chunk loader
+  -- sent out with a miner, a builder's mate sent with fuel). It has no
+  -- number in the controller's sequence; repeats are told by its nonce.
+  if cmd.direct then
+    if cmd.forId ~= os.getComputerID() or cmd.nonce == nil or cmd.nonce == lastNonce then return false end
+    lastNonce = cmd.nonce
+    return true
+  end
+  if type(cmd.id) ~= "number" then return false end
   if not M.forMe(cmd) or cmd.id <= lastCmd() then return false end
   setLastCmd(cmd.id)
   return true

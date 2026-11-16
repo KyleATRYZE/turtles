@@ -453,8 +453,9 @@ local launchingHelper = false
 -- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
 -- while there are controllers in stock, up to this many. One stays at the
 -- base; the others go out with whoever is working far away.
-local LOADERS      = 3
-local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey" }
+local LOADERS      = 4
+local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey", "LoadZeppelin",
+  "ChunkSinatra", "LoadOfTheRings", "ChunkDaddy", "HeavyLoad" }
 local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
@@ -1745,6 +1746,129 @@ local function jobFor(id)
   }
 end
 
+---------------------------------------------------------------- pairing chunk loaders
+-- What every turtle last said in its status reports. From this the factory
+-- pairs chunk loaders with the turtles that need one: a loader parked at
+-- the base asks every minute (escort_request), and is sent out with the
+-- turtle working far away that needs company most. Never the last loader
+-- at the base. And a turtle too low on fuel to fetch its own (feed_request)
+-- has a builder's mate with nothing to do sent to it with coal.
+-- Both go out as direct orders (see swarm.accept).
+local fleet = {}          -- label (lower case) -> what it last said
+local escortGiven = {}    -- turtle (label, lower case) -> { loader = id, at = clock }
+local escortRest = {}     -- turtle -> not offered again before this (a loader found nothing there)
+local feedSent = {}       -- who asked (id) -> when a mate was last sent
+local ESCORT_FAR = 48     -- blocks from the factory (either way) beyond which a turtle is "far"
+local SILENT = 240        -- seconds without a word: far away, that is a turtle frozen in an unloaded chunk
+local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
+  ["waiting for a plot"] = true, ["stopped by player"] = true }
+
+local function noteStatus(id, msg)
+  if type(msg) ~= "table" or type(msg.label) ~= "string" or msg.role == "factory" then return end
+  local key = msg.label:lower()
+  local old = fleet[key] or {}
+  local p = type(msg.pos) == "table" and msg.pos or {}
+  local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
+  if not x or not z or (x == 0 and z == 0) then x, y, z = old.x, old.y, old.z end   -- (0, 0 = not known)
+  local job = type(msg.job) == "table" and msg.job or {}
+  local loader = msg.role == "loader"
+  fleet[key] = { id = id, label = msg.label, role = msg.role, state = tostring(msg.state),
+    x = x, y = y, z = z, at = os.clock(), fuel = tonumber(msg.fuel), chunky = msg.chunky,
+    mode = loader and job.mode or nil,
+    who = loader and type(job.who) == "string" and job.who:lower() or nil }
+end
+
+local function isFar(u)
+  return u.x ~= nil and base ~= nil and (math.abs(u.x - base.f.x) > ESCORT_FAR
+    or math.abs(u.z - base.f.z) > ESCORT_FAR)
+end
+
+local directSeq = 0
+local function direct(id, order)
+  directSeq = directSeq + 1
+  order.direct, order.forId = true, id
+  order.nonce = tostring(os.epoch("utc")) .. "-" .. directSeq
+  rednet.send(id, order, swarm.CMD_PROTOCOL)
+end
+
+-- A loader parked at the base asks whether anyone needs it.
+local function escortFor(id, msg)
+  if not base or not swarm then return end
+  local now = os.clock()
+  if type(msg.gaveUp) == "string" and not escortRest[msg.gaveUp:lower()] then
+    escortRest[msg.gaveUp:lower()] = now + 3600
+  end
+  -- another loader must be staying: at the base, heard from in the last
+  -- few minutes, and not itself just sent out
+  local kept = false
+  for _, u in pairs(fleet) do
+    if u.role == "loader" and u.id ~= id and (u.state == "parked" or u.state == "needs fuel")
+      and now - u.at < 300 and not isFar(u) then
+      local sent = false
+      for _, g in pairs(escortGiven) do
+        if g.loader == u.id and now - g.at < 300 then sent = true end
+      end
+      if not sent then kept = true end
+    end
+  end
+  if not kept then return end
+  local best, bestScore
+  for key, u in pairs(fleet) do
+    if (u.role == "miner" or u.role == "helper") and isFar(u) and not RESTING[u.state]
+      and not (escortRest[key] and now < escortRest[key]) then
+      local g = escortGiven[key]
+      local taken = g ~= nil and now - g.at < 300 and g.loader ~= id
+      for _, l in pairs(fleet) do
+        if l.role == "loader" and l.id ~= id and l.who == key and now - l.at < 600 then taken = true end
+      end
+      local silent = now - u.at > SILENT
+      -- a turtle that carries its own Chunk Controller looks after itself,
+      -- unless it has gone quiet all the same
+      if not taken and (silent or not u.chunky) then
+        local score = (silent and 1000 or 0)
+          + math.min(999, math.abs(u.x - base.f.x) + math.abs(u.z - base.f.z)) / 1000
+        if not best or score > bestScore then best, bestScore = u, score end
+      end
+    end
+  end
+  if not best then return end
+  escortGiven[best.label:lower()] = { loader = id, at = now }
+  print("Chunk loader " .. tostring(msg.label or id) .. " goes out with " .. best.label .. ".")
+  direct(id, { cmd = "escort", who = best.label, x = best.x, z = best.z, auto = true })
+end
+
+-- A turtle too low on fuel to fetch its own: send a builder's mate that is
+-- doing nothing (the one with most fuel) with coal, as the order "feed" does.
+local function feedFor(id, msg)
+  if not swarm then return end
+  local now = os.clock()
+  local x, y, z = tonumber(msg.x), tonumber(msg.y), tonumber(msg.z)
+  if not (x and y and z) or (feedSent[id] and now - feedSent[id] < 600) then return end
+  local best
+  for _, u in pairs(fleet) do
+    if u.role == "helper" and u.state == "idle" and now - u.at < 200 and u.id ~= id
+      and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
+  end
+  if not best then
+    print("No builder's mate free to take fuel to " .. tostring(msg.label or id) .. ".")
+    return
+  end
+  feedSent[id] = now
+  best.state = "sent with fuel"             -- (not sent twice before it says what it is doing)
+  print(best.label .. " takes fuel to " .. tostring(msg.label or id) .. ".")
+  direct(best.id, { cmd = "feed", x = math.floor(x), y = math.floor(y), z = math.floor(z) })
+end
+
+-- Listens to everyone's status reports (for the pairing above).
+local function statusListener()
+  if not swarm then while true do sleep(3600) end end
+  swarm.open()
+  while true do
+    local id, msg = rednet.receive(swarm.PROTOCOL)
+    if id then noteStatus(id, msg) end
+  end
+end
+
 -- Answers miners. Runs alongside the building work; uses no turtle moves.
 local function responder()
   if swarm then swarm.open() end
@@ -1770,6 +1894,10 @@ local function responder()
         bucketQueue[id] = true
       elseif msg.type == "scanner_request" then
         scannerQueue[id] = true
+      elseif msg.type == "escort_request" then
+        escortFor(id, msg)
+      elseif msg.type == "feed_request" then
+        feedFor(id, msg)
       elseif msg.type == "controller_request" then
         -- a turtle with room for a Chunk Controller of its own
         local given = (plots.ctlGiven or {})[tostring(id)] or 0
@@ -2072,7 +2200,7 @@ local function buildLoop()
 end
 
 local function work()
-  parallel.waitForAny(buildLoop, responder)
+  parallel.waitForAny(buildLoop, responder, statusListener)
 end
 
 local function paused()
