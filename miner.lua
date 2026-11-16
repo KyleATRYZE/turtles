@@ -1083,6 +1083,9 @@ local function huntDeliver()
   upToDock()
   refuelFromInventory(FUEL_TARGET)
   unloadDock()
+  -- never set off again on an empty tank: get fuel from the factory first
+  -- (it once ran dry in the exit shaft and blocked every miner behind it)
+  serviceStop(FUEL_LOW)
   leaveToHunt()
   report("hunting coal")
 end
