@@ -87,6 +87,7 @@ local function upload()
     updatedText = os.date("!%Y-%m-%d %H:%M:%S UTC"),
     controller = { id = os.getComputerID(), label = os.getComputerLabel() },
     lastOrder = orderNote,
+    version = swarm.version(),
     units = units,
   }
   local okJson, json = pcall(textutils.serialiseJSON, doc)
@@ -197,6 +198,23 @@ local function fetchOrders()
   return nil
 end
 
+-- The newest commit on main, so rebooting machines download exactly that.
+local function latestRev()
+  local hdr = headers()
+  hdr["Accept"] = "application/vnd.github.sha"
+  local r = http.get({
+    url = "https://api.github.com/repos/" .. REPO .. "/commits/main",
+    headers = hdr,
+  })
+  if not r then return nil end
+  local rev = r.readAll():gsub("%s", "")
+  r.close()
+  if #rev == 40 and rev:match("^%x+$") then return rev end
+  return nil
+end
+
+local revForOrder = {}   -- order id -> version looked up for it
+
 local function orders()
   while true do
     local list = fetchOrders()
@@ -205,6 +223,10 @@ local function orders()
     for _, cmd in ipairs(list or {}) do
       if type(cmd) == "table" and type(cmd.issued) == "number"
         and now - cmd.issued < ORDER_LIFE then
+        if cmd.cmd == "reboot" and cmd.id then
+          if not revForOrder[cmd.id] then revForOrder[cmd.id] = latestRev() end
+          cmd.rev = revForOrder[cmd.id]
+        end
         rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
         orderNote = ("#%d %s -> %s"):format(
           cmd.id or 0, tostring(cmd.cmd), tostring(cmd.target))
@@ -212,6 +234,7 @@ local function orders()
       end
     end
     if mine and mine.cmd == "reboot" then
+      swarm.pinVersion(mine)
       print("Rebooting by remote order.")
       sleep(1)
       os.reboot()

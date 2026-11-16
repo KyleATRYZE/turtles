@@ -17,12 +17,31 @@ end
 
 M.open = open
 
+-- Which version of the scripts this machine downloaded at boot.
+function M.version()
+  if not fs.exists(".version") then return "unknown" end
+  local h = fs.open(".version", "r")
+  local v = h.readAll()
+  h.close()
+  return v
+end
+
+-- A reboot order can name the exact version to download on the way back up.
+function M.pinVersion(cmd)
+  if type(cmd.rev) == "string" then
+    local h = fs.open(".rev", "w")
+    h.write(cmd.rev)
+    h.close()
+  end
+end
+
 -- Broadcast a status table. Does nothing if there is no wireless modem.
 function M.report(status)
   if not open() then return false end
   status.id = os.getComputerID()
   status.label = os.getComputerLabel()
   status.time = os.epoch("utc")
+  status.version = M.version()
   rednet.broadcast(status, M.PROTOCOL)
   return true
 end

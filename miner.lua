@@ -748,6 +748,7 @@ local function main(args)
       task = idleTask
     elseif cmd.cmd == "reboot" then
       print("Rebooting by remote order.")
+      swarm.pinVersion(cmd)
       report("rebooting")
       os.reboot()
     elseif cmd.cmd == "stop" then

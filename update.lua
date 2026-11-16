@@ -1,6 +1,39 @@
 -- update.lua : download the latest scripts from GitHub.
 -- Runs on every boot (from startup.lua). Safe to run by hand: update
-local BASE = "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/"
+local REPO = "KyleATRYZE/turtles"
+
+-- Work out exactly which version to download. GitHub's file server can serve
+-- a copy up to five minutes old for "main", so we ask for a precise commit.
+local function latestRev()
+  -- 1. pinned by a remote reboot order
+  if fs.exists(".rev") then
+    local h = fs.open(".rev", "r")
+    local rev = h.readAll():gsub("%s", "")
+    h.close()
+    fs.delete(".rev")
+    if #rev == 40 and rev:match("^%x+$") then return rev end
+  end
+  -- 2. ask GitHub which commit is newest
+  if http then
+    local r = http.get({
+      url = "https://api.github.com/repos/" .. REPO .. "/commits/main",
+      headers = {
+        ["Accept"] = "application/vnd.github.sha",
+        ["User-Agent"] = "cc-turtle-updater",
+      },
+    })
+    if r then
+      local rev = r.readAll():gsub("%s", "")
+      r.close()
+      if #rev == 40 and rev:match("^%x+$") then return rev end
+    end
+  end
+  -- 3. fall back to whatever "main" gives us
+  return "main"
+end
+
+local REV = latestRev()
+local BASE = "https://raw.githubusercontent.com/" .. REPO .. "/" .. REV .. "/"
 
 local function get(name)
   if not http then return nil, "http is disabled" end
@@ -42,6 +75,14 @@ for line in manifest:gmatch("[^\r\n]+") do
     end
   end
 end
+
+-- Record which version this machine is running (shown in status reports).
+do
+  local h = fs.open(".version", "w")
+  h.write(REV:sub(1, 7))
+  h.close()
+end
+print("Version " .. REV:sub(1, 7))
 
 -- Keep startup.lua correct for this machine's job, so a change of job never
 -- needs the installer to be run again.
