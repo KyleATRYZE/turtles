@@ -21,7 +21,8 @@ local KEEP_ONE_STACK = "minecraft:cobblestone"
 -- (one bucket = 1000 fuel) until its tank reaches LAVA_TARGET.
 local BUCKET      = "minecraft:bucket"
 local LAVA_BUCKET = "minecraft:lava_bucket"
-local LAVA_TARGET = 10000
+local LAVA_TARGET = 4000
+local LAVA_SPARE  = 4      -- full buckets a miner brings home for the others, when its own tank is full
 
 -- Coal hunting: a miner holding a Geo Scanner (Advanced Peripherals) stops
 -- digging its plot and goes looking for coal ore instead.
@@ -228,6 +229,14 @@ local function refuelFromInventory(target)
     if d and FUEL_ITEMS[d.name] then
       turtle.select(s)
       while fuel() < target and turtle.refuel(1) do end
+    end
+  end
+  for s = 1, 16 do
+    if fuel() >= target then break end
+    local d = turtle.getItemDetail(s)
+    if d and d.name == LAVA_BUCKET then
+      turtle.select(s)
+      turtle.refuel(1)
     end
   end
   turtle.select(1)
@@ -585,16 +594,26 @@ end
 -- Drop the haul into the drop-off chest below. The bucket and one stack of
 -- cobblestone (for flooring the roads) stay on board.
 local COAL_BUFFER = 32       -- coal kept on board as a spare tank
+local collectEmpties     -- defined further down (empty buckets from the factory, for lava)
+
 local function unloadDock()
-  local keptCobble, keptCoal = false, false
+  local keptCobble, keptCoal, empties = false, false, 0
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     local keep = false
     if d then
-      if d.name == LAVA_BUCKET and st.hunt then
-        keep = false                    -- the hunter's lava is for everyone
-      elseif d.name == BUCKET or d.name == LAVA_BUCKET
-        or d.name == SCANNER or d.name == PICKAXE then
+      if d.name == LAVA_BUCKET then
+        keep = false                    -- lava brought home is for everyone
+      elseif d.name == BUCKET then
+        -- empties for the next lava: a few are plenty
+        local room = LAVA_SPARE + 1 - empties
+        if room > 0 then
+          turtle.select(s)
+          if turtle.getItemCount(s) > room then turtle.dropDown(turtle.getItemCount(s) - room) end
+          empties = empties + turtle.getItemCount(s)
+          keep = true
+        end
+      elseif d.name == SCANNER or d.name == PICKAXE then
         keep = true
       elseif d.name == KEEP_ONE_STACK and not keptCobble then
         keptCobble = true
@@ -888,6 +907,7 @@ local function finishUnload()
   refuelFromInventory(FUEL_TARGET)
   unloadDock()
   serviceStop(tripFuel(st.back.y))
+  collectEmpties()                     -- a few empty buckets, to bring lava home in
   st.phase = "return"
   save()
 end
@@ -955,32 +975,69 @@ end
 
 -- Scoop lava into the bucket and burn it. inspect sees fluids; level 0 is a
 -- full source block, the only kind a bucket can pick up.
-local function scoop(inspectFn, placeFn)
+local function slotOf(name)
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and d.name == name then return s, d.count end
+  end
+end
+
+-- Fill an empty bucket from a full block of lava. keep = leave it full (to
+-- take home); otherwise it goes straight into the tank. True if one was filled.
+local function scoop(inspectFn, placeFn, keep)
   local ok, data = inspectFn()
   if not (ok and data.name == "minecraft:lava" and data.state and data.state.level == 0) then
     return false
   end
-  local slot = hasBucket()
+  local slot = slotOf(BUCKET)
   if not slot then return false end
   turtle.select(slot)
-  if placeFn() then turtle.refuel() end
+  local filled = placeFn()
+  if filled and not keep then
+    local full = slotOf(LAVA_BUCKET)
+    if full then
+      turtle.select(full)
+      turtle.refuel()
+    end
+  end
   turtle.select(1)
-  return true
+  return filled
 end
 
-local bucketChecked, bucketKnown = -1000, false
+local bucketChecked, emptyN, fullN = -1000, 0, 0
 
 local function lavaFuel()
-  if fuel() >= LAVA_TARGET then return end
   -- looking through the inventory is slow, so only re-check now and then
   if os.clock() - bucketChecked > 60 then
     bucketChecked = os.clock()
-    bucketKnown = hasBucket() ~= nil
+    emptyN, fullN = 0, 0
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name == BUCKET then emptyN = emptyN + d.count end
+      if d and d.name == LAVA_BUCKET then fullN = fullN + d.count end
+    end
   end
-  if not bucketKnown then return end
-  scoop(turtle.inspectDown, turtle.placeDown)
-  scoop(turtle.inspectUp, turtle.placeUp)
-  scoop(turtle.inspect, turtle.place)
+  local drink = fuel() < LAVA_TARGET
+  if drink and emptyN == 0 and fullN > 0 then
+    -- every bucket is full and the tank is not: drink one
+    local full = slotOf(LAVA_BUCKET)
+    if full then
+      turtle.select(full)
+      if turtle.refuel() then emptyN, fullN = emptyN + 1, fullN - 1 end
+      turtle.select(1)
+    end
+    return
+  end
+  if emptyN == 0 then return end
+  -- tank full: fill the spare buckets for the base (one empty stays for us)
+  if not drink and not (emptyN >= 2 and fullN < LAVA_SPARE) then return end
+  for _, side in ipairs({ { turtle.inspectDown, turtle.placeDown }, { turtle.inspectUp, turtle.placeUp },
+    { turtle.inspect, turtle.place } }) do
+    if scoop(side[1], side[2], not drink) and not drink then
+      emptyN, fullN = emptyN - 1, fullN + 1
+      if emptyN < 2 or fullN >= LAVA_SPARE then break end
+    end
+  end
 end
 
 local function mineStep()
@@ -1138,8 +1195,6 @@ local function leaveToHunt()
 end
 
 -- Take the coal home, then come back out.
-local collectEmpties     -- defined below (empty buckets for the next lava run)
-
 local function huntDeliver()
   print("Taking coal to the base.")
   report("flying to base")
@@ -1248,15 +1303,19 @@ end
 -- Empty buckets for the next lava run, from the factory (at the service
 -- stop above it, after unloading).
 collectEmpties = function()
-  if not st.hunt then return end
-  local dry = st.lavaDry or {}
-  if dry[1] and dry[2] and dry[3] and dry[4] then return end
-  local want = LAVA_RUN + 1 - countItem(BUCKET)
+  local want
+  if st.hunt then
+    local dry = st.lavaDry or {}
+    if dry[1] and dry[2] and dry[3] and dry[4] then return end
+    want = LAVA_RUN + 1 - countItem(BUCKET)
+  else
+    want = LAVA_SPARE + 1 - countItem(BUCKET)
+  end
   if want <= 0 then return end
   if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
   if not at(st.exit1) then return end
   print("Asking the factory for empty buckets.")
-  for _ = 1, 20 do                     -- (it may be in the middle of a load)
+  for _ = 1, (st.hunt and 20 or 5) do   -- (it may be in the middle of a load)
     rednet.broadcast({ type = "empties_request", id = os.getComputerID(), n = want }, JOB_PROTOCOL)
     sleep(4)
     if countItem(BUCKET) > LAVA_RUN + 1 - want then break end

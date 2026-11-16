@@ -1197,9 +1197,14 @@ local function serveRequests(canCraft)
         -- a share of what there is, keeping a reserve for the builder, new
         -- turtles and the furnaces: 5% of the coal above the reserve, at
         -- least 8 (nobody is left stranded) and at most a stack
-        local coal = countIn(stockTotals(), "#fuel")
+        local stock = stockTotals()
+        local coal = countIn(stock, "#fuel")
         local share = math.max(8, math.min(64, math.floor((coal - FUEL_RESERVE) * 0.05)))
-        if giveTo(dir, "#fuel", share) then
+        if (stock[LAVA] or 0) > LAVA_KEEP and giveTo(dir, LAVA, 1) then
+          -- lava first, when there is some to spare: 1,000 moves a bucket,
+          -- and the miners bring it home themselves
+          print("Gave a lava bucket to a miner.")
+        elseif giveTo(dir, "#fuel", share) then
           print("Gave " .. share .. " coal to a miner.")
         else
           print("A miner needs fuel but I have no coal.")
