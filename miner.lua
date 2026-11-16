@@ -1237,6 +1237,22 @@ local function requestJob(limit)
     local deadline = os.clock() + (limit or 5)
     while os.clock() < deadline do
       local _, msg = rednet.receive(JOB_PROTOCOL, 1)
+      if type(msg) == "table" and msg.type == "role" and msg.forId == me
+        and type(msg.role) == "string" then
+        -- the factory built this turtle for another job (e.g. the builder)
+        local h = fs.open(".role", "w")
+        h.write(msg.role)
+        h.close()
+        if type(msg.base) == "table" then
+          h = fs.open(".base", "w")
+          h.write(textutils.serialize(msg.base))
+          h.close()
+        end
+        fs.delete(STATE_FILE)
+        print("New job: " .. msg.role .. ". Restarting.")
+        sleep(1)
+        os.reboot()
+      end
       if type(msg) == "table" and msg.type == "job" and msg.forId == me then
         return msg
       end

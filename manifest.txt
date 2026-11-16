@@ -3,3 +3,4 @@ swarm.lua
 miner.lua
 controller.lua
 factory.lua
+builder.lua

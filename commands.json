@@ -1,16 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794794129,
-      "issued": 1794794129000,
+      "id": 1794795135,
+      "issued": 1794795135000,
       "cmd": "reboot",
       "target": "all"
-    },
-    {
-      "id": 1794794130,
-      "issued": 1794794129000,
-      "cmd": "resume",
-      "target": "CoalPorter"
     }
   ]
 }

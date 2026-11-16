@@ -15,6 +15,7 @@ local API = "https://api.github.com/repos/" .. REPO .. "/contents/" .. FILE
 local ORDERS_API = "https://api.github.com/repos/" .. REPO
   .. "/contents/commands.json?ref=main"
 local ORDER_POLL = 20          -- seconds between checks for new orders
+local MAP_PROTOCOL = "swarm_map"
 local ORDER_LIFE = 5 * 60000   -- orders older than this (ms) are ignored
 
 ---------------------------------------------------------------- token
@@ -95,6 +96,7 @@ local function upload()
     version = swarm.version(),
     chatBox = chatBox() ~= nil,
     chatOwner = owner,
+    maps = mapNote,
     chatDebug = chatDebug,
     monitor = peripheral.find("monitor") ~= nil,
     monitorError = monitorError,
@@ -178,6 +180,9 @@ local ALERTS = {
   ["scanner problem"] = "cannot use the Geo Scanner",
   ["stranded"] = "is stranded with no fuel",
   ["rescuing"] = "is taking coal to a stranded miner",
+  ["launched builder"] = "launched the builder",
+  ["no way out"] = "cannot get out to the surface",
+  ["stuck outside"] = "is stuck outside and cannot get back in",
   ["fleet full"] = "has built the whole fleet",
 }
 
@@ -497,6 +502,62 @@ local function uploader()
   end
 end
 
+-- Write any file to the status branch (maps and the like).
+local function putFile(path, text, message)
+  local url = "https://api.github.com/repos/" .. REPO .. "/contents/" .. path
+  local fileSha
+  local r = http.get({ url = url .. "?ref=" .. BRANCH, headers = headers() })
+  if r then
+    local okJson, data = pcall(textutils.unserialiseJSON, r.readAll())
+    r.close()
+    if okJson and type(data) == "table" then fileSha = data.sha end
+  end
+  local body = textutils.serialiseJSON({
+    message = message, branch = BRANCH, content = b64(text), sha = fileSha,
+  })
+  local r2, err, failed = http.post({ url = url, method = "PUT", headers = headers(), body = body })
+  if r2 then
+    r2.close()
+    return true
+  end
+  if failed then failed.close() end
+  return false, tostring(err)
+end
+
+local mapQueue, mapNote = {}, {}
+
+-- Maps sent by the builder are uploaded as maps/<name>.json.
+local function maps()
+  while true do
+    local m = table.remove(mapQueue, 1)
+    if m then
+      local okJson, json = pcall(textutils.serialiseJSON, {
+        name = m.name, from = m.from, updated = os.epoch("utc"), data = m.data,
+      })
+      if okJson then
+        local ok, why = putFile("maps/" .. m.name .. ".json", json, "map " .. m.name)
+        mapNote[m.name] = ok and os.date("!%H:%M") or ("failed: " .. tostring(why))
+        if ok then say("New map uploaded: " .. m.name) end
+      else
+        mapNote[m.name] = "could not convert: " .. tostring(json)
+      end
+      urgent = true
+    end
+    sleep(2)
+  end
+end
+
+local function mapListener()
+  while true do
+    local id, msg = rednet.receive(MAP_PROTOCOL)
+    if type(msg) == "table" and msg.type == "map" and type(msg.name) == "string"
+      and msg.name:match("^[%w_%-]+$") and type(msg.data) == "table" then
+      msg.from = id
+      mapQueue[#mapQueue + 1] = msg
+    end
+  end
+end
+
 -- Fetch the orders file from GitHub and pass fresh orders on to the swarm.
 -- Each order is re-broadcast until it expires, so a turtle that was busy or
 -- out of range still gets it; turtles ignore orders they have already seen.
@@ -578,4 +639,4 @@ if not swarm.open() then
 end
 token = loadToken()
 draw()
-parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders)
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, maps, mapListener)

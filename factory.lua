@@ -52,6 +52,7 @@ shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/m
 
 local BUCKET   = "minecraft:bucket"
 local SCANNER  = "advancedperipherals:geo_scanner"
+local CORE     = "advancedperipherals:weak_automata_core"
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
@@ -185,6 +186,7 @@ local function report(state)
     network = lastNetwork,
     base = base,
     fleet = { active = activeCount(), launching = pending, max = MAX_MINERS,
+      builder = plots.builderId,
       plotsDone = plots.done, nextPlot = plots.next, byId = plots.byId },
     log = logLines,
   })
@@ -478,6 +480,19 @@ local function heldSlot()
     if turtle.getItemCount(slot) > 0 then return slot end
   end
   return nil
+end
+
+-- The builder: a plain turtle with just an ender modem (it needs no tool to
+-- map things). Left in this turtle's inventory, staged as "builder".
+local function assembleBuilder()
+  stashAll()
+  if not (pull(TURTLE, 1, 1) and pull(MODEM, 1, 2)) then
+    error("Parts for the builder went missing.", 0)
+  end
+  turtle.select(16)
+  local ok, err = turtle.craft()
+  if not ok then error("Could not fit the modem on the builder: " .. tostring(err), 0) end
+  setStage("builder")
 end
 
 -- Put the pickaxe and the modem onto a plain turtle. The finished miner is
@@ -776,6 +791,7 @@ end
 local function deploy()
   local slot = heldSlot()
   if not slot then error("Nothing to launch.", 0) end
+  local isBuilder = getStage() == "builder"
   turnTo(base.padTurns)
   local waited = 0
   while true do
@@ -810,7 +826,21 @@ local function deploy()
   pending = pending + 1
   sleep(0.5)
   fuelTurtleInFront(NEWBORN_COAL, true)
-  giveToFront(BUCKET, 1, true)      -- for scooping lava as fuel
+  if isBuilder then
+    giveToFront(SCANNER, 1, true)   -- for mapping
+    giveToFront(CORE, 1, true)      -- for later: lets it right-click things
+    for _ = 1, 10 do
+      local okId, id = pcall(peripheral.call, "front", "getID")
+      if okId and id then
+        plots.builderId = id
+        saveTable(PLOTS_FILE, plots)
+        break
+      end
+      sleep(0.5)
+    end
+  else
+    giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
+  end
   stashAll()
   for _ = 1, 10 do
     if pcall(peripheral.call, "front", "turnOn") then break end
@@ -848,6 +878,10 @@ end
 -- The job for a miner: its current plot, or a new one if it has none.
 local function jobFor(id)
   local key = tostring(id)
+  if plots.builderId and tostring(plots.builderId) == key then
+    if pending > 0 then pending = pending - 1 end
+    return { type = "role", role = "builder", forId = id, base = base }
+  end
   local index = plots.byId[key]
   if not index then
     if activeCount() >= MAX_MINERS then return nil end
@@ -964,6 +998,27 @@ local function tryBuild()
     built = built + 1
     report("launched one")
     return true
+  end
+
+  -- one builder, before any more miners (it needs no diamonds)
+  if not plots.builderId then
+    local pretend = {}
+    for name, c in pairs(lastStock) do pretend[name] = c end
+    local steps, missing = {}, {}
+    plan(pretend, TURTLE, 1, steps, missing)
+    plan(pretend, MODEM, 1, steps, missing)
+    plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)
+    if not next(missing) then
+      print("Building the builder...")
+      report("building")
+      runSteps(steps)
+      assembleBuilder()
+      print("Launching the builder")
+      deploy()
+      built = built + 1
+      report("launched builder")
+      return true
+    end
   end
 
   if activeCount() + pending >= MAX_MINERS then
