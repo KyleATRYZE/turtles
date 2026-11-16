@@ -2050,6 +2050,12 @@ while true do
   elseif cmd.cmd == "feed" then
     task = guarded(function()
       relocate()
+      local here = key(pos.x, pos.y, pos.z)
+      local inside = (roomSet()[here] or here == st.padKey) and pos.y <= base.f.y + 2
+      if not inside then
+        print("Coming in to feed the stuck queue.")
+        if not comeHome(st.park) then error("I could not get back in.", 0) end
+      end
       feedShaft()
       work()
     end)
