@@ -35,6 +35,7 @@ local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
 local HUNT_NORTH  = 20     -- no hunting further north than this: a friend's base is inside
                            -- the mountain there (until we know exactly where it is)
+local LAVA_RUN    = 8      -- buckets of lava the hunter brings home per trip
 local DEEP_REACH  = 23     -- under the base (inside the ring of plots) coal is taken at any depth
 local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (ChunkNorris escorts)
 local RESCUE_PROTOCOL = "swarm_rescue"
@@ -590,7 +591,9 @@ local function unloadDock()
     local d = turtle.getItemDetail(s)
     local keep = false
     if d then
-      if d.name == BUCKET or d.name == LAVA_BUCKET
+      if d.name == LAVA_BUCKET and st.hunt then
+        keep = false                    -- the hunter's lava is for everyone
+      elseif d.name == BUCKET or d.name == LAVA_BUCKET
         or d.name == SCANNER or d.name == PICKAXE then
         keep = true
       elseif d.name == KEEP_ONE_STACK and not keptCobble then
@@ -1076,8 +1079,16 @@ local function scanForCoal(deep)
   equip()          -- pickaxe back on
   turtle.select(1)
   if not found then return nil, why or "scan failed" end
-  local ores = {}
+  local ores, lava = {}, {}
   for _, b in ipairs(found) do
+    if deep and b.name == "minecraft:lava" and b.x and b.y and b.z then
+      local x, y, z = pos.x + b.x, pos.y + b.y, pos.z + b.z
+      -- (the bottom of the world, where the caves are flooded with it)
+      if y <= (st.bottom or -58) + 18 and math.abs(x - st.exit1.x) <= DEEP_REACH
+        and math.abs(z - st.exit1.z) <= DEEP_REACH then
+        lava[#lava + 1] = { x = x, y = y, z = z }
+      end
+    end
     if type(b.name) == "string" and b.name:find("coal", 1, true)
       and not b.name:find("charcoal", 1, true) and b.x and b.y and b.z then
       local x, y, z = pos.x + b.x, pos.y + b.y, pos.z + b.z
@@ -1095,7 +1106,7 @@ local function scanForCoal(deep)
       end
     end
   end
-  return ores
+  return ores, lava
 end
 
 -- Straight-line dig to a block. False if something will not break.
@@ -1127,6 +1138,8 @@ local function leaveToHunt()
 end
 
 -- Take the coal home, then come back out.
+local collectEmpties     -- defined below (empty buckets for the next lava run)
+
 local function huntDeliver()
   print("Taking coal to the base.")
   report("flying to base")
@@ -1139,6 +1152,7 @@ local function huntDeliver()
   -- never set off again on an empty tank: get fuel from the factory first
   -- (it once ran dry in the exit shaft and blocked every miner behind it)
   serviceStop(FUEL_LOW)
+  collectEmpties()
   leaveToHunt()
   report("hunting coal")
 end
@@ -1174,9 +1188,75 @@ local function harvestHere(deep)
   return n
 end
 
+-- Lava is the best fuel there is (a bucket is 1,000 moves), and deep under
+-- the base the caves are full of it. With empty buckets on board: down one
+-- of the four columns to the bottom, scan, and fill every bucket from the
+-- nearest full lava blocks. The factory hands the buckets out as fuel.
+local DEEP_PTS = { { 14, 14 }, { 14, -14 }, { -14, 14 }, { -14, -14 } }
+local function lavaStep()
+  if countItem(BUCKET) < 2 then return false end       -- (one is its own)
+  st.lavaDry = st.lavaDry or {}
+  for i, p in ipairs(DEEP_PTS) do
+    if not st.lavaDry[i] then
+      local x, z = st.exit1.x + p[1], st.exit1.z + p[2]
+      local level = (st.bottom or -58) + 6
+      print(("Fetching lava under the base (column %d)."):format(i))
+      report("fetching lava")
+      local there = (pos.x == x and pos.z == z)
+        or (axisMove("y", huntY(), false) and axisMove("x", x, false) and axisMove("z", z, false))
+      local filled = 0
+      if there and axisMove("y", level, false) then
+        local _, lava = scanForCoal(level)
+        if type(lava) == "table" then
+          table.sort(lava, function(a, b)
+            return math.abs(a.x - x) + math.abs(a.z - z) + math.abs(a.y - level)
+              < math.abs(b.x - x) + math.abs(b.z - z) + math.abs(b.y - level)
+          end)
+          for _, o in ipairs(lava) do
+            if countItem(BUCKET) < 2 or fuel() < 300 then break end
+            -- over it, and scoop down: only a full block of lava comes up
+            if digTo(o.x, o.y + 1, o.z) then
+              local ok, data = turtle.inspectDown()
+              if ok and data.name == "minecraft:lava" and data.state and data.state.level == 0 then
+                turtle.select(findItem(BUCKET))
+                if turtle.placeDown() then filled = filled + 1 end
+                turtle.select(1)
+              end
+            end
+          end
+        end
+        digTo(x, level, z)
+        axisMove("y", huntY(), true)
+      end
+      if filled == 0 then st.lavaDry[i] = true end
+      save()
+      print(("Filled %d buckets with lava."):format(filled))
+      report("hunting coal")
+      if filled > 0 then return true end
+    end
+  end
+  return false
+end
+
+-- Empty buckets for the next lava run, from the factory (at the service
+-- stop above it, after unloading).
+collectEmpties = function()
+  if not st.hunt then return end
+  local dry = st.lavaDry or {}
+  if dry[1] and dry[2] and dry[3] and dry[4] then return end
+  local want = LAVA_RUN + 1 - countItem(BUCKET)
+  if want <= 0 then return end
+  if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
+  if not at(st.exit1) then return end
+  for _ = 1, 8 do
+    rednet.broadcast({ type = "empties_request", id = os.getComputerID(), n = want }, JOB_PROTOCOL)
+    sleep(4)
+    if countItem(BUCKET) > LAVA_RUN + 1 - want then break end
+  end
+end
+
 -- Under the base nobody mines: the plots start 24 blocks out. Four columns
 -- down through it, scanning every 16 blocks, reach nearly all of it.
-local DEEP_PTS = { { 14, 14 }, { 14, -14 }, { -14, 14 }, { -14, -14 } }
 local function deepStep()
   st.deepDone = st.deepDone or {}
   local levels = {}
@@ -1291,7 +1371,10 @@ local function hunt()
     end
     listenForRescue(6)
 
-    if not (fuel() >= 600 and deepStep()) then
+    local gotLava = fuel() >= 600 and lavaStep()
+    if gotLava then
+      huntDeliver()
+    elseif not (fuel() >= 600 and deepStep()) then
     -- nearest scan point not yet visited
     local pts = huntPoints(st.huntReach)
     local best, bestD

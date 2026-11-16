@@ -51,6 +51,7 @@ shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/m
 ]]
 
 local BUCKET   = "minecraft:bucket"
+local LAVA     = "minecraft:lava_bucket"   -- fuel for turtles (1,000 moves each); never for the furnaces
 local SCANNER  = "advancedperipherals:geo_scanner"
 local CORE     = "advancedperipherals:weak_automata_core"
 local TURTLE   = "computercraft:turtle_normal"
@@ -265,6 +266,7 @@ local base = loadTable(BASE_FILE)                 -- where everything is
 local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
+local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local FUEL_RESERVE = 256 -- coal never handed out to miners
 local HELPERS      = 3   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
@@ -1118,7 +1120,10 @@ end
 -- goes to the first miner that asks, so it can hunt for coal.
 -- canCraft = false while I am holding a finished miner.
 local function serveRequests(canCraft)
-  if not next(fuelQueue) and not next(bucketQueue) then return end
+  if not next(fuelQueue) and not next(bucketQueue) and not next(emptiesQueue) then return end
+  local wantEmpties = 0
+  for _, n in pairs(emptiesQueue) do wantEmpties = math.max(wantEmpties, n) end
+  if canCraft and wantEmpties > 0 then pcall(ensureStock, BUCKET, wantEmpties) end
   if canCraft and next(bucketQueue) then
     pcall(ensureStock, BUCKET, 1)
   end
@@ -1150,9 +1155,16 @@ local function serveRequests(canCraft)
       if next(bucketQueue) and giveTo(dir, BUCKET, 1) then
         print("Gave a bucket to a miner.")
       end
+      if wantEmpties > 0 then
+        local ok, moved = giveTo(dir, BUCKET, wantEmpties)
+        if ok then
+          print("Gave " .. tostring(moved) .. " empty buckets to the lava runner.")
+          wantEmpties = 0
+        end
+      end
     end
   end
-  fuelQueue, bucketQueue = {}, {}
+  fuelQueue, bucketQueue, emptiesQueue = {}, {}, {}
   turnTo(0)
 end
 
@@ -1278,9 +1290,19 @@ local function serveOrders()
       if (given[name] or 0) < want then missing[name] = want - (given[name] or 0) end
     end
     if order.fuel > 0 then
-      -- when fuel is short nobody gets more than a share of what there is
-      local have = countIn(stockTotals(), "#fuel")
-      giveTo("front", "#fuel", math.min(64, order.fuel, math.max(8, math.floor(have * 0.4))))
+      -- lava first (a bucket is 1,000 moves, about 12 coal), coal for the rest
+      local stock = stockTotals()
+      local want = order.fuel * 80
+      local buckets = math.min(stock[LAVA] or 0, 4, math.floor(want / 1000 + 0.5))
+      for _ = 1, buckets do
+        if giveTo("front", LAVA, 1) then want = want - 1000 end
+      end
+      local coal = math.ceil(math.max(0, want) / 80)
+      if coal > 0 then
+        -- when fuel is short nobody gets more than a share of what there is
+        local have = countIn(stock, "#fuel")
+        giveTo("front", "#fuel", math.min(64, coal, math.max(8, math.floor(have * 0.4))))
+      end
     end
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
@@ -1459,6 +1481,8 @@ local function responder()
         fuelQueue[id] = true
       elseif msg.type == "bucket_request" then
         bucketQueue[id] = true
+      elseif msg.type == "empties_request" then
+        emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
       elseif msg.type == "materials" and type(msg.items) == "table"
         and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }

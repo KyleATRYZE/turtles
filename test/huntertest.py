@@ -40,3 +40,34 @@ setSpecial(e.x+40,5,e.z+9,"minecraft:coal_ore")   -- in a plot's ground: must be
 KILL_AT=2500''')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"deep")
 print("   deep ore left:", [1 for i in range(1,7) if L.eval(f'getBlock(DEEPORE[{i}][1],DEEPORE[{i}][2],DEEPORE[{i}][3])')], "| plot ore still there:", L.eval('getBlock(EXIT1.x+40,5,EXIT1.z+9)'), "| deepDone:", list(L.eval('textutils.unserialize(FS["miner.state"]).deepDone').values()))
+
+# E) empty buckets on board: fetch lava from under the base, bring it home, ask for more empties
+L=fresh(2500, -4480, 25, 1480)
+L.execute('''local e=EXIT1
+for i=0,5 do setSpecial(e.x+12+i, 3, e.z+13, "minecraft:lava") setSpecial(e.x+12+i, 2, e.z+13, "minecraft:lava") end
+local st = textutils.unserialize(FS["miner.state"]) st.deepDone = {1,1,1,1} FS["miner.state"] = textutils.serialize(st)
+T.inv[5] = {name="minecraft:bucket", count=9}
+-- a stack of empties: one comes off the stack, a full one appears
+local function scoop(x,y,z)
+  local i=T.inv[T.sel]
+  if not (i and i.name=="minecraft:bucket" and getBlock(x,y,z)=="minecraft:lava") then return false end
+  clearBlock(x,y,z)
+  i.count = i.count - 1 if i.count == 0 then T.inv[T.sel] = nil end
+  for s=1,16 do if not T.inv[s] then T.inv[s] = {name="minecraft:lava_bucket", count=1} break end end
+  return true
+end
+turtle.placeDown = function() return scoop(T.x, T.y-1, T.z) end
+EMPTIES = 0
+local ob = rednet.broadcast
+rednet.broadcast = function(m, p)
+  if type(m) == "table" and m.type == "empties_request" then
+    EMPTIES = EMPTIES + 1
+    for s=1,16 do local i = T.inv[s] if i and i.name == "minecraft:bucket" then i.count = i.count + m.n return end end
+    for s=1,16 do if not T.inv[s] then T.inv[s] = {name="minecraft:bucket", count=m.n} return end end
+  end
+  return ob(m, p)
+end
+KILL_AT=900''')
+print(list(L.eval('{runMiner("resume")}').values())); show(L,"lava")
+g=L.globals()
+print("   lava buckets home:", dict(g.DOCKCHEST).get('minecraft:lava_bucket'), "| empties asked for:", g.EMPTIES, "times | on board:", [(i.name.split(':')[1], i.count) for i in g.T.inv.values() if i and 'bucket' in i.name], "| lava left:", sum(1 for i in range(6) for y in (2,3) if L.eval(f'getBlock(EXIT1.x+12+{i},{y},EXIT1.z+13)')))

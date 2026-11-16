@@ -407,7 +407,23 @@ local function supplyRun(indices, reason, once)
       end
       tick("waiting for materials")
     end
-    if onPad then upFromPad() end
+    if onPad then
+      -- emptied lava buckets go back to the factory, right beside the pad
+      for d = 0, 3 do
+        if DIRS[d].x == base.f.x - base.pad.x and DIRS[d].z == base.f.z - base.pad.z then
+          for s = 1, 16 do
+            local it = turtle.getItemDetail(s)
+            if it and it.name == "minecraft:bucket" then
+              face(d)
+              turtle.select(s)
+              turtle.drop()
+            end
+          end
+          turtle.select(1)
+        end
+      end
+      upFromPad()
+    end
     refuel(FULL_TANK)
     goHover()
     if reply then
