@@ -1492,7 +1492,9 @@ local function runLab()
         -- equip|left/right|item : swap what is on that side for the item (a
         -- Chunk Controller in place of the pickaxe, say)
         local slot = findSlot(a[3])
-        if not slot then res = "none on board" else
+        if peripheral.getType(a[2]) == "modem" then
+          res, stop = "that side holds the modem: left alone", true
+        elseif not slot then res = "none on board" else
           turtle.select(slot)
           local done, why = turtle[a[2] == "right" and "equipRight" or "equipLeft"]()
           turtle.select(1)
@@ -1714,6 +1716,33 @@ local function guarded(fn)
       if err == "Terminated" then error(err, 0) end
       print("ERROR: " .. tostring(err))
       while true do report("error") sleep(60) end
+    end
+  end
+end
+
+-- Without its modem a turtle hears no orders and reports nothing. If one has
+-- been swapped off (a lab step once put a Chunk Controller in its place), put
+-- it back on before anything else: onto the side that is not the pickaxe.
+do
+  local function hasModem()
+    return peripheral.getType("left") == "modem" or peripheral.getType("right") == "modem"
+  end
+  if not hasModem() then
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name:find("modem", 1, true) then
+        turtle.select(s)
+        local side = peripheral.getType("right") and "Right" or "Left"   -- a side holding some other gadget first
+        turtle["equip" .. side]()
+        local back = turtle.getItemDetail(s)
+        if back and back.name:find("pickaxe", 1, true) then
+          -- that was the pickaxe: put it back, and use the other side
+          turtle["equip" .. side]()
+          turtle["equip" .. (side == "Left" and "Right" or "Left")]()
+        end
+        turtle.select(1)
+        break
+      end
     end
   end
 end
