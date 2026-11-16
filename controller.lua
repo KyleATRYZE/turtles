@@ -64,6 +64,7 @@ local uploadNote = "not uploaded yet"
 local orderNote = "no orders yet"
 local owner              -- player who gets chat messages (set from chat)
 local chatBox            -- defined in the chat section below
+local chatDebug = { heard = 0, sent = 0, failed = 0 }   -- shown in the status file
 local sha               -- GitHub's id for the current status file
 
 local function headers()
@@ -92,6 +93,8 @@ local function upload()
     version = swarm.version(),
     chatBox = chatBox() ~= nil,
     chatOwner = owner,
+    chatDebug = chatDebug,
+    peripherals = peripheral.getNames(),
     units = units,
   }
   local okJson, json = pcall(textutils.serialiseJSON, doc)
@@ -194,10 +197,17 @@ local function chatter()
     local box = chatBox()
     if box and #chatQueue > 0 then
       local text = table.remove(chatQueue, 1)
+      local ok, res, why
       if owner then
-        pcall(box.sendMessageToPlayer, text, owner, "Swarm")
+        ok, res, why = pcall(box.sendMessageToPlayer, text, owner, "Swarm")
       else
-        pcall(box.sendMessage, text, "Swarm")
+        ok, res, why = pcall(box.sendMessage, text, "Swarm")
+      end
+      if ok and res ~= nil and res ~= false then
+        chatDebug.sent = chatDebug.sent + 1
+      else
+        chatDebug.failed = chatDebug.failed + 1
+        chatDebug.lastError = tostring(ok and why or res)
       end
     elseif not box then
       chatQueue = {}
@@ -212,6 +222,8 @@ local ORDER_WORDS = { stop = true, home = true, resume = true, reboot = true, pi
 local function chatOrders()
   while true do
     local _, user, message = os.pullEvent("chat")
+    chatDebug.heard = chatDebug.heard + 1
+    chatDebug.lastHeard = tostring(user) .. ": " .. tostring(message)
     local text = type(message) == "string" and message:lower():gsub("^%$", "") or ""
     local word, arg = text:match("^swarm%s+(%S+)%s*(%S*)")
     if word and (not owner or owner == user) then
