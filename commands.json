@@ -1,16 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794855545,
-      "issued": 1794855545000,
-      "cmd": "resume",
-      "target": "DiggyStardust"
+      "id": 1794856862,
+      "issued": 1794856862000,
+      "cmd": "reboot",
+      "target": "MortarKombat"
     },
     {
-      "id": 1794855546,
-      "issued": 1794855545000,
-      "cmd": "resume",
-      "target": "NotoriousDIG"
+      "id": 1794856863,
+      "issued": 1794856862000,
+      "cmd": "fit",
+      "target": "MortarKombat",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_touchup",
+      "shell": "factory_asfit",
+      "after": 1
     }
   ]
 }
