@@ -1,44 +1,53 @@
 {
   "commands": [
     {
-      "id": 1794865336,
-      "issued": 1794865336000,
+      "id": 1794865617,
+      "issued": 1794865617000,
       "cmd": "reboot",
-      "target": "WallStreet"
+      "target": "ForgeClooney"
     },
     {
-      "id": 1794865337,
-      "issued": 1794865336000,
-      "cmd": "lab",
-      "target": "WallStreet",
-      "ops": "handin|",
-      "clear": 1
-    },
-    {
-      "id": 1794865338,
-      "issued": 1794865336000,
+      "id": 1794865618,
+      "issued": 1794865617000,
       "cmd": "reboot",
-      "target": "SteelyDan"
+      "target": "DiggyStardust"
     },
     {
-      "id": 1794865339,
-      "issued": 1794865336000,
-      "cmd": "lab",
-      "target": "SteelyDan",
-      "ops": "fetch|minecraft:iron_ingot=10,minecraft:charcoal=20,alltheores:osmium_ingot=2,minecraft:redstone=50;goto|-4453|80|1533;ground;face|0;expect|front|metallurgic_infuser;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;face|3;fwd|1;down|1;face|1;expect|front|metallurgic_infuser;drop|minecraft:redstone|46;wait|25;face|1;up|1;fwd|1;expect|down|metallurgic_infuser;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInput;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:charcoal|10;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|minecraft:iron_ingot|10;until|bottom|getOutput|10|210;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:charcoal|10;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|mekanism:enriched_iron|10;until|bottom|getOutput|10|210;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:redstone|4;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|alltheores:osmium_ingot|2;until|bottom|getOutput|2|90;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;inv;handin|",
-      "clear": 1
+      "id": 1794865619,
+      "issued": 1794865617000,
+      "cmd": "hunt",
+      "target": "DiggyStardust",
+      "name": "NatKingCoal"
     },
     {
-      "id": 1794865340,
-      "issued": 1794865336000,
+      "id": 1794865620,
+      "issued": 1794865617000,
+      "cmd": "escort",
+      "target": "ChunkBerry",
+      "who": "NatKingCoal",
+      "stay": 1,
+      "x": -4421,
+      "z": 1561
+    },
+    {
+      "id": 1794865621,
+      "issued": 1794865617000,
+      "cmd": "stop",
+      "target": "MortarKombat"
+    },
+    {
+      "id": 1794865622,
+      "issued": 1794865617000,
       "cmd": "reboot",
       "target": "TimberLake"
     },
     {
-      "id": 1794865341,
-      "issued": 1794865336000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
+      "id": 1794865623,
+      "issued": 1794865617000,
+      "cmd": "lab",
+      "target": "TimberLake",
+      "ops": "fetch|advancedperipherals:chunk_controller=1;types|left;equip|left|advancedperipherals:chunk_controller;types|left;methods|left;goto|-4392|140|1440;note|with the controller on;wait|40;fuel;wait|40;fuel;wait|40;fuel;wait|40;fuel;equip|left|minecraft:diamond_pickaxe;types|left;note|controller in the bag;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;wait|30;fuel;equip|left|advancedperipherals:chunk_controller;note|controller back on;home;equip|left|minecraft:diamond_pickaxe;inv",
+      "clear": 1
     }
   ]
 }
