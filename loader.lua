@@ -211,9 +211,9 @@ local function park()
     if st.park or base then break end
     sleep(3)                                -- the factory reports every so often
   end
-  -- a few blocks south of the factory: on the hut roof, clear of the holes
-  -- the miners and the builder use, in the same chunk as the factory
-  local p = st.park or (base and { x = base.f.x, z = base.f.z + 4 })
+  -- just east of the hut, in the factory's chunk, clear of the holes in
+  -- the roof that the builder uses and of its paths to the building site
+  local p = st.park or (base and { x = base.f.x + 4, z = base.f.z - 1 })
   if not p then
     report("parked")
     return

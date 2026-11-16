@@ -1707,7 +1707,9 @@ local function runBuild()
   local _, d = doorKey()
   st.doorX, st.doorZ = d.x, d.z
   local here = key(pos.x, pos.y, pos.z)
-  local inside = roomSet()[here] or here == st.padKey
+  -- (the room map also has the open air over the roof: above the ceiling
+  -- is outside)
+  local inside = (roomSet()[here] or here == st.padKey) and pos.y <= base.f.y + 2
   if not hasPickaxe() or fuel() < BUILD_FUEL / 2 then
     if inside then goToCell(st.padKey) else leaveSite(b, st.padKey) end
     restock(b)
@@ -1734,7 +1736,7 @@ local function work()
   if fitScanner() then print("Geo Scanner fitted.") end
   relocate()
   local here = key(pos.x, pos.y, pos.z)
-  local inside = roomSet()[here] or here == st.padKey
+  local inside = ((roomSet()[here] or here == st.padKey) and pos.y <= base.f.y + 2)
     or (not st.done.room and inBox(pos.x, pos.y, pos.z) and pos.y <= base.f.y + 1)
   if not inside then
     -- restarted outside: find the way back in (keep trying for a while:
