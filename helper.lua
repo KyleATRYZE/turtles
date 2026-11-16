@@ -505,7 +505,8 @@ end
 ---------------------------------------------------------------- building
 
 local function facingOf(data)
-  return type(data) == "table" and type(data.state) == "table" and data.state.facing or nil
+  -- (Sophisticated Storage's limited barrels call it horizontal_facing)
+  return type(data) == "table" and type(data.state) == "table" and (data.state.facing or data.state.horizontal_facing) or nil
 end
 
 local function isClutter(name)
