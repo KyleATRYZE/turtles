@@ -231,6 +231,9 @@ local function work()
   if os.getComputerLabel() ~= NAME then os.setComputerLabel(NAME) end
   refuel(1000)
   while fuel() < 100 do
+    -- say where we are (GPS needs no fuel) so coal can be brought here
+    local x, y, z = gps.locate(2)
+    if x then pos.x, pos.y, pos.z = math.floor(x + 0.5), math.floor(y + 0.5), math.floor(z + 0.5) end
     print("I need fuel: put some coal in me.")
     report("needs fuel")
     sleep(10)
