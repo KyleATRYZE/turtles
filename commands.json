@@ -1,22 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794856862,
-      "issued": 1794856862000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794856863,
-      "issued": 1794856862000,
-      "cmd": "fit",
-      "target": "MortarKombat",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_touchup",
-      "shell": "factory_asfit",
-      "after": 1
+      "id": 1794857097,
+      "issued": 1794857097000,
+      "cmd": "ping",
+      "target": "CoalPorter"
     }
   ]
 }
