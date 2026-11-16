@@ -1,11 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794872430,
-      "issued": 1794872430000,
-      "cmd": "foundry",
-      "target": "Pushy",
-      "job": "move_infuser"
+      "id": 1794872565,
+      "issued": 1794872565000,
+      "cmd": "resume",
+      "target": "Pushy"
+    },
+    {
+      "id": 1794872566,
+      "issued": 1794872565000,
+      "cmd": "reboot",
+      "target": "CommandBlock"
     }
   ]
 }
