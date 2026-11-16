@@ -712,6 +712,85 @@ local function fuelUpOnPad(target)
   end
 end
 
+-- Blocks a turtle can move through.
+local PASSABLE = {
+  ["minecraft:short_grass"] = true, ["minecraft:tall_grass"] = true,
+  ["minecraft:fern"] = true, ["minecraft:large_fern"] = true,
+  ["minecraft:snow"] = true, ["minecraft:water"] = true,
+}
+
+-- Caught in a cave: look around with the scanner and walk through the open
+-- space to a spot with open sky above, then climb up. If the way out is
+-- further than the scanner reaches, go to the highest open spot and look
+-- again.
+local function escape()
+  if not scannerSide() then return false end
+  for _ = 1, 6 do
+    local found, covered = scanHere()
+    if not found then return false end
+    local function open(x, y, z)
+      local k = key(x, y, z)
+      return covered(x, y, z) and (not found[k] or PASSABLE[found[k]])
+    end
+    -- open straight up to the top of what the scan saw, and the scan saw
+    -- at least 5 blocks of that (near its edge it sees too little to tell)
+    local function sky(x, y, z)
+      local n = 0
+      for yy = y + 1, y + SCAN_RADIUS + 1 do
+        if not covered(x, yy, z) then return n >= 5 end
+        if not open(x, yy, z) then return false end
+        n = n + 1
+      end
+      return true
+    end
+    -- breadth-first through open cells
+    local startK = key(pos.x, pos.y, pos.z)
+    local seen, queue, head = { [startK] = true }, { startK }, 1
+    local exitK, bestK, bestY = nil, startK, pos.y
+    while head <= #queue and #queue < 6000 do
+      local k = queue[head]
+      head = head + 1
+      local x, y, z = unkey(k)
+      if sky(x, y, z) then exitK = k break end
+      if y > bestY then bestK, bestY = k, y end
+      for _, m in ipairs(ALL_MOVES) do
+        local nx, ny, nz = neighbour(x, y, z, m)
+        local nk = key(nx, ny, nz)
+        if not seen[nk] and open(nx, ny, nz) then
+          seen[nk] = true
+          queue[#queue + 1] = nk
+        end
+      end
+    end
+    local goal = exitK or bestK
+    if goal == startK and not exitK then return false end
+    local allowed = {}
+    for k in pairs(seen) do allowed[k] = true end
+    local moves = pathTo(goal, allowed)
+    if not moves then return false end
+    for _, m in ipairs(moves) do
+      if not moveBy(m) then break end
+    end
+    if exitK and key(pos.x, pos.y, pos.z) == exitK then
+      -- up the hole until nothing solid is beside us
+      local function clear()
+        for h = 0, 3 do
+          local x, y, z = neighbour(pos.x, pos.y, pos.z, h)
+          local name = found[key(x, y, z)]
+          if covered(x, y, z) and name and not PASSABLE[name] then return false end
+        end
+        return true
+      end
+      for _ = 1, 12 do
+        if clear() or not step("u") then break end
+      end
+      print("Found a way out of the cave.")
+      return true
+    end
+  end
+  return false
+end
+
 -- Stuck somewhere (a pit, a cave): climb as high as we can, sidestepping
 -- anything overhead, so that groundTo can find a way.
 local function climbOut()
@@ -733,8 +812,8 @@ end
 local function groundToSafely(x, z)
   for _ = 1, 4 do
     if groundTo(x, z) then return true end
-    print("Stuck. Climbing out.")
-    if not climbOut() then return false end
+    print("Stuck. Looking for a way out.")
+    if not escape() and not climbOut() then return false end
   end
   return false
 end

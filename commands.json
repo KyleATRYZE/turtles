@@ -1,20 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794797934,
-      "issued": 1794797934000,
+      "id": 1794798300,
+      "issued": 1794798300000,
       "cmd": "reboot",
       "target": "BrickJagger"
-    },
-    {
-      "id": 1794797935,
-      "issued": 1794797934000,
-      "cmd": "survey",
-      "target": "BrickJagger",
-      "x": -4428,
-      "z": 1548,
-      "size": 72,
-      "name": "meadow"
     }
   ]
 }
