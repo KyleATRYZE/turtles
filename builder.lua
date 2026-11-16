@@ -1557,6 +1557,9 @@ local function restock(b)
   while true do
     local items = placing and nextLoad(b) or {}
     local first = items[1] and items[1][1]
+    -- already loaded and only short of fuel: ask for fuel alone
+    local fuelOnly = first and findSlot(first) and fuel() < FUEL_SPARE + 400
+    if fuelOnly then items = {} end
     if not hasPickaxe() then table.insert(items, 1, { PICKAXE, 1 }) end
     local fuelWanted = math.max(0, math.ceil((BUILD_FUEL - fuel()) / 80))
     if #items == 0 and fuelWanted == 0 then break end
@@ -1564,19 +1567,27 @@ local function restock(b)
     report("waiting for materials")
     local reply = ask(b, items, math.min(64, fuelWanted))
     burnInventory(BUILD_FUEL)
-    if not placing or (first and findSlot(first)) then break end
-    if not first then break end
-    if OPTIONAL[first] then
+    if fuel() < FUEL_SPARE + 400 then
+      -- never set off on a tank that will only bring us straight back
+      print("No fuel to be had. Waiting here for coal.")
+      report("waiting for fuel")
+      goToCell(st.park)
+      sleep(180)
+    elseif fuelOnly then break
+    elseif not placing or (first and findSlot(first)) then break
+    elseif not first then break
+    elseif OPTIONAL[first] then
       -- windows and lights can wait: note it and carry on with the rest
       b.short = b.short or {}
       b.short[first] = true
       print("No " .. first:gsub("^.*:", "") .. " for now. Leaving those for later.")
       break
+    else
+      print("No " .. first:gsub("^.*:", "") .. " to be had yet. Waiting for the miners.")
+      report("waiting for materials")
+      goToCell(st.park)
+      sleep(300)
     end
-    print("No " .. first:gsub("^.*:", "") .. " to be had yet. Waiting for the miners.")
-    report("waiting for materials")
-    goToCell(st.park)
-    sleep(300)
   end
   if not hasPickaxe() then error("I still have no pickaxe.", 0) end
   save()
