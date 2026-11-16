@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794821136,
-      "issued": 1794821136000,
+      "id": 1794821198,
+      "issued": 1794821198000,
       "cmd": "reboot",
-      "target": "loader"
+      "target": "ChunkNorris"
     }
   ]
 }

@@ -230,6 +230,12 @@ end
 local function work()
   if os.getComputerLabel() ~= NAME then os.setComputerLabel(NAME) end
   refuel(1000)
+  while fuel() < 100 do
+    print("I need fuel: put some coal in me.")
+    report("needs fuel")
+    sleep(10)
+    refuel(1000)
+  end
   relocate()
   st = loadTable(STATE_FILE) or { mode = "park" }
   base = loadTable(BASE_FILE)
