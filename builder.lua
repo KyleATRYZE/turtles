@@ -1383,12 +1383,22 @@ local function restock(b)
     local d = turtle.getItemDetail(s)
     if d and isKeeper(d.name) then carrying = true end
   end
-  if carrying and goToCell(key(dock.x, dock.y, dock.z)) then
+  -- stand beside the chest (never in the miners' lanes) and drop in
+  local cx, cy, cz = dock.x, dock.y - 1, dock.z
+  local room, lanes = roomSet(), laneCells()
+  local spot, toward
+  for h = 0, 3 do
+    local x, z = cx - DIRS[h].x, cz - DIRS[h].z
+    local k = key(x, cy, z)
+    if room[k] and not lanes[k] then spot, toward = k, h break end
+  end
+  if carrying and spot and goToCell(spot) then
+    face(toward)
     for s = 1, 16 do
       local d = turtle.getItemDetail(s)
       if d and isKeeper(d.name) then
         turtle.select(s)
-        turtle.dropDown()
+        turtle.drop()
       end
     end
     turtle.select(1)
