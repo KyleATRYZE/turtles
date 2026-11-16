@@ -139,6 +139,7 @@ turtle = {
     elseif eq(S,{{SK},{"minecraft:cobblestone"}}) then out,n=LV,1
     elseif eq(S,{{RS},{SK}}) then out,n=RT,1
     elseif eq(S,{{OP,OP,OP}}) then out,n=OS,6
+    elseif eq(S,{{OP,OS,OP},{OP,"",OP},{OP,OS,OP}}) then out,n="minecraft:barrel",1
     elseif eq(S,{{OP,OP,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."chest",1
     elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OS,OP}}) then out,n=SS.."barrel",1
     elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."limited_barrel_1",1

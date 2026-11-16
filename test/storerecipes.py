@@ -26,7 +26,7 @@ def order(L, items, full=False):
 S="sophisticatedstorage:"
 want=[(S+"chest",2),(S+"barrel",1),(S+"limited_barrel_1",4),(S+"limited_barrel_2",1),(S+"limited_barrel_3",1),(S+"limited_barrel_4",1),
       (S+"diamond_chest",1),(S+"storage_link",1),(S+"storage_tool",1),(S+"basic_tier_upgrade",1),(S+"stack_upgrade_tier_2",1),
-      (S+"controller",2),("minecraft:lever",2)]
+      (S+"controller",2),("minecraft:lever",2),("minecraft:barrel",2)]
 fails=0
 L=world()
 given,missing,full,log=order(L,want)

@@ -159,6 +159,10 @@ local RECIPES = {
     grid = { "P", "P", "P", "", "", "", "", "", "" },
     key = { P = "minecraft:oak_planks" },
   },
+  ["minecraft:barrel"] = {                           -- plain: the store's In and Out (not joined to it)
+    grid = { "P", "S", "P", "P", "", "P", "P", "S", "P" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab" },
+  },
   ["sophisticatedstorage:chest"] = {                 -- 27 slots
     grid = { "P", "P", "P", "P", "L", "P", "P", "P", "P" },
     key = { P = "minecraft:oak_planks", L = "minecraft:lever" },
