@@ -134,6 +134,21 @@ local RECIPES = {
     yield = 6, grid = { "C", "C", "C", "", "", "", "", "", "" },
     key = { C = "minecraft:cut_copper" },
   },
+  -- unpacking storage blocks (packed by tidyStorage when the chests fill up)
+  ["minecraft:redstone"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "minecraft:redstone_block" } },
+  ["minecraft:raw_copper"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "minecraft:raw_copper_block" } },
+  ["minecraft:raw_iron"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "minecraft:raw_iron_block" } },
+  ["minecraft:raw_gold"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "minecraft:raw_gold_block" } },
+  ["minecraft:cobblestone"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "allthecompressed:cobblestone_1x" } },
+  ["minecraft:cobbled_deepslate"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "allthecompressed:cobbled_deepslate_1x" } },
+  ["minecraft:dirt"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "allthecompressed:dirt_1x" } },
   [BUCKET] = {
     grid = { "I", "", "I", "", "I", "", "", "", "" },
     key = { I = "minecraft:iron_ingot" },
@@ -873,6 +888,96 @@ local function craftBatch(name, k)
   stashAll()
 end
 
+---------------------------------------------------------------- tidying storage
+-- When the chests fill up: first merge part-stacks of the same item, then
+-- pack big piles into storage blocks (9 to 1). Nothing is ever thrown away,
+-- and the planner unpacks blocks again when it needs the items.
+
+local PACK = {
+  { item = "minecraft:redstone", block = "minecraft:redstone_block", keep = 192 },
+  { item = "minecraft:raw_copper", block = "minecraft:raw_copper_block", keep = 448 },
+  { item = "minecraft:lapis_lazuli", block = "minecraft:lapis_block", keep = 64 },
+  { item = "minecraft:raw_iron", block = "minecraft:raw_iron_block", keep = 192 },
+  { item = "minecraft:raw_gold", block = "minecraft:raw_gold_block", keep = 128 },
+  { item = "minecraft:cobbled_deepslate", block = "allthecompressed:cobbled_deepslate_1x", keep = 4000 },
+  { item = "minecraft:cobblestone", block = "allthecompressed:cobblestone_1x", keep = 3000 },
+  { item = "minecraft:dirt", block = "allthecompressed:dirt_1x", keep = 640 },
+}
+local packFails = {}      -- recipes that do not exist in this pack
+
+-- Merge part-stacks of the same item. Returns how many slots were freed.
+local function mergeStacks()
+  local byName, freed = {}, 0
+  for _, st in ipairs(listStorage()) do
+    if st.count < 64 then
+      byName[st.name] = byName[st.name] or {}
+      table.insert(byName[st.name], st)
+    end
+  end
+  for _, list in pairs(byName) do
+    if #list > 1 then
+      table.sort(list, function(a, b) return a.count > b.count end)
+      local i, j = 1, #list
+      while i < j do
+        local to, from = list[i], list[j]
+        local ok, moved = pcall(peripheral.call, from.inv, "pushItems", to.inv, from.slot,
+          from.count, to.slot)
+        moved = ok and tonumber(moved) or 0
+        from.count = from.count - moved
+        to.count = to.count + moved
+        if from.count <= 0 then
+          j = j - 1
+          freed = freed + 1
+        end
+        if moved == 0 or to.count >= 64 then i = i + 1 end
+      end
+    end
+  end
+  return freed
+end
+
+-- Pack one pile into blocks, up to a stack of blocks per craft.
+local function packOne(job, stock)
+  local have = stock[job.item] or 0
+  local packed = 0
+  while have - job.keep >= 9 * 8 and not packFails[job.block] do
+    local k = math.min(64, math.floor((have - job.keep) / 9))
+    stashAll()
+    for _, slot in ipairs(GRID_SLOT) do
+      if not pull(job.item, k, slot) then
+        stashAll()
+        return packed
+      end
+    end
+    turtle.select(16)
+    local ok = turtle.craft()
+    local made = turtle.getItemCount(16) > 0
+    stashAll()
+    if not ok or not made then
+      packFails[job.block] = true      -- no such recipe in this modpack
+      return packed
+    end
+    have = have - 9 * k
+    packed = packed + k
+  end
+  return packed
+end
+
+local function tidyStorage(force)
+  local sp = storageSpace()
+  if not force and sp.free >= 24 then return end
+  local freed = mergeStacks()
+  if freed > 0 then print("Merged part-stacks: " .. freed .. " slots freed.") end
+  if not pcall(stashAll) then return end
+  local stock = stockTotals()
+  for _, job in ipairs(PACK) do
+    local ok, n = pcall(packOne, job, stock)
+    if not ok then print("Could not pack " .. shortName(job.item) .. ": " .. tostring(n)) end
+    if ok and n > 0 then print(("Packed %d %s."):format(n, shortName(job.block))) end
+  end
+  spaceAt = nil                          -- measure again next time
+end
+
 -- Run a list of planned smelting and crafting jobs.
 local function runSteps(steps)
   for _, step in ipairs(steps) do
@@ -1245,6 +1350,7 @@ end
 local function tryBuild()
   local ok, why = discover()
   if not ok then return notReady(why) end
+  pcall(tidyStorage)
   if not turtle.craft then
     return notReady("I need a crafting table upgrade (Crafty Turtle)")
   end
