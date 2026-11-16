@@ -1,58 +1,44 @@
 {
   "commands": [
     {
-      "id": 1794865227,
-      "issued": 1794865227000,
+      "id": 1794865336,
+      "issued": 1794865336000,
       "cmd": "reboot",
-      "target": "ChunkBerry"
+      "target": "WallStreet"
     },
     {
-      "id": 1794865228,
-      "issued": 1794865227000,
-      "cmd": "park",
-      "target": "ChunkBerry"
+      "id": 1794865337,
+      "issued": 1794865336000,
+      "cmd": "lab",
+      "target": "WallStreet",
+      "ops": "handin|",
+      "clear": 1
     },
     {
-      "id": 1794865229,
-      "issued": 1794865227000,
+      "id": 1794865338,
+      "issued": 1794865336000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "SteelyDan"
     },
     {
-      "id": 1794865230,
-      "issued": 1794865227000,
+      "id": 1794865339,
+      "issued": 1794865336000,
+      "cmd": "lab",
+      "target": "SteelyDan",
+      "ops": "fetch|minecraft:iron_ingot=10,minecraft:charcoal=20,alltheores:osmium_ingot=2,minecraft:redstone=50;goto|-4453|80|1533;ground;face|0;expect|front|metallurgic_infuser;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;face|3;fwd|1;down|1;face|1;expect|front|metallurgic_infuser;drop|minecraft:redstone|46;wait|25;face|1;up|1;fwd|1;expect|down|metallurgic_infuser;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInput;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:charcoal|10;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|minecraft:iron_ingot|10;until|bottom|getOutput|10|210;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:charcoal|10;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|mekanism:enriched_iron|10;until|bottom|getOutput|10|210;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;face|2;up|1;fwd|1;expect|down|metallurgic_infuser;face|2;fwd|1;down|1;face|0;expect|front|metallurgic_infuser;drop|minecraft:redstone|4;call|front|getInfuseType;face|0;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|alltheores:osmium_ingot|2;until|bottom|getOutput|2|90;face|0;fwd|1;down|1;face|2;expect|front|metallurgic_infuser;suck|64;suck|64;call|front|getInfuseType;call|front|dumpInfuseType;inv;handin|",
+      "clear": 1
+    },
+    {
+      "id": 1794865340,
+      "issued": 1794865336000,
       "cmd": "reboot",
-      "target": "OreLando"
+      "target": "TimberLake"
     },
     {
-      "id": 1794865231,
-      "issued": 1794865227000,
+      "id": 1794865341,
+      "issued": 1794865336000,
       "cmd": "reboot",
-      "target": "ElvisPitsley"
-    },
-    {
-      "id": 1794865232,
-      "issued": 1794865227000,
-      "cmd": "reboot",
-      "target": "BoulderDash"
-    },
-    {
-      "id": 1794865233,
-      "issued": 1794865227000,
-      "cmd": "resume",
-      "target": "BoulderDash"
-    },
-    {
-      "id": 1794865234,
-      "issued": 1794865227000,
-      "cmd": "reboot",
-      "target": "NotoriousDIG"
-    },
-    {
-      "id": 1794865235,
-      "issued": 1794865227000,
-      "cmd": "resume",
-      "target": "NotoriousDIG"
+      "target": "MortarKombat"
     }
   ]
 }
