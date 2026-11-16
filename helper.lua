@@ -1102,6 +1102,15 @@ local function homeForFuel()
   return true
 end
 
+-- No walking about at ground level here: there is somebody's base inside the
+-- mountain (a lumberjack once wandered into it). Rows fly over these boxes.
+local NO_FORAGE = { { -4484, 1462, -4412, 1516 } }
+local function noForage(x, z)
+  for _, b in ipairs(NO_FORAGE) do
+    if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] then return b end
+  end
+end
+
 local function runForage()
   local a = st.job.area
   local x1, x2 = math.min(a[1], a[3]), math.max(a[1], a[3])
@@ -1118,10 +1127,19 @@ local function runForage()
     report("looking for trees")
     riseTo(highway())
     across(from, z, top)
-    toGroundLevel()
+    if not noForage(pos.x, z) then toGroundLevel() end
     local n, logs0 = 0, countLogs()
     while pos.x ~= to do
       face(east and 0 or 2)
+      local box = noForage(pos.x + (east and 1 or -1), z)
+      if box then
+        -- over the top of it, and down again on the far side
+        local far = east and math.min(to, box[3] + 1) or math.max(to, box[1] - 1)
+        riseTo(highway())
+        across(far, z, top)
+        if far == to then break end
+        toGroundLevel()
+      end
       local ahead = look("f")
       if isLog(ahead) then
         -- a trunk, or somebody's log wall? climb it: a tree has leaves
@@ -1224,6 +1242,65 @@ end
 
 ---------------------------------------------------------------- jobs
 
+---------------------------------------------------------------- lost and found
+-- escape: shut in somewhere with no way straight up (a cave, a hollow in a
+-- hillside, somebody's cellar): search the open space, without breaking
+-- anything, for a way out to open sky. Goes up wherever it can; comes back
+-- to where it started if there is no way out. True when it is out, at
+-- flying height.
+local function escape(limit)
+  limit = limit or 1500
+  local seen, moves = {}, 0
+  local function key(x, y, z) return x .. "," .. y .. "," .. z end
+  local function visit(depth)
+    seen[key(pos.x, pos.y, pos.z)] = true
+    if pos.y >= highway() then return true end
+    if moves >= limit or depth > 600 then return false end
+    if depth % 8 == 0 then tick("finding a way out") end
+    -- up first
+    if not seen[key(pos.x, pos.y + 1, pos.z)] and not turtle.detectUp() and step("u") then
+      moves = moves + 1
+      if visit(depth + 1) then return true end
+      if step("d") then moves = moves + 1 else return false end
+    end
+    local first = heading
+    for turn = 0, 3 do
+      local d = (first + turn) % 4
+      if not seen[key(pos.x + DIRS[d].x, pos.y, pos.z + DIRS[d].z)] then
+        face(d)
+        if not turtle.detect() and step("f") then
+          moves = moves + 1
+          if visit(depth + 1) then return true end
+          face((d + 2) % 4)
+          if step("f") then moves = moves + 1 else return false end
+        else
+          seen[key(pos.x + DIRS[d].x, pos.y, pos.z + DIRS[d].z)] = true
+        end
+      end
+    end
+    if not seen[key(pos.x, pos.y - 1, pos.z)] and not turtle.detectDown() and step("d") then
+      moves = moves + 1
+      if visit(depth + 1) then return true end
+      if step("u") then moves = moves + 1 else return false end
+    end
+    return false
+  end
+  print("Looking for a way out to open sky.")
+  report("finding a way out")
+  local out = visit(0)
+  print(out and ("Out, after " .. moves .. " moves.") or ("No way out found (" .. moves .. " moves)."))
+  return out, moves
+end
+
+-- Blocks that are just ground: a rescue may dig straight down through these.
+local GROUND = { "stone", "deepslate", "dirt", "grass_block", "gravel", "sand", "clay", "andesite",
+  "diorite", "granite", "tuff", "cobblestone", "sandstone", "mud", "_ore", "calcite", "podzol" }
+local function isGround(name)
+  if not name then return false end
+  for _, g in ipairs(GROUND) do if name:find(g, 1, true) then return true end end
+  return false
+end
+
 ---------------------------------------------------------------- lab bench
 -- lab: try something out in the world, step by step, on remote orders, and
 -- report what happened. For finding out how a machine from another mod
@@ -1235,6 +1312,7 @@ end
 --   drop|item|n  dropUp|item|n  dropDown|item|n     suck|n  suckUp|n  suckDown|n
 --   types|side   methods|side   call|side|method|arg|...   inspect|front/up/down
 --   inv   fuel   wait|seconds   home   note|text
+--   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -1333,6 +1411,25 @@ local function runLab()
         end
         res = done .. " of " .. n
         stop = done < n
+      elseif verb == "face" then
+        face(tonumber(a[2]) % 4)
+        res = "facing " .. heading
+      elseif verb == "escape" then
+        local got, moves = escape(tonumber(a[2]))
+        res = (got and "out" or "no way out") .. (" after %d moves, at %d %d %d"):format(moves, pos.x, pos.y, pos.z)
+        stop = not got
+      elseif verb == "digdown" then
+        local y = tonumber(a[2])
+        while pos.y > y do
+          local seen, data = turtle.inspectDown()
+          if seen then
+            if not isGround(data.name) then res = "stopped above " .. data.name break end
+            turtle.digDown()
+          end
+          if not step("d") then res = "could not go down" break end
+        end
+        res = (res or "down") .. (" at %d %d %d"):format(pos.x, pos.y, pos.z)
+        stop = pos.y ~= y
       elseif verb == "turn" then
         face((heading + (a[2] == "left" and 3 or a[2] == "around" and 2 or 1)) % 4)
         res = "facing " .. heading
