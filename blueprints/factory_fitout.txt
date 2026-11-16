@@ -1,3 +1,4 @@
+S 22 2 33
 P 26
 minecraft:raw_copper_block -
 computercraft:monitor_advanced west

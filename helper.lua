@@ -519,6 +519,343 @@ local function runBuild()
   save()
 end
 
+---------------------------------------------------------------- fitting out
+-- fit: the indoor work. The plan (tools/fitout.py) lists every job in an
+-- order that can be done, each with the spot to stand on. The turtle knows
+-- the whole building from the plans, so it finds its own way through the
+-- rooms: in at the big door, round what is already fitted.
+local STAND = { [0] = { 0, 1, 0 }, { 0, -1, 0 }, { 1, 0, 0 }, { 0, 0, 1 }, { -1, 0, 0 }, { 0, 0, -1 } }
+local STAND_FACE = { [2] = 2, [3] = 3, [4] = 0, [5] = 1 }   -- standing east of it: face west...
+local fitMap                                    -- what is where, in the plan's own coordinates
+
+local function ck(x, y, z) return (x + 16) + (z + 16) * 128 + (y + 8) * 16384 end
+
+local function fetchPlan(name)
+  local file = name .. ".plan"
+  if not fs.exists(file) then
+    local rev = "main"
+    if fs.exists(".version") then
+      local f = fs.open(".version", "r")
+      rev = f.readAll():gsub("%s", "")
+      f.close()
+    end
+    local res = http and http.get(LIST_URL:format(rev ~= "" and rev or "main", name))
+    if not res then error("Could not download " .. name .. ".", 0) end
+    local f = fs.open(file, "w")
+    f.write(res.readAll())
+    f.close()
+    res.close()
+  end
+  return fs.open(file, "r")
+end
+
+local function loadFit(job)
+  local m = { solid = {}, ops = {}, pal = {} }
+  local x1, y1, z1, x2, y2, z2 = 0, 0, 0, 0, 0, 0
+  local f = fetchPlan(job.shell)
+  local mode
+  while true do
+    local line = f.readLine()
+    if not line then break end
+    local tag = line:match("^([PB]) %d+$")
+    if tag then
+      mode = tag
+    elseif mode == "B" then
+      local x, y, z = line:match("^(-?%d+) (-?%d+) (-?%d+) ")
+      x, y, z = tonumber(x), tonumber(y), tonumber(z)
+      if x and y >= 0 then
+        m.solid[ck(x, y, z)] = true
+        x1, z1 = math.min(x1, x), math.min(z1, z)
+        x2, y2, z2 = math.max(x2, x), math.max(y2, y), math.max(z2, z)
+      end
+    end
+  end
+  f.close()
+  m.x1, m.z1, m.x2, m.y2, m.z2 = x1 - 4, z1 - 4, x2 + 4, y2 + 4, z2 + 4
+  f = fetchPlan(job.plan)
+  mode = nil
+  while true do
+    local line = f.readLine()
+    if not line then break end
+    local sx, sy, sz = line:match("^S (-?%d+) (-?%d+) (-?%d+)$")
+    if sx then
+      m.start = { tonumber(sx), tonumber(sy), tonumber(sz) }
+    elseif line:match("^[PO] %d+$") then
+      mode = line:sub(1, 1)
+    elseif mode == "P" then
+      local name, facing = line:match("^(%S+) (%S+)$")
+      m.pal[#m.pal + 1] = { name = name, facing = facing ~= "-" and facing or nil }
+    elseif mode == "O" then
+      local t = {}
+      for w in line:gmatch("%S+") do t[#t + 1] = w end
+      if t[1] == "D" then
+        m.ops[#m.ops + 1] = { k = "D", x = tonumber(t[2]), y = tonumber(t[3]), z = tonumber(t[4]), s = tonumber(t[5]) }
+      else
+        m.ops[#m.ops + 1] = { k = t[1], x = tonumber(t[2]), y = tonumber(t[3]), z = tonumber(t[4]),
+          i = tonumber(t[5]) + 1, s = tonumber(t[6]) }
+      end
+    end
+  end
+  f.close()
+  return m
+end
+
+-- the jobs already done change what is where
+local function applyOp(op)
+  local k = ck(op.x, op.y, op.z)
+  if op.k == "D" then fitMap.solid[k] = nil else fitMap.solid[k] = true end
+end
+
+local function lx() return pos.x - st.job.ox end
+local function ly() return pos.y - st.job.oy end
+local function lz() return pos.z - st.job.oz end
+
+local function open(x, y, z)
+  local m = fitMap
+  if x < m.x1 or x > m.x2 or z < m.z1 or z > m.z2 or y < 1 or y > m.y2 then return false end
+  return not m.solid[ck(x, y, z)]
+end
+
+-- Shortest way through open space from where we are to a cell (in the
+-- plan's coordinates). Returns the list of moves, or nil.
+local MOVES = { { 1, 0, 0, 0 }, { 0, 0, 1, 1 }, { -1, 0, 0, 2 }, { 0, 0, -1, 3 }, { 0, 1, 0, "u" }, { 0, -1, 0, "d" } }
+local function route(tx, ty, tz)
+  local sx, sy, sz = lx(), ly(), lz()
+  if sx == tx and sy == ty and sz == tz then return {} end
+  if not open(tx, ty, tz) then return nil end
+  local goal = ck(tx, ty, tz)
+  local from = { [ck(sx, sy, sz)] = false }
+  local qx, qy, qz, head = { sx }, { sy }, { sz }, 1
+  while head <= #qx do
+    local x, y, z = qx[head], qy[head], qz[head]
+    head = head + 1
+    for _, mv in ipairs(MOVES) do
+      local nx, ny, nz = x + mv[1], y + mv[2], z + mv[3]
+      local nk = ck(nx, ny, nz)
+      if from[nk] == nil and open(nx, ny, nz) then
+        from[nk] = { ck(x, y, z), mv[4] }
+        if nk == goal then
+          local path, k = {}, goal
+          while from[k] do
+            table.insert(path, 1, from[k][2])
+            k = from[k][1]
+          end
+          return path
+        end
+        qx[#qx + 1], qy[#qy + 1], qz[#qz + 1] = nx, ny, nz
+      end
+    end
+    if head % 4000 == 0 then sleep(0) end          -- a long search: let others run
+  end
+  return nil
+end
+
+-- Go there. Something in the way that the plan does not know about: note
+-- it and find another way.
+local function goTo(tx, ty, tz)
+  for _ = 1, 12 do
+    local path = route(tx, ty, tz)
+    if not path then return false end
+    local ok = true
+    for _, mv in ipairs(path) do
+      local moved
+      if mv == "u" or mv == "d" then
+        moved = step(mv)
+      else
+        face(mv)
+        moved = step("f")
+      end
+      if not moved then
+        local x, y, z = lx(), ly(), lz()
+        if mv == "u" then y = y + 1 elseif mv == "d" then y = y - 1
+        else x, z = x + DIRS[mv].x, z + DIRS[mv].z end
+        fitMap.solid[ck(x, y, z)] = true
+        ok = false
+        break
+      end
+      tick()
+    end
+    if ok then return true end
+  end
+  return false
+end
+
+-- between the hut and the building: high over everything, down in front
+-- of the big door
+local function intoBuilding()
+  local m, job = fitMap, st.job
+  local x, y, z = lx(), ly(), lz()
+  if x >= m.x1 and x <= m.x2 and z >= m.z1 and z <= m.z2 and y >= 1 and y <= m.y2 and open(x, y, z) then
+    return true
+  end
+  riseTo(highway())
+  across(job.ox + m.start[1], job.oz + m.start[3], highway() + 12)
+  while ly() > m.start[2] do
+    if not step("d") then break end
+  end
+  return true
+end
+
+local function outOfBuilding()
+  local m = fitMap
+  goTo(m.start[1], m.start[2], m.start[3])
+  riseTo(highway())
+end
+
+local function runFit()
+  local job = st.job
+  fitMap = loadFit(job)
+  local m = fitMap
+  st.i = st.i or 1
+  st.later = st.later or {}
+  st.turns = st.turns or {}
+  st.undone = st.undone or {}
+  for i = 1, math.min(st.i - 1, #m.ops) do
+    if not st.undone[i] then applyOp(m.ops[i]) end
+  end
+  print(("Fitting out: %d jobs."):format(#m.ops))
+
+  local function needs(from)
+    return function()
+      local counts, order, stacks = {}, {}, 0
+      local list = type(from) == "table" and from or nil
+      local n = list and #list or (#m.ops - from + 1)
+      for k = 1, n do
+        local op = m.ops[list and list[k] or (from + k - 1)]
+        if op.k ~= "D" then
+          local name = m.pal[op.i].name
+          if not (st.short and st.short[name]) then
+            if not counts[name] then counts[name] = 0 order[#order + 1] = name end
+            if counts[name] % 64 == 0 then
+              if stacks >= LOAD_STACKS then break end
+              stacks = stacks + 1
+            end
+            counts[name] = counts[name] + 1
+          end
+        end
+      end
+      local items = {}
+      for _, name in ipairs(order) do
+        local have = 0
+        for s = 1, 16 do
+          local d = turtle.getItemDetail(s)
+          if d and d.name == name then have = have + d.count end
+        end
+        if counts[name] > have then items[#items + 1] = { name, counts[name] - have } end
+      end
+      return items
+    end
+  end
+
+  local function act(verb, s)
+    local sfx = s == 0 and "Down" or s == 1 and "Up" or ""
+    return turtle[verb .. sfx]()
+  end
+  local function see(s)
+    local ok, data = turtle["inspect" .. (s == 0 and "Down" or s == 1 and "Up" or "")]()
+    return ok and data or nil
+  end
+
+  -- One job. True when finished with it (done, or given up on); false to
+  -- try again (after fetching things).
+  local function doOp(n, rest, lastGo)
+    local op = m.ops[n]
+    local want = op.k ~= "D" and m.pal[op.i] or nil
+    local function putOff(why)
+      if lastGo then
+        st.left = (st.left or 0) + 1
+        print(("Left: %s at %d %d %d (%s)."):format(want and want.name:gsub("^.*:", "") or "dig", op.x, op.y, op.z, why))
+      else
+        st.later[#st.later + 1] = n
+      end
+      st.undone[n] = true
+      return true
+    end
+    if want and not findSlot(want.name) then
+      if st.short and st.short[want.name] then return putOff("none to be had") end
+      outOfBuilding()
+      supplyRun(needs(rest), "out of " .. want.name:gsub("^.*:", ""))
+      intoBuilding()
+      if not findSlot(want.name) then
+        st.short = st.short or {}
+        st.short[want.name] = true
+      end
+      return false
+    elseif fuel() < FUEL_SPARE then
+      outOfBuilding()
+      supplyRun(needs(rest), "low on fuel")
+      intoBuilding()
+      return false
+    end
+    local d = STAND[op.s]
+    if not goTo(op.x + d[1], op.y + d[2], op.z + d[3]) then return putOff("cannot get to it") end
+    if op.s >= 2 then face(STAND_FACE[op.s]) end
+    local there = see(op.s)
+    if op.k == "D" then
+      if there then act("dig", op.s) end
+      st.undone[n] = nil
+      applyOp(op)
+      return true
+    end
+    local right = there and there.name == want.name
+      and (not want.facing or facingOf(there) == want.facing)
+    if not right then
+      if there and (op.k == "R" or there.name == want.name or isClutter(there.name)) then
+        act("dig", op.s)
+      elseif there then
+        return putOff("a " .. there.name:gsub("^.*:", "") .. " is there")
+      end
+      local turn = st.turns[want.name] or 2
+      if want.facing and op.s < 2 then face((FACING[want.facing] + turn) % 4) end
+      turtle.select(findSlot(want.name))
+      local placed = act("place", op.s)
+      if placed and want.facing then
+        local got = facingOf(see(op.s))
+        if got and FACING[got] and got ~= want.facing and op.s < 2 then
+          -- learn which way this kind of block ends up, and put it right
+          st.turns[want.name] = (turn + FACING[want.facing] - FACING[got]) % 4
+          turtle.select(1)
+          act("dig", op.s)
+          face((FACING[want.facing] + st.turns[want.name]) % 4)
+          turtle.select(findSlot(want.name))
+          act("place", op.s)
+        end
+      end
+      turtle.select(1)
+      if not placed and not see(op.s) then return putOff("it would not go in") end
+    end
+    st.undone[n] = nil
+    applyOp(op)
+    return true
+  end
+
+  intoBuilding()
+  while st.i <= #m.ops do
+    progress = { kind = "fitting", done = st.i - 1, total = #m.ops, later = #st.later }
+    if doOp(st.i, st.i, false) then
+      st.i = st.i + 1
+      if st.i % 8 == 0 then save() end
+    end
+    tick("fitting out")
+  end
+  if #st.later > 0 then
+    print(("Going back for %d jobs I put off."):format(#st.later))
+    st.short = nil
+  end
+  while #st.later > 0 do
+    progress = { kind = "fitting", done = #m.ops, total = #m.ops, retry = #st.later }
+    if doOp(st.later[1], st.later, true) then
+      table.remove(st.later, 1)
+      save()
+    end
+    tick("fitting out")
+  end
+  outOfBuilding()
+  print(("Fit-out finished%s."):format((st.left or 0) > 0 and (", " .. st.left .. " jobs left undone") or ""))
+  st.done = true
+  save()
+end
+
 ---------------------------------------------------------------- lumberjack
 -- chop: fell wild trees for charcoal. Given spots where the ground map saw
 -- treetops, come down on each from above and follow the tree through its
@@ -794,7 +1131,12 @@ local function work()
     if not findHeading() then error("I am boxed in.", 0) end
   end
   if st.job and not st.done and not st.paused then
-    if st.job.area then runForage() elseif st.job.trees then runChop() else
+    if st.job.area then runForage() elseif st.job.trees then runChop()
+    elseif st.job.fit then
+      report("fitting out")
+      runFit()
+      lastState = "idle"
+    else
       report("building")
       runBuild()
       lastState = "idle"
@@ -848,6 +1190,18 @@ while true do
     task = guarded(work)
   elseif cmd.cmd == "resume" then
     st.paused = nil
+    save()
+    task = guarded(work)
+  elseif cmd.cmd == "fit" and tonumber(cmd.ox) and tonumber(cmd.oy) and tonumber(cmd.oz) then
+    -- fit out a building: plan (the jobs) and shell (what is already built)
+    local plan = type(cmd.plan) == "string" and cmd.plan:match("^[%w_%-]+$") or "factory_fitout"
+    local shell = type(cmd.shell) == "string" and cmd.shell:match("^[%w_%-]+$") or "factory_shell"
+    for _, f in ipairs({ plan .. ".plan", shell .. ".plan" }) do
+      if fs.exists(f) then fs.delete(f) end
+    end
+    st = { job = { fit = true, plan = plan, shell = shell, ox = math.floor(tonumber(cmd.ox)),
+      oy = math.floor(tonumber(cmd.oy)), oz = math.floor(tonumber(cmd.oz)) },
+      turn = st.turn, orderSeq = st.orderSeq }
     save()
     task = guarded(work)
   elseif cmd.cmd == "chop" and type(cmd.area) == "string" then

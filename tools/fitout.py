@@ -28,7 +28,13 @@ from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-bp = json.load(open(os.path.join(ROOT, "blueprints", "factory.json")))
+# fitout.py [<final.json> <shell.txt> <out.txt> <start x,y,z>]
+ARGS = sys.argv[1:]
+F_FINAL = ARGS[0] if ARGS else os.path.join(ROOT, "blueprints", "factory.json")
+F_SHELL = ARGS[1] if ARGS else os.path.join(ROOT, "blueprints", "factory_shell.txt")
+F_OUT = ARGS[2] if ARGS else os.path.join(ROOT, "blueprints", "factory_fitout.txt")
+START = tuple(map(int, ARGS[3].split(","))) if ARGS else (22, 2, 33)   # outside the big door
+bp = json.load(open(F_FINAL))
 
 def split(full):
     m = re.match(r"([^\[]+)(?:\[(.*)\])?", full)
@@ -38,7 +44,7 @@ def split(full):
 final = {(x, y, z): split(bp["palette"][i]) for x, y, z, i in bp["blocks"]}
 
 shell, mode, spal = {}, None, []
-for line in open(os.path.join(ROOT, "blueprints", "factory_shell.txt")):
+for line in open(F_SHELL):
     t = line.split()
     if t[0] in "PB" and len(t) == 2 and t[1].isdigit():
         mode = t[0]
@@ -68,8 +74,11 @@ for c, (name, facing) in final.items():
 print(f"{len(digs)} to dig out, {len(swaps)} to swap, {len(puts)} to put in")
 
 # ---------------------------------------------------------------- the space
-X0, Y0, Z0 = -4, -1, -4
-SX, SY, SZ = 57 + 8, 34 + 4, 32 + 8
+_all = list(final) + list(shell)
+X0, Y0, Z0 = min(c[0] for c in _all) - 4, -1, min(c[2] for c in _all) - 4
+SX = max(c[0] for c in _all) + 5 - X0
+SY = max(c[1] for c in _all) + 5 - Y0
+SZ = max(c[2] for c in _all) + 5 - Z0
 def idx(c):
     return (c[0] - X0, c[1] - Y0, c[2] - Z0)
 footprint = {(x, z) for (x, y, z) in final if y == 0} | {(x, z) for (x, y, z) in shell if y == 0}
@@ -84,7 +93,6 @@ def space(blocks):
             free[i] = False
     return free
 
-START = (22, 2, 33)                               # outside the big door
 def reachable(free):
     lab, _ = ndimage.label(free)
     return lab == lab[idx(START)]
@@ -182,7 +190,7 @@ for c in sorted(swaps, key=lambda c: (c[2], c[0])):
 # then the fittings, deepest round first; within a round sweep room by room
 def sweep(item):
     (x, y, z), s = item
-    room = min(x // 9, 5)
+    room = min(max(x, 0) // 9, 5)
     return (room, y, z if (y + room) % 2 == 0 else -z, x)
 for wave in reversed(waves):
     for c, s in sorted(wave, key=sweep):
@@ -218,8 +226,9 @@ wrong = [c for c in want if have.get(c) != want[c]]
 extra = [c for c in have if c not in final]
 print(f"replay: {len(ops)} jobs, {bad} out of reach, {len(wrong)} blocks wrong at the end, {len(extra)} left over")
 
-out = os.path.join(ROOT, "blueprints", "factory_fitout.txt")
+out = F_OUT
 with open(out, "w") as f:
+    f.write(f"S {START[0]} {START[1]} {START[2]}\n")
     f.write(f"P {len(pal)}\n")
     for name, facing in pal:
         f.write(f"{name} {facing}\n")
