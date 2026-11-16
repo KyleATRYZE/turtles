@@ -1,52 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794849686,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "BoulderDash"
-    },
-    {
-      "id": 1794849687,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "DiggyStardust"
-    },
-    {
-      "id": 1794849688,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "ElvisPitsley"
-    },
-    {
-      "id": 1794849689,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "NotoriousDIG"
-    },
-    {
-      "id": 1794849690,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "ObiWanKenOrebi"
-    },
-    {
-      "id": 1794849691,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "OreLando"
-    },
-    {
-      "id": 1794849692,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "OreSonWelles"
-    },
-    {
-      "id": 1794849693,
-      "issued": 1794849686000,
-      "cmd": "home",
-      "target": "QuarryStyles"
+      "id": 1794850251,
+      "issued": 1794850251000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
     }
   ]
 }
