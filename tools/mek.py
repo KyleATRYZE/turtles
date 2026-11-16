@@ -11,7 +11,7 @@ Prints the ops for a helper's lab bench:  tools/order.py lab SteelyDan "ops=$(to
 The infuser stands at -4452 74 1533 facing south. From the turtle's side:
 the west face takes the infusion item, the top takes the item to work on,
 the east face gives the result, the north face is the energy slot (redstone
-dust is power: one dust runs one job).
+dust is power: two dust run one job, with a little to spare).
 """
 import sys
 
@@ -61,11 +61,14 @@ for name, n in jobs:
     want(stages[0][0], n)
     for inp, extra, per, out in stages:
         want(extra, n * per)
-        power += n
+        power += 2 * n                   # (a job takes a little more than one dust of power)
 want("minecraft:redstone", power + 2)
 ops = ["fetch|" + ",".join(f"{k}={v}" for k, v in need.items()), STATION["W"][1]]
 at = "W"
 ops += go(at, "N") + drop("minecraft:redstone", power + 2); at = "N"
+# whatever was left half done last time finishes now it has power: take it
+# out, and empty the infusion tank, so this run starts clean
+ops += ["wait|25"] + go(at, "E") + ["suck|64", "suck|64", "call|front|getInput", "call|front|dumpInfuseType"]; at = "E"
 for name, n in jobs:
     for inp, extra, per, out in RECIPES[name]:
         ops += go(at, "W") + drop(extra, n * per) + ["call|front|getInfuseType"]; at = "W"

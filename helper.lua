@@ -457,6 +457,15 @@ local function supplyRun(indices, reason, once)
       end
       if once then return false end
     elseif st.lab then
+      -- lava first: coal and charcoal on board may be what the lab was sent for
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it and it.name == "minecraft:lava_bucket" and fuel() < FULL_TANK then
+          turtle.select(s)
+          turtle.refuel(1)
+        end
+      end
+      turtle.select(1)
       if fuel() < 600 then refuel(FULL_TANK) end
       goHover()
     else
