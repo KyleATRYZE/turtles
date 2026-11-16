@@ -1163,6 +1163,15 @@ local function isNatural(name)
   return false
 end
 
+-- Building blocks: never dropped. Ones the current plan doesn't use go back
+-- to the factory.
+local MATERIALS = {}
+for _, n in ipairs({ "polished_deepslate", "deepslate_tiles", "stone_bricks",
+  "cracked_stone_bricks", "deepslate_bricks", "deepslate_tile_stairs", "cut_copper",
+  "cut_copper_slab", "cobblestone", "dirt", "glass", "glass_pane" }) do
+  MATERIALS["minecraft:" .. n] = true
+end
+
 -- Worth taking home after clearing (the rest is dropped).
 local function isKeeper(name)
   return name:find("_log", 1, true) or name:find("sapling", 1, true)
@@ -1173,7 +1182,8 @@ end
 local list                   -- { pal = {...}, blocks = {...} }
 
 local function loadList(b)
-  if list then return list end
+  if list and list.file == b.listFile then return list end
+  list = nil
   if not fs.exists(b.listFile) then
     print("Downloading the building plan.")
     local rev = (fs.exists(".version") and (function()
@@ -1210,20 +1220,22 @@ local function loadList(b)
     error("The building plan is empty.", 0)
   end
   list = { pal = pal, blocks = blocks }
-  local sx, sy, sz, miny = 0, 0, 0, 0
+  for _, p in ipairs(pal) do MATERIALS[p.name] = true end
+  local sx, sy, sz, minx, miny, minz = 0, 0, 0, 0, 0, 0
   for _, e in ipairs(blocks) do
     sx, sy, sz = math.max(sx, e[1] + 1), math.max(sy, e[2] + 1), math.max(sz, e[3] + 1)
-    miny = math.min(miny, e[2])
+    minx, miny, minz = math.min(minx, e[1]), math.min(miny, e[2]), math.min(minz, e[3])
   end
-  list.sx, list.sy, list.sz, list.miny = sx, sy, sz, miny
+  list.sx, list.sy, list.sz, list.minx, list.miny, list.minz = sx, sy, sz, minx, miny, minz
+  list.file = b.listFile
   return list
 end
 
 -- the box we may dig in: the building plus a ring around it, from the
 -- bottom of the foundation up
 local function inSite(b, x, y, z)
-  return x >= b.ox - MARGIN and x <= b.ox + list.sx - 1 + MARGIN
-    and z >= b.oz - MARGIN and z <= b.oz + list.sz - 1 + MARGIN
+  return x >= b.ox + list.minx - MARGIN and x <= b.ox + list.sx - 1 + MARGIN
+    and z >= b.oz + list.minz - MARGIN and z <= b.oz + list.sz - 1 + MARGIN
     and y >= b.oy + list.miny and y <= b.oy + list.sy + 20
 end
 
@@ -1239,11 +1251,9 @@ end
 
 -- Drop what is not worth keeping; with all = true drop the keepers too.
 local function dropJunk(b, all)
-  local mats = {}
-  if list then for _, p in ipairs(list.pal) do mats[p.name] = true end end
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
-    if d and not mats[d.name] and d.name ~= PICKAXE and d.name ~= SCANNER
+    if d and not MATERIALS[d.name] and d.name ~= PICKAXE and d.name ~= SCANNER
       and d.name ~= CORE and d.name ~= "minecraft:coal" and d.name ~= "minecraft:charcoal"
       and (all or not isKeeper(d.name)) then
       turtle.select(s)
@@ -1303,8 +1313,8 @@ end
 
 -- The column on the west side of the site we go up and down in.
 local function sideColumn(b, z)
-  local x1 = b.ox - MARGIN
-  local z1, z2 = b.oz - MARGIN, b.oz + list.sz - 1 + MARGIN
+  local x1 = b.ox + list.minx - MARGIN
+  local z1, z2 = b.oz + list.minz - MARGIN, b.oz + list.sz - 1 + MARGIN
   return x1, math.max(z1, math.min(z2, z))
 end
 
@@ -1386,10 +1396,15 @@ end
 local function restock(b)
   -- the keepers go into the drop-off chest by the factory
   local dock = base.dock
+  local using = {}
+  for _, p in ipairs(list.pal) do using[p.name] = true end
+  local function handBack(name)
+    return (isKeeper(name) or MATERIALS[name]) and not using[name]
+  end
   local carrying = false
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
-    if d and isKeeper(d.name) then carrying = true end
+    if d and handBack(d.name) then carrying = true end
   end
   -- stand beside the chest (never in the miners' lanes) and drop in
   local cx, cy, cz = dock.x, dock.y - 1, dock.z
@@ -1404,7 +1419,7 @@ local function restock(b)
     face(toward)
     for s = 1, 16 do
       local d = turtle.getItemDetail(s)
-      if d and isKeeper(d.name) then
+      if d and handBack(d.name) then
         turtle.select(s)
         turtle.drop()
       end
@@ -1474,8 +1489,8 @@ end
 -- natural block above the ground there, top down. Stops (touching nothing)
 -- if anything there looks built.
 local function clearSite(b)
-  local x1, x2 = b.ox - MARGIN, b.ox + list.sx - 1 + MARGIN
-  local z1, z2 = b.oz - MARGIN, b.oz + list.sz - 1 + MARGIN
+  local x1, x2 = b.ox + list.minx - MARGIN, b.ox + list.sx - 1 + MARGIN
+  local z1, z2 = b.oz + list.minz - MARGIN, b.oz + list.sz - 1 + MARGIN
   if not b.scanned then
     print("Scanning the site.")
     report("scanning the site")
@@ -1634,7 +1649,7 @@ local function placeShell(b)
   end
   b.stage = "done"
   save()
-  print("The shell is finished!")
+  print("Finished: " .. tostring(b.plan):gsub("_", " ") .. "!")
   return true
 end
 
@@ -1692,10 +1707,18 @@ local function work()
   if not st.done.ground then landSurvey() end
   if st.site then landSurvey(st.site) end
   goToCell(st.park)
-  if st.build and st.build.stage ~= "done" and not st.build.paused then
-    runBuild()
-    goToCell(st.park)
+  for _ = 1, 4 do
+    if not st.build or st.build.paused then break end
+    if st.build.stage == "done" then
+      if not (st.queue and #st.queue > 0) then break end
+      st.build = table.remove(st.queue, 1)     -- back to what was put aside
+      save()
+      print("Back to " .. tostring(st.build.plan):gsub("_", " ") .. ".")
+    end
+    if st.build.stage ~= "done" then runBuild() end
+    if st.build.stage ~= "done" then break end
   end
+  goToCell(st.park)
   if st.done.ground then
     print("Maps done. Waiting for jobs.")
   else
@@ -1776,19 +1799,31 @@ while true do
     save()
     task = guarded(work)
   elseif cmd.cmd == "build" then
-    -- build the shell with its corner (the plan's 0,0,0) at ox, oy, oz.
+    -- build a plan (default: the shell) with its corner (the plan's 0,0,0)
+    -- at ox, oy, oz (default: where the current build is). A different plan
+    -- puts the current build aside; it carries on when the new one is done.
     -- limit = only place this many blocks (a trial); clear = 0 skips
-    -- clearing the site first.
+    -- clearing the site first; stage = clear or place.
     st.paused = nil
-    if tonumber(cmd.ox) and tonumber(cmd.oy) and tonumber(cmd.oz) then
-      local same = st.build and st.build.ox == math.floor(tonumber(cmd.ox))
-        and st.build.oy == math.floor(tonumber(cmd.oy)) and st.build.oz == math.floor(tonumber(cmd.oz))
+    local cur = st.build
+    local plan = (type(cmd.plan) == "string" and cmd.plan:match("^[%w_%-]+$"))
+      or (cur and cur.plan) or "factory_shell"
+    local ox = tonumber(cmd.ox) and math.floor(tonumber(cmd.ox)) or (cur and cur.ox)
+    local oy = tonumber(cmd.oy) and math.floor(tonumber(cmd.oy)) or (cur and cur.oy)
+    local oz = tonumber(cmd.oz) and math.floor(tonumber(cmd.oz)) or (cur and cur.oz)
+    if ox and oy and oz then
+      local same = cur and cur.plan == plan and cur.ox == ox and cur.oy == oy and cur.oz == oz
       if not same then
-        st.build = { ox = math.floor(tonumber(cmd.ox)), oy = math.floor(tonumber(cmd.oy)),
-          oz = math.floor(tonumber(cmd.oz)), plan = "factory_shell", listFile = "build.list",
-          stage = "clear", i = 1 }
-        if fs.exists("build.list") then fs.delete("build.list") end
-        if fs.exists("clear.list") then fs.delete("clear.list") end
+        if cur and cur.plan ~= plan and cur.stage ~= "done" then
+          st.queue = st.queue or {}
+          table.insert(st.queue, 1, cur)
+          print("Putting " .. tostring(cur.plan):gsub("_", " ") .. " aside for now.")
+        end
+        local file = plan == "factory_shell" and "build.list" or (plan .. ".list")
+        if fs.exists(file) then fs.delete(file) end
+        if plan == "factory_shell" and fs.exists("clear.list") then fs.delete("clear.list") end
+        st.build = { ox = ox, oy = oy, oz = oz, plan = plan, listFile = file,
+          stage = plan == "factory_shell" and "clear" or "place", i = 1 }
       end
     end
     if st.build then
