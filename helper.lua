@@ -1259,10 +1259,13 @@ end
 escape = function(limit)
   limit = limit or 1500
   local seen, moves = {}, 0
+  -- out = at flying height, and well clear above where we started (up a
+  -- mountain, flying height can be inside the treetops)
+  local goal = math.max(highway(), pos.y + 20)
   local function key(x, y, z) return x .. "," .. y .. "," .. z end
   local function visit(depth)
     seen[key(pos.x, pos.y, pos.z)] = true
-    if pos.y >= highway() then return true end
+    if pos.y >= goal then return true end
     if moves >= limit or depth > 600 then return false end
     if depth % 8 == 0 then tick("finding a way out") end
     -- up first
