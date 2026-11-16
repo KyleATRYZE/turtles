@@ -1,16 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794870285,
-      "issued": 1794870285000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794870286,
-      "issued": 1794870285000,
-      "cmd": "reboot",
-      "target": "WallStreet"
+      "id": 1794870360,
+      "issued": 1794870360000,
+      "cmd": "lab",
+      "target": "MortarKombat",
+      "clear": 1,
+      "ops": "fetch|sophisticatedstorage:controller=1,sophisticatedstorage:chest=1,sophisticatedstorage:barrel=1,sophisticatedstorage:limited_barrel_1=1,sophisticatedstorage:limited_barrel_4=1,minecraft:barrel=1,minecraft:cobblestone=8|dump;inv;goto|-4452|80|1532;ground;face|2;expect|front|inventory_manager;up|1;inspect|front;place|sophisticatedstorage:controller;expect|front|controller;up|1;place|sophisticatedstorage:chest;expect|front|sophisticatedstorage:chest;up|1;place|sophisticatedstorage:barrel;expect|front|sophisticatedstorage:barrel;inspect|front;down|2;expect|front|controller;types|front;call|front|size;drop|minecraft:cobblestone|8;call|front|list;up|1;call|front|list;up|1;call|front|list;down|3;expect|front|inventory_manager;call|front|importItem|@up|{name='minecraft:cobblestone',count=2};up|1;call|front|list;suck|64;up|2;dig;down|1;dig;down|1;dig;down|1;inv;handin|"
     }
   ]
 }
