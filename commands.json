@@ -1,35 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794862693,
-      "issued": 1794862693000,
+      "id": 1794862843,
+      "issued": 1794862843000,
       "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794862694,
-      "issued": 1794862693000,
-      "cmd": "lab",
-      "target": "MortarKombat",
-      "ops": "escape|800",
-      "clear": 1
-    },
-    {
-      "id": 1794862695,
-      "issued": 1794862693000,
-      "cmd": "reboot",
-      "target": "TimberLake"
-    },
-    {
-      "id": 1794862696,
-      "issued": 1794862693000,
-      "cmd": "fit",
-      "target": "TimberLake",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_foundryfloor",
-      "shell": "factory_asfit2"
+      "target": "LoadRunner"
     }
   ]
 }
