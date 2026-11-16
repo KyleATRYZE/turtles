@@ -337,15 +337,6 @@ function D.wall(mon, data)
   local oz = data.base.z - floor(MH * 3 / 2)    -- world z at pixel 0
   local function px(wx) return wx - ox end
   local function pz(wz) return wz - oz end
-  -- chunk grid over unscanned land
-  for gy = 0, c.h - 1 do
-    for gx = 0, c.w - 1 do
-      local wx, wz = gx + ox, gy + oz
-      if wx % 16 == 0 or wz % 16 == 0 then
-        if (wx + wz) % 2 == 0 then set(c, gx, gy, C.panel) end
-      end
-    end
-  end
   -- land from the scans: three greens by height, contour lines every 3
   local function heightAt(wx, wz)
     for _, m in ipairs(data.maps) do
@@ -364,7 +355,11 @@ function D.wall(mon, data)
     for gx = 0, c.w - 1 do
       local wx, wz = gx + ox, gy + oz
       local h, name = heightAt(wx, wz)
-      if h then
+      if not h then
+        -- not charted yet: plain ground with a light texture, so the map
+        -- reads as one piece; scans fill in the detail as they come
+        set(c, gx, gy, ((gx * 7 + gy * 13) % 11 == 0) and C.low or C.land)
+      else
         local col = (h < floorY - 2 and C.low) or (h > floorY + 3 and C.high) or C.land
         if name:find("leaves") then col = C.low end
         if name:find("water") then col = C.line end
@@ -377,11 +372,15 @@ function D.wall(mon, data)
       end
     end
   end
-  -- plots: dug ones are dark squares, live ones outlined in teal
+  -- plots: they're dug underground, so the dug ones only shade the land
+  -- (every other pixel); the ones being dug now are outlined in teal
   local P = data.plots.size or 8
   for _, p in ipairs(data.plots.done or {}) do
-    box(c, px(p[1]), pz(p[2]), px(p[1]) + P - 1, pz(p[2]) + P - 1, C.panel)
-    outline(c, px(p[1]), pz(p[2]), px(p[1]) + P - 1, pz(p[2]) + P - 1, C.night)
+    for yy = pz(p[2]), pz(p[2]) + P - 1 do
+      for xx = px(p[1]), px(p[1]) + P - 1 do
+        if (xx + yy) % 2 == 0 then set(c, xx, yy, C.low) end
+      end
+    end
   end
   for _, p in ipairs(data.plots.active or {}) do
     box(c, px(p[1]), pz(p[2]), px(p[1]) + P - 1, pz(p[2]) + P - 1, C.raised)
@@ -423,9 +422,9 @@ function D.wall(mon, data)
   line(c, 6, c.h - 5, 6 + 32, c.h - 5, C.dim)
   set(c, 6, c.h - 6, C.dim); set(c, 38, c.h - 6, C.dim)
   put(s, c, MX, MY)
-  text(s, MX + 21, MY + MH - 2, "32 blocks", C.dim, C.night)
-  text(s, MX + 2, MY + 1, "N " .. string.char(24), C.dim, C.night)
-  text(s, MX + MW - 18, MY + MH - 2, "1 pixel = 1 block", C.dim, C.night)
+  text(s, MX + 21, MY + MH - 2, " 32 blocks ", C.dim, C.panel)
+  text(s, MX + 1, MY + 1, " N " .. string.char(24) .. " ", C.dim, C.panel)
+  text(s, MX + MW - 19, MY + MH - 2, " 1 pixel = 1 block ", C.dim, C.panel)
   -- labels: try right, left, above, below; skip if they would overlap
   local taken = {}
   local function free(x1, y, x2)
