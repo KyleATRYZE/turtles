@@ -1422,7 +1422,7 @@ local function runLab()
         local y = tonumber(a[2])
         while pos.y > y do
           local seen, data = turtle.inspectDown()
-          if seen then
+          if seen and data.name ~= "minecraft:water" and data.name ~= "minecraft:lava" then
             if not isGround(data.name) then res = "stopped above " .. data.name break end
             turtle.digDown()
           end
