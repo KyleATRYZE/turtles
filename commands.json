@@ -1,17 +1,19 @@
 {
   "commands": [
     {
-      "id": 1794851972,
-      "issued": 1794851972000,
+      "id": 1794852238,
+      "issued": 1794852238000,
       "cmd": "reboot",
-      "target": "TimberLake"
+      "target": "WallStreet"
     },
     {
-      "id": 1794851973,
-      "issued": 1794851972000,
-      "cmd": "chop",
-      "target": "TimberLake",
-      "area": "-4500:1440:-4400:1504"
+      "id": 1794852239,
+      "issued": 1794852238000,
+      "cmd": "fit",
+      "target": "WallStreet",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518
     }
   ]
 }
