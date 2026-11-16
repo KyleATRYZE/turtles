@@ -158,6 +158,10 @@ local function refuelAny(min)
     if fuel() < min then
       print(("Need fuel (%d/%d). Put coal in my inventory."):format(fuel(), min))
       report("needs fuel")
+      -- on the launch pad the factory can hand some over
+      if swarm and swarm.open() then
+        rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+      end
       sleep(5)
     end
   end

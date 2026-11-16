@@ -169,6 +169,7 @@ local ALERTS = {
   ["not ready"] = "is not ready",
   ["waiting for parts"] = "is waiting for parts",
   ["launched one"] = "launched a new miner",
+  ["out of coal"] = "has no coal: put coal in the storage chest",
   ["fleet full"] = "has built the whole fleet",
 }
 
@@ -198,11 +199,10 @@ local function chatter()
     if box and #chatQueue > 0 then
       local text = table.remove(chatQueue, 1)
       local ok, res, why
-      if owner then
-        ok, res, why = pcall(box.sendMessageToPlayer, text, owner, "Swarm")
-      else
-        ok, res, why = pcall(box.sendMessage, text, "Swarm")
-      end
+      -- Advanced Peripherals 0.8: sendMessage(text, { options })
+      local options = { prefix = "Swarm" }
+      if owner then options.player = owner end
+      ok, res, why = pcall(box.sendMessage, text, options)
       if ok and res ~= nil and res ~= false then
         chatDebug.sent = chatDebug.sent + 1
       else
@@ -221,7 +221,8 @@ local ORDER_WORDS = { stop = true, home = true, resume = true, reboot = true, pi
 -- Listens for "swarm ..." typed in chat.
 local function chatOrders()
   while true do
-    local _, user, message = os.pullEvent("chat")
+    -- Advanced Peripherals 0.8: event, uuid, player name, message, hidden
+    local _, _, user, message = os.pullEvent("chat")
     chatDebug.heard = chatDebug.heard + 1
     chatDebug.lastHeard = tostring(user) .. ": " .. tostring(message)
     local text = type(message) == "string" and message:lower():gsub("^%$", "") or ""

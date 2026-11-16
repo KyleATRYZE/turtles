@@ -672,20 +672,35 @@ local function collect()
   end
 end
 
+-- Hand coal to the turtle in front, without disturbing anything I hold.
+local function fuelTurtleInFront(amount)
+  if not peripheral.hasType("front", "turtle") then return false end
+  local slot
+  for s = 16, 1, -1 do
+    if turtle.getItemCount(s) == 0 then slot = s break end
+  end
+  if not slot then return false end
+  pull("#fuel", amount, slot)
+  if turtle.getItemCount(slot) == 0 then return false end
+  turtle.select(slot)
+  turtle.drop()
+  stashSlot(slot)
+  turtle.select(1)
+  return true
+end
+
 -- Give coal to a miner waiting on the launch pad.
 local function serveFuel()
   if not next(fuelQueue) then return end
-  fuelQueue = {}
   turnTo(base.padTurns)
-  if peripheral.hasType("front", "turtle") then
-    stashAll()
-    pull("#fuel", 16, 1)
-    if turtle.getItemCount(1) > 0 then
-      turtle.select(1)
-      turtle.drop()
-      print("Gave fuel to a miner.")
-    end
-    stashAll()
+  if not peripheral.hasType("front", "turtle") then
+    fuelQueue = {}          -- whoever asked is not on the pad
+  elseif fuelTurtleInFront(16) then
+    fuelQueue = {}
+    print("Gave fuel to a miner.")
+  else
+    print("A miner needs fuel but I have no coal.")
+    report("out of coal")
   end
   turnTo(0)
 end
@@ -696,10 +711,23 @@ local function deploy()
   if not slot then error("Nothing to launch.", 0) end
   turnTo(base.padTurns)
   local waited = 0
-  while turtle.detect() do
+  while true do
+    local coal = countIn(stockTotals(), "#fuel")
+    local busy = turtle.detect()
+    -- a miner sitting on the pad without fuel: feed it so it can leave
+    if busy and next(fuelQueue) and fuelTurtleInFront(16) then
+      fuelQueue = {}
+      print("Gave fuel to a miner.")
+    end
+    if not busy and coal >= NEWBORN_COAL then break end
     if waited % 6 == 0 then
-      print("Launch pad is busy, waiting...")
-      report("launch pad busy")
+      if busy then
+        print("Launch pad is busy, waiting...")
+        report(coal > 0 and "launch pad busy" or "out of coal")
+      else
+        print("Waiting for " .. NEWBORN_COAL .. " coal to fuel the new miner...")
+        report("out of coal")
+      end
     end
     waited = waited + 1
     sleep(5)
@@ -708,11 +736,7 @@ local function deploy()
   if not turtle.place() then error("Could not place the new miner.", 0) end
   setStage(nil)
   pending = pending + 1
-  pull("#fuel", NEWBORN_COAL, 1)
-  if turtle.getItemCount(1) > 0 then
-    turtle.select(1)
-    turtle.drop()
-  end
+  fuelTurtleInFront(NEWBORN_COAL)
   stashAll()
   pcall(peripheral.call, "front", "turnOn")
   turnTo(0)
@@ -795,7 +819,7 @@ end
 local function describeMissing(missing)
   local parts = {}
   for name, n in pairs(missing) do
-    parts[#parts + 1] = n .. " " .. shortName(name)
+    parts[#parts + 1] = n .. " " .. (name == "#fuel" and "coal" or shortName(name))
   end
   table.sort(parts)
   return table.concat(parts, ", ")
@@ -863,6 +887,7 @@ local function tryBuild()
   for name, n in pairs(MINER_PARTS) do
     plan(pretend, name, n, steps, missing)
   end
+  plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)   -- fuel to send it off with
   lastMissing = missing
   if next(missing) then
     print("Waiting for: " .. describeMissing(missing))
