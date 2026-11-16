@@ -1398,13 +1398,23 @@ local function restock(b)
   local dock = base.dock
   local using = {}
   for _, p in ipairs(list.pal) do using[p.name] = true end
-  local function handBack(name)
+  -- spare coal goes back too: one stack is plenty (it takes room from blocks)
+  local coalSlots, spareCoal = 0, {}
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then
+      coalSlots = coalSlots + 1
+      if coalSlots > 1 then spareCoal[s] = true end
+    end
+  end
+  local function handBack(name, slot)
+    if spareCoal[slot] then return true end
     return (isKeeper(name) or MATERIALS[name]) and not using[name]
   end
   local carrying = false
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
-    if d and handBack(d.name) then carrying = true end
+    if d and handBack(d.name, s) then carrying = true end
   end
   -- stand beside the chest (never in the miners' lanes) and drop in
   local cx, cy, cz = dock.x, dock.y - 1, dock.z
@@ -1419,7 +1429,7 @@ local function restock(b)
     face(toward)
     for s = 1, 16 do
       local d = turtle.getItemDetail(s)
-      if d and handBack(d.name) then
+      if d and handBack(d.name, s) then
         turtle.select(s)
         turtle.drop()
       end
