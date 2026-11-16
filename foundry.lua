@@ -25,6 +25,7 @@ local M = {}
 M.STATE_FILE = ".foundry"
 M.print = print           -- (the helper puts its own, logged, print here)
 M.REDSTONE = "minecraft:redstone"
+M.PROTOCOL = "swarm_job" -- (the factory's own channel)
 
 -- the building the line stands in (its corner in the world, and the plans
 -- the helper finds its way by)
@@ -130,7 +131,13 @@ end
 
 function M.order(cmd)
   local s = M.load()
-  if cmd.on ~= nil then s.on = not (cmd.on == 0 or cmd.on == "0" or cmd.on == false) end
+  if cmd.on ~= nil then
+    s.on = not (cmd.on == 0 or cmd.on == "0" or cmd.on == false)
+    -- off the foundry: the factory is told (its furnaces take the ore again)
+    if not s.on then
+      pcall(rednet.broadcast, { type = "foundry_ready", ready = false, machines = {} }, M.PROTOCOL)
+    end
+  end
   if cmd.clear then s.queue, s.cur = {}, nil end
   if cmd.reset then s.m, s.bench, s.ready = {}, nil, nil end
   local kind, item = cmd.job, cmd.item
