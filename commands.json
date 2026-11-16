@@ -1,10 +1,33 @@
 {
   "commands": [
     {
-      "id": 1794862843,
-      "issued": 1794862843000,
+      "id": 1794863090,
+      "issued": 1794863090000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794863091,
+      "issued": 1794863090000,
       "cmd": "reboot",
       "target": "LoadRunner"
+    },
+    {
+      "id": 1794863092,
+      "issued": 1794863090000,
+      "cmd": "reboot",
+      "target": "TimberLake"
+    },
+    {
+      "id": 1794863093,
+      "issued": 1794863090000,
+      "cmd": "fit",
+      "target": "TimberLake",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_foundryfloor",
+      "shell": "factory_asfit2"
     }
   ]
 }
