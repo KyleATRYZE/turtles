@@ -1341,6 +1341,7 @@ end
 --   expect|front/up/down|text   (stop unless the block that way has text in its name)
 --   until|side|method|n|seconds (wait for a machine's count to reach n)
 --   equip|left/right|item       (swap the tool on that side for an item on board)
+--   site|ox|oy|oz|shell|plan   walk|x|y|z   leave   (inside a building, by its plan)
 --   handin|keep,keep            (everything else on board back to the factory)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
@@ -1488,6 +1489,26 @@ local function runLab()
         else
           res = "left alone: " .. name
         end
+      elseif verb == "site" then
+        -- site|ox|oy|oz|shell|plan : work inside a building; walk and leave
+        -- find their way through it by its plan (as the fit-out does)
+        st.job = { fit = true, ox = tonumber(a[2]), oy = tonumber(a[3]), oz = tonumber(a[4]),
+          shell = a[5] or "factory_asfit2", plan = a[6] or "factory_foundryfloor" }
+        st.done = true                       -- (a place to work in, not a job to do)
+        save()
+        fitMap = loadFit(st.job)
+        res = ("plan loaded, door at %d %d %d"):format(fitMap.start[1], fitMap.start[2], fitMap.start[3])
+      elseif verb == "walk" then
+        -- walk|x|y|z in the building's own coordinates
+        if not fitMap then res, stop = "no site set", true else
+          intoBuilding()
+          local there = goTo(tonumber(a[2]), tonumber(a[3]), tonumber(a[4]))
+          res = ("at %d %d %d (%d %d %d)"):format(lx(), ly(), lz(), pos.x, pos.y, pos.z)
+          stop = not there
+        end
+      elseif verb == "leave" then
+        if fitMap then outOfBuilding() end
+        res = ("at %d %d %d"):format(pos.x, pos.y, pos.z)
       elseif verb == "equip" then
         -- equip|left/right|item : swap what is on that side for the item (a
         -- Chunk Controller in place of the pickaxe, say)
