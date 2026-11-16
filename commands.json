@@ -1,17 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794870595,
-      "issued": 1794870595000,
-      "cmd": "fit",
-      "target": "WallStreet",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_storeroom",
-      "shell": "factory_asfit3",
-      "xmin": 10,
-      "xmax": 10
+      "id": 1794870969,
+      "issued": 1794870969000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794870970,
+      "issued": 1794870969000,
+      "cmd": "reboot",
+      "target": "LoadRunner"
+    },
+    {
+      "id": 1794870971,
+      "issued": 1794870969000,
+      "cmd": "reboot",
+      "target": "MortarKombat"
     }
   ]
 }
