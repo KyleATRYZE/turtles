@@ -463,6 +463,14 @@ local function drainFurnace(f)
   end
 end
 
+-- Take finished items out of a furnace, leaving what is still cooking.
+local function emptyOutput(f)
+  for _, inv in ipairs(stores) do
+    if not furnaceList(f)[3] then break end
+    peripheral.call(f, "pushItems", inv, 3)
+  end
+end
+
 -- Load one furnace with fuel and up to `count` of the input. Returns how
 -- many went in.
 local function loadFurnace(f, input, count)
@@ -490,7 +498,41 @@ local function loadFurnace(f, input, count)
   return loaded
 end
 
+-- Between jobs the furnaces keep cooking what the building will need, so a
+-- load for the builder rarely has to wait for smelting.
+local BACKGROUND = {
+  { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
+  { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
+  { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
+}
+
+local function keepFurnacesBusy(stock)
+  for _, f in ipairs(furnaces) do
+    local okList, items = pcall(furnaceList, f)
+    if okList and not items[1] then
+      for _, job in ipairs(BACKGROUND) do
+        local have = stock[job.output] or 0
+        local raw = stock[job.input] or 0
+        local minRaw = job.input == "minecraft:stone_bricks" and 128 or 16
+        if have < job.keep and raw >= minRaw then
+          local okLoad, got = pcall(loadFurnace, f, job.input, 64)
+          if okLoad and got and got > 0 then
+            stock[job.input] = raw - got
+            stock[job.output] = have + got
+            break
+          end
+        end
+      end
+    end
+  end
+end
+
 -- Smelt n items, split across every furnace on the network.
+-- Something to do while waiting on the furnaces (set further down: look
+-- after the miners).
+local whileWaiting
+local lastServe
+
 local function smelt(name, n)
   local usable = {}
   for _, f in ipairs(furnaces) do
@@ -525,6 +567,7 @@ local function smelt(name, n)
       if os.clock() > deadline then
         error("The furnaces did not finish smelting " .. shortName(input) .. ".", 0)
       end
+      if whileWaiting then pcall(whileWaiting) end
       sleep(2)
     end
     for _, a in ipairs(active) do drainFurnace(a.f) end
@@ -920,6 +963,14 @@ local function serveRequests(canCraft)
   turnTo(0)
 end
 
+whileWaiting = function()
+  if not lastServe or os.clock() - lastServe > 10 then
+    lastServe = os.clock()
+    collect()
+    serveRequests(false)
+  end
+end
+
 -- Plan a whole load at once against one copy of the stock, so that making
 -- one line never eats what was set aside for another. Returns the steps,
 -- or nil and what is missing.
@@ -931,6 +982,13 @@ local function planLoad(lines, stock)
     if l[2] > 0 then plan(pretend, l[1], l[2], steps, missing) end
   end
   if next(missing) then return nil, missing end
+  -- no more smelting than one load per furnace (about 11 minutes): the
+  -- builder would rather have a smaller load sooner
+  local smelting = 0
+  for _, st in ipairs(steps) do
+    if RECIPES[st.name] and RECIPES[st.name].smelt then smelting = smelting + st.batches end
+  end
+  if smelting > 64 * math.max(1, #furnaces) then return nil, { smelting = smelting } end
   return steps
 end
 
@@ -1204,7 +1262,8 @@ local function tryBuild()
     setStage(nil)
     stashAll()
   end
-  for _, f in ipairs(furnaces) do drainFurnace(f) end
+  for _, f in ipairs(furnaces) do emptyOutput(f) end
+  if not held then pcall(keepFurnacesBusy, stockTotals()) end
 
   local b
   b, why = survey()

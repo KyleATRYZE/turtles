@@ -64,6 +64,11 @@ local JUNK = {
   ["minecraft:pointed_dripstone"] = true,
   ["minecraft:deepslate"] = true,
   ["minecraft:stone"] = true,
+  -- other mods' stone, not needed and filling the chests
+  ["forbidden_arcanus:darkstone"] = true,
+  ["xycraft_world:kivi"] = true,
+  ["astralsorcery:marble_raw"] = true,
+  ["regions_unexplored:volcanic_ash"] = true,
 }
 
 -- Burned for fuel while mining
@@ -768,9 +773,10 @@ end
 -- Building stone carried home for the factory building: this many stacks
 -- of each are kept back from the rubble (one cobblestone stack always stays
 -- on board for flooring the roads).
--- stacks of building stone to bring home each trip (the factory has more
--- cobbled deepslate than the building needs, so that stays down here)
-local HAUL = { ["minecraft:cobblestone"] = 2 }
+-- stacks of building stone to bring home each trip. The factory has all the
+-- cobble and cobbled deepslate the building needs and its chests are
+-- nearly full, so for now nothing extra comes home.
+local HAUL = {}
 
 local function dropJunk()
   local kept = {}
