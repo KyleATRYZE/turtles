@@ -538,6 +538,8 @@ local BACKGROUND = {
 
 local function keepFurnacesBusy(stock)
   if next(orders) then return end          -- a builder load is being made
+  -- cooking ahead is a luxury: not when coal is short
+  if (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < FUEL_RESERVE + 144 then return end
   for _, f in ipairs(furnaces) do
     local okList, items = pcall(furnaceList, f)
     if okList and not items[1] then

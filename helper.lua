@@ -19,7 +19,7 @@ local BASE_FILE    = ".base"
 local JOB_PROTOCOL = "swarm_job"
 local LIST_URL     = "https://raw.githubusercontent.com/KyleATRYZE/turtles/%s/blueprints/%s.txt"
 local LOAD_STACKS  = 12     -- stacks of blocks per trip
-local FULL_TANK    = 4000   -- fuel to leave the pad with
+local FULL_TANK    = 2500   -- fuel to leave the pad with
 local FUEL_SPARE   = 500    -- go home for more when down to this
 local OVER_SITE    = 36     -- flying height above the site's floor
 local FACING       = { east = 0, south = 1, west = 2, north = 3 }
@@ -264,6 +264,7 @@ local function upFromPad()
       if why == "minecraft:stone" or why == "minecraft:cobblestone" or why == "minecraft:dirt" then
         turtle.digUp()
       else
+        report("stuck under " .. tostring(why):gsub("^.*:", ""))
         sleep(5)
       end
     end
