@@ -1,10 +1,33 @@
 {
   "commands": [
     {
-      "id": 1794855252,
-      "issued": 1794855252000,
+      "id": 1794855377,
+      "issued": 1794855377000,
       "cmd": "reboot",
       "target": "WallStreet"
+    },
+    {
+      "id": 1794855378,
+      "issued": 1794855377000,
+      "cmd": "strip",
+      "target": "WallStreet",
+      "xmax": 27
+    },
+    {
+      "id": 1794855379,
+      "issued": 1794855377000,
+      "cmd": "reboot",
+      "target": "MortarKombat"
+    },
+    {
+      "id": 1794855380,
+      "issued": 1794855377000,
+      "cmd": "fit",
+      "target": "MortarKombat",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "xmin": 28
     }
   ]
 }
