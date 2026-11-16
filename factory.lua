@@ -134,6 +134,55 @@ local RECIPES = {
     yield = 6, grid = { "C", "C", "C", "", "", "", "", "", "" },
     key = { C = "minecraft:cut_copper" },
   },
+  -- fittings for the factory building
+  ["minecraft:furnace"] = {
+    grid = { "C", "C", "C", "C", "", "C", "C", "C", "C" },
+    key = { C = "minecraft:cobblestone" },
+  },
+  ["minecraft:ladder"] = {
+    yield = 3, grid = { "S", "", "S", "S", "S", "S", "S", "", "S" },
+    key = { S = "minecraft:stick" },
+  },
+  ["minecraft:iron_bars"] = {
+    yield = 16, grid = { "I", "I", "I", "I", "I", "I", "", "", "" },
+    key = { I = "minecraft:iron_ingot" },
+  },
+  ["minecraft:iron_nugget"] = {
+    yield = 9, grid = { "I", "", "", "", "", "", "", "", "" },
+    key = { I = "minecraft:iron_ingot" },
+  },
+  ["minecraft:chain"] = {
+    grid = { "N", "", "", "I", "", "", "N", "", "" },
+    key = { N = "minecraft:iron_nugget", I = "minecraft:iron_ingot" },
+  },
+  ["minecraft:torch"] = {
+    yield = 4, grid = { "C", "", "", "S", "", "", "", "", "" },
+    key = { C = "#fuel", S = "minecraft:stick" },
+  },
+  ["minecraft:lantern"] = {
+    grid = { "N", "N", "N", "N", "T", "N", "N", "N", "N" },
+    key = { N = "minecraft:iron_nugget", T = "minecraft:torch" },
+  },
+  ["minecraft:lightning_rod"] = {
+    grid = { "C", "", "", "C", "", "", "C", "", "" },
+    key = { C = "minecraft:copper_ingot" },
+  },
+  ["computercraft:cable"] = {
+    yield = 6, grid = { "", "S", "", "S", "R", "S", "", "S", "" },
+    key = { S = "minecraft:stone", R = "minecraft:redstone" },
+  },
+  ["computercraft:wired_modem"] = {
+    grid = { "S", "S", "S", "S", "R", "S", "S", "S", "S" },
+    key = { S = "minecraft:stone", R = "minecraft:redstone" },
+  },
+  ["computercraft:wired_modem_full"] = {
+    grid = { "M", "", "", "", "", "", "", "", "" },
+    key = { M = "computercraft:wired_modem" },
+  },
+  ["computercraft:monitor_advanced"] = {
+    yield = 4, grid = { "G", "G", "G", "G", "P", "G", "G", "G", "G" },
+    key = { G = "minecraft:gold_ingot", P = "minecraft:glass_pane" },
+  },
   -- unpacking storage blocks (packed by tidyStorage when the chests fill up)
   ["minecraft:redstone"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:redstone_block" } },
