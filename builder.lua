@@ -364,16 +364,42 @@ local function doorKey()
   return key(d.x, d.y, d.z), d
 end
 
--- Walk to a cell of the base room by known open cells.
+-- Walk to a cell of the base room by known open cells. If a block now
+-- stands where the map says it's open (someone put a furnace there, say),
+-- the map is corrected and another way is tried. Turtles in the way are
+-- waited for (by step), not mapped.
 local function goToCell(goalK)
-  local allowed = roomSet()
-  allowed[doorKey()] = true
-  local path = pathTo(goalK, allowed)
-  if not path then return false end
-  for _, m in ipairs(path) do
-    if not moveBy(m) then return false end
+  for _ = 1, 6 do
+    local allowed = roomSet()
+    allowed[doorKey()] = true
+    local path = pathTo(goalK, allowed)
+    if not path then return false end
+    local ok = true
+    for _, m in ipairs(path) do
+      if not moveBy(m) then
+        local dir = (m == "u" or m == "d") and m or "f"
+        local seen, data = turtle["inspect" .. SUFFIX[dir]]()
+        if seen and type(data) == "table" and not tostring(data.name):find("turtle", 1, true) then
+          local x, y, z = neighbour(pos.x, pos.y, pos.z, m)
+          local bad = key(x, y, z)
+          local cells = {}
+          for _, k in ipairs(st.roomCells or {}) do
+            if k ~= bad then cells[#cells + 1] = k end
+          end
+          st.roomCells = cells
+          save()
+          print("The room has changed: " .. tostring(data.name):gsub("^.*:", "")
+            .. " in the way. Finding another way.")
+        else
+          return false                    -- a turtle that would not move
+        end
+        ok = false
+        break
+      end
+    end
+    if ok then return true end
   end
-  return true
+  return false
 end
 
 local function sendMap(name, data)
