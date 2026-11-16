@@ -1,40 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794871801,
-      "issued": 1794871801000,
+      "id": 1794872248,
+      "issued": 1794872248000,
       "cmd": "reboot",
-      "target": "ChunkNorris"
+      "target": "WallStreet"
     },
     {
-      "id": 1794871802,
-      "issued": 1794871801000,
-      "cmd": "park",
-      "target": "ChunkNorris"
-    },
-    {
-      "id": 1794871803,
-      "issued": 1794871801000,
+      "id": 1794872249,
+      "issued": 1794872248000,
       "cmd": "reboot",
-      "target": "NatKingCoal"
-    },
-    {
-      "id": 1794871804,
-      "issued": 1794871801000,
-      "cmd": "reboot",
-      "target": "BoulderDash"
-    },
-    {
-      "id": 1794871805,
-      "issued": 1794871801000,
-      "cmd": "reboot",
-      "target": "ElvisPitsley"
-    },
-    {
-      "id": 1794871806,
-      "issued": 1794871801000,
-      "cmd": "reboot",
-      "target": "BrickJagger"
+      "target": "SteelyDan"
     }
   ]
 }
