@@ -23,6 +23,16 @@ local BUCKET      = "minecraft:bucket"
 local LAVA_BUCKET = "minecraft:lava_bucket"
 local LAVA_TARGET = 10000
 
+-- Coal hunting: a miner holding a Geo Scanner (Advanced Peripherals) stops
+-- digging its plot and goes looking for coal ore instead.
+local SCANNER     = "advancedperipherals:geo_scanner"
+local PICKAXE     = "minecraft:diamond_pickaxe"
+local HUNT_RADIUS = 8      -- scan range in blocks (the free range)
+local HUNT_STEP   = 14     -- distance between scan points
+local HUNT_REACH  = 70     -- how far from the factory to roam
+local HUNT_NEAR   = 28     -- but no closer than this
+local HUNT_LOAD   = 128    -- coal to gather before taking it home
+
 -- Names for miners, picked by computer number.
 local NAMES = {
   "ShaftPunk", "PickJagger", "CoalPorter", "DrillMurray", "OreLando",
@@ -530,7 +540,8 @@ local function unloadDock()
     local d = turtle.getItemDetail(s)
     local keep = false
     if d then
-      if d.name == BUCKET or d.name == LAVA_BUCKET then
+      if d.name == BUCKET or d.name == LAVA_BUCKET
+        or d.name == SCANNER or d.name == PICKAXE then
         keep = true
       elseif d.name == KEEP_ONE_STACK and not keptCobble then
         keptCobble = true
@@ -580,18 +591,35 @@ local function fuelStop(needed)
   if fuel() >= needed then return end
   toExitColumn()
   axisMove("y", st.exit2.y - 1, true)
+  local tries = 0
   while fuel() < needed do
     print("Asking the factory for fuel.")
     report("needs fuel")
     rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
     sleep(10)
     for s = 1, 16 do
-      if turtle.getItemCount(s) > 0 then
+      local d = turtle.getItemDetail(s)
+      if d and d.name == SCANNER then
+        -- the factory has no coal and handed over its Geo Scanner instead:
+        -- go and find some
+        st.hunt = true
+        st.phase, st.back = nil, nil
+        save()
+        error("SWITCH_TO_HUNT", 0)
+      end
+      if d then
         turtle.select(s)
         while fuel() < needed and turtle.refuel(1) do end
       end
     end
     turtle.select(1)
+    tries = tries + 1
+    -- the factory has nothing to give: if there is enough in the tank to
+    -- get to the plot and back, carry on rather than wait for ever
+    if tries >= 6 and st.back and fuel() >= 2 * dockDistance(st.back.y) + 60 then
+      print("No fuel on offer. Carrying on with what I have.")
+      return
+    end
   end
 end
 
@@ -874,6 +902,214 @@ local function mineRow(lr, y)
   return axisMove(axis, target, false, mineStep)
 end
 
+---------------------------------------------------------------- coal hunting
+
+local function findItem(name)
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and d.name == name then return s end
+  end
+  return nil
+end
+
+local function countItem(name)
+  local n = 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and d.name == name then n = n + d.count end
+  end
+  return n
+end
+
+-- Hunting happens on its own level, above the roads and the plots.
+local function huntY() return st.home.y + 10 end
+
+-- The side holding the pickaxe (the other one holds the modem).
+local function toolSide()
+  if peripheral.getType("left") == "modem" then return "right" end
+  return "left"
+end
+
+-- If a restart caught us with the scanner fitted, put the pickaxe back.
+local function fixTool()
+  local side = toolSide()
+  local fitted = peripheral.getType(side)
+  local slot = findItem(PICKAXE)
+  if fitted and fitted ~= "modem" and slot then
+    turtle.select(slot)
+    if side == "left" then turtle.equipLeft() else turtle.equipRight() end
+    turtle.select(1)
+  end
+end
+
+-- Swap the pickaxe for the scanner, look around, swap back.
+-- Returns a list of coal ore positions, or nil and a reason.
+local function scanForCoal()
+  local slot = findItem(SCANNER)
+  if not slot then return nil, "I have no Geo Scanner" end
+  local side = toolSide()
+  local equip = side == "left" and turtle.equipLeft or turtle.equipRight
+  turtle.select(slot)
+  if not equip() then
+    turtle.select(1)
+    return nil, "could not fit the scanner"
+  end
+  local found, why
+  for _ = 1, 8 do
+    local scanner = peripheral.wrap(side)
+    if scanner and scanner.scan then
+      local ok, blocks, reason = pcall(scanner.scan, HUNT_RADIUS)
+      if ok and type(blocks) == "table" then
+        found = blocks
+        break
+      end
+      why = tostring(ok and reason or blocks)
+    else
+      why = "the scanner did not respond"
+    end
+    sleep(1)
+  end
+  turtle.select(slot)
+  equip()          -- pickaxe back on
+  turtle.select(1)
+  if not found then return nil, why or "scan failed" end
+  local ores = {}
+  for _, b in ipairs(found) do
+    if type(b.name) == "string" and b.name:find("coal", 1, true)
+      and not b.name:find("charcoal", 1, true) and b.x and b.y and b.z then
+      local x, y, z = pos.x + b.x, pos.y + b.y, pos.z + b.z
+      local nearBase = math.abs(x - st.exit1.x) <= 12 and math.abs(z - st.exit1.z) <= 12
+      if y > st.home.y and not nearBase then
+        ores[#ores + 1] = { x = x, y = y, z = z }
+      end
+    end
+  end
+  return ores
+end
+
+-- Straight-line dig to a block. False if something will not break.
+local function digTo(x, y, z)
+  return axisMove("y", y, false) and axisMove("x", x, false) and axisMove("z", z, false)
+end
+
+-- Places to scan from: a grid around the factory, skipping the middle.
+local function huntPoints()
+  local pts = {}
+  local n = math.floor(HUNT_REACH / HUNT_STEP)
+  for i = -n, n do
+    for k = -n, n do
+      local dx, dz = i * HUNT_STEP, k * HUNT_STEP
+      if math.max(math.abs(dx), math.abs(dz)) >= HUNT_NEAR then
+        pts[#pts + 1] = { x = st.exit1.x + dx, z = st.exit1.z + dz }
+      end
+    end
+  end
+  return pts
+end
+
+-- Leave the base down the out-shaft, stopping at the hunting level.
+local function leaveToHunt()
+  toExitColumn()
+  local out = outShaft()
+  if over(st.exit2) then
+    axisMove("y", st.dock.y, true)
+    flyTo(out.x, out.z)
+  end
+  axisMove("y", huntY(), true)
+end
+
+-- Take the coal home, then come back out.
+local function huntDeliver()
+  print("Taking coal to the base.")
+  report("flying to base")
+  local shaft = inShaft()
+  axisMove("y", huntY(), true)
+  flyTo(shaft.x, shaft.z)
+  upToDock()
+  refuelFromInventory(FUEL_TARGET)
+  unloadDock()
+  leaveToHunt()
+  report("hunting coal")
+end
+
+-- Roam the scan points, digging out every coal ore the scanner finds.
+-- Returns when the whole area has been covered.
+local function hunt()
+  if os.getComputerLabel() ~= "CoalPorter" then os.setComputerLabel("CoalPorter") end
+  print("Hunting coal.")
+  report("hunting coal")
+  fixTool()
+
+  -- get onto the hunting level from wherever we are, the right way round
+  local shaft, out = inShaft(), outShaft()
+  if at(st.dock) or (pos.x == shaft.x and pos.z == shaft.z and pos.y <= st.dock.y
+    and pos.y >= huntY()) then
+    if not at(st.dock) then upToDock() end
+    refuelFromInventory(FUEL_TARGET)
+    unloadDock()
+    leaveToHunt()
+  elseif at(st.exit1) or (over(st.exit2) and pos.y >= st.exit2.y - 1)
+    or (pos.x == out.x and pos.z == out.z and pos.y <= st.dock.y and pos.y >= huntY()) then
+    leaveToHunt()
+  else
+    axisMove("y", huntY(), true)
+  end
+
+  local pts = huntPoints()
+  st.huntDone = st.huntDone or {}
+  while true do
+    if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+    if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then
+      dropJunk()
+      compact()
+      if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then huntDeliver() end
+    end
+
+    -- nearest scan point not yet visited
+    local best, bestD
+    for i, p in ipairs(pts) do
+      if not st.huntDone[i] then
+        local d = math.abs(p.x - pos.x) + math.abs(p.z - pos.z)
+        if not bestD or d < bestD then best, bestD = i, d end
+      end
+    end
+    if not best then break end
+    local p = pts[best]
+    print(("Scan point %d of %d"):format(best, #pts))
+    local reached = axisMove("y", huntY(), false) and axisMove("x", p.x, false)
+      and axisMove("z", p.z, false)
+    if reached then
+      local ores, why = scanForCoal()
+      if not ores then
+        print("Scanner problem: " .. tostring(why))
+        report("scanner problem")
+        sleep(20)
+      else
+        print(#ores .. " coal ore nearby.")
+        report("hunting coal")
+        while #ores > 0 do
+          local ni, nd
+          for i, o in ipairs(ores) do
+            local d = math.abs(o.x - pos.x) + math.abs(o.y - pos.y) + math.abs(o.z - pos.z)
+            if not nd or d < nd then ni, nd = i, d end
+          end
+          local o = table.remove(ores, ni)
+          digTo(o.x, o.y, o.z)
+          if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+        end
+      end
+    end
+    st.huntDone[best] = true
+    save()
+  end
+
+  print("Covered the whole area. Taking the coal home.")
+  huntDeliver()
+  st.hunt, st.huntDone = nil, nil
+  st.huntFinished = true
+  save()
+end
+
 -- Ask the factory for a plot to mine. With no time limit it waits until one
 -- is offered; with one (seconds) it gives up and returns nil.
 local function requestJob(limit)
@@ -1007,6 +1243,7 @@ local function relocate()
   pos.x, pos.y, pos.z = locate()
   if st.swarm then
     refuelFromInventory(FUEL_TARGET)
+    if st.hunt then return true end   -- hunt() finds its own way
     if st.phase == "finish" or st.phase == "finished" then
       return true   -- run() finishes the job from wherever we are
     end
@@ -1061,11 +1298,26 @@ local function jobTask()
         located = false
         print(("Plot #%d at %d, %d"):format(j.index, j.x0, j.z0))
       end
+      -- any swarm miner that is holding a Geo Scanner hunts coal instead
+      if st.swarm and not st.hunt and not st.huntFinished and findItem(SCANNER) then
+        st.hunt = true
+        st.phase, st.back = nil, nil
+        save()
+      end
       if not located and not relocate() then return end
       located = false
-      local job = st
-      run()
-      if st == job then st = nil end   -- unless run() lined up the next plot
+      local job, wasHunting = st, st.hunt
+      local ok, err = pcall(function()
+        if st.hunt then hunt() else run() end
+      end)
+      if not ok then
+        -- "SWITCH_TO_HUNT": handed a scanner mid-trip; go round again as a hunter
+        if err ~= "SWITCH_TO_HUNT" then error(err, 0) end
+      elseif wasHunting then
+        -- the hunt covered its whole area: go round again and resume the plot
+      elseif st == job then
+        st = nil   -- plot finished (unless run() lined up the next one)
+      end
     end
   end)
 end

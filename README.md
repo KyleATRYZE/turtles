@@ -57,3 +57,11 @@ miner, and to any older miner that asks on its next visit. Rubble is dumped befo
 
 Machines remember their job in a `.role` file, so they can be renamed freely. Miners name
 themselves from a list of puns; the factory is ForgeClooney and the controller GroundControl.
+
+## Coal hunting
+
+A swarm miner holding a Geo Scanner (Advanced Peripherals) stops digging its plot and hunts coal:
+it roams a grid of scan points 28 to 70 blocks from the factory at Y 60, swaps the scanner in to
+find coal ore within 8 blocks, digs each one out and carries the coal home. When the factory has
+no coal for a miner that asks, it hands over its scanner so that miner becomes the hunter
+(renamed CoalPorter). After covering the whole area it goes back to its plot.

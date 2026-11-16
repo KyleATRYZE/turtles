@@ -51,6 +51,7 @@ shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/m
 ]]
 
 local BUCKET   = "minecraft:bucket"
+local SCANNER  = "advancedperipherals:geo_scanner"
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
@@ -745,6 +746,13 @@ local function serveRequests(canCraft)
       else
         print("A miner needs fuel but I have no coal.")
         report("out of coal")
+        -- no coal at all: hand it the Geo Scanner so it can go and find some
+        if not plots.hunter and giveToFront(SCANNER, 1) then
+          plots.hunter = true
+          saveTable(PLOTS_FILE, plots)
+          fuelQueue = {}
+          print("Gave it the Geo Scanner to hunt for coal.")
+        end
       end
     end
     if next(bucketQueue) and giveToFront(BUCKET, 1) then
