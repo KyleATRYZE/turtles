@@ -1,1 +1,10 @@
-{"commands": []}
+{
+  "commands": [
+    {
+      "id": 1794787218,
+      "issued": 1794787218000,
+      "cmd": "ping",
+      "target": "all"
+    }
+  ]
+}
