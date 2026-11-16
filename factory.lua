@@ -45,7 +45,36 @@ if fs.exists("/startup.lua") then
   shell.run("/startup.lua")
   return
 end
-if not turtle then return end
+if not turtle then
+  -- A station computer (it will sit beside a screen): it sets itself up,
+  -- takes a name and switches off. The helper standing on it is waiting to
+  -- carry it to its post, where it works out which screen is its own.
+  local base = "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/"
+  local h = fs.open("/.role", "w")
+  h.write("screen")
+  h.close()
+  local r = http and http.get(base .. "update.lua?t=" .. os.epoch("utc"))
+  if r then
+    h = fs.open("/update.lua", "w")
+    h.write(r.readAll())
+    h.close()
+    r.close()
+    shell.run("/update.lua")
+  end
+  h = fs.exists("/startup.lua") and fs.open("/startup.lua", "r")
+  local startup = h and h.readAll() or ""
+  if h then h.close() end
+  if fs.exists("/screens.lua") and startup:find("screens", 1, true) then
+    os.setComputerLabel("station-" .. os.getComputerID())
+  else
+    -- an old copy of the updater, or no download: leave nothing behind, so
+    -- the next try starts clean (and it never comes up as anything else)
+    fs.delete("/startup.lua")
+    fs.delete("/.role")
+  end
+  os.shutdown()
+  return
+end
 os.setComputerLabel("miner-" .. os.getComputerID())
 shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua")
 ]]

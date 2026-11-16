@@ -339,6 +339,79 @@ local function upFromPad()
   end
 end
 
+-- Down the hole to just above the launch pad (to set something on it).
+local function overPad()
+  local e, pad = base.exit2, base.pad
+  if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
+  while pos.y > pad.y + 1 do
+    if not step("d") then return false end
+  end
+  return true
+end
+
+-- Station computers (the screens'). A blank computer set on the launch pad
+-- touches the disk drive under it: switched on, it boots from the factory's
+-- floppy, installs itself, takes the name station-<number> and switches
+-- off. Dug up again it keeps its name, number and files, so it can be
+-- carried to its post and switched on there. Does up to n of the blank
+-- computers on board; returns how many are ready and a note for each.
+local function bootstrap(name, n)
+  local ready, notes = 0, {}
+  local function named(s)
+    local d = turtle.getItemDetail(s, true)
+    local label = d and d.name == name and d.displayName or ""
+    return label:find("^station%-") and label or nil
+  end
+  local function blank()
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name == name and not named(s) then return s end
+    end
+  end
+  for s = 1, 16 do if named(s) then ready = ready + 1 end end
+  if not blank() or n <= 0 then return ready, notes end
+  if not overPad() then return ready, { "could not get down to the launch pad" } end
+  local done = 0
+  while done < n do
+    local s = blank()
+    if not s then break end
+    done = done + 1
+    local waited = 0
+    while turtle.detectDown() and waited < 90 do      -- someone on the pad: give them time
+      sleep(3)
+      waited = waited + 3
+    end
+    if turtle.detectDown() then notes[#notes + 1] = "the pad is taken" break end
+    turtle.select(s)
+    if not turtle.placeDown() then notes[#notes + 1] = "it would not go down" break end
+    sleep(0.5)
+    pcall(peripheral.call, "bottom", "turnOn")
+    local t0, seenOn = os.clock(), false
+    while os.clock() - t0 < 150 do                    -- (the download takes a little while)
+      sleep(1)
+      local ok, on = pcall(peripheral.call, "bottom", "isOn")
+      if ok and on then seenOn = true end
+      if ok and not on and (seenOn or os.clock() - t0 > 15) then break end
+      report("setting up a computer")
+    end
+    pcall(peripheral.call, "bottom", "shutdown")
+    local okL, label = pcall(peripheral.call, "bottom", "getLabel")
+    label = okL and type(label) == "string" and label or nil
+    sleep(0.3)
+    local seen, data = turtle.inspectDown()
+    if seen and data.name == name then turtle.digDown() end
+    if label and label:find("^station%-") then
+      ready = ready + 1
+      notes[#notes + 1] = label
+    else
+      notes[#notes + 1] = "one did not set itself up" .. (seenOn and "" or " (it never came on)")
+      break                                           -- (no use trying the rest the same way)
+    end
+  end
+  turtle.select(1)
+  return ready, notes
+end
+
 ---------------------------------------------------------------- the plan
 
 local function loadList(job)
@@ -553,6 +626,26 @@ end
 local function facingOf(data)
   -- (Sophisticated Storage's limited barrels call it horizontal_facing)
   return type(data) == "table" and type(data.state) == "table" and (data.state.facing or data.state.horizontal_facing) or nil
+end
+
+-- A monitor put in from above lies on its back, screen to the ceiling
+-- (orientation up), and will not join the ones standing beside it.
+local function upright(data)
+  local o = type(data) == "table" and type(data.state) == "table" and data.state.orientation
+  return o == nil or o == "north"
+end
+
+-- A computer just put down is switched off. side = where it is from here.
+local function wake(side)
+  pcall(function()
+    for _ = 1, 10 do
+      if peripheral.getType(side) == "computer" then break end
+      sleep(0.2)
+    end
+    if peripheral.getType(side) == "computer" and not peripheral.call(side, "isOn") then
+      peripheral.call(side, "turnOn")
+    end
+  end)
 end
 
 local function isClutter(name)
@@ -947,7 +1040,7 @@ local function runFit()
       return true
     end
     local right = there and there.name == want.name
-      and (not want.facing or facingOf(there) == want.facing)
+      and (not want.facing or facingOf(there) == want.facing) and upright(there)
     if not right then
       if there and (op.k == "R" or there.name == want.name or isClutter(there.name)) then
         act("dig", op.s)
@@ -972,6 +1065,10 @@ local function runFit()
       end
       turtle.select(1)
       if not placed and not see(op.s) then return putOff("it would not go in") end
+    end
+    -- a station computer (a screen's) is switched on where it stands
+    if want.name:find("computer", 1, true) then
+      wake(op.s == 0 and "bottom" or op.s == 1 and "top" or "front")
     end
     st.undone[n] = nil
     applyOp(op)
@@ -1554,6 +1651,14 @@ local function runLab()
         else
           res = "left alone: " .. name
         end
+      elseif verb == "bootstrap" then
+        -- bootstrap|item|n : set blank computers up on the launch pad's
+        -- disk drive, ready to be carried to their posts (see bootstrap)
+        local got, notes = bootstrap(a[2] ~= "" and a[2] or "computercraft:computer_normal", tonumber(a[3]) or 16)
+        upFromPad()
+        goHover()
+        res = got .. " ready" .. (#notes > 0 and (": " .. table.concat(notes, ", ")) or "")
+        stop = got == 0
       elseif verb == "site" then
         -- site|ox|oy|oz|shell|plan : work inside a building; walk and leave
         -- find their way through it by its plan (as the fit-out does)
