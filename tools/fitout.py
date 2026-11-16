@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""Work out the fit-out: everything that turns the bare shell into the
+finished factory, in an order a turtle can actually do it.
+
+Compares blueprints/factory.json (the finished building) with
+blueprints/factory_shell.txt (what the builders put up) and writes
+blueprints/factory_fitout.txt:
+
+  P <n>            then n lines: <block name> <facing or ->
+  O <m>            then m lines, one job each, in order:
+     D x y z s           dig the block there (a doorway, a porthole)
+     P x y z i s         put palette block i there
+     R x y z i s         dig what is there and put block i (the lane's floor)
+  s = where the turtle stands to do it: 0 above (works downwards), 1 below
+  (works upwards), 2 east, 3 south, 4 west, 5 north of the block (works
+  forwards, facing it).
+
+The order comes from taking the finished building apart: a fitting can be
+taken out when a turtle can get to a free spot beside it; whatever comes
+out last has to go in first. Hanging things go in after what they hang
+from. Then the whole list is replayed from the bare shell to make sure
+every job can be reached when its turn comes.
+"""
+import json, os, re, sys
+from collections import Counter
+import numpy as np
+from scipy import ndimage
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+bp = json.load(open(os.path.join(ROOT, "blueprints", "factory.json")))
+
+def split(full):
+    m = re.match(r"([^\[]+)(?:\[(.*)\])?", full)
+    props = dict(p.split("=") for p in (m.group(2) or "").split(",") if p)
+    return m.group(1), props.get("facing", "-")
+
+final = {(x, y, z): split(bp["palette"][i]) for x, y, z, i in bp["blocks"]}
+
+shell, mode, spal = {}, None, []
+for line in open(os.path.join(ROOT, "blueprints", "factory_shell.txt")):
+    t = line.split()
+    if t[0] in "PB" and len(t) == 2 and t[1].isdigit():
+        mode = t[0]
+    elif mode == "P":
+        spal.append((t[0], t[1]))
+    else:
+        x, y, z, i = map(int, t)
+        shell[(x, y, z)] = spal[i]
+
+# ---------------------------------------------------------------- what changes
+SKIP = {"computercraft:turtle_advanced", "computercraft:turtle_normal",      # drones place themselves
+        "computercraft:computer_advanced", "advancedperipherals:chat_box",   # carried over by hand
+        "advancedperipherals:player_detector", "computercraft:disk_drive",
+        "minecraft:glass_pane", "minecraft:glass"}                            # the builders' own second go
+digs, puts, swaps = [], [], []
+for c, (name, facing) in shell.items():
+    if c[1] < 0:
+        continue                                   # foundation
+    f = final.get(c)
+    if f is None:
+        digs.append(c)
+    elif f[0] != name and f[0] not in SKIP:
+        swaps.append(c)
+for c, (name, facing) in final.items():
+    if c not in shell and name not in SKIP:
+        puts.append(c)
+print(f"{len(digs)} to dig out, {len(swaps)} to swap, {len(puts)} to put in")
+
+# ---------------------------------------------------------------- the space
+X0, Y0, Z0 = -4, -1, -4
+SX, SY, SZ = 57 + 8, 34 + 4, 32 + 8
+def idx(c):
+    return (c[0] - X0, c[1] - Y0, c[2] - Z0)
+footprint = {(x, z) for (x, y, z) in final if y == 0} | {(x, z) for (x, y, z) in shell if y == 0}
+
+def space(blocks):
+    """True where a turtle can be."""
+    free = np.ones((SX, SY, SZ), dtype=bool)
+    free[:, 0:2, :] = False                       # the ground outside (y <= 0)
+    for c in blocks:
+        i = idx(c)
+        if 0 <= i[0] < SX and 0 <= i[1] < SY and 0 <= i[2] < SZ:
+            free[i] = False
+    return free
+
+START = (22, 2, 33)                               # outside the big door
+def reachable(free):
+    lab, _ = ndimage.label(free)
+    return lab == lab[idx(START)]
+
+STAND = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 0, -1)]   # codes 0..5
+FACE_STAND = {"east": 2, "south": 3, "west": 4, "north": 5}
+def prefs(name, facing):
+    if name == "minecraft:lantern":
+        return [1]
+    if name == "minecraft:chain":
+        return [1, 2, 3, 4, 5]
+    if name == "minecraft:ladder":
+        return [FACE_STAND[facing], 0, 1]         # in front of it, facing the wall it hangs on;
+                                                  # or from above / below (in a hole in a floor)
+    if name.endswith("sapling"):
+        return [0]
+    return [0, 2, 3, 4, 5, 1]
+HANGS = {"minecraft:lantern": (0, 1, 0), "minecraft:chain": (0, 1, 0), "minecraft:birch_sapling": (0, -1, 0)}
+
+def stand_for(c, name, facing, reach):
+    for s in prefs(name, facing):
+        d = STAND[s]
+        i = idx((c[0] + d[0], c[1] + d[1], c[2] + d[2]))
+        if 0 <= i[0] < SX and 0 <= i[1] < SY and 0 <= i[2] < SZ and reach[i]:
+            return s
+    return None
+
+# ---------------------------------------------------------------- digging first
+# forwards: dig what can be reached, which opens the way to more
+now = dict(shell)
+ops = []
+todo = set(digs)
+while todo:
+    reach = reachable(space(now))
+    wave = []
+    for c in sorted(todo):
+        s = stand_for(c, "", "-", reach)
+        if s is not None:
+            wave.append((c, s))
+    if not wave:
+        print("cannot reach to dig:", sorted(todo)[:10])
+        sys.exit(1)
+    for c, s in wave:
+        ops.append(("D", c, None, s))
+        del now[c]
+        todo.discard(c)
+after_digs = dict(now)
+
+# ---------------------------------------------------------------- putting in, worked out backwards
+state = dict(after_digs)
+for c in puts:
+    state[c] = final[c]
+left = set(puts)
+waves = []
+while left:
+    reach = reachable(space(state))
+    wave = []
+    for c in sorted(left):
+        name, facing = final[c]
+        # something still hanging from it? then it stays for now
+        held = False
+        for other, d in HANGS.items():
+            o = (c[0] - d[0], c[1] - d[1], c[2] - d[2])
+            if o in left and final[o][0] == other:
+                held = True
+        if held:
+            continue
+        s = stand_for(c, name, facing, reach)
+        if s is not None:
+            wave.append((c, s))
+    if not wave:
+        print("cannot work out how to reach:", [(c, final[c][0]) for c in sorted(left)[:12]])
+        sys.exit(1)
+    for c, s in wave:
+        del state[c]
+        left.discard(c)
+    waves.append(wave)
+print(f"{len(waves)} rounds of fitting")
+
+pal, pindex = [], {}
+def pal_i(entry):
+    if entry not in pindex:
+        pindex[entry] = len(pal)
+        pal.append(entry)
+    return pindex[entry]
+
+# swaps (the lane floor) go right after the digging: from above
+reach = reachable(space(after_digs))
+for c in sorted(swaps, key=lambda c: (c[2], c[0])):
+    s = stand_for(c, "", "-", reach)
+    if s is None:
+        print("cannot reach to swap", c)
+        sys.exit(1)
+    ops.append(("R", c, pal_i(final[c]), s))
+# then the fittings, deepest round first; within a round sweep room by room
+def sweep(item):
+    (x, y, z), s = item
+    room = min(x // 9, 5)
+    return (room, y, z if (y + room) % 2 == 0 else -z, x)
+for wave in reversed(waves):
+    for c, s in sorted(wave, key=sweep):
+        ops.append(("P", c, pal_i(final[c]), s))
+
+# ---------------------------------------------------------------- replay it
+now = dict(shell)
+bad = 0
+reach = reachable(space(now))
+dirty = False
+for kind, c, i, s in ops:
+    d = STAND[s]
+    stand = (c[0] + d[0], c[1] + d[1], c[2] + d[2])
+    if dirty:
+        reach = reachable(space(now))
+        dirty = False
+    if not reach[idx(stand)]:
+        bad += 1
+        if bad <= 5:
+            print("  not reachable in replay:", kind, c, s)
+    if kind == "D":
+        del now[c]
+        dirty = True                               # more space: look again
+    elif kind == "P":
+        now[c] = pal[i]
+        # less space: only matters if this cell was part of the way; cheap to recheck
+        dirty = True
+    else:
+        now[c] = pal[i]
+want = {c: v for c, v in final.items() if v[0] not in SKIP}
+have = {c: v for c, v in now.items() if c[1] >= 0}
+wrong = [c for c in want if have.get(c) != want[c]]
+extra = [c for c in have if c not in final]
+print(f"replay: {len(ops)} jobs, {bad} out of reach, {len(wrong)} blocks wrong at the end, {len(extra)} left over")
+
+out = os.path.join(ROOT, "blueprints", "factory_fitout.txt")
+with open(out, "w") as f:
+    f.write(f"P {len(pal)}\n")
+    for name, facing in pal:
+        f.write(f"{name} {facing}\n")
+    f.write(f"O {len(ops)}\n")
+    for kind, c, i, s in ops:
+        if kind == "D":
+            f.write(f"D {c[0]} {c[1]} {c[2]} {s}\n")
+        else:
+            f.write(f"{kind} {c[0]} {c[1]} {c[2]} {i} {s}\n")
+need = Counter(pal[i][0] for kind, c, i, s in ops if kind != "D")
+print(out)
+for name, n in need.most_common():
+    print(f"{n:6d}  {name}")
+sys.exit(1 if bad or wrong else 0)

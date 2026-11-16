@@ -332,7 +332,7 @@ put(TX1 + 4, 17, TZ2 - 2, "advancedperipherals:player_detector")
 DOCKS = []
 for x in range(19, 27):
     put(x, 0, 3, "minecraft:cut_copper")                       # lower pad, in the floor
-    put(x, 2, 3, "minecraft:cut_copper_slab[type=top]")        # upper pad
+    put(x, 2, 3, "minecraft:cut_copper")                       # upper pad (the upper drone sits on it)
     DOCKS += [(x, 0, 3), (x, 2, 3)]
     fill(x, 1, 4, x, 3, 4, "minecraft:iron_bars")
     put(x, 4, 4, "computercraft:monitor_advanced[facing=south]")
