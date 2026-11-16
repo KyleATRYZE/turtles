@@ -256,11 +256,17 @@ local function hover()
   return e.x + 3 + 2 * slot(), base.f.y + 12, e.z - 4
 end
 
+local escape     -- defined further down (a way out of a place with no way straight up)
+
 local function goHover()
   local x, y, z = hover()
   if pos.y < y then riseTo(y) end
   -- (from up a mountain we may already be above the usual flying height)
-  if not across(x, z, math.max(highway() + 12, pos.y + 40)) then return false end
+  if not across(x, z, math.max(highway() + 12, pos.y + 40)) then
+    -- shut in (a lumberjack inside a big tree, say): find the way out, then home
+    if not escape(600) then return false end
+    if not across(x, z, math.max(highway() + 12, pos.y + 40)) then return false end
+  end
   while pos.y > y and step("d") do end
   return true
 end
@@ -1250,7 +1256,7 @@ end
 -- anything, for a way out to open sky. Goes up wherever it can; comes back
 -- to where it started if there is no way out. True when it is out, at
 -- flying height.
-local function escape(limit)
+escape = function(limit)
   limit = limit or 1500
   local seen, moves = {}, 0
   local function key(x, y, z) return x .. "," .. y .. "," .. z end
