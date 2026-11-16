@@ -77,12 +77,56 @@ The Inventory Manager beside the bench (-4453 74 1532) is not touched.
 `tools/mek.py` (lab steps for the bench) is only for as long as it stands
 outside.
 
-## Power, next (recipes in the factory, not yet tried in this pack)
+## Power (job=power)
 
-Energy tablet, basic energy cube, universal cable, wind generator; a spare
-Heat Generator is in stock. A generator gives its power out of its front, and
-a placed machine faces the turtle, so: stand where the cable (or the machine)
-is to go, place the generator beyond it, back off one and place the cable.
-Cables join by themselves; the machines take power on any side. With power
-laid on, `perOp` in `foundry.lua` goes to 0 and the redstone limit in the
-factory can go.
+    tools/order.py foundry DropIt job=power            generator, cube (if one can be had), cable; fuel; check
+    tools/order.py foundry DropIt job=power cube=0     no cube: cable in its place
+    tools/order.py foundry DropIt job=fuel [fuel=lava] more fuel for the generator
+    tools/order.py foundry DropIt job=bank [n=3]       more Energized Smelters at z 9, 8, 7, on the cable
+    tools/order.py foundry DropIt smelt=minecraft:sand n=128   anything a furnace cooks, through every smelter
+
+All on the plinth behind the machines (x 42), in the building's coordinates:
+
+| what | place | facing | why |
+|---|---|---|---|
+| Heat Generator | 42 1 18 | north | its front (where the power comes out) against the cube |
+| Basic Energy Cube | 42 1 17 | north | takes power at its back, gives it out of its front into the cable |
+| Universal cable | 42 1 16 north to the first machine (11; 7 with the bank) | - | touches each machine's back (east face) |
+
+Without a cube there is cable at 42 1 17; a later `job=power` with a cube to
+hand takes that cable up and puts the cube in its place. The generator and
+cube are placed from the spot south of them (a placed block faces the
+turtle); the cable from above. Only our own cable is ever taken up.
+
+The operator then sets each machine's back (east) to take energy
+(`setMode("ENERGY", side, "INPUT")`, where the machine has such a setting),
+drops coal into the generator from above (charcoal if there is no coal; a
+stack at most), and reads each machine's energy before and after a short
+wait. A machine whose energy rises is on the cable ("yes"); one already full
+counts as on ("full") until a job shows it; one that stays empty keeps its
+redstone ("no"). A machine on the cable costs no redstone: a job takes only
+a few dust in case the power fails. If it runs short on the cable while the
+generator has fuel, it goes back to redstone.
+
+Fuel: a coal is about 32 jobs. Every job on the cable ends at the generator
+and tops it up from the coal on board; when it is below 16, the next job
+fetches fuel with its ore, and the factory sends a fuel job when no ore is
+going over (only while it has 160 coal and charcoal to spare). Lava: only on
+`fuel=lava`, and only while the empty bucket comes back out of the
+generator's slot (the operator takes it); if it stays in, the operator says
+so and uses no more lava (that bucket must then be taken out by hand).
+
+The factory hears `power` in `foundry_ready` and then keeps only 16 dust
+above its reserve for a batch instead of 100.
+
+Recipes, NOT YET TRIED in this pack: universal cable (steel, redstone,
+steel: 8), energy tablet (3 infused alloy down the middle, 2 gold, 4
+redstone), basic energy cube (redstone, 2 tablets, 2 iron, steel casing),
+wind generator (needs an electrolytic core, which the factory cannot make),
+crusher (2 lava buckets, 2 circuits, 4 redstone, steel casing). The heat
+generator was crafted in the world already.
+
+Not done: tripling ore (Purification Chamber) needs oxygen gas, which means
+an Electrolytic Separator, water and gas plumbing: left for later. The
+factory does not yet send big smelting batches to the bank by itself
+(`smelt=` is an order only).

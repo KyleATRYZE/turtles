@@ -426,6 +426,16 @@ local function configure(env, s, name)
     if not faces[role] then return false, ("the %s has no %s side I can use"):format(name, role) end
   end
   s.m[name] = { ok = true, f = f, faces = faces }
+  -- power laid on already (the infuser brought in afterwards, say): its back
+  -- takes power from the cable too
+  local p = s.power
+  if p and p.ok and m.x == M.POWER.x - 1 then
+    local rel = relative("east", f)
+    local mode = call(side, "getMode", "ENERGY", rel)
+    if mode ~= nil and mode ~= "INPUT" then pcall(peripheral.call, side, "setMode", "ENERGY", rel, "INPUT") end
+    p.on = p.on or {}
+    if p.on[name] == nil then p.on[name] = "full" end
+  end
   note(s, ("%s ready (facing %s)"):format(name, FACE[f]))
   return true
 end

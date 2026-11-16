@@ -149,6 +149,16 @@ g.run()
 last = d(d(L.eval("F.info()")).get("last"))
 check("bank before power: refused, nothing placed", last.get("ok") is False and g.at(41, 1, 9)[0] is None, str(last))
 
+# ---------------------------------------------------------------- the infuser brought in after the power
+L, g = world('MACHINES["41,1,15"] = nil BENCH = { x = -4453, y = 74, z = 1533, face = 0, item = "mekanism:metallurgic_infuser", there = true }')
+L.execute('F.order({ job = "power" })')
+g.run()
+L.execute('F.order({ job = "move_infuser" })')
+g.run()
+on = d(d(d(L.eval("F.info()")).get("power")).get("on"))
+check("infuser brought in after the power: its back takes power, it counts as on the cable",
+      g.emode(41, 1, 15, "BACK") == "INPUT" and on.get("infuser") in ("full", "yes"), f"{g.emode(41, 1, 15, 'BACK')} {on}")
+
 # ---------------------------------------------------------------- the generator kept fed
 L, g = world()
 L.execute('F.order({ job = "power" })')
