@@ -1,10 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794846899,
-      "issued": 1794846899000,
+      "id": 1794848093,
+      "issued": 1794848093000,
       "cmd": "reboot",
       "target": "TimberLake"
+    },
+    {
+      "id": 1794848094,
+      "issued": 1794848093000,
+      "cmd": "resume",
+      "target": "BrickJagger"
     }
   ]
 }
