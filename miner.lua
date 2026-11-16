@@ -33,7 +33,7 @@ local HUNT_REACH  = 40     -- how far from the factory to roam (further out the
                            -- chunks may not be loaded, and a turtle there freezes)
 local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
-local HUNT_MAX    = 48     -- the hunting area grows each round, up to this
+local HUNT_MAX    = 96     -- the hunting area grows each round, up to this (ChunkNorris escorts)
 local RESCUE_PROTOCOL = "swarm_rescue"
 local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
