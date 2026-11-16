@@ -319,6 +319,7 @@ end
 
 -- What the next part of our share needs, up to a load.
 local function nextLoad(indices)
+  if type(indices) == "function" then return indices() end
   local counts, order, stacks = {}, {}, 0
   local n = type(indices) == "number" and (#list.blocks - indices + 1) or #indices
   for k = 1, n do
@@ -403,6 +404,7 @@ local function supplyRun(indices, reason)
         end
       end
       save()
+      lastState = "building"
       if gotAny or fuel() > FUEL_SPARE * 2 then return true end
     end
     print("Nothing to be had yet. Waiting for the miners.")
@@ -511,6 +513,157 @@ local function runBuild()
   save()
 end
 
+---------------------------------------------------------------- lumberjack
+-- chop: fell wild trees for charcoal. Given spots where the ground map saw
+-- treetops, come down on each from above and follow the tree through its
+-- leaves and logs, taking the lot (saplings drop into the inventory as the
+-- leaves go). Only leaves and logs are ever broken, a canopy has to be met
+-- before any log is touched, and nothing within reach of the base.
+local CHOP_REACH  = 7      -- how far from where we came down a tree is followed
+local CHOP_BUDGET = 500    -- blocks taken per treetop
+local CHOP_LOAD   = 128    -- logs to carry before taking them home
+local KEEP_OFF    = 16     -- no chopping this close to the base
+
+local function isLog(name) return name ~= nil and name:find("_log$") ~= nil and not name:find("stripped") end
+local function isLeaf(name) return name ~= nil and name:find("leaves", 1, true) ~= nil end
+
+local function countLogs()
+  local n = 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and isLog(d.name) then n = n + d.count end
+  end
+  return n
+end
+
+local function freeSlots()
+  local n = 0
+  for s = 1, 16 do if turtle.getItemCount(s) == 0 then n = n + 1 end end
+  return n
+end
+
+local function look(dir)
+  local ok, data = turtle["inspect" .. SUFFIX[dir]]()
+  return ok and data.name or nil
+end
+
+-- Follow the tree from where we are: into every leaf or log next to us,
+-- and back. Leaves are only followed a few steps from the last log.
+local function fell(x0, z0, leafRun, left)
+  local function try(dir, d)
+    if left.n <= 0 then return end
+    if d then face(d) end
+    local name = look(dir)
+    local log = isLog(name)
+    if not (log or (isLeaf(name) and leafRun < 5)) then return end
+    local nx = pos.x + (dir == "f" and DIRS[heading].x or 0)
+    local nz = pos.z + (dir == "f" and DIRS[heading].z or 0)
+    if math.abs(nx - x0) > CHOP_REACH or math.abs(nz - z0) > CHOP_REACH then return end
+    if math.abs(nx - base.f.x) <= KEEP_OFF and math.abs(nz - base.f.z) <= KEEP_OFF then return end
+    if not turtle["dig" .. SUFFIX[dir]]() then return end
+    left.n = left.n - 1
+    if not step(dir) then return end
+    fell(x0, z0, log and 0 or leafRun + 1, left)
+    if dir == "u" then step("d")
+    elseif dir == "d" then step("u")
+    else
+      face(d)
+      if turtle.back() then
+        pos.x, pos.z = pos.x - DIRS[heading].x, pos.z - DIRS[heading].z
+      end
+    end
+  end
+  try("d")
+  for d = 0, 3 do try("f", d) end
+  try("u")
+end
+
+-- Logs (and saplings and the rest) into the miners' drop-off chest: down
+-- the hole to the level above the pad, two steps along, drop, and out.
+local function deliver()
+  local e2, e1, dock = base.exit2, base.exit1, base.dock
+  report("bringing logs home")
+  riseTo(highway())
+  for _ = 1, 20 do
+    local done = false
+    if across(e2.x, e2.z, highway() + 100) then
+      local ok = true
+      while ok and pos.y > e2.y do ok = step("d") end
+      if ok then
+        face(e1.x > e2.x and 0 or e1.x < e2.x and 2 or (e1.z > e2.z and 1 or 3))
+        local s1 = step("f")
+        local s2 = s1 and step("f")
+        if s2 and pos.x == dock.x and pos.z == dock.z then
+          for s = 1, 16 do
+            local d = turtle.getItemDetail(s)
+            if d and not isCoal(d.name) and not d.name:find("bucket") then
+              turtle.select(s)
+              turtle.dropDown()
+            end
+          end
+          turtle.select(1)
+          done = true
+        end
+        face((heading + 2) % 4)
+        if s2 then step("f") end
+        if s1 then step("f") end
+      end
+      upFromPad()
+    end
+    goHover()
+    if done then return true end
+    sleep(30)
+  end
+  return false
+end
+
+local function runChop()
+  local job = st.job
+  st.ci = st.ci or 1
+  local top = highway() + 100
+  while st.ci <= #job.trees do
+    progress = { kind = "chopping", done = st.ci - 1, total = #job.trees, logs = countLogs() }
+    if fuel() < 600 then                       -- burn a few of our own logs
+      for s = 1, 16 do
+        local d = turtle.getItemDetail(s)
+        if d and isLog(d.name) and fuel() < 900 then
+          turtle.select(s)
+          turtle.refuel(math.min(d.count, 24))
+        end
+      end
+      turtle.select(1)
+    end
+    if countLogs() >= CHOP_LOAD or freeSlots() < 3 then
+      deliver()
+      if fuel() < 1200 then supplyRun(function() return {} end, "fuel") end
+    end
+    local t = job.trees[st.ci]
+    report("chopping")
+    riseTo(highway())
+    if across(t[1], t[2], top) then
+      -- come down onto the treetop: it has to be leaves we meet first
+      local met
+      while pos.y > base.f.y - 20 do
+        met = look("d")
+        if met then break end
+        if not step("d") then break end
+      end
+      if isLeaf(met) and not (math.abs(pos.x - base.f.x) <= KEEP_OFF and math.abs(pos.z - base.f.z) <= KEEP_OFF) then
+        local before = countLogs()
+        fell(pos.x, pos.z, 0, { n = CHOP_BUDGET })
+        print(("Tree %d of %d: %d logs."):format(st.ci, #job.trees, countLogs() - before))
+      end
+    end
+    st.ci = st.ci + 1
+    save()
+    tick("chopping")
+  end
+  if countLogs() > 0 then deliver() end
+  print("That is all the trees I was given.")
+  st.done = true
+  save()
+end
+
 ---------------------------------------------------------------- jobs
 
 local function work()
@@ -528,8 +681,11 @@ local function work()
     if not findHeading() then error("I am boxed in.", 0) end
   end
   if st.job and not st.done and not st.paused then
-    report("building")
-    runBuild()
+    if st.job.trees then runChop() else
+      report("building")
+      runBuild()
+      lastState = "idle"
+    end
   end
   riseTo(math.max(pos.y, base.f.y + 12))
   goHover()
@@ -581,6 +737,15 @@ while true do
     st.paused = nil
     save()
     task = guarded(work)
+  elseif cmd.cmd == "chop" and type(cmd.trees) == "string" then
+    -- fell wild trees: trees = "x:z;x:z;..." (treetops from the ground map)
+    local trees = {}
+    for x, z in cmd.trees:gmatch("(-?%d+):(-?%d+)") do trees[#trees + 1] = { tonumber(x), tonumber(z) } end
+    if #trees > 0 then
+      st = { job = { trees = trees }, turn = st.turn, orderSeq = st.orderSeq }
+      save()
+      task = guarded(work)
+    end
   elseif cmd.cmd == "build" and type(cmd.plan) == "string" and cmd.plan:match("^[%w_%-]+$")
     and tonumber(cmd.ox) and tonumber(cmd.oy) and tonumber(cmd.oz) then
     local job = {

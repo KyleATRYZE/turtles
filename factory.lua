@@ -217,8 +217,9 @@ local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local FUEL_RESERVE = 256 -- coal never handed out to miners
-local HELPERS      = 2   -- builder's mates to make (mining turtles running helper.lua)
-local HELPER_NAMES = { "MortarKombat", "WallStreet", "BrickAstley", "HodStewart" }
+local HELPERS      = 3   -- builder's mates to make (mining turtles running helper.lua);
+                         -- the third is the lumberjack
+local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "HodStewart" }
 local launchingHelper = false
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
@@ -526,6 +527,13 @@ end
 -- Between jobs the furnaces keep cooking what the building will need, so a
 -- load for the builder rarely has to wait for smelting.
 local BACKGROUND = {
+  -- logs to charcoal first: it is fuel (8 charcoal for 1 burned), so this
+  -- runs even when coal is short
+  { fuel = true, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = 64, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = 64, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
   { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
@@ -539,7 +547,7 @@ local BACKGROUND = {
 local function keepFurnacesBusy(stock)
   if next(orders) then return end          -- a builder load is being made
   -- cooking ahead is a luxury: not when coal is short
-  if (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < FUEL_RESERVE + 144 then return end
+  local shortOfCoal = (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < FUEL_RESERVE + 144
   for _, f in ipairs(furnaces) do
     local okList, items = pcall(furnaceList, f)
     if okList and not items[1] then
@@ -548,7 +556,8 @@ local function keepFurnacesBusy(stock)
         local raw = stock[job.input] or 0
         local minRaw = job.input == "minecraft:stone_bricks" and 128 or 16
         -- leave = raw kept back for building turtles
-        if have < job.keep and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
+        if (job.fuel or not shortOfCoal) and have < job.keep
+          and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
           local okLoad, got = pcall(loadFurnace, f, job.input, 64)
           if okLoad and got and got > 0 then
             stock[job.input] = raw - got
