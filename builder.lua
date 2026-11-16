@@ -1266,13 +1266,18 @@ end
 ---------------------------------------------------------------- moving on the site
 
 -- One step that may dig a natural block out of the way, inside the site.
+local lastBlocker            -- what stopped the last move on the site
 local function digStep(b, dir)
   if step(dir) then return true end
   local x, y, z = pos.x, pos.y, pos.z
   if dir == "u" then y = y + 1 elseif dir == "d" then y = y - 1
   else x, z = x + DIRS[heading].x, z + DIRS[heading].z end
-  if not inSite(b, x, y, z) then return false end
   local ok, data = turtle["inspect" .. SUFFIX[dir]]()
+  lastBlocker = ok and data.name or "something moving"
+  if not inSite(b, x, y, z) then
+    lastBlocker = lastBlocker .. " (outside the site)"
+    return false
+  end
   if not ok or not isNatural(data.name) then return false end
   useTool("pick")
   local dig = dir == "u" and turtle.digUp or dir == "d" and turtle.digDown or turtle.dig
@@ -1624,7 +1629,8 @@ local function placeShell(b)
       return false
     end
     if not flyTo(b, wx, wy + 1, wz) then
-      print(("Cannot reach %d %d %d. %s"):format(wx, wy, wz,
+      print(("Cannot reach %d %d %d (%s). %s"):format(wx, wy, wz,
+        tostring(lastBlocker):gsub("^minecraft:", ""),
         lastGo and "Leaving it." or "I'll try again at the end."))
       if not lastGo then b.skips[#b.skips + 1] = idx end
       b.skipped = (b.skipped or 0) + 1
