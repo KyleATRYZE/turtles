@@ -1,20 +1,18 @@
 {
   "commands": [
     {
-      "id": 1794863550,
-      "issued": 1794863550000,
-      "cmd": "lab",
-      "target": "WallStreet",
-      "ops": "face|0;inspect|front;drop|minecraft:coal|4;drop|minecraft:coal|4;call|front|getInfuseType;wait|25;call|front|getRecipeProgress;call|front|getOutput;wait|30;call|front|getOutput;call|front|getEnergy;up|1;fwd|2;down|1;turn|around;suck|64;inv;up|1;fwd|1;dropDown|mekanism:enriched_iron|4;wait|50;call|bottom|getOutput;back|1;down|1;suck|64;inv;call|front|getInfuseType;call|front|getEnergy",
-      "clear": 1
+      "id": 1794863801,
+      "issued": 1794863801000,
+      "cmd": "reboot",
+      "target": "WallStreet"
     },
     {
-      "id": 1794863551,
-      "issued": 1794863550000,
-      "cmd": "search",
-      "target": "ChunkBerry",
-      "who": "CoalPorter",
-      "path": "-4363:1545;-4559:1545;-4559:1577;-4363:1577;-4363:1609;-4559:1609;-4559:1625;-4363:1625"
+      "id": 1794863802,
+      "issued": 1794863801000,
+      "cmd": "lab",
+      "target": "WallStreet",
+      "ops": "fetch|minecraft:coal=8,minecraft:redstone=8;goto|-4453|80|1533;ground;face|0;expect|front|metallurgic_infuser;drop|minecraft:coal|4;drop|minecraft:coal|4;call|front|getInfuseType;wait|25;call|front|getRecipeProgress;call|front|getOutput;wait|30;call|front|getOutput;call|front|getEnergy;up|1;fwd|2;down|1;turn|around;expect|front|metallurgic_infuser;suck|64;inv;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|mekanism:enriched_iron|4;wait|50;call|bottom|getOutput;back|1;down|1;suck|64;inv",
+      "clear": 1
     }
   ]
 }
