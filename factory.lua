@@ -17,7 +17,7 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local MAX_MINERS   = 6     -- size of the fleet this base will run
+local MAX_MINERS   = 7     -- size of the fleet this base will run
 local CHECK_EVERY  = 10    -- seconds between checks when idle
 local NEWBORN_COAL = 24    -- coal given to each new miner
 local PLOT_SIZE    = 8     -- each plot is this many blocks square
@@ -205,9 +205,12 @@ local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local served = {}        -- the last order number served, by computer id
 
+-- Miners with a plot, plus miners between plots (they finished one and
+-- will be back for the next, so their place in the fleet is kept).
 local function activeCount()
   local n = 0
   for _ in pairs(plots.byId) do n = n + 1 end
+  for _ in pairs(plots.between or {}) do n = n + 1 end
   return n
 end
 
@@ -1078,7 +1081,14 @@ local function jobFor(id)
   end
   local index = plots.byId[key]
   if not index then
-    if activeCount() >= MAX_MINERS then return nil end
+    local returning = plots.between and plots.between[key]
+    if returning then
+      plots.between[key] = nil
+    elseif activeCount() >= MAX_MINERS and pending == 0 then
+      return nil
+    elseif pending > 0 then
+      pending = pending - 1                   -- one we launched: it gets a plot
+    end
     if plots.free and #plots.free > 0 then
       index = table.remove(plots.free, 1)     -- a plot someone gave back
     else
@@ -1087,7 +1097,6 @@ local function jobFor(id)
     end
     plots.byId[key] = index
     saveTable(PLOTS_FILE, plots)
-    if pending > 0 then pending = pending - 1 end
   end
   local x0, z0 = plotOrigin(index)
   return {
@@ -1113,6 +1122,8 @@ local function responder()
       elseif msg.type == "job_done" then
         if plots.byId[tostring(id)] == msg.index then
           plots.byId[tostring(id)] = nil
+          plots.between = plots.between or {}
+          plots.between[tostring(id)] = true
           plots.done = (plots.done or 0) + 1
           saveTable(PLOTS_FILE, plots)
         end
