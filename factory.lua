@@ -58,6 +58,7 @@ local CORE     = "advancedperipherals:weak_automata_core"
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
+local PLAIN_MODEM = "computercraft:wireless_modem_normal"   -- (short range: for a chunk loader when ender modems run out)
 local PICKAXE  = "minecraft:diamond_pickaxe"
 local CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its chunk loaded
 
@@ -101,6 +102,10 @@ local RECIPES = {
   [MODEM] = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
+  },
+  [PLAIN_MODEM] = {
+    grid = { "S", "S", "S", "S", "E", "S", "S", "S", "S" },
+    key = { S = "minecraft:stone", E = "minecraft:ender_pearl" },
   },
   -- building blocks (2 x 2 recipes give 4)
   ["minecraft:polished_deepslate"] = {
@@ -313,6 +318,8 @@ local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
+local ctlQueue = {}      -- turtles asking for a Chunk Controller of their own to carry: id -> when
+local CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 local FUEL_RESERVE = 256 -- coal never handed out to miners
 local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
@@ -321,7 +328,7 @@ local launchingHelper = false
 -- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
 -- while there are controllers in stock, up to this many. One stays at the
 -- base; the others go out with whoever is working far away.
-local LOADERS      = 2
+local LOADERS      = 3
 local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey" }
 local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
@@ -824,10 +831,12 @@ local function assemble()
       turtle.select(at)
       turtle.transferTo(1)
     end
-    if not pull(MODEM, 1, 2) then error("The ender modem went missing.", 0) end
+    -- (a chunk loader may be given a plain wireless modem: plots.loaderModem)
+    local modem = plots.makingLoader and plots.loaderModem or MODEM
+    if not pull(modem, 1, 2) then error("The " .. shortName(modem) .. " went missing.", 0) end
     turtle.select(16)
     local ok, err = turtle.craft()
-    if not ok then error("Could not fit the ender modem: " .. tostring(err), 0) end
+    if not ok then error("Could not fit the " .. shortName(modem) .. ": " .. tostring(err), 0) end
     setStage("ready")
   end
 end
@@ -1196,14 +1205,42 @@ local function ensureStock(name, n)
   return true
 end
 
+-- Chunk Controllers in stock beyond those the chunk loaders still to be
+-- built will need: these can go to turtles that carry their own.
+local function spareControllers(stock)
+  local forLoaders = plots.noLoaders and 0 or math.max(0, LOADERS - #(plots.loaders or {}))
+  return math.max(0, ((stock or lastStock or {})[CHUNKY] or 0) - forLoaders)
+end
+
+-- One controller to the turtle that asked for it (and to no other), standing
+-- on top of me or on the pad.
+local function giveController(dir, id)
+  if not ctlQueue[id] or spareControllers(stockTotals()) < 1 then return false end
+  if not giveTo(dir, CHUNKY, 1) then return false end
+  local key = tostring(id)
+  plots.ctlGiven = plots.ctlGiven or {}
+  plots.ctlGiven[key] = (plots.ctlGiven[key] or 0) + 1
+  saveTable(PLOTS_FILE, plots)
+  ctlQueue[id] = nil
+  print("Gave a Chunk Controller to turtle " .. key .. " to carry.")
+  return true
+end
+
 -- Serve miners waiting for things: on top of me (the usual service stop) or
 -- on the launch pad (where they wait if they cannot carry on). Coal for the
 -- empty, buckets for those without one. With no coal at all, the Geo Scanner
 -- goes to the first miner that asks, so it can hunt for coal.
 -- canCraft = false while I am holding a finished miner.
 local function serveRequests(canCraft)
+  -- (a controller is handed to a builder's mate with its load; here only to
+  -- a turtle that has just asked, waiting on top of me)
+  local ctlNow = false
+  for id, at in pairs(ctlQueue) do
+    if os.clock() - at > 1800 then ctlQueue[id] = nil
+    elseif os.clock() - at < 30 then ctlNow = true end
+  end
   if not next(fuelQueue) and not next(bucketQueue) and not next(emptiesQueue)
-    and not next(scannerQueue) then return end
+    and not next(scannerQueue) and not ctlNow then return end
   local wantEmpties = 0
   for _, n in pairs(emptiesQueue) do wantEmpties = math.max(wantEmpties, n) end
   if canCraft and wantEmpties > 0 then pcall(ensureStock, BUCKET, wantEmpties) end
@@ -1246,6 +1283,10 @@ local function serveRequests(canCraft)
       if next(scannerQueue) and giveTo(dir, SCANNER, 1) then
         print("Gave a Geo Scanner to a new hunter.")
         scannerQueue = {}
+      end
+      if ctlNow then
+        local okId, here = pcall(peripheral.call, side, "getID")
+        if okId and here then giveController(dir, here) end
       end
       if wantEmpties > 0 then
         local ok, moved = giveTo(dir, BUCKET, wantEmpties)
@@ -1396,6 +1437,7 @@ local function serveOrders()
         giveTo("front", "#fuel", math.min(64, coal, math.max(8, math.floor(have * 0.4))))
       end
     end
+    giveController("front", id)       -- (if it asked for one to carry)
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
       given = given, missing = missing }, JOB_PROTOCOL)
@@ -1469,7 +1511,7 @@ local function deploy()
       end
       sleep(0.5)
     end
-    plots.makingLoader = nil
+    plots.makingLoader, plots.loaderModem = nil, nil
     saveTable(PLOTS_FILE, plots)
   else
     giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
@@ -1595,6 +1637,14 @@ local function responder()
         bucketQueue[id] = true
       elseif msg.type == "scanner_request" then
         scannerQueue[id] = true
+      elseif msg.type == "controller_request" then
+        -- a turtle with room for a Chunk Controller of its own
+        local given = (plots.ctlGiven or {})[tostring(id)] or 0
+        if given < CTL_PER_TURTLE and spareControllers() > 0 then
+          ctlQueue[id] = os.clock()
+        else
+          rednet.send(id, { type = "controller_none", forId = id }, JOB_PROTOCOL)
+        end
       elseif msg.type == "empties_request" then
         emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
       elseif msg.type == "materials" and type(msg.items) == "table"
@@ -1790,17 +1840,25 @@ local function tryBuild()
 
   -- a chunk loader, while there is a Chunk Controller to put on one
   if #(plots.loaders or {}) < LOADERS and (lastStock[CHUNKY] or 0) > 0 and not plots.noLoaders then
-    local pretend = {}
-    for name, c in pairs(lastStock) do pretend[name] = c end
-    local steps, missing = {}, {}
-    plan(pretend, TURTLE, 1, steps, missing)
-    plan(pretend, MODEM, 1, steps, missing)
-    plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)
+    -- with an ender modem if one can be had; otherwise a plain wireless modem
+    -- (stone and an ender pearl) will do: a loader flies high, where even
+    -- that reaches far, and the others' ender modems hear it anywhere
+    local steps, missing, modem
+    for _, m in ipairs({ MODEM, PLAIN_MODEM }) do
+      local pretend = {}
+      for name, c in pairs(lastStock) do pretend[name] = c end
+      local st2, miss2 = {}, {}
+      plan(pretend, TURTLE, 1, st2, miss2)
+      plan(pretend, m, 1, st2, miss2)
+      plan(pretend, "#fuel", NEWBORN_COAL, st2, miss2)
+      if not missing or not next(miss2) then steps, missing, modem = st2, miss2, m end
+      if not next(miss2) then break end
+    end
     if not next(missing) then
-      print("Building a chunk loader...")
+      print("Building a chunk loader" .. (modem == PLAIN_MODEM and " (plain wireless modem)..." or "..."))
       report("building")
       runSteps(steps)
-      plots.makingLoader = true
+      plots.makingLoader, plots.loaderModem = true, modem
       saveTable(PLOTS_FILE, plots)
       local okFit, why = pcall(assemble)
       if not okFit then
@@ -1808,7 +1866,7 @@ local function tryBuild()
         if not getStage() then
           -- the controller would not go on: put the parts back and leave it
           -- (until .plots is edited), rather than trying for ever
-          plots.makingLoader, plots.noLoaders = nil, true
+          plots.makingLoader, plots.noLoaders, plots.loaderModem = nil, true, nil
           saveTable(PLOTS_FILE, plots)
           stashAll()
         end

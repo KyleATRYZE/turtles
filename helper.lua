@@ -14,6 +14,26 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
+-- A Chunk Controller of my own (if I carry one) keeps my chunk loaded where
+-- nobody is about: worn in place of the pickaxe whenever I am not digging
+-- (see swarm.lua). Every dig puts the pickaxe back on first.
+local CHUNKY = "advancedperipherals:chunk_controller"
+local chunky = swarm and swarm.chunky or nil
+if chunky and turtle and not turtle.chunkyDigs then
+  turtle.chunkyDigs = true
+  for _, n in ipairs({ "dig", "digUp", "digDown" }) do
+    local raw = turtle[n]
+    turtle[n] = function(...)
+      chunky.tool()
+      return raw(...)
+    end
+  end
+end
+-- (the pickaxe and the controller are my own kit: never handed in or dumped)
+local function isKit(name)
+  return name == CHUNKY or name:find("pickaxe", 1, true) ~= nil
+end
+
 local STATE_FILE   = "helper.state"
 local BASE_FILE    = ".base"
 local JOB_PROTOCOL = "swarm_job"
@@ -60,6 +80,9 @@ local function report(state)
       turtle.select(1)
     end
   end
+  -- not digging just now: the controller goes on (the lab bench swaps tools
+  -- by hand, so not there)
+  if chunky and not (st and st.lab) and chunky.have() then chunky.wear() end
   if not swarm then return end
   local f = turtle.getFuelLevel()
   local inv = {}
@@ -72,6 +95,7 @@ local function report(state)
     pos = { x = pos.x, y = pos.y, z = pos.z },
     fuel = f == "unlimited" and -1 or f,
     progress = progress, log = logLines,
+    chunky = chunky and chunky.have() and (chunky.isWorn() and "on" or "carried") or nil,
   })
 end
 local function tick(state)
@@ -384,6 +408,17 @@ local function nextLoad(indices)
   return items
 end
 
+-- With no Chunk Controller on board, ask the factory for one to carry: it
+-- comes with the load, if there is one to spare (asked for at most every
+-- 20 minutes; an hour after being told there is none).
+local ctlAsked, ctlNone = -10000, -10000
+local function askController()
+  if not chunky or chunky.have(true) then return end
+  if os.clock() - ctlAsked < 1200 or os.clock() - ctlNone < 3600 then return end
+  ctlAsked = os.clock()
+  rednet.broadcast({ type = "controller_request", id = os.getComputerID() }, JOB_PROTOCOL)
+end
+
 -- Home for a load: wait in the air until the factory has it ready, drop
 -- onto the pad, take it, and get straight back out of the way.
 local function supplyRun(indices, reason, once)
@@ -406,6 +441,7 @@ local function supplyRun(indices, reason, once)
     save()
     local msg = { type = "materials", id = me, n = st.orderSeq, items = items, fuel = coal }
     rednet.broadcast(msg, JOB_PROTOCOL)
+    askController()
     report("waiting for materials")
     local started, lastAsk, onPad, padSince, reply = os.clock(), os.clock(), false, 0, nil
     while os.clock() - started < 1800 do
@@ -421,6 +457,8 @@ local function supplyRun(indices, reason, once)
             goHover()
           end
         end
+      elseif type(m) == "table" and m.type == "controller_none" and m.forId == me then
+        ctlNone = os.clock()
       end
       if onPad and os.clock() - padSince > 240 then      -- do not hog the pad
         upFromPad()
@@ -441,7 +479,7 @@ local function supplyRun(indices, reason, once)
             local it = turtle.getItemDetail(s)
             -- (and, for the lab bench, everything it was not sent for)
             local spare = st.lab and st.lab.keep and not st.lab.keep[it and it.name or ""]
-            if it and (it.name == "minecraft:bucket" or spare) then
+            if it and (it.name == "minecraft:bucket" or spare) and not isKit(it.name) then
               face(d)
               turtle.select(s)
               turtle.drop()
@@ -1058,7 +1096,7 @@ local function deliver()
         if s2 and pos.x == dock.x and pos.z == dock.z then
           for s = 1, 16 do
             local d = turtle.getItemDetail(s)
-            if d and not isCoal(d.name) and not d.name:find("bucket") then
+            if d and not isCoal(d.name) and not d.name:find("bucket") and not isKit(d.name) then
               turtle.select(s)
               turtle.dropDown()
             end
@@ -1519,6 +1557,7 @@ local function runLab()
           turtle.select(slot)
           local done, why = turtle[a[2] == "right" and "equipRight" or "equipLeft"]()
           turtle.select(1)
+          if chunky then chunky.forget() end
           local kinds = table.concat({ peripheral.getType(a[2]) }, ", ")
           res = (done and "on" or ("no: " .. tostring(why))) .. " (" .. (kinds ~= "" and kinds or "no peripheral") .. ")"
         end
