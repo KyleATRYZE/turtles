@@ -234,5 +234,26 @@ check("take 16 with the Out chest chosen", g.total(g.OUT, IRON) == 16 and not g.
 S.touch("dest:toggle"); S.touch("take:16")
 check("take 16 to the owner", g.PLAYER[IRON] == 16 and g.total(g.OUT, IRON) == 16, g.PLAYER[IRON])
 
+# ---- 12. the real screen draws from these books (dash.lua, 5 x 3 monitor)
+lua.execute('package.path = ROOT .. "/?.lua;" .. package.path')
+lua.execute('''
+function makeMon(bw, bh)
+  local m = { scale = 1, rows = {}, pal = {} }
+  m.setTextScale = function(s) m.scale = s end
+  m.getSize = function()
+    return math.max(math.floor((bw - 0.3125) / (m.scale * 6 / 64) + 0.5), 1), math.max(math.floor((bh - 0.3125) / (m.scale * 9 / 64) + 0.5), 1)
+  end
+  m.setPaletteColour = function(c, hex) m.pal[#m.pal + 1] = { c, hex } end
+  m.setCursorPos = function(x, y) m.cy = y end
+  m.blit = function(t, f, b) m.rows[m.cy] = { t, f, b } end
+  return m
+end
+''')
+dash = lua.eval('(require("dash"))')
+m = lua.eval("makeMon")(5, 3)
+zones = dash.store(m, S.view(), 0)
+text = "\n".join(m.rows[y][1] for y in sorted(m.rows.keys()))
+check("the store screen draws: the one store, and where items go", "The store" in text and "to your inventory" in text and "tap to change" in text and "West wall" not in text)
+
 print("PASS" if not fails else "FAILED: " + "; ".join(fails))
 sys.exit(1 if fails else 0)
