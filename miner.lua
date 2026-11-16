@@ -748,13 +748,19 @@ local function emptySlots()
   return n
 end
 
+-- Building stone carried home for the factory building: this many stacks
+-- of each are kept back from the rubble (one cobblestone stack always stays
+-- on board for flooring the roads).
+local HAUL = { ["minecraft:cobblestone"] = 2, ["minecraft:cobbled_deepslate"] = 2 }
+
 local function dropJunk()
-  local kept = false
+  local kept = {}
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     if d and JUNK[d.name] then
-      if d.name == KEEP_ONE_STACK and not kept then
-        kept = true
+      local keep = HAUL[d.name] or (d.name == KEEP_ONE_STACK and 1) or 0
+      if (kept[d.name] or 0) < keep then
+        kept[d.name] = (kept[d.name] or 0) + 1
       else
         turtle.select(s)
         turtle.dropDown()
