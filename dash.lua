@@ -785,8 +785,9 @@ function D.store(mon, view, frame)
     end
     put(s, c, LX, y + 1)
   end
-  wall(8, "West wall", view.walls.west)
-  wall(15, "East wall", view.walls.east)
+  local wn = view.wallNames or { "West wall", "East wall" }   -- (a controller's store has no walls)
+  wall(8, wn[1], view.walls.west)
+  wall(15, wn[2], view.walls.east)
   local first = view.results[1]
   if first then
     text(s, LX, 22, " ", C.text, (frame % 2 == 0) and C.text or (SEC[first.section] or C.dim))
@@ -826,6 +827,11 @@ function D.store(mon, view, frame)
     text(s, MX, 21, first.name, C.text)
     local more = string.char(183) .. " " .. first.section .. " " .. string.char(183) .. " in " .. (view.where or "")
     text(s, MX + #first.name + 1, 21, more:sub(1, math.max(0, MW - #first.name - 1)), C.dim)
+    if view.dest then                           -- with an Inventory Manager: where they go
+      text(s, MX, 22, "to " .. view.dest, C.text)
+      text(s, MX + MW - 13, 22, "tap to change", C.dim)
+      s.zones[#s.zones + 1] = { MX, 22, MX + MW - 1, 22, "dest:toggle" }
+    end
     button(s, MX, 23, 10, "16", 13, "take:16")
     button(s, MX + 11, 23, 10, "64", 13, "take:64")
     button(s, MX + 22, 23, 11, "ALL", 12, "take:all")
