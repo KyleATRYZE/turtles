@@ -623,9 +623,41 @@ end
 
 ---------------------------------------------------------------- building
 
+-- Which way a block's front is. A barrel can face up or down as well as
+-- round: a plain one says so in facing; a Sophisticated limited barrel in
+-- vertical_facing ("up", "down", or "no" when it stands on its side), and
+-- its horizontal_facing is then only which way it is turned. Put in from
+-- above it lies face up, and its horizontal_facing still looks right.
 local function facingOf(data)
-  -- (Sophisticated Storage's limited barrels call it horizontal_facing)
-  return type(data) == "table" and type(data.state) == "table" and (data.state.facing or data.state.horizontal_facing) or nil
+  local s = type(data) == "table" and type(data.state) == "table" and data.state
+  if not s then return nil end
+  local v = s.vertical_facing
+  if v ~= nil and v ~= "no" and v ~= "none" then return tostring(v) end
+  return s.facing or s.horizontal_facing
+end
+
+-- Faces that way for certain: horizontal_facing alone does not say the
+-- block is not lying on its back.
+local function facesSurely(data, want)
+  local s = type(data) == "table" and type(data.state) == "table" and data.state
+  if not s or facingOf(data) ~= want then return false end
+  return s.facing ~= nil or s.horizontal_facing == nil or s.vertical_facing ~= nil
+end
+
+-- Blocks whose front matters: put up from in front of them, and turned
+-- round when found wrong even with none to spare (the one there is the one
+-- to put back).
+local function frontMatters(name)
+  return name:find("monitor", 1, true) or name:find("barrel", 1, true)
+    or name:find("sophisticatedstorage:", 1, true) == 1
+end
+
+-- Something with things in it is never dug: they would spill on the floor
+-- and be lost. s = 0 below, 1 above, otherwise in front.
+local function holdsThings(s)
+  local side = s == 0 and "bottom" or s == 1 and "top" or "front"
+  local ok, list = pcall(peripheral.call, side, "list")
+  return ok and type(list) == "table" and next(list) ~= nil
 end
 
 -- A monitor put in from above lies on its back, screen to the ceiling
@@ -937,8 +969,10 @@ local function runFit()
   st.later = st.later or {}
   st.turns = st.turns or {}
   st.undone = st.undone or {}
+  st.empty = st.empty or {}
   for i = 1, math.min(st.i - 1, #m.ops) do
-    if not st.undone[i] then applyOp(m.ops[i]) end
+    local o = m.ops[i]
+    if not st.undone[i] and not (o.k == "D" and st.kept and st.kept[ck(o.x, o.y, o.z)]) then applyOp(o) end
   end
   -- two helpers can share the fit-out: each takes the jobs in its own strip
   -- (x from xmin to xmax) and takes the other's as done
@@ -960,8 +994,12 @@ local function runFit()
       local n = list and #list or (#m.ops - from + 1)
       for k = 1, n do
         local op = m.ops[list and list[k] or (from + k - 1)]
-        if op.k ~= "D" and mine(op) then
-          local name = m.pal[op.i].name
+        local name = op.k ~= "D" and m.pal[op.i].name
+        -- (one of these already standing there is turned round, not
+        -- replaced: none is fetched for it unless it was found missing)
+        local standing = name and frontMatters(name) and m.solid[ck(op.x, op.y, op.z)]
+          and not st.empty[ck(op.x, op.y, op.z)]
+        if op.k ~= "D" and mine(op) and not standing then
           if not (st.short and st.short[name]) then
             if not counts[name] then counts[name] = 0 order[#order + 1] = name end
             if counts[name] % 64 == 0 then
@@ -985,6 +1023,12 @@ local function runFit()
     end
   end
 
+  -- what the plan leaves at each place it puts something
+  local finalAt = {}
+  for _, op in ipairs(m.ops) do
+    if op.k ~= "D" then finalAt[ck(op.x, op.y, op.z)] = op end
+  end
+
   local function act(verb, s)
     local sfx = s == 0 and "Down" or s == 1 and "Up" or ""
     return turtle[verb .. sfx]()
@@ -998,6 +1042,16 @@ local function runFit()
   -- try again (after fetching things).
   local function doOp(n, rest, lastGo)
     local op = m.ops[n]
+    -- a take-out where a barrel, chest or monitor is to stand is done from
+    -- that one's front (from the side it could be a wall or an old fitting)
+    local forFront = false
+    if op.k == "D" then
+      local fop = finalAt[ck(op.x, op.y, op.z)]
+      if fop and fop.s and fop.s >= 2 and frontMatters(m.pal[fop.i].name) then
+        forFront = true
+        if fop.s ~= op.s then op = { k = op.k, x = op.x, y = op.y, z = op.z, i = op.i, s = fop.s } end
+      end
+    end
     if not mine(op) then
       applyOp(op)
       return true
@@ -1017,11 +1071,14 @@ local function runFit()
     -- parts are looked at all the same: the one already there may be right,
     -- or only lying wrong (taken down, it is the one to put back).
     local lacking = want and not findSlot(want.name)
-    local lookAnyway = lacking and (want.name:find("monitor", 1, true) or want.name:find("computer", 1, true)
+    local lookAnyway = lacking and (frontMatters(want.name) or want.name:find("computer", 1, true)
       or want.name:find("wireless_modem", 1, true))
-    if lacking and st.short and st.short[want.name] and not lookAnyway then
-      return putOff("none to be had")
-    elseif lacking and not (st.short and st.short[want.name]) then
+    -- one standing there already (going by the shell): see to it before
+    -- fetching any
+    local lookFirst = lacking and frontMatters(want.name) and m.solid[ck(op.x, op.y, op.z)]
+      and not st.empty[ck(op.x, op.y, op.z)]
+    local short = lacking and st.short and st.short[want.name]
+    local function fetch()
       outOfBuilding()
       supplyRun(needs(rest), "out of " .. want.name:gsub("^.*:", ""))
       intoBuilding()
@@ -1030,6 +1087,11 @@ local function runFit()
         st.short[want.name] = true
       end
       return false
+    end
+    if short and not lookAnyway then
+      return putOff("none to be had")
+    elseif lacking and not short and not lookFirst then
+      return fetch()
     elseif fuel() < FUEL_SPARE then
       outOfBuilding()
       supplyRun(needs(rest), "low on fuel")
@@ -1037,20 +1099,50 @@ local function runFit()
       return false
     end
     local d = STAND[op.s]
-    if not goTo(op.x + d[1], op.y + d[2], op.z + d[3]) then return putOff("cannot get to it") end
+    if not goTo(op.x + d[1], op.y + d[2], op.z + d[3]) then
+      if forFront and lastGo then
+        -- (the job that puts the barrel here looks at this place from the
+        -- same side: it finds out what is there and says so if it is wrong)
+        st.undone[n] = nil
+        return true
+      end
+      return putOff("cannot get to it")
+    end
     if op.s >= 2 then face(STAND_FACE[op.s]) end
     local there = see(op.s)
     if op.k == "D" then
+      -- the very thing the plan puts here (a barrel, chest or monitor) is
+      -- already standing: leave it. Its own job turns it round if it faces
+      -- wrong. (Not glass: a window taken out to get in is taken out again.)
+      local fop = finalAt[ck(op.x, op.y, op.z)]
+      local final = fop and m.pal[fop.i]
+      if there and final and there.name == final.name and frontMatters(final.name) then
+        st.kept = st.kept or {}
+        st.kept[ck(op.x, op.y, op.z)] = true
+        st.undone[n] = nil
+        return true
+      end
+      if there and holdsThings(op.s) then
+        -- (dug, a chest spills what is in it: someone empties it first)
+        return putOff("a " .. there.name:gsub("^.*:", "") .. " with things in it")
+      end
       if there then act("dig", op.s) end
       st.undone[n] = nil
       applyOp(op)
       return true
     end
-    if lacking and not (there and there.name == want.name) then return putOff("none to be had") end
+    if lacking and not (there and there.name == want.name) then
+      if short then return putOff("none to be had") end
+      st.empty[ck(op.x, op.y, op.z)] = true          -- (not there after all: one is fetched for it)
+      return fetch()
+    end
     local right = there and there.name == want.name
-      and (not want.facing or facingOf(there) == want.facing) and upright(there)
+      and (not want.facing or facesSurely(there, want.facing)) and upright(there)
     if not right then
       if there and (op.k == "R" or there.name == want.name or isClutter(there.name)) then
+        if holdsThings(op.s) then
+          return putOff("a " .. there.name:gsub("^.*:", "") .. " with things in it")
+        end
         act("dig", op.s)
       elseif there then
         return putOff("a " .. there.name:gsub("^.*:", "") .. " is there")
@@ -1073,6 +1165,11 @@ local function runFit()
       end
       turtle.select(1)
       if not placed and not see(op.s) then return putOff("it would not go in") end
+      if placed and want.facing and op.s >= 2 and facingOf(see(op.s)) ~= want.facing then
+        -- (put in from in front, it should face the turtle: say so if not)
+        print(("%s at %d %d %d faces %s, not %s."):format(want.name:gsub("^.*:", ""), op.x, op.y, op.z,
+          tostring(facingOf(see(op.s))), want.facing))
+      end
     end
     -- a station computer (a screen's) is switched on where it stands
     if want.name:find("computer", 1, true) then
