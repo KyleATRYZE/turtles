@@ -272,6 +272,7 @@ local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "HodStewart" 
 local launchingHelper = false
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
+local bootstrapFuel      -- defined further down (fuel from nothing)
 local served = {}        -- the last order number served, by computer id
 
 -- Miners with a plot, plus miners between plots (they finished one and
@@ -1466,6 +1467,50 @@ local function responder()
   end
 end
 
+---------------------------------------------------------------- fuel from nothing
+-- No coal and no charcoal at all: nothing can smelt, so logs cannot become
+-- charcoal either. Planks burn in a furnace too (a plank cooks 1.5 items,
+-- and one log makes four): cook a first batch of logs on planks. After
+-- that there is charcoal, and one charcoal cooks eight logs.
+bootstrapFuel = function(stock)
+  if next(orders) then return end
+  if countIn(stock, "#fuel") > 0 then return end
+  local logs = countIn(stock, "#log")
+  if logs < 4 then return end
+  local planks = countIn(stock, "#planks")
+  if planks < 8 then
+    local pretend = {}
+    for name, c in pairs(stock) do pretend[name] = c end
+    local steps, missing = {}, {}
+    plan(pretend, "#planks", 8, steps, missing)
+    if next(missing) then return end
+    stashAll()
+    runSteps(steps)
+    stashAll()
+  end
+  for _, f in ipairs(furnaces) do
+    local okList, items = pcall(furnaceList, f)
+    if okList and not items[1] and not items[2] then
+      local fed, loaded = 0, 0
+      for _, st in ipairs(listStorage()) do
+        if fed < 8 and matches("#planks", st.name) then
+          fed = fed + (peripheral.call(st.inv, "pushItems", f, st.slot, 8 - fed, 2) or 0)
+        end
+      end
+      if fed == 0 then return end
+      local kind
+      for _, st in ipairs(listStorage()) do
+        if loaded < math.floor(fed * 1.5) and matches("#log", st.name) and (not kind or kind == st.name) then
+          kind = st.name
+          loaded = loaded + (peripheral.call(st.inv, "pushItems", f, st.slot, math.floor(fed * 1.5) - loaded, 1) or 0)
+        end
+      end
+      print(("No fuel at all: cooking %d logs on planks for charcoal."):format(loaded))
+      return
+    end
+  end
+end
+
 ---------------------------------------------------------------- main loop
 
 local function describeMissing(missing)
@@ -1507,7 +1552,10 @@ local function tryBuild()
     stashAll()
   end
   for _, f in ipairs(furnaces) do emptyOutput(f) end
-  if not held then pcall(keepFurnacesBusy, stockTotals()) end
+  if not held then
+    pcall(bootstrapFuel, stockTotals())
+    pcall(keepFurnacesBusy, stockTotals())
+  end
 
   local b
   b, why = survey()
