@@ -1,20 +1,17 @@
 {
   "commands": [
     {
-      "id": 1794837345,
-      "issued": 1794837345000,
+      "id": 1794838355,
+      "issued": 1794838355000,
       "cmd": "reboot",
       "target": "BrickJagger"
     },
     {
-      "id": 1794837346,
-      "issued": 1794837345000,
-      "cmd": "givecoal",
+      "id": 1794838356,
+      "issued": 1794838355000,
+      "cmd": "reload",
       "target": "BrickJagger",
-      "x": -4461,
-      "y": 75,
-      "z": 1522,
-      "n": 16
+      "plan": "factory_shell"
     }
   ]
 }

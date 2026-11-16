@@ -23,6 +23,9 @@ SHELL = {
     "minecraft:polished_deepslate", "minecraft:deepslate_tiles", "minecraft:stone_bricks",
     "minecraft:cracked_stone_bricks", "minecraft:deepslate_bricks",
     "minecraft:deepslate_tile_stairs", "minecraft:cut_copper", "minecraft:cut_copper_slab",
+    # windows go in as the walls go up (the builder leaves them for later if
+    # the factory has no glass yet)
+    "minecraft:glass_pane", "minecraft:glass",
 }
 
 bp = json.load(open(os.path.join(ROOT, "blueprints", "factory.json")))

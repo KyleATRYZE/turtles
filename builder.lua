@@ -1203,6 +1203,10 @@ local LOAD_STACKS = 12     -- stacks of blocks to fetch per trip
 local BUILD_FUEL  = 4000   -- fuel to leave the launch pad with
 local FUEL_SPARE  = 600    -- head home for more when down to this (plus the trip)
 local FACING      = { east = 0, south = 1, west = 2, north = 3 }
+-- Blocks the building can go on without for now (put in later, when the
+-- factory has them): windows and lights.
+local OPTIONAL    = { ["minecraft:glass_pane"] = true, ["minecraft:glass"] = true,
+  ["minecraft:lantern"] = true }
 
 -- Things that grow or lie about naturally: fine to clear from the site.
 local NATURAL_WORDS = {
@@ -1465,18 +1469,29 @@ end
 -- What the next part of the list needs, up to a load.
 local function nextLoad(b)
   local counts, order = {}, {}
-  for i = b.i, #list.blocks do
+  local short = b.short or {}
+  -- the blocks still to place: the rest of the list, or (at the end) the
+  -- ones being gone back for
+  local indices = {}
+  if b.i <= #list.blocks then
+    for i = b.i, #list.blocks do indices[#indices + 1] = i end
+  else
+    for _, i in ipairs(b.skips or {}) do indices[#indices + 1] = i end
+  end
+  for _, i in ipairs(indices) do
     local name = list.pal[list.blocks[i][4]].name
-    if not counts[name] then
-      counts[name] = 0
-      order[#order + 1] = name
-    end
-    counts[name] = counts[name] + 1
-    local stacks = 0
-    for _, c in pairs(counts) do stacks = stacks + math.ceil(c / 64) end
-    if stacks > LOAD_STACKS then
-      counts[name] = counts[name] - 1
-      break
+    if not short[name] then                -- (out of stock: left for later)
+      if not counts[name] then
+        counts[name] = 0
+        order[#order + 1] = name
+      end
+      counts[name] = counts[name] + 1
+      local stacks = 0
+      for _, c in pairs(counts) do stacks = stacks + math.ceil(c / 64) end
+      if stacks > LOAD_STACKS then
+        counts[name] = counts[name] - 1
+        break
+      end
     end
   end
   local items = {}
@@ -1546,6 +1561,13 @@ local function restock(b)
     burnInventory(BUILD_FUEL)
     if not placing or (first and findSlot(first)) then break end
     if not first then break end
+    if OPTIONAL[first] then
+      -- windows and lights can wait: note it and carry on with the rest
+      b.short = b.short or {}
+      b.short[first] = true
+      print("No " .. first:gsub("^.*:", "") .. " for now. Leaving those for later.")
+      break
+    end
     print("No " .. first:gsub("^.*:", "") .. " to be had yet. Waiting for the miners.")
     report("waiting for materials")
     goToCell(st.park)
@@ -1705,6 +1727,15 @@ local function placeShell(b)
     local wx, wy, wz = b.ox + e[1], b.oy + e[2], b.oz + e[3]
     local slot = findSlot(want.name)
     local trip = math.abs(pos.x - st.doorX) + math.abs(pos.z - st.doorZ) + math.abs(pos.y - b.oy) + 50
+    if not slot and OPTIONAL[want.name] and b.short and b.short[want.name] then
+      if lastGo then
+        b.leftover = (b.leftover or 0) + 1      -- the fit-out puts these in
+      else
+        b.later = b.later or {}
+        b.later[#b.later + 1] = idx              -- put it in later
+      end
+      return true
+    end
     if not slot then
       supplyRun(b, "out of " .. want.name:gsub("^.*:", ""))
       return false
@@ -1777,13 +1808,21 @@ local function placeShell(b)
       return false
     end
     progress = { kind = "building", done = b.i - 1, total = #blocks, layer = blocks[b.i][2],
-      skipped = #b.skips }
+      skipped = #b.skips, later = b.later and #b.later or 0 }
+    b.layer = blocks[b.i][2]
     if doBlock(b.i, false) then
       b.i = b.i + 1
       if b.i % 8 == 0 then save() end
     end
     if freeSlots() < 2 then dropJunk(b, true) end
     tick("building")
+  end
+  -- the windows and lights left for later go on the end of the retry list,
+  -- with a fresh look at whether the factory has them now
+  if b.later and #b.later > 0 then
+    print(("Coming back for %d windows and lights."):format(#b.later))
+    for _, idx in ipairs(b.later) do b.skips[#b.skips + 1] = idx end
+    b.later, b.short = nil, nil
   end
   -- one more go at the ones that could not be reached the first time
   if #b.skips > 0 then print(("Going back for %d I skipped."):format(#b.skips)) end
@@ -1806,6 +1845,26 @@ end
 local FACTORY_SIZE = { x = 57, y = 33, z = 32 }   -- the shell's box
 local function runBuild()
   local b = st.build
+  if b.reload then
+    -- a new version of the plan: carry on from the start of the layer we
+    -- are on (what is already built there is just checked)
+    local layer = b.layer
+    if not layer then
+      loadList(b)
+      local e = list.blocks[math.min(b.i, #list.blocks)]
+      layer = e and e[2] or 0
+    end
+    if fs.exists(b.listFile) then fs.delete(b.listFile) end
+    list = nil
+    loadList(b)
+    local i = #list.blocks + 1
+    for n, e in ipairs(list.blocks) do
+      if e[2] >= layer then i = n break end
+    end
+    b.i, b.reload, b.skips = i, nil, {}
+    print(("New plan loaded: carrying on from layer %d."):format(layer))
+    save()
+  end
   loadList(b)
   if b.plan ~= "factory_shell" then
     b.keepOut = { x1 = b.ox, z1 = b.oz, x2 = b.ox + FACTORY_SIZE.x - 1,
@@ -2115,6 +2174,18 @@ while true do
       sendScan(type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or "scan_here")
       work()
     end)
+  elseif cmd.cmd == "reload" and type(cmd.plan) == "string" then
+    -- a new version of a plan is on GitHub: pick it up where we are
+    local hit = false
+    for _, b in ipairs({ st.build, table.unpack(st.queue or {}) }) do
+      if b and b.plan == cmd.plan then
+        b.reload = true
+        b.layer = b.layer
+        hit = true
+      end
+    end
+    save()
+    print(hit and ("Will reload " .. cmd.plan .. ".") or ("No build of " .. cmd.plan .. "."))
   elseif cmd.cmd == "givecoal" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
     task = guarded(function()
       relocate()
