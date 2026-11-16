@@ -1388,6 +1388,17 @@ end
 
 ---------------------------------------------------------------- startup
 
+-- A turtle labelled "loader..." is ChunkNorris (it carries a Chunk
+-- Controller, not a pickaxe): switch it to its own program.
+if turtle and (os.getComputerLabel() or ""):lower():match("^loader") then
+  local h = fs.open(".role", "w")
+  h.write("loader")
+  h.close()
+  print("This is the chunk loader. Switching job.")
+  sleep(1)
+  os.reboot()
+end
+
 local function loadState()
   if not fs.exists(STATE_FILE) then return false end
   local h = fs.open(STATE_FILE, "r")
