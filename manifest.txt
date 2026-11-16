@@ -6,5 +6,6 @@ factory.lua
 builder.lua
 loader.lua
 helper.lua
+foundry.lua
 dash.lua
 sortnado.lua

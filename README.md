@@ -26,6 +26,8 @@ relays it to the turtles. Write one with `tools/order.py <cmd> <target>`, then c
 - `home` - go home, unload and wait
 - `resume` - carry on with the saved job
 - `ping` - report status now
+- `foundry` - (a helper) work the Mekanism line: `ore=minecraft:raw_iron n=48`, `make=steel n=16`,
+  `job=setup`, `job=move_infuser`, `on=0`. See `docs/foundry.md`.
 
 ## Factory
 

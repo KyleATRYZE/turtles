@@ -1,12 +1,17 @@
 {
   "commands": [
     {
-      "id": 1794869376,
-      "issued": 1794869376000,
-      "cmd": "lab",
-      "target": "MortarKombat",
-      "ops": "fetch|sophisticatedstorage:chest=1,sophisticatedstorage:barrel=1;inv;handin|",
-      "clear": 1
+      "id": 1794870595,
+      "issued": 1794870595000,
+      "cmd": "fit",
+      "target": "WallStreet",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_storeroom",
+      "shell": "factory_asfit3",
+      "xmin": 10,
+      "xmax": 10
     }
   ]
 }

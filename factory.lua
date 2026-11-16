@@ -295,9 +295,26 @@ local RECIPES = {
     key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", I = "minecraft:iron_ingot",
       K = "mekanism:steel_casing" },
   },
-  ["mekanism:basic_universal_cable"] = {
+  -- Power, so the machines need no redstone dust fed to them: generators,
+  -- cable to carry it, a cube to hold it. NOT YET TRIED in this pack (the
+  -- grids are Mekanism's own; a craft that fails is reported and left).
+  ["mekanism:basic_universal_cable"] = {                 -- unverified
     yield = 8, grid = { "S", "R", "S", "", "", "", "", "", "" },
     key = { S = "alltheores:steel_ingot", R = "minecraft:redstone" },
+  },
+  ["mekanism:energy_tablet"] = {                         -- unverified
+    grid = { "R", "G", "R", "A", "G", "A", "R", "G", "R" },
+    key = { R = "minecraft:redstone", G = "minecraft:gold_ingot", A = "mekanism:alloy_infused" },
+  },
+  ["mekanism:basic_energy_cube"] = {                     -- unverified
+    grid = { "R", "T", "R", "I", "K", "I", "R", "T", "R" },
+    key = { R = "minecraft:redstone", T = "mekanism:energy_tablet", I = "minecraft:iron_ingot",
+      K = "mekanism:steel_casing" },
+  },
+  ["mekanismgenerators:wind_generator"] = {              -- unverified
+    grid = { "", "O", "", "O", "A", "O", "T", "C", "T" },
+    key = { O = "alltheores:osmium_ingot", A = "mekanism:alloy_infused", T = "mekanism:energy_tablet",
+      C = "mekanism:basic_control_circuit" },
   },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
@@ -504,6 +521,9 @@ local function report(state)
     fleet = { active = activeCount(), launching = pending, max = MAX_MINERS,
       builder = plots.builderId,
       plotsDone = plots.done, nextPlot = plots.next, byId = plots.byId },
+    foundry = plots.foundry and { op = plots.foundry.op, machines = plots.foundry.machines,
+      job = plots.foundry.job and plots.foundry.job.item, fails = plots.foundry.fails,
+      last = plots.foundry.last } or nil,
     log = logLines,
   })
 end
@@ -810,6 +830,130 @@ local BACKGROUND = {
   { leave = 64, input = "minecraft:raw_gold", output = "minecraft:gold_ingot", keep = 160 },
 }
 
+---------------------------------------------------------------- the foundry
+-- The Mekanism line in the foundry bay is worked by a helper (foundry.lua).
+-- Once it says its Enrichment Chamber and Energized Smelter are set up, raw
+-- ore goes to it a batch at a time rather than into the furnaces: three raw
+-- make four ingots there. Each job costs about one redstone dust of power,
+-- so this only runs while there is redstone to spare; without it, or if the
+-- foundry stops answering, the furnaces carry on as before.
+local REDSTONE = "minecraft:redstone"
+local FOUNDRY_ORES = {      -- keep = ingots wanted; leave = raw ore kept back
+  { raw = "minecraft:raw_iron", out = "minecraft:iron_ingot", keep = 600, leave = 64 },
+  { raw = "minecraft:raw_gold", out = "minecraft:gold_ingot", keep = 320, leave = 64 },
+  { raw = "minecraft:raw_copper", out = "minecraft:copper_ingot", keep = 600, leave = 0 },
+  { raw = "alltheores:raw_osmium", out = "alltheores:osmium_ingot", keep = 200, leave = 0 },
+}
+local FOUNDRY_BATCH = 48    -- raw ore a job (64 ingots: one stack out of the smelter)
+local FOUNDRY_DUST  = 100   -- redstone dust a batch takes with it (80 jobs, and a little)
+local FOUNDRY_KEEP  = 128   -- redstone dust never sent to the foundry (crafting needs it)
+local foundryHello = nil    -- when the operator was last called for
+
+local function foundryUp()
+  local fy = plots.foundry
+  return fy ~= nil and fy.op ~= nil and type(fy.machines) == "table"
+    and fy.machines.chamber and fy.machines.smelter and (fy.fails or 0) < 3 or false
+end
+
+-- This raw ore is the foundry's just now (the furnaces leave it alone).
+local function foundryOre(stock, raw)
+  if not foundryUp() then return nil end
+  if (stock[REDSTONE] or 0) < FOUNDRY_KEEP + FOUNDRY_DUST then return nil end
+  for _, o in ipairs(FOUNDRY_ORES) do
+    if o.raw == raw then return o end
+  end
+end
+
+local function foundrySend(fy)
+  local job = fy.job
+  rednet.send(fy.op, { type = "foundry_job", n = job.n, forId = fy.op,
+    job = { kind = job.kind, item = job.item, n = job.count } }, JOB_PROTOCOL)
+end
+
+-- Raise a job when there is ore and redstone for one and none is out; ask
+-- again if the operator has not answered; give up on one that never ends.
+local function foundryDuty(stock)
+  local fy = plots.foundry
+  if not fy then
+    fy = {}
+    plots.foundry = fy
+  end
+  local now = os.epoch("utc")
+  local job = fy.job
+  if job then
+    if now - job.since > (job.acked and 3600000 or 1200000) then
+      print(job.acked and "The foundry never finished its job: dropped." or "Nobody at the foundry: job dropped.")
+      fy.job, fy.fails, fy.failedAt = nil, (fy.fails or 0) + 1, now
+      saveTable(PLOTS_FILE, plots)
+    elseif now - job.asked > (job.acked and 900000 or 120000) then
+      -- (not heard: asked again. One that is done already says so again.)
+      job.asked = now
+      foundrySend(fy)
+    end
+    return
+  end
+  if not fy.op then
+    if not foundryHello or now - foundryHello > 300000 then
+      foundryHello = now
+      rednet.broadcast({ type = "foundry_hello" }, JOB_PROTOCOL)
+    end
+    return
+  end
+  if (fy.fails or 0) >= 3 and now - (fy.failedAt or 0) > 3 * 3600000 then
+    fy.fails = 0                           -- (another go, a few hours on)
+  end
+  if now - (fy.failedAt or 0) < 600000 or now - (fy.doneAt or 0) < 30000 then return end
+  if next(orders) ~= nil then return end   -- a load is being made up: not now
+  for _, o in ipairs(FOUNDRY_ORES) do
+    if foundryOre(stock, o.raw) and (stock[o.raw] or 0) >= o.leave + FOUNDRY_BATCH
+      and (stock[o.out] or 0) < o.keep then
+      fy.seq = (fy.seq or 0) % 1000 + 1
+      fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = "ore", item = o.raw, count = FOUNDRY_BATCH,
+        since = now, asked = now }
+      saveTable(PLOTS_FILE, plots)
+      print(("To the foundry: %d %s."):format(FOUNDRY_BATCH, shortName(o.raw)))
+      foundrySend(fy)
+      return
+    end
+  end
+end
+
+-- word from the operator (from the responder)
+local function foundryHeard(id, msg)
+  local fy = plots.foundry
+  if not fy then
+    fy = {}
+    plots.foundry = fy
+  end
+  if msg.type == "foundry_ready" then
+    fy.op = id
+    fy.machines = type(msg.machines) == "table" and msg.machines or {}
+    saveTable(PLOTS_FILE, plots)
+    return
+  end
+  local job = fy.job
+  if not job or id ~= fy.op or msg.n ~= job.n then return end
+  if msg.type == "foundry_ack" then
+    job.acked = true
+  elseif msg.type == "foundry_done" then
+    local now = os.epoch("utc")
+    fy.job, fy.doneAt = nil, now
+    local made = {}
+    for name, n in pairs(type(msg.made) == "table" and msg.made or {}) do
+      made[#made + 1] = n .. " " .. shortName(name)
+    end
+    if msg.ok then
+      fy.fails = 0
+      print("The foundry made " .. (made[1] and table.concat(made, ", ") or "nothing") .. ".")
+    else
+      fy.fails, fy.failedAt = (fy.fails or 0) + 1, now
+      print("The foundry: " .. tostring(msg.why or "job failed") .. ".")
+    end
+    fy.last = { item = job.item, ok = msg.ok and true or false, why = msg.why, made = table.concat(made, ", ") }
+  end
+  saveTable(PLOTS_FILE, plots)
+end
+
 local function keepFurnacesBusy(stock)
   local busy = next(orders) ~= nil         -- a builder load is being made: only fuel is cooked
   -- cooking ahead is a luxury: not when coal is short
@@ -826,7 +970,7 @@ local function keepFurnacesBusy(stock)
         -- fuel now, and wood is wanted for chests, ladders and new turtles)
         local wanted
         if job.fuel then wanted = shortOfCoal else wanted = not (shortOfCoal or busy) end
-        if wanted and have < job.keep
+        if wanted and have < job.keep and not foundryOre(stock, job.input)
           and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
           local okLoad, got = pcall(loadFurnace, f, job.input, 64)
           if okLoad and got and got > 0 then
@@ -1911,6 +2055,8 @@ local function responder()
       elseif msg.type == "materials" and type(msg.items) == "table"
         and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
+      elseif msg.type == "foundry_ready" or msg.type == "foundry_ack" or msg.type == "foundry_done" then
+        pcall(foundryHeard, id, msg)
       elseif msg.type == "release" then
         -- a miner turned coal hunter: its plot goes to the next new miner
         if plots.byId[tostring(id)] == msg.index then
@@ -2053,6 +2199,7 @@ local function tryBuild()
     pcall(bootstrapFuel, stockTotals())
     pcall(dumpJunk, stockTotals())
     pcall(keepFurnacesBusy, stockTotals())
+    pcall(foundryDuty, stockTotals())
   end
 
   local b
