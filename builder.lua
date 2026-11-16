@@ -739,6 +739,9 @@ local function fuelUpOnPad(target)
   for _ = 1, 30 do
     burnInventory(target)
     if fuel() >= target then return end
+    if key(pos.x, pos.y, pos.z) ~= st.padKey then
+      goToCell(st.padKey)                  -- the pad may have been taken
+    end
     report("needs fuel")
     if swarm and swarm.open() then
       rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
@@ -1039,7 +1042,15 @@ local function landSurvey(site)
   goToCell(st.padKey)
   fuelUpOnPad(math.min(need, 19000))
   if fuel() < need then
-    size = math.max(8, math.floor(math.sqrt(math.max(0, fuel() - 600) / 3)))
+    local afford = scanning and math.floor(math.sqrt(math.max(0, fuel() - 800) * 4))
+      or math.floor(math.sqrt(math.max(0, fuel() - 600) / 3))
+    if afford < 24 then
+      print("Not enough fuel to map. Waiting for fuel.")
+      report("needs fuel")
+      goToCell(st.park)
+      return false
+    end
+    size = math.min(size, afford)
     print("Not enough fuel for the full map. Mapping " .. size .. " x " .. size .. ".")
   end
   local ok, why = goOutside()
