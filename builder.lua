@@ -29,8 +29,8 @@ local CORE         = "advancedperipherals:weak_automata_core"
 local SCANNER      = "advancedperipherals:geo_scanner"
 local SCAN_RADIUS  = 8      -- the scanner's free range
 local SCAN_SPACING = 10     -- distance between scan points on the ground map
-local DOOR_OFFSET  = { x = -1, y = 0, z = 8 }   -- the way in and out of the hut,
-                                                -- from the factory (south side)
+local DOOR_OFFSET  = { x = -1, y = 0, z = 8 }   -- the hut's doorway, from the factory
+local DOOR_OUT     = 1                          -- the way out of it: south
 
 -- Blocks that count as the ground itself (anything above these is a tree,
 -- a plant, or something somebody built).
@@ -818,21 +818,34 @@ local function groundToSafely(x, z)
   return false
 end
 
--- Out of the hut through its door (the open south side).
+-- Out of the hut through its doorway, then a few steps clear of it.
 local function goOutside()
   local dk = doorKey()
   if not goToCell(dk) then return false, "cannot reach the door" end
+  face(DOOR_OUT)
+  for _ = 1, 3 do groundForward() end
   return true
 end
 
--- Back in through the door, then to a cell of the room (the parking
--- spot unless told otherwise).
+-- Back in: walk to a spot a few blocks out from the doorway, come down to
+-- its level, then walk in through it and on to a cell of the room (the
+-- parking spot unless told otherwise).
 local function comeHome(target)
-  local dk, d = doorKey()
-  if not groundToSafely(d.x, d.z) then return false end
-  -- step up or down to the door's height
-  while pos.y < d.y do if not step("u") then return false end end
-  while pos.y > d.y do if not step("d") then return false end end
+  local _, d = doorKey()
+  local back = (DOOR_OUT + 2) % 4
+  local ox, oz = d.x + 3 * DIRS[DOOR_OUT].x, d.z + 3 * DIRS[DOOR_OUT].z
+  if not groundToSafely(ox, oz) then return false end
+  for _ = 1, 8 do
+    if pos.x == d.x and pos.z == d.z then break end
+    while pos.y > d.y and step("d") do end
+    while pos.y < d.y and step("u") do end
+    face(back)
+    if not step("f") then
+      if pos.y ~= d.y or not step("u") then return false end
+    end
+  end
+  while pos.y > d.y and step("d") do end
+  if pos.x ~= d.x or pos.z ~= d.z or pos.y ~= d.y then return false end
   return goToCell(target or st.park)
 end
 
