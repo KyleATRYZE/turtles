@@ -1,16 +1,26 @@
 {
   "commands": [
     {
-      "id": 1794795414,
-      "issued": 1794795414000,
+      "id": 1794795938,
+      "issued": 1794795938000,
+      "cmd": "reboot",
+      "target": "GroundControl"
+    },
+    {
+      "id": 1794795939,
+      "issued": 1794795938000,
       "cmd": "reboot",
       "target": "BrickJagger"
     },
     {
-      "id": 1794795415,
-      "issued": 1794795414000,
+      "id": 1794795940,
+      "issued": 1794795938000,
       "cmd": "survey",
-      "target": "BrickJagger"
+      "target": "BrickJagger",
+      "x": -4430,
+      "z": 1530,
+      "size": 64,
+      "name": "factory_site"
     }
   ]
 }

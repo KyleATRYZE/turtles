@@ -23,7 +23,8 @@ local ROOM_REACH   = 12     -- room map: blocks either side of the factory
 local ROOM_BELOW   = 2      -- ... and below / above its level
 local ROOM_ABOVE   = 5
 local LAND_SIZE    = 40     -- ground map: this many blocks square, centred on the base
-local MAX_DROP     = 12     -- never follow the ground down further than this in one step
+local MAX_DROP     = 3      -- never follow the ground down further than this in one step
+                            -- (deeper drops are pits: hover across them instead)
 local CORE         = "advancedperipherals:weak_automata_core"
 local SCANNER      = "advancedperipherals:geo_scanner"
 local SCAN_RADIUS  = 8      -- the scanner's free range
@@ -722,9 +723,36 @@ local function goOutside()
   end
 end
 
+-- Stuck somewhere (a pit, a cave): climb as high as we can, sidestepping
+-- anything overhead, so that groundTo can find a way.
+local function climbOut()
+  for _ = 1, 3 do
+    local rose = 0
+    while rose < 40 and step("u") do rose = rose + 1 end
+    if rose > 0 and not turtle.detectUp() then return true end
+    local moved = false
+    for h = 0, 3 do
+      face(h)
+      if step("f") then moved = true break end
+    end
+    if not moved then return false end
+  end
+  return true
+end
+
+-- Walk to a column, climbing out of trouble if we get stuck.
+local function groundToSafely(x, z)
+  for _ = 1, 4 do
+    if groundTo(x, z) then return true end
+    print("Stuck. Climbing out.")
+    if not climbOut() then return false end
+  end
+  return false
+end
+
 -- Back down the hole onto the launch pad, then to the parking spot.
 local function comeHome()
-  if not groundTo(base.exit2.x, base.exit2.z) then return false end
+  if not groundToSafely(base.exit2.x, base.exit2.z) then return false end
   while pos.y > base.exit2.y + 1 do
     if not step("d") then return false end
   end
@@ -744,9 +772,9 @@ local function comeHome()
 end
 
 -- Ground map by scanning from points on a grid.
-local function landScan(size)
+local function landScan(size, cx, cz, name)
   local f = base.f
-  local x1, z1 = f.x - math.floor(size / 2), f.z - math.floor(size / 2)
+  local x1, z1 = cx - math.floor(size / 2), cz - math.floor(size / 2)
   local blocks, colRange = {}, {}
   local points = {}
   local half = math.floor(SCAN_SPACING / 2)
@@ -767,7 +795,7 @@ local function landScan(size)
 
   for _, p in ipairs(points) do
     if p then
-      groundTo(p.x, p.z)
+      groundToSafely(p.x, p.z)
       local found, covered = scanHere()
       done = done + 1
       progress = { kind = "ground", scans = done, of = total }
@@ -822,16 +850,18 @@ local function landScan(size)
       end
     end
   end
-  sendMap("ground", {
+  sendMap(name, {
     kind = "ground", origin = { x = x1, z = z1 }, size = size, scanned = true,
     factory = f, heights = heights, names = names, palette = palette, above = above,
   })
   return true
 end
 
-local function landSurvey()
+local function landSurvey(site)
   local f = base.f
-  local size = st.landSize or LAND_SIZE
+  local size = (site and site.size) or st.landSize or LAND_SIZE
+  local cx, cz = (site and site.x) or f.x, (site and site.z) or f.z
+  local mapName = (site and site.name) or "ground"
   local scanning = scannerSide() ~= nil
   local need = scanning and (math.floor(size * size / 4) + 800) or (size * size * 3 + 600)
   goToCell(st.padKey)
@@ -849,7 +879,9 @@ local function landSurvey()
   end
   print("Mapping the ground, " .. size .. " x " .. size .. ".")
   report("mapping the ground")
-  if scanning and landScan(size) then
+  if scanning and landScan(size, cx, cz, mapName) then
+    if site then st.site = nil else st.done.ground = true end
+    save()
     print("Ground mapped. Coming home.")
     report("coming home")
     if not comeHome() then
@@ -857,12 +889,12 @@ local function landSurvey()
       report("stuck outside")
       return false
     end
-    st.done.ground = true
+    if site then st.site = nil else st.done.ground = true end
     save()
     return true
   end
 
-  local x1, z1 = f.x - math.floor(size / 2), f.z - math.floor(size / 2)
+  local x1, z1 = cx - math.floor(size / 2), cz - math.floor(size / 2)
   local heights, names, palette, index = {}, {}, {}, {}
   for i = 1, size * size do heights[i], names[i] = -1000, 0 end
   local function record()
@@ -878,7 +910,7 @@ local function landSurvey()
     names[i] = index[name]
   end
 
-  groundTo(x1, z1)
+  groundToSafely(x1, z1)
   record()
   for row = 0, size - 1 do
     progress = { kind = "ground", row = row + 1, rows = size }
@@ -894,10 +926,12 @@ local function landSurvey()
     end
   end
 
-  sendMap("ground", {
+  sendMap(mapName, {
     kind = "ground", origin = { x = x1, z = z1 }, size = size,
     factory = f, heights = heights, names = names, palette = palette,
   })
+  if site then st.site = nil else st.done.ground = true end
+  save()
   print("Ground mapped. Coming home.")
   report("coming home")
   if not comeHome() then
@@ -905,7 +939,7 @@ local function landSurvey()
     report("stuck outside")
     return false
   end
-  st.done.ground = true
+  if site then st.site = nil else st.done.ground = true end
   save()
   return true
 end
@@ -916,14 +950,22 @@ local function work()
   if os.getComputerLabel() ~= NAME then os.setComputerLabel(NAME) end
   if fitScanner() then print("Geo Scanner fitted.") end
   relocate()
-  if pos.y > base.f.y + ROOM_ABOVE then
+  local here = key(pos.x, pos.y, pos.z)
+  local inside = roomSet()[here] or here == st.padKey
+    or (not st.done.room and inBox(pos.x, pos.y, pos.z) and pos.y <= base.f.y + 1)
+  if not inside then
     -- restarted outside: walk back to the hole and come in
     print("Outside. Coming home.")
-    if not comeHome() then report("stuck outside") return end
+    if not comeHome() then
+      print("I could not get back in.")
+      report("stuck outside")
+      return
+    end
   end
   if not st.done.room then roomSurvey() end
   goToCell(st.park)
   if not st.done.ground then landSurvey() end
+  if st.site then landSurvey(st.site) end
   goToCell(st.park)
   if st.done.ground then
     print("Maps done. Waiting for jobs.")
@@ -1005,10 +1047,19 @@ while true do
     save()
     task = guarded(work)
   elseif cmd.cmd == "survey" then
-    -- map again: "survey" redoes both maps; a size sets the ground map size
+    -- map again: with x and z, map the ground around that spot (named
+    -- cmd.name); without, redo both base maps. size sets the map size.
     st.paused = nil
-    st.done = {}
-    if tonumber(cmd.size) then st.landSize = math.floor(tonumber(cmd.size)) end
+    if tonumber(cmd.x) and tonumber(cmd.z) then
+      st.site = {
+        x = math.floor(tonumber(cmd.x)), z = math.floor(tonumber(cmd.z)),
+        size = math.min(96, math.floor(tonumber(cmd.size) or 48)),
+        name = (type(cmd.name) == "string" and cmd.name:match("^[%w_%-]+$")) and cmd.name or "site",
+      }
+    else
+      st.done = {}
+      if tonumber(cmd.size) then st.landSize = math.floor(tonumber(cmd.size)) end
+    end
     save()
     task = guarded(work)
   end

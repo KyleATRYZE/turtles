@@ -67,6 +67,8 @@ local owner              -- player who gets chat messages (set from chat)
 local chatBox            -- defined in the chat section below
 local chatDebug = { heard = 0, sent = 0, failed = 0 }   -- shown in the status file
 local drawMonitor        -- defined in the monitor section below
+local marks, ownerPos    -- defined in the player detector section below
+local MARKS_FILE = ".marks"
 local monitorError       -- last error from drawing the monitor, if any
 local sha               -- GitHub's id for the current status file
 
@@ -97,6 +99,9 @@ local function upload()
     chatBox = chatBox() ~= nil,
     chatOwner = owner,
     maps = mapNote,
+    ownerPos = ownerPos(),
+    marks = marks,
+    detector = (peripheral.find("player_detector") or peripheral.find("playerDetector")) ~= nil,
     chatDebug = chatDebug,
     monitor = peripheral.find("monitor") ~= nil,
     monitorError = monitorError,
@@ -248,7 +253,21 @@ local function chatOrders()
         h.close()
         say("Hello " .. user .. ". I will message only you from now on.")
       end
-      if word == "status" then
+      if word == "mark" then
+        -- remember where the owner is standing, under a name
+        local p = ownerPos()
+        local name = (arg ~= "" and arg:match("^[%w_%-]+$")) and arg or "here"
+        if p then
+          marks[name] = p
+          local h = fs.open(MARKS_FILE, "w")
+          h.write(textutils.serialize(marks))
+          h.close()
+          urgent = true
+          say(("Marked '%s' at %d, %d, %d."):format(name, p.x, p.y, p.z))
+        else
+          say("I cannot see you. Is the Player Detector touching me?")
+        end
+      elseif word == "status" then
         local any = false
         for id, u in pairs(units) do
           any = true
@@ -267,7 +286,7 @@ local function chatOrders()
         rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
         say("Order sent: " .. word .. " -> " .. tostring(target))
       else
-        say("Try: swarm status | swarm stop/home/resume/reboot <name or all>")
+        say("Try: swarm status | swarm mark <name> | swarm stop/home/resume/reboot <name or all>")
       end
     end
   end
@@ -525,6 +544,28 @@ local function putFile(path, text, message)
 end
 
 local mapQueue, mapNote = {}, {}
+
+-- Player Detector: where the owner is, and named spots they mark in chat.
+marks = {}
+if fs.exists(MARKS_FILE) then
+  local h = fs.open(MARKS_FILE, "r")
+  marks = textutils.unserialize(h.readAll()) or {}
+  h.close()
+end
+
+ownerPos = function()
+  local det = peripheral.find("player_detector") or peripheral.find("playerDetector")
+  if not det or not owner then return nil end
+  local ok, p = pcall(det.getPlayer, owner)
+  if not ok or type(p) ~= "table" then
+    ok, p = pcall(det.getPlayerPos, owner)        -- older versions
+  end
+  if ok and type(p) == "table" and p.x then
+    return { x = math.floor(p.x), y = math.floor(p.y), z = math.floor(p.z),
+      dimension = p.dimension }
+  end
+  return nil
+end
 
 -- Maps sent by the builder are uploaded as maps/<name>.json.
 local function maps()

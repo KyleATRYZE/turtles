@@ -3,7 +3,8 @@
 
     tools/order.py reboot all
     tools/order.py stop miner-1
-    tools/order.py reboot all resume CoalPorter      (several orders, in order)
+    tools/order.py reboot all resume CoalPorter          (several orders, in order)
+    tools/order.py survey BrickJagger x=-4430 z=1530 size=64 name=factory_site
 
 Then commit and push; the controller picks them up within about 20 seconds.
 Targets: "all", a name ("CoalPorter", any case) or a computer id (5).
@@ -11,15 +12,24 @@ Targets: "all", a name ("CoalPorter", any case) or a computer id (5).
 import json, sys, time
 
 args = sys.argv[1:]
-if not args or len(args) % 2:
-    sys.exit(__doc__)
-now = int(time.time())
-orders = []
-for i in range(0, len(args), 2):
+orders, now = [], int(time.time())
+i = 0
+while i < len(args):
     cmd, target = args[i], args[i + 1]
-    if target.isdigit():
-        target = int(target)
-    orders.append({"id": now + i // 2, "issued": now * 1000, "cmd": cmd, "target": target})
+    i += 2
+    order = {"id": now + len(orders), "issued": now * 1000, "cmd": cmd,
+             "target": int(target) if target.isdigit() else target}
+    while i < len(args) and "=" in args[i]:
+        k, v = args[i].split("=", 1)
+        try:
+            v = int(v)
+        except ValueError:
+            pass
+        order[k] = v
+        i += 1
+    orders.append(order)
+if not orders:
+    sys.exit(__doc__)
 with open("commands.json", "w") as f:
     json.dump({"commands": orders}, f, indent=2)
     f.write("\n")
