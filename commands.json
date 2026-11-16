@@ -1,55 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794844692,
-      "issued": 1794844692000,
+      "id": 1794844986,
+      "issued": 1794844986000,
       "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794844693,
-      "issued": 1794844692000,
-      "cmd": "reboot",
-      "target": "WallStreet"
-    },
-    {
-      "id": 1794844694,
-      "issued": 1794844692000,
-      "cmd": "reboot",
-      "target": "BrickJagger"
-    },
-    {
-      "id": 1794844695,
-      "issued": 1794844692000,
-      "cmd": "build",
-      "target": "MortarKombat",
-      "plan": "factory_shell",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "xmin": 15,
-      "xmax": 36,
-      "layer": 10
-    },
-    {
-      "id": 1794844696,
-      "issued": 1794844692000,
-      "cmd": "build",
-      "target": "WallStreet",
-      "plan": "factory_shell",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "xmin": 37,
-      "xmax": 56,
-      "layer": 10
-    },
-    {
-      "id": 1794844697,
-      "issued": 1794844692000,
-      "cmd": "build",
-      "target": "BrickJagger",
-      "xmax": 14
+      "target": "ForgeClooney"
     }
   ]
 }
