@@ -1328,19 +1328,25 @@ end
 
 ---------------------------------------------------------------- materials
 
+-- Order a load. We wait at the parking spot while the factory makes it,
+-- go onto the launch pad when it says the load is ready, and get it there.
 local function ask(b, items, fuelWanted)
   if not (swarm and swarm.open()) then return nil end
   b.orderN = (b.orderN or 0) + 1
   save()
-  local msg = { type = "materials", id = os.getComputerID(), n = b.orderN,
-    items = items, fuel = fuelWanted }
+  local me = os.getComputerID()
+  local msg = { type = "materials", id = me, n = b.orderN, items = items, fuel = fuelWanted }
   rednet.broadcast(msg, JOB_PROTOCOL)
+  goToCell(st.park)
   local started, lastAsk = os.clock(), os.clock()
   while os.clock() - started < 3600 do
-    local id, reply = rednet.receive(JOB_PROTOCOL, 30)
-    if type(reply) == "table" and reply.type == "materials_ready"
-      and reply.forId == os.getComputerID() and reply.n == b.orderN then
-      return reply
+    local _, reply = rednet.receive(JOB_PROTOCOL, 30)
+    if type(reply) == "table" and reply.forId == me and reply.n == b.orderN then
+      if reply.type == "materials_ready" then return reply end
+      if reply.type == "load_ready" and key(pos.x, pos.y, pos.z) ~= st.padKey then
+        print("The load is ready. Onto the launch pad.")
+        goToCell(st.padKey)
+      end
     end
     if os.clock() - lastAsk > 120 then          -- the factory may have missed it
       rednet.broadcast(msg, JOB_PROTOCOL)
@@ -1405,7 +1411,7 @@ local function restock(b)
     end
     turtle.select(1)
   end
-  goToCell(st.padKey)
+  goToCell(st.park)
   dropJunk(b, false)
   local placing = b.stage == "place"
   while true do
@@ -1422,6 +1428,7 @@ local function restock(b)
     if not first then break end
     print("No " .. first:gsub("^.*:", "") .. " to be had yet. Waiting for the miners.")
     report("waiting for materials")
+    goToCell(st.park)
     sleep(300)
   end
   if not hasPickaxe() then error("I still have no pickaxe.", 0) end

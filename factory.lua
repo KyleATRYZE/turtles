@@ -135,19 +135,19 @@ local RECIPES = {
     key = { C = "minecraft:cut_copper" },
   },
   -- unpacking storage blocks (packed by tidyStorage when the chests fill up)
-  ["minecraft:redstone"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:redstone"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:redstone_block" } },
-  ["minecraft:raw_copper"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:raw_copper"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:raw_copper_block" } },
-  ["minecraft:raw_iron"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:raw_iron"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:raw_iron_block" } },
-  ["minecraft:raw_gold"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:raw_gold"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:raw_gold_block" } },
-  ["minecraft:cobblestone"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:cobblestone"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "allthecompressed:cobblestone_1x" } },
-  ["minecraft:cobbled_deepslate"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:cobbled_deepslate"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "allthecompressed:cobbled_deepslate_1x" } },
-  ["minecraft:dirt"] = { yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+  ["minecraft:dirt"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "allthecompressed:dirt_1x" } },
   [BUCKET] = {
     grid = { "I", "", "I", "", "I", "", "", "", "" },
@@ -418,6 +418,12 @@ local function plan(stock, wanted, n, steps, missing)
   if short <= 0 then return end
 
   local recipe = RECIPES[wanted]
+  -- an unpacking recipe only helps if there are packed blocks; otherwise
+  -- report the item itself as missing (clearer than "cobblestone 1x")
+  if recipe and recipe.unpack then
+    local block = recipe.key.B
+    if countIn(stock, block) < math.ceil(short / 9) then recipe = nil end
+  end
   if not recipe then
     missing[wanted] = (missing[wanted] or 0) + short
     return
@@ -522,6 +528,7 @@ local BACKGROUND = {
 }
 
 local function keepFurnacesBusy(stock)
+  if next(orders) then return end          -- a builder load is being made
   for _, f in ipairs(furnaces) do
     local okList, items = pcall(furnaceList, f)
     if okList and not items[1] then
@@ -1119,27 +1126,42 @@ local function fitLoad(items)
   return lines, planLoad(lines, stock) or {}
 end
 
--- A builder waiting on the launch pad with a list of what it needs: make
--- what is missing, hand it all over, tell it what it got.
+-- Builder loads: make the load first while the builder waits out of the
+-- way, tell it the load is ready, and hand it over once that builder (and
+-- not a miner) is on the launch pad.
+local function frontId()
+  local ok, id = pcall(peripheral.call, "front", "getID")
+  return ok and id or nil
+end
+
 local function serveOrders()
   for id, order in pairs(orders) do
+    if not order.ready then
+      served[id] = order.n
+      print("Preparing a load for the builder.")
+      report("preparing materials")
+      stashAll()
+      local lines, steps = fitLoad(order.items)
+      local okRun, err = pcall(runSteps, steps)
+      if not okRun then print("Problem: " .. tostring(err)) end
+      order.lines, order.ready, order.told = lines, true, os.clock()
+      rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
+      print("Load ready. Waiting for the builder.")
+      return true
+    end
     turnTo(base.padTurns)
-    if not peripheral.hasType("front", "turtle") then
+    local here = peripheral.hasType("front", "turtle") and frontId()
+    if here ~= id then
       turnTo(0)
-      return false                       -- not on the pad yet: keep the order
+      if os.clock() - order.told > 60 then       -- remind it
+        order.told = os.clock()
+        rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
+      end
+      return false
     end
     orders[id] = nil
-    served[id] = order.n
-    print("Preparing a load for the builder.")
-    report("preparing materials")
-    turnTo(0)
-    stashAll()
-    local lines, steps = fitLoad(order.items)
-    local okRun, err = pcall(runSteps, steps)
-    if not okRun then print("Problem: " .. tostring(err)) end
-    turnTo(base.padTurns)
     local given, missing = {}, {}
-    for _, l in ipairs(lines) do
+    for _, l in ipairs(order.lines) do
       local name, want = l[1], l[2]
       local got = 0
       while got < want do
