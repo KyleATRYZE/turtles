@@ -32,6 +32,9 @@ local HUNT_STEP   = 14     -- distance between scan points
 local HUNT_REACH  = 70     -- how far from the factory to roam
 local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
+local HUNT_MAX    = 112    -- the hunting area grows each round, up to this
+local RESCUE_PROTOCOL = "swarm_rescue"
+local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
 -- Names for miners, picked by computer number.
 local NAMES = {
@@ -195,9 +198,12 @@ local function refuelAny(min)
     if fuel() < min then
       print(("Need fuel (%d/%d). Put coal in my inventory."):format(fuel(), min))
       report("needs fuel")
-      -- on the launch pad the factory can hand some over
       if swarm and swarm.open() then
+        -- on the launch pad the factory can hand some over
         rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+        -- anywhere else, the coal hunter can come and bring some
+        rednet.broadcast({ type = "rescue", id = os.getComputerID(),
+          pos = { x = pos.x, y = pos.y, z = pos.z } }, RESCUE_PROTOCOL)
       end
       sleep(5)
     end
@@ -973,19 +979,22 @@ local function scanForCoal()
     return nil, "could not fit the scanner"
   end
   local found, why
-  for _ = 1, 8 do
+  for _ = 1, 12 do
     local scanner = peripheral.wrap(side)
-    if scanner and scanner.scan then
-      local ok, blocks, reason = pcall(scanner.scan, HUNT_RADIUS)
+    -- Advanced Peripherals 0.8 calls it scanBlocks; older versions scan
+    local fn = scanner and (scanner.scanBlocks or scanner.scan)
+    if fn then
+      local ok, blocks, reason = pcall(fn, HUNT_RADIUS)
       if ok and type(blocks) == "table" then
         found = blocks
         break
       end
       why = tostring(ok and reason or blocks)
+      sleep(2)          -- usually the scanner's cooldown
     else
-      why = "the scanner did not respond"
+      why = "no scanner on the " .. side .. " (found " .. tostring(peripheral.getType(side)) .. ")"
+      sleep(1)
     end
-    sleep(1)
   end
   turtle.select(slot)
   equip()          -- pickaxe back on
@@ -1011,9 +1020,9 @@ local function digTo(x, y, z)
 end
 
 -- Places to scan from: a grid around the factory, skipping the middle.
-local function huntPoints()
+local function huntPoints(reach)
   local pts = {}
-  local n = math.floor(HUNT_REACH / HUNT_STEP)
+  local n = math.floor(reach / HUNT_STEP)
   for i = -n, n do
     for k = -n, n do
       local dx, dz = i * HUNT_STEP, k * HUNT_STEP
@@ -1047,13 +1056,93 @@ local function huntDeliver()
   report("hunting coal")
 end
 
--- Roam the scan points, digging out every coal ore the scanner finds.
--- Returns when the whole area has been covered.
+-- Moves from a column on the hunting level back to the drop-off chest.
+local function huntHomeDistance(x, z)
+  local shaft = inShaft()
+  return math.abs(x - shaft.x) + math.abs(z - shaft.z) + (st.dock.y - huntY()) + 2
+end
+
+-- Scan where we are and dig out every coal ore found. Returns how many.
+local function harvestHere()
+  local ores, why = scanForCoal()
+  if not ores then
+    print("Scanner problem: " .. tostring(why))
+    report("scanner problem")
+    return nil, why
+  end
+  print(#ores .. " coal ore nearby.")
+  report("hunting coal")
+  local n = #ores
+  while #ores > 0 do
+    local ni, nd
+    for i, o in ipairs(ores) do
+      local d = math.abs(o.x - pos.x) + math.abs(o.y - pos.y) + math.abs(o.z - pos.z)
+      if not nd or d < nd then ni, nd = i, d end
+    end
+    local o = table.remove(ores, ni)
+    digTo(o.x, o.y, o.z)
+    if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+  end
+  axisMove("y", huntY(), true)
+  return n
+end
+
+-- Fly to a stranded miner, drop coal on it, come back up.
+local function rescue(id, p)
+  if type(p) ~= "table" or not (p.x and p.y and p.z) then return end
+  if p.y >= huntY() then return end                  -- the base looks after those
+  if countItem("minecraft:coal") < RESCUE_COAL then return end
+  local trip = 2 * (math.abs(p.x - pos.x) + math.abs(p.z - pos.z) + (huntY() - p.y)) + 60
+  if fuel() < trip then return end
+  print("Rescuing #" .. tostring(id) .. " at " .. p.x .. ", " .. p.y .. ", " .. p.z)
+  report("rescuing")
+  axisMove("y", huntY(), true)
+  flyTo(p.x, p.z)
+  axisMove("y", p.y + 1, false)                      -- dig down to just above it
+  local ok, data = turtle.inspectDown()
+  if pos.y == p.y + 1 and ok and tostring(data.name):find("computercraft:turtle", 1, true) then
+    local slot = findItem("minecraft:coal")
+    if slot then
+      turtle.select(slot)
+      turtle.dropDown(RESCUE_COAL)
+      turtle.select(1)
+      print("Gave it " .. RESCUE_COAL .. " coal.")
+    end
+  else
+    print("It was not there.")
+  end
+  axisMove("y", huntY(), true)
+  report("hunting coal")
+end
+
+-- Listen briefly for stranded miners calling for help.
+local function listenForRescue(seconds)
+  local deadline = os.clock() + seconds
+  while os.clock() < deadline do
+    local id, msg = rednet.receive(RESCUE_PROTOCOL, math.max(0.5, deadline - os.clock()))
+    if type(msg) == "table" and msg.type == "rescue" and id ~= os.getComputerID() then
+      rescue(id, msg.pos)
+      return
+    end
+  end
+end
+
+-- The coal hunter: roams a growing area around the base, digging out every
+-- coal ore the scanner finds, taking the coal home, and bringing coal to
+-- any miner that has run dry. It never goes back to a plot.
 local function hunt()
   if os.getComputerLabel() ~= "CoalPorter" then os.setComputerLabel("CoalPorter") end
   print("Hunting coal.")
   report("hunting coal")
   fixTool()
+  swarm.open()
+
+  -- give the plot back so another miner can finish it
+  if st.index then
+    rednet.broadcast({ type = "release", id = os.getComputerID(), index = st.index }, JOB_PROTOCOL)
+    st.index = nil
+    save()
+  end
 
   -- get onto the hunting level from wherever we are, the right way round
   local shaft, out = inShaft(), outShaft()
@@ -1070,17 +1159,23 @@ local function hunt()
     axisMove("y", huntY(), true)
   end
 
-  local pts = huntPoints()
   st.huntDone = st.huntDone or {}
+  st.huntReach = st.huntReach or HUNT_REACH
+  local scannedHere = false
   while true do
     if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
     if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then
       dropJunk()
       compact()
-      if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then huntDeliver() end
+      if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then
+        huntDeliver()
+        scannedHere = false
+      end
     end
+    listenForRescue(6)
 
     -- nearest scan point not yet visited
+    local pts = huntPoints(st.huntReach)
     local best, bestD
     for i, p in ipairs(pts) do
       if not st.huntDone[i] then
@@ -1088,41 +1183,48 @@ local function hunt()
         if not bestD or d < bestD then best, bestD = i, d end
       end
     end
-    if not best then break end
-    local p = pts[best]
-    print(("Scan point %d of %d"):format(best, #pts))
-    local reached = axisMove("y", huntY(), false) and axisMove("x", p.x, false)
-      and axisMove("z", p.z, false)
-    if reached then
-      local ores, why = scanForCoal()
-      if not ores then
-        print("Scanner problem: " .. tostring(why))
-        report("scanner problem")
-        sleep(20)
-      else
-        print(#ores .. " coal ore nearby.")
-        report("hunting coal")
-        while #ores > 0 do
-          local ni, nd
-          for i, o in ipairs(ores) do
-            local d = math.abs(o.x - pos.x) + math.abs(o.y - pos.y) + math.abs(o.z - pos.z)
-            if not nd or d < nd then ni, nd = i, d end
-          end
-          local o = table.remove(ores, ni)
-          digTo(o.x, o.y, o.z)
-          if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+
+    if not best then
+      -- the whole area is covered: widen it and go round again
+      st.huntDone = {}
+      st.huntReach = math.min(st.huntReach + 2 * HUNT_STEP, HUNT_MAX)
+      save()
+      print("Area covered. Now searching out to " .. st.huntReach .. " blocks.")
+    else
+      local p = pts[best]
+      local need = bestD + huntHomeDistance(p.x, p.z) + 30
+      if fuel() < need and not scannedHere then
+        -- short of fuel: look where we are before going anywhere
+        print("Low on fuel. Scanning here first.")
+        harvestHere()
+        scannedHere = true
+      elseif fuel() < need then
+        if fuel() >= huntHomeDistance(pos.x, pos.z) + 5 then
+          print("Low on fuel. Heading home.")
+          huntDeliver()
+          serviceStop(1500)
+          scannedHere = false
+        else
+          print("Stranded: not enough fuel to get home.")
+          report("stranded")
+          rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+          sleep(60)
+          refuelFromInventory(FUEL_TARGET)
         end
+      else
+        print(("Scan point %d of %d"):format(best, #pts))
+        local reached = axisMove("y", huntY(), false) and axisMove("x", p.x, false)
+          and axisMove("z", p.z, false)
+        if reached then
+          local found, why = harvestHere()
+          if not found then sleep(20) end
+        end
+        scannedHere = reached
+        st.huntDone[best] = true
+        save()
       end
     end
-    st.huntDone[best] = true
-    save()
   end
-
-  print("Covered the whole area. Taking the coal home.")
-  huntDeliver()
-  st.hunt, st.huntDone = nil, nil
-  st.huntFinished = true
-  save()
 end
 
 -- Ask the factory for a plot to mine. With no time limit it waits until one

@@ -176,6 +176,8 @@ local ALERTS = {
   ["out of coal"] = "has no coal: put coal in the storage chest",
   ["hunting coal"] = "is out hunting coal with the Geo Scanner",
   ["scanner problem"] = "cannot use the Geo Scanner",
+  ["stranded"] = "is stranded with no fuel",
+  ["rescuing"] = "is taking coal to a stranded miner",
   ["fleet full"] = "has built the whole fleet",
 }
 

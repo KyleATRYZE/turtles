@@ -851,8 +851,12 @@ local function jobFor(id)
   local index = plots.byId[key]
   if not index then
     if activeCount() >= MAX_MINERS then return nil end
-    index = plots.next
-    plots.next = index + 1
+    if plots.free and #plots.free > 0 then
+      index = table.remove(plots.free, 1)     -- a plot someone gave back
+    else
+      index = plots.next
+      plots.next = index + 1
+    end
     plots.byId[key] = index
     saveTable(PLOTS_FILE, plots)
     if pending > 0 then pending = pending - 1 end
@@ -888,6 +892,15 @@ local function responder()
         fuelQueue[id] = true
       elseif msg.type == "bucket_request" then
         bucketQueue[id] = true
+      elseif msg.type == "release" then
+        -- a miner turned coal hunter: its plot goes to the next new miner
+        if plots.byId[tostring(id)] == msg.index then
+          plots.byId[tostring(id)] = nil
+          plots.free = plots.free or {}
+          table.insert(plots.free, msg.index)
+          plots.hunter = true
+          saveTable(PLOTS_FILE, plots)
+        end
       end
     end
   end

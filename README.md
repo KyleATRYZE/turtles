@@ -65,3 +65,8 @@ it roams a grid of scan points 28 to 70 blocks from the factory at Y 60, swaps t
 find coal ore within 8 blocks, digs each one out and carries the coal home. When the factory has
 no coal for a miner that asks, it hands over its scanner so that miner becomes the hunter
 (renamed CoalPorter). After covering the whole area it goes back to its plot.
+
+The coal hunter is permanent: it gives its plot back (the next new miner finishes it), widens
+its search area each round (up to 112 blocks), scans where it is first when low on fuel, and
+answers rescue calls: a miner that runs dry away from the base broadcasts its position, and the
+hunter digs down to it and drops 16 coal on it.
