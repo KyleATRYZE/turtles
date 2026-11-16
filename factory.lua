@@ -1152,8 +1152,17 @@ local function frontId()
 end
 
 local function serveOrders()
+  -- a builder already on the pad with its load made goes first
+  local waiting = false
+  for _, o in pairs(orders) do if o.ready then waiting = true end end
+  if waiting then
+    turnTo(base.padTurns)
+    local here = peripheral.hasType("front", "turtle") and frontId()
+    if not (here and orders[here] and orders[here].ready) then waiting = false end
+    turnTo(0)
+  end
   for id, order in pairs(orders) do
-    if not order.ready then
+    if not waiting and not order.ready then
       served[id] = order.n
       print("Preparing a load for the builder.")
       report("preparing materials")
@@ -1172,6 +1181,7 @@ local function serveOrders()
     turnTo(base.padTurns)
     local here = peripheral.hasType("front", "turtle") and frontId()
     local order = here and orders[here]
+    if order and not order.ready then order = nil end
     if not order then
       turnTo(0)
       for id, o in pairs(orders) do
