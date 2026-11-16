@@ -1,11 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794869962,
-      "issued": 1794869962000,
-      "cmd": "foundry",
-      "target": "SteelyDan",
-      "job": "setup"
+      "id": 1794870285,
+      "issued": 1794870285000,
+      "cmd": "reboot",
+      "target": "MortarKombat"
+    },
+    {
+      "id": 1794870286,
+      "issued": 1794870285000,
+      "cmd": "reboot",
+      "target": "WallStreet"
     }
   ]
 }
