@@ -1,25 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794855013,
-      "issued": 1794855013000,
+      "id": 1794855252,
+      "issued": 1794855252000,
       "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794855014,
-      "issued": 1794855013000,
-      "cmd": "feed",
-      "target": "MortarKombat",
-      "x": -4426,
-      "y": 113,
-      "z": 1522
-    },
-    {
-      "id": 1794855015,
-      "issued": 1794855013000,
-      "cmd": "reboot",
-      "target": "CoalPorter"
+      "target": "WallStreet"
     }
   ]
 }
