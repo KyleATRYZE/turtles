@@ -148,46 +148,39 @@ local RECIPES = {
   },
   -- Sophisticated Storage (recipes from the mod's own recipe provider). A
   -- chest or barrel takes the wood it is made of, and all of it must be the
-  -- same wood, so these are made of oak and nothing else.
-  ["minecraft:oak_planks"] = {
-    yield = 4,
-    grid = { "L", "", "", "", "", "", "", "", "" },
-    key = { L = "minecraft:oak_log" },
-  },
-  ["minecraft:oak_slab"] = {
-    yield = 6,
-    grid = { "P", "P", "P", "", "", "", "", "", "" },
-    key = { P = "minecraft:oak_planks" },
-  },
+  -- same wood. "@planks" and "@slab" stand for the planks and slabs of ONE
+  -- wood, chosen for each craft from what is in stock (see "wood" below);
+  -- the planks and slabs themselves need no recipe here, they are worked
+  -- out from the log's name (x_log -> x_planks -> x_slab).
   ["minecraft:barrel"] = {                           -- plain: the store's In and Out (not joined to it)
     grid = { "P", "S", "P", "P", "", "P", "P", "S", "P" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab" },
+    key = { P = "@planks", S = "@slab" },
   },
   ["sophisticatedstorage:chest"] = {                 -- 27 slots
     grid = { "P", "P", "P", "P", "L", "P", "P", "P", "P" },
-    key = { P = "minecraft:oak_planks", L = "minecraft:lever" },
+    key = { P = "@planks", L = "minecraft:lever" },
   },
   ["sophisticatedstorage:barrel"] = {                -- 27 slots
     grid = { "P", "S", "P", "P", "L", "P", "P", "S", "P" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+    key = { P = "@planks", S = "@slab", L = "minecraft:lever" },
   },
   -- limited barrels show what is in them on the front: 1 to 4 kinds of
   -- item, 32 / 16 / 10 / 8 stacks of each
   ["sophisticatedstorage:limited_barrel_1"] = {
     grid = { "P", "S", "P", "P", "L", "P", "P", "P", "P" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+    key = { P = "@planks", S = "@slab", L = "minecraft:lever" },
   },
   ["sophisticatedstorage:limited_barrel_2"] = {
     grid = { "P", "P", "P", "S", "L", "S", "P", "P", "P" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+    key = { P = "@planks", S = "@slab", L = "minecraft:lever" },
   },
   ["sophisticatedstorage:limited_barrel_3"] = {
     grid = { "P", "S", "P", "P", "L", "P", "S", "P", "S" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+    key = { P = "@planks", S = "@slab", L = "minecraft:lever" },
   },
   ["sophisticatedstorage:limited_barrel_4"] = {
     grid = { "S", "P", "S", "P", "L", "P", "S", "P", "S" },
-    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+    key = { P = "@planks", S = "@slab", L = "minecraft:lever" },
   },
   -- bigger chests: metal around the chest one tier down (54 / 81 / 108 slots)
   ["sophisticatedstorage:iron_chest"] = {
@@ -214,12 +207,12 @@ local RECIPES = {
   },
   ["sophisticatedstorage:controller"] = {
     grid = { "S", "C", "S", "P", "B", "P", "S", "C", "S" },
-    key = { S = "minecraft:stone", C = "minecraft:comparator", P = "minecraft:oak_planks",
+    key = { S = "minecraft:stone", C = "minecraft:comparator", P = "@planks",
       B = "sophisticatedstorage:barrel" },
   },
   ["sophisticatedstorage:storage_link"] = {
     grid = { "E", "P", "", "R", "S", "", "", "", "" },
-    key = { E = "minecraft:ender_pearl", P = "minecraft:oak_planks", R = "minecraft:repeater",
+    key = { E = "minecraft:ender_pearl", P = "@planks", R = "minecraft:repeater",
       S = "minecraft:stone" },
   },
   ["sophisticatedstorage:storage_tool"] = {
@@ -456,6 +449,8 @@ local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
 local FUEL_RESERVE = 256 -- coal never handed out to miners
+local LOGS_KEPT = 320    -- logs of each wood the furnaces leave alone: chests, barrels and the
+                         -- storage room are made of wood (whatever wood there is)
 local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
 local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "SteelyDan" }   -- (the fourth runs the Mekanism machines)
@@ -526,7 +521,20 @@ local modem      -- the wired modem behind the turtle
 local selfName   -- this turtle's name on the wired network
 local furnaces = {}  -- names of furnaces
 
+-- Which wood a log is: "minecraft:oak_log" and "minecraft:stripped_oak_log"
+-- are "minecraft:oak", "biomesoplenty:hellbark_stem" is
+-- "biomesoplenty:hellbark". Its planks and slabs are then <wood>_planks and
+-- <wood>_slab, whatever mod it is from.
+local function woodOfLog(name)
+  local ns, rest = name:match("^([%w_%.%-]+):(.+)$")
+  if not ns then return nil end
+  local base = rest:match("^(.+)_log$") or rest:match("^(.+)_stem$")
+  if not base or base == "mushroom" then return nil end
+  return ns .. ":" .. (base:gsub("^stripped_", ""))
+end
+
 local function matches(wanted, name)
+  if wanted:sub(1, 5) == "@log:" then return woodOfLog(name) == wanted:sub(6) end   -- the logs of one wood
   if wanted:sub(1, 1) ~= "#" then return wanted == name end
   for _, suffix in ipairs(GROUPS[wanted] or {}) do
     if name == suffix or name:sub(-#suffix) == suffix then return true end
@@ -535,7 +543,8 @@ local function matches(wanted, name)
 end
 
 local function shortName(name)
-  return (name:gsub("^#", ""):gsub("^[%w_]+:", ""):gsub("_", " "))
+  if name:sub(1, 5) == "@log:" then return shortName(name:sub(6)) .. " log" end
+  return (name:gsub("^[#@]", ""):gsub("^[%w_]+:", ""):gsub("_", " "))
 end
 
 -- Find the wired modem and everything attached to the network.
@@ -597,7 +606,24 @@ end
 -- Move `count` of an item (or group) from storage into a turtle slot.
 local function pull(wanted, count, slot)
   local need = count
-  for _, s in ipairs(listStorage()) do
+  local storage = listStorage()
+  if wanted == "#log" or wanted == "#planks" then
+    -- any wood will do: the kind there is most of first, by name after
+    -- that. The planner takes them in the same order (takeFrom), so a
+    -- stick's planks do not come out of the wood a chest was counted on.
+    local totals = {}
+    for _, st in ipairs(storage) do
+      if matches(wanted, st.name) then totals[st.name] = (totals[st.name] or 0) + st.count end
+    end
+    table.sort(storage, function(x, y)
+      local tx, ty = totals[x.name] or 0, totals[y.name] or 0
+      if tx ~= ty then return tx > ty end
+      if x.name ~= y.name then return x.name < y.name end
+      if x.inv ~= y.inv then return x.inv < y.inv end
+      return x.slot < y.slot
+    end)
+  end
+  for _, s in ipairs(storage) do
     if need <= 0 then break end
     if matches(wanted, s.name) then
       local moved = peripheral.call(s.inv, "pushItems", selfName, s.slot, need, slot)
@@ -637,14 +663,151 @@ local function countIn(stock, wanted)
 end
 
 local function takeFrom(stock, wanted, n)
+  -- (of a group, the kind there is most of first: the same order pull uses)
+  local names = {}
   for name, c in pairs(stock) do
+    if c > 0 and matches(wanted, name) then names[#names + 1] = name end
+  end
+  table.sort(names, function(x, y)
+    if stock[x] ~= stock[y] then return stock[x] > stock[y] end
+    return x < y
+  end)
+  for _, name in ipairs(names) do
     if n <= 0 then break end
-    if matches(wanted, name) then
-      local t = math.min(c, n)
-      stock[name] = c - t
-      n = n - t
+    local t = math.min(stock[name], n)
+    stock[name] = stock[name] - t
+    n = n - t
+  end
+end
+
+---------------------------------------------------------------- wood
+-- A recipe with "@planks" or "@slab" in it is made of one wood, and never
+-- a mix: for each craft the planner picks a wood from the stock, counting
+-- that wood's logs, planks and slabs together. Oak when there is enough oak
+-- for all that is wanted; otherwise the wood there is most of that can
+-- make them all; otherwise the order is spread, one wood per item.
+
+plots.badWood = plots.badWood or {}              -- woods whose planks are not called what the log suggests
+local badWood = plots.badWood                    -- (remembered over restarts)
+local function markBadWood(wood)
+  badWood[wood] = true
+  plots.badWood = badWood
+  saveTable(PLOTS_FILE, plots)
+end
+local knownWood = { ["minecraft:oak"] = true }   -- woods seen in stock
+
+-- The recipe for something not in the list: planks from the logs of their
+-- wood, slabs from the planks.
+local function recipeFor(name)
+  local recipe = RECIPES[name]
+  if recipe then return recipe end
+  local wood = name:match("^([%w_%.%-]+:.+)_planks$")
+  if wood then
+    return { yield = 4, wood = wood, grid = { "L", "", "", "", "", "", "", "", "" }, key = { L = "@log:" .. wood } }
+  end
+  wood = name:match("^([%w_%.%-]+:.+)_slab$")
+  if wood and knownWood[wood] then
+    return { yield = 6, wood = wood, grid = { "P", "P", "P", "", "", "", "", "", "" }, key = { P = wood .. "_planks" } }
+  end
+  return nil
+end
+
+-- How many planks and slabs of its one wood a recipe takes per craft.
+local function woodNeeds(recipe)
+  local planks, slabs = 0, 0
+  for _, k in ipairs(recipe.grid or {}) do
+    local item = k ~= "" and recipe.key[k]
+    if item == "@planks" then planks = planks + 1 elseif item == "@slab" then slabs = slabs + 1 end
+  end
+  return planks, slabs
+end
+
+-- The same recipe, in one wood.
+local function ofWood(recipe, wood)
+  local key = {}
+  for k, item in pairs(recipe.key) do
+    key[k] = item == "@planks" and wood .. "_planks" or item == "@slab" and wood .. "_slab" or item
+  end
+  return { yield = recipe.yield, grid = recipe.grid, key = key }
+end
+
+-- What there is of each wood: { wood = { logs, planks, slabs } }
+local function woodStock(stock)
+  local woods = {}
+  local function at(wood)
+    woods[wood] = woods[wood] or { logs = 0, planks = 0, slabs = 0 }
+    return woods[wood]
+  end
+  for name, count in pairs(stock) do
+    if count > 0 then
+      local wood = woodOfLog(name)
+      if wood then
+        at(wood).logs = at(wood).logs + count
+      else
+        wood = name:match("^([%w_%.%-]+:.+)_planks$")
+        if wood then at(wood).planks = at(wood).planks + count end
+      end
     end
   end
+  for wood, t in pairs(woods) do
+    t.slabs = stock[wood .. "_slab"] or 0
+    knownWood[wood] = true
+  end
+  return woods
+end
+
+-- How many crafts (up to most) of planks + slabs each a wood can finish.
+local function woodCan(t, planks, slabs, most)
+  local k = 0
+  while k < most do
+    local n = k + 1
+    local slabCrafts = math.ceil(math.max(0, slabs * n - t.slabs) / 6)       -- 3 planks make 6 slabs
+    local need = planks * n + 3 * slabCrafts
+    if math.ceil(math.max(0, need - t.planks) / 4) > t.logs then break end    -- a log makes 4 planks
+    k = n
+  end
+  return k
+end
+
+-- The wood for the next crafts, and how many of the n wanted it will make.
+-- The first choice is oak, unless an order named another ("wood" order:
+-- first=regions_unexplored:magnolia, kept in the plots file as plots.wood).
+local function chooseWood(stock, planks, slabs, n)
+  local woods = woodStock(stock)
+  local first = plots.wood or "minecraft:oak"
+  local t = woods[first]
+  if t and not badWood[first] and woodCan(t, planks, slabs, n) >= n then
+    return first, n
+  end
+  local best, bestK, bestSize
+  for wood, t in pairs(woods) do
+    local k = badWood[wood] and 0 or woodCan(t, planks, slabs, n)
+    if k > 0 then
+      local size = t.logs * 4 + t.planks + t.slabs / 2
+      local all, bestAll = k >= n, best ~= nil and bestK >= n
+      if not best or (all and not bestAll)
+        or (all == bestAll and (size > bestSize or (size == bestSize and wood < best))) then
+        best, bestK, bestSize = wood, k, size
+      end
+    end
+  end
+  return best, bestK
+end
+
+-- A "wood" order: which wood to reach for first. "oak" or nothing puts it
+-- back to oak; a bare name ("magnolia") is looked up among the woods in stock.
+local function setFirstWood(name)
+  name = type(name) == "string" and name:lower() or "oak"
+  if not name:find(":", 1, true) then
+    local found
+    for wood in pairs(woodStock(stockTotals())) do
+      if wood:match(":(.+)$") == name and (not found or wood < found) then found = wood end
+    end
+    name = found or ("minecraft:" .. name)
+  end
+  plots.wood = name ~= "minecraft:oak" and name or nil
+  saveTable(PLOTS_FILE, plots)
+  print("First-choice wood: " .. shortName(name) .. ".")
 end
 
 -- What a recipe consumes per craft: { name = count }
@@ -672,7 +835,7 @@ local function plan(stock, wanted, n, steps, missing)
   local short = n - have
   if short <= 0 then return end
 
-  local recipe = RECIPES[wanted]
+  local recipe = recipeFor(wanted)
   -- an unpacking recipe only helps if there are packed blocks; otherwise
   -- report the item itself as missing (clearer than "cobblestone 1x")
   if recipe and recipe.unpack then
@@ -686,13 +849,37 @@ local function plan(stock, wanted, n, steps, missing)
 
   local yield = recipe.yield or 1
   local batches = math.ceil(short / yield)
-  for name, per in pairs(ingredients(recipe)) do
-    plan(stock, name, per * batches, steps, missing)
+  local woodPlanks, woodSlabs = woodNeeds(recipe)
+  if woodPlanks + woodSlabs > 0 then
+    -- made of one wood. Everything else first (a lever's stick may take
+    -- planks of any wood), then the wood for each craft from what is left.
+    local needs = ingredients(recipe)
+    for name, per in pairs(needs) do
+      if name:sub(1, 1) ~= "@" then plan(stock, name, per * batches, steps, missing) end
+    end
+    local left = batches
+    while left > 0 do
+      local wood, k = chooseWood(stock, woodPlanks, woodSlabs, left)
+      if not wood then
+        -- (said in logs: that is what someone can go and fetch)
+        local planks = woodPlanks * left + math.ceil(woodSlabs * left / 6) * 3
+        missing["#log"] = (missing["#log"] or 0) + math.ceil(planks / 4)
+        return
+      end
+      if woodPlanks > 0 then plan(stock, wood .. "_planks", woodPlanks * k, steps, missing) end
+      if woodSlabs > 0 then plan(stock, wood .. "_slab", woodSlabs * k, steps, missing) end
+      steps[#steps + 1] = { name = wanted, batches = k, wood = wood }
+      left = left - k
+    end
+  else
+    for name, per in pairs(ingredients(recipe)) do
+      plan(stock, name, per * batches, steps, missing)
+    end
+    if recipe.smelt then
+      plan(stock, "#fuel", math.ceil(batches / 8), steps, missing)
+    end
+    steps[#steps + 1] = { name = wanted, batches = batches, recipe = recipe.wood and recipe or nil }
   end
-  if recipe.smelt then
-    plan(stock, "#fuel", math.ceil(batches / 8), steps, missing)
-  end
-  steps[#steps + 1] = { name = wanted, batches = batches }
 
   -- anything made beyond what was needed goes back on the pretend shelf
   local spare = batches * yield - short
@@ -705,8 +892,21 @@ end
 
 ---------------------------------------------------------------- doing
 
-local function craftOnce(name)
-  local recipe = RECIPES[name]
+-- After a craft of planks or slabs worked out from a log's name: is it
+-- what the name said it would be? If not, that wood is left alone from now on.
+local function checkWood(name, recipe)
+  if not recipe.wood or not turtle.getItemDetail then return end
+  local made = turtle.getItemDetail(16)
+  if made and made.name ~= name then
+    markBadWood(recipe.wood)
+    stashAll()
+    error(("Expected %s but the craft made %s: not using %s wood."):format(shortName(name),
+      shortName(made.name), shortName(recipe.wood)), 0)
+  end
+end
+
+local function craftOnce(name, recipe)
+  recipe = recipe or recipeFor(name)
   stashAll()
   for i, k in ipairs(recipe.grid) do
     if k ~= "" then
@@ -719,9 +919,11 @@ local function craftOnce(name)
   turtle.select(16)
   local ok, err = turtle.craft()
   if not ok then
+    if recipe.wood and tostring(err):find("No matching") then markBadWood(recipe.wood) end
     error("The recipe for " .. shortName(name) .. " did not work: "
       .. tostring(err), 0)
   end
+  checkWood(name, recipe)
   stashAll()
 end
 
@@ -803,15 +1005,15 @@ end
 local BACKGROUND = {
   -- logs to charcoal first: it is fuel (8 charcoal for 1 burned), so this
   -- runs even when coal is short
-  { fuel = true, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = 64, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:jungle_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:jungle_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
   { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
@@ -988,7 +1190,7 @@ local function smelt(name, n)
     if peripheral.call(f, "size") == 3 then usable[#usable + 1] = f end
   end
   if #usable == 0 then error("No furnace on the network.", 0) end
-  local input = RECIPES[name].smelt
+  local input = recipeFor(name).smelt
   local remaining = n
   while remaining > 0 do
     local per = math.min(64, math.ceil(remaining / #usable))
@@ -1300,13 +1502,41 @@ end
 -- ingredients are exact items (a group like any planks could mix types).
 local function canBulk(recipe)
   for _, item in pairs(recipe.key) do
-    if item:sub(1, 1) == "#" then return false end
+    if item:sub(1, 1) == "#" or item:sub(1, 1) == "@" then return false end
+    -- something made of wood (a chest going into an iron chest): two of
+    -- different woods do not stack in one grid slot
+    local made = RECIPES[item]
+    if made and made.grid then
+      local planks, slabs = woodNeeds(made)
+      if planks + slabs > 0 then return false end
+    end
   end
   return true
 end
 
-local function craftBatch(name, k)
-  local recipe = RECIPES[name]
+-- A recipe that takes "the logs of one wood": the same recipe with the one
+-- kind of log there is most of (plain or stripped), and how many there are.
+local function withLog(recipe)
+  local group, letter
+  for k, item in pairs(recipe.key) do
+    if item:sub(1, 5) == "@log:" then group, letter = item, k end
+  end
+  if not group then return recipe, math.huge end
+  local best, most = nil, 0
+  for name, count in pairs(stockTotals()) do
+    if matches(group, name) and (count > most or (count == most and best and name < best)) then
+      best, most = name, count
+    end
+  end
+  if not best then return nil, 0, group end
+  local key = {}
+  for k, item in pairs(recipe.key) do key[k] = item end
+  key[letter] = best
+  return { yield = recipe.yield, grid = recipe.grid, key = key, wood = recipe.wood }, most
+end
+
+local function craftBatch(name, k, recipe)
+  recipe = recipe or recipeFor(name)
   stashAll()
   for i, key in ipairs(recipe.grid) do
     if key ~= "" then
@@ -1321,8 +1551,10 @@ local function craftBatch(name, k)
   local ok, err = turtle.craft()
   if not ok then
     stashAll()
+    if recipe.wood and tostring(err):find("No matching") then markBadWood(recipe.wood) end
     error("The recipe for " .. shortName(name) .. " did not work: " .. tostring(err), 0)
   end
+  checkWood(name, recipe)
   stashAll()
 end
 
@@ -1419,17 +1651,26 @@ end
 -- Run a list of planned smelting and crafting jobs.
 local function runSteps(steps)
   for _, step in ipairs(steps) do
-    local recipe = RECIPES[step.name]
+    local recipe = step.recipe or recipeFor(step.name)
     if recipe.smelt then
       print("Smelting " .. step.batches .. " " .. shortName(recipe.smelt))
       smelt(step.name, step.batches)
     else
-      print("Crafting " .. shortName(step.name))
+      if step.wood then
+        recipe = ofWood(recipe, step.wood)             -- all of one wood
+        print("Crafting " .. shortName(step.name) .. " in " .. shortName(step.wood))
+      else
+        print("Crafting " .. shortName(step.name))
+      end
       local left = step.batches
-      local bulk = canBulk(recipe)
       while left > 0 do
-        local k = bulk and math.max(1, math.min(left, math.floor(64 / (recipe.yield or 1)))) or 1
-        if bulk then craftBatch(step.name, k) else craftOnce(step.name) end
+        local now, most, short = withLog(recipe)
+        if not now then
+          error("Ran out of " .. shortName(short) .. " while making " .. shortName(step.name) .. ".", 0)
+        end
+        local bulk = canBulk(now)
+        local k = bulk and math.max(1, math.min(left, most, math.floor(64 / (recipe.yield or 1)))) or 1
+        if bulk then craftBatch(step.name, k, now) else craftOnce(step.name, now) end
         left = left - k
       end
     end
@@ -1567,7 +1808,7 @@ local function fitLoad(items)
   local lines = {}
   for _, line in ipairs(items) do
     local name, want = line[1], math.floor(tonumber(line[2]) or 0)
-    if want > 0 and RECIPES[name] or countIn(stock, name) > 0 then
+    if want > 0 and recipeFor(name) or countIn(stock, name) > 0 then
       local lo, hi = 0, want
       while lo < hi do                       -- largest count that still plans
         local mid = math.floor((lo + hi + 1) / 2)
@@ -2197,6 +2438,9 @@ while true do
   local cmd = swarm.runWithCommands(task, function(c)
     if c.cmd == "ping" then
       report(lastState)
+      return true
+    elseif c.cmd == "wood" then            -- wood ForgeClooney first=<wood>: no need to stop work
+      setFirstWood(c.first)
       return true
     end
   end)

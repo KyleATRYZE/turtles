@@ -61,7 +61,26 @@ peripheral = {
 -- true recipes, written independently of factory.lua, to validate its grids
 local function g(slot) local it=INV.turtle_3.items[slot] return it and it.name or "" end
 local function isPlank(n) return n:sub(-7)=="_planks" end
-local function isLog(n) return n:sub(-4)=="_log" end
+local function isLog(n) return n:sub(-4)=="_log" or n:sub(-5)=="_stem" end
+-- the wood of a log, plank or slab ("ns:x"), or nil. NO_PLANKS[wood] = a wood whose planks are called something else.
+NO_PLANKS = NO_PLANKS or {}
+local function woodOf(n)
+  local ns,rest=n:match("^([^:]+):(.+)$") if not ns then return nil end
+  local base=rest:match("^(.+)_log$") or rest:match("^(.+)_stem$") or rest:match("^(.+)_planks$")
+  if not base and rest:match("_slab$") and not rest:find("copper") and not rest:find("stone") and not rest:find("deepslate") then base=rest:match("^(.+)_slab$") end
+  return base and (ns..":"..base:gsub("^stripped_","")) or nil
+end
+-- a grid with its wood written as oak, if all the wood in it is one wood; else nil
+local function asOak(S)
+  local wood, out = nil, {}
+  for r=1,#S do out[r]={} for c=1,#S[r] do local n=S[r][c]
+    local w=(n:sub(-7)=="_planks" or n:sub(-5)=="_slab") and woodOf(n)
+    if w then if wood and wood~=w then return nil end wood=w
+      out[r][c]="minecraft:oak"..(n:sub(-7)=="_planks" and "_planks" or "_slab")
+    else out[r][c]=n end end end
+  return out, wood
+end
+WOOD_MADE={}
 local function grid() return {g(1),g(2),g(3),g(5),g(6),g(7),g(9),g(10),g(11)} end
 local function shape(G)  -- trimmed pattern as string rows
   local rows={{G[1],G[2],G[3]},{G[4],G[5],G[6]},{G[7],G[8],G[9]}}
@@ -106,6 +125,7 @@ turtle = {
       for t=1,16 do if not INV.turtle_3.items[t] then INV.turtle_3.items[t]=it INV.front.items[s2]=nil return true end end
     end return false end,
   getItemCount=function(s) local it=INV.turtle_3.items[s] return it and it.count or 0 end,
+  getItemDetail=function(s) local it=INV.turtle_3.items[s] return it and {name=it.name,count=it.count} or nil end,
   select=function(s) SEL=s end,
   transferTo=function(s) return move("turtle_3", SEL, "turtle_3", 64, s)>0 end,
   drop=function()
@@ -118,13 +138,18 @@ turtle = {
     for _,s in ipairs({4,8,12,13,14,15,16}) do if INV.turtle_3.items[s] then return false,"Inventory not empty outside grid" end end
     local S=shape(grid()); local out,n,tag
     local first=INV.turtle_3.items
+    local W,wood=asOak(S)            -- for the recipes that want one wood throughout
+    local real=S
+    if W then S=W end
     if eq(S,{{ST,ST,ST},{ST,RS,ST},{ST,GP,ST}}) then out,n=CO,1
     elseif eq(S,{{II,II,II},{II,CO,II},{II,CH,II}}) then out,n=TU,1
     elseif eq(S,{{DI,DI,DI},{"",SK,""},{"",SK,""}}) then out,n=PK,1
     elseif eq(S,{{GO,GO,GO},{GO,EY,GO},{GO,GO,GO}}) then out,n=MO,1
-    elseif eq(S,{{isPlank,isPlank,isPlank},{isPlank,"",isPlank},{isPlank,isPlank,isPlank}}) then out,n=CH,1
-    elseif eq(S,{{isPlank},{isPlank}}) then out,n=SK,4
-    elseif eq(S,{{isLog}}) then out,n="minecraft:oak_planks",4
+    elseif eq(real,{{isPlank,isPlank,isPlank},{isPlank,"",isPlank},{isPlank,isPlank,isPlank}}) then out,n=CH,1
+    elseif eq(real,{{isPlank},{isPlank}}) then out,n=SK,4
+    elseif eq(real,{{isLog}}) then
+      local w=woodOf(real[1][1])
+      if NO_PLANKS[w] then out,n=NO_PLANKS[w],4 else out,n=w.."_planks",4 end
     elseif eq(S,{{"minecraft:glass","minecraft:glass","minecraft:glass"},{"minecraft:glass","minecraft:glass","minecraft:glass"}}) then out,n=GP,16
     elseif eq(S,{{II,"",II},{"",II,""}}) then out,n="minecraft:bucket",1
     elseif eq(S,{{"minecraft:cobbled_deepslate","minecraft:cobbled_deepslate"},{"minecraft:cobbled_deepslate","minecraft:cobbled_deepslate"}}) then out,n="minecraft:polished_deepslate",4
@@ -138,14 +163,14 @@ turtle = {
     -- Sophisticated Storage, from the mod's recipe provider (one wood throughout)
     elseif eq(S,{{SK},{"minecraft:cobblestone"}}) then out,n=LV,1
     elseif eq(S,{{RS},{SK}}) then out,n=RT,1
-    elseif eq(S,{{OP,OP,OP}}) then out,n=OS,6
-    elseif eq(S,{{OP,OS,OP},{OP,"",OP},{OP,OS,OP}}) then out,n="minecraft:barrel",1
-    elseif eq(S,{{OP,OP,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."chest",1
-    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OS,OP}}) then out,n=SS.."barrel",1
-    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n=SS.."limited_barrel_1",1
-    elseif eq(S,{{OP,OP,OP},{OS,LV,OS},{OP,OP,OP}}) then out,n=SS.."limited_barrel_2",1
-    elseif eq(S,{{OP,OS,OP},{OP,LV,OP},{OS,OP,OS}}) then out,n=SS.."limited_barrel_3",1
-    elseif eq(S,{{OS,OP,OS},{OP,LV,OP},{OS,OP,OS}}) then out,n=SS.."limited_barrel_4",1
+    elseif W and wood and eq(S,{{OP,OP,OP}}) then out,n=wood.."_slab",6
+    elseif W and eq(S,{{OP,OS,OP},{OP,"",OP},{OP,OS,OP}}) then out,n="minecraft:barrel",1
+    elseif W and eq(S,{{OP,OP,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n,tag=SS.."chest",1,wood
+    elseif W and eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OS,OP}}) then out,n,tag=SS.."barrel",1,wood
+    elseif W and eq(S,{{OP,OS,OP},{OP,LV,OP},{OP,OP,OP}}) then out,n,tag=SS.."limited_barrel_1",1,wood
+    elseif W and eq(S,{{OP,OP,OP},{OS,LV,OS},{OP,OP,OP}}) then out,n,tag=SS.."limited_barrel_2",1,wood
+    elseif W and eq(S,{{OP,OS,OP},{OP,LV,OP},{OS,OP,OS}}) then out,n,tag=SS.."limited_barrel_3",1,wood
+    elseif W and eq(S,{{OS,OP,OS},{OP,LV,OP},{OS,OP,OS}}) then out,n,tag=SS.."limited_barrel_4",1,wood
     elseif eq(S,{{II,II,II},{II,SS.."chest",II},{II,II,II}}) then out,n=SS.."iron_chest",1
     elseif eq(S,{{GO,GO,GO},{GO,SS.."iron_chest",GO},{GO,GO,GO}}) then out,n=SS.."gold_chest",1
     elseif eq(S,{{DI,DI,DI},{DI,SS.."gold_chest",DI},{DI,DI,DI}}) then out,n=SS.."diamond_chest",1
@@ -186,7 +211,8 @@ turtle = {
     for _,s in ipairs({1,2,3,5,6,7,9,10,11}) do if first[s] then return false,"leftover in grid" end end
     first[SEL]={name=out,count=n*k,tag=tag}
     CRAFTS=(CRAFTS or 0)+1
-    CRAFTED[#CRAFTED+1]=out..(tag and ("["..tag.."]") or "")
+    if tag and tag==wood then WOOD_MADE[#WOOD_MADE+1]={item=out,wood=wood,n=n*k} CRAFTED[#CRAFTED+1]=out
+    else CRAFTED[#CRAFTED+1]=out..(tag and ("["..tag.."]") or "") end
     return true
   end,
 }
