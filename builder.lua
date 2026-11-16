@@ -1926,6 +1926,16 @@ end
 -- Hand n coal to a turtle at x, y, z next to the hut (ChunkNorris on the
 -- roof, say): go to an open cell beside it and drop the coal into it.
 local function giveCoalTo(tx, ty, tz, n)
+  local have = 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then have = have + d.count end
+  end
+  if have < n then
+    print("Fetching coal to hand over.")
+    st.feed = st.feed or {}
+    ask(st.feed, { { "minecraft:coal", n - have } }, 0, 600)
+  end
   local room = roomSet()
   for _, m in ipairs(ALL_MOVES) do
     local nx, ny, nz = neighbour(tx, ty, tz, m)
