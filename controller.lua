@@ -89,6 +89,8 @@ local function fetchSha()
   return data and data.sha
 end
 
+local mapQueue, mapNote = {}, {}   -- maps from the builder, and how their uploads went
+
 local function upload()
   local doc = {
     updated = os.epoch("utc"),
@@ -543,7 +545,6 @@ local function putFile(path, text, message)
   return false, tostring(err)
 end
 
-local mapQueue, mapNote = {}, {}
 
 -- Player Detector: where the owner is, and named spots they mark in chat.
 marks = {}

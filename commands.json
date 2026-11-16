@@ -1,8 +1,14 @@
 {
   "commands": [
     {
-      "id": 1794798811,
-      "issued": 1794798811000,
+      "id": 1794799035,
+      "issued": 1794799035000,
+      "cmd": "reboot",
+      "target": "GroundControl"
+    },
+    {
+      "id": 1794799036,
+      "issued": 1794799035000,
       "cmd": "reboot",
       "target": "BrickJagger"
     }
