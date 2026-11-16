@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794791975,
-      "issued": 1794791975000,
+      "id": 1794792657,
+      "issued": 1794792657000,
       "cmd": "reboot",
-      "target": "all"
+      "target": "GroundControl"
     }
   ]
 }

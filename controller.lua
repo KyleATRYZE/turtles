@@ -65,6 +65,8 @@ local orderNote = "no orders yet"
 local owner              -- player who gets chat messages (set from chat)
 local chatBox            -- defined in the chat section below
 local chatDebug = { heard = 0, sent = 0, failed = 0 }   -- shown in the status file
+local drawMonitor        -- defined in the monitor section below
+local monitorError       -- last error from drawing the monitor, if any
 local sha               -- GitHub's id for the current status file
 
 local function headers()
@@ -94,6 +96,8 @@ local function upload()
     chatBox = chatBox() ~= nil,
     chatOwner = owner,
     chatDebug = chatDebug,
+    monitor = peripheral.find("monitor") ~= nil,
+    monitorError = monitorError,
     peripherals = peripheral.getNames(),
     units = units,
   }
@@ -285,6 +289,176 @@ local function draw()
       tostring(u.fuel or "?")))
   end
   if #ids == 0 then print("No turtles have reported yet.") end
+  -- the monitor is a nicety: never let it take the controller down
+  local okMon, errMon = pcall(drawMonitor)
+  monitorError = not okMon and tostring(errMon) or nil
+end
+
+---------------------------------------------------------------- monitor
+-- With a monitor attached, shows a top-down map of the base, the plots and
+-- every turtle, plus a status line for each machine.
+
+local function stateColour(state)
+  state = tostring(state)
+  if state == "mining" or state == "building" or state == "launched one" then
+    return colors.lime
+  elseif state:find("flying") or state == "going home" or state == "starting" then
+    return colors.yellow
+  elseif state == "parked" or state == "stopped" or state == "paused"
+    or state == "idle" or state == "done" or state == "fleet full"
+    or state == "waiting for a plot" or state == "waiting for parts" then
+    return colors.lightBlue
+  end
+  return colors.red   -- anything else needs a look
+end
+
+drawMonitor = function()
+  local mon = peripheral.find("monitor")
+  if not mon then return end
+  mon.setTextScale(0.5)
+  local w, h = mon.getSize()
+  local colour = mon.isColour()
+  local function bg(c) if colour then mon.setBackgroundColour(c) end end
+  local function fg(c) if colour then mon.setTextColour(c) end end
+  local function put(x, y, text)
+    if y < 1 or y > h or x > w then return end
+    if x < 1 then text = text:sub(2 - x); x = 1 end
+    mon.setCursorPos(x, y)
+    mon.write(text:sub(1, w - x + 1))
+  end
+  bg(colors.black)
+  fg(colors.white)
+  mon.clear()
+
+  -- sort machines: factory first, then by name
+  local ids = {}
+  for id in pairs(units) do ids[#ids + 1] = id end
+  table.sort(ids, function(a, b)
+    local ua, ub = units[a], units[b]
+    if (ua.role == "factory") ~= (ub.role == "factory") then return ua.role == "factory" end
+    return tostring(ua.label) < tostring(ub.label)
+  end)
+
+  -- layout: list on the right if the monitor is wide, else underneath
+  local listW = 50
+  local sideBySide = w >= listW + 30
+  local mapX, mapY, mapW, mapH, listX, listY
+  if sideBySide then
+    mapX, mapY, mapW, mapH = 1, 2, w - listW - 1, h - 1
+    listX, listY = w - listW + 1, 2
+  else
+    local listH = math.min(#ids + 1, math.floor(h / 2))
+    mapX, mapY, mapW, mapH = 1, 2, w, h - 1 - listH
+    listX, listY = 1, h - listH + 1
+  end
+
+  fg(colors.yellow)
+  put(1, 1, "SWARM  " .. os.date("%H:%M") .. "  " .. uploadNote)
+  fg(colors.white)
+
+  -- everything that has a place on the map
+  local base, plotsOf = nil, {}
+  local minX, maxX, minZ, maxZ
+  local function grow(x, z)
+    minX = math.min(minX or x, x) maxX = math.max(maxX or x, x)
+    minZ = math.min(minZ or z, z) maxZ = math.max(maxZ or z, z)
+  end
+  for _, id in ipairs(ids) do
+    local u = units[id]
+    if type(u.base) == "table" and type(u.base.f) == "table" then
+      base = u.base
+      grow(base.f.x, base.f.z)
+    end
+    local j = u.job
+    if type(j) == "table" and type(j.home) == "table" and j.size then
+      local x0, z0 = j.home.x + 1, j.home.z
+      if not j.plot then x0 = nil end          -- old-style job: no fixed square
+      if x0 then
+        plotsOf[id] = { x0 = x0, z0 = z0, size = j.size, plot = j.plot,
+          layer = j.layer or 0, layers = j.layers or 0 }
+        grow(x0, z0)
+        grow(x0 + j.size - 1, z0 + j.size - 1)
+      end
+    end
+    if type(u.pos) == "table" and u.pos.x and not (u.pos.x == 0 and u.pos.z == 0) then
+      grow(u.pos.x, u.pos.z)
+    end
+  end
+
+  if minX and mapW > 4 and mapH > 2 then
+    minX, maxX, minZ, maxZ = minX - 3, maxX + 3, minZ - 3, maxZ + 3
+    -- a character cell is about 1.5 times as tall as it is wide
+    local sx = math.max((maxX - minX + 1) / mapW, (maxZ - minZ + 1) / (mapH * 1.5))
+    local sz = sx * 1.5
+    local function col(x) return mapX + math.floor((x - minX) / sx) end
+    local function row(z) return mapY + math.floor((z - minZ) / sz) end
+
+    -- plots: grey squares, darker once more than half dug
+    for _, pl in pairs(plotsOf) do
+      local c1, c2 = col(pl.x0), col(pl.x0 + pl.size - 1)
+      local r1, r2 = row(pl.z0), row(pl.z0 + pl.size - 1)
+      local done = pl.layers > 0 and pl.layer / pl.layers or 0
+      bg(done > 0.5 and colors.gray or colors.lightGray)
+      fg(colors.black)
+      for r = r1, r2 do
+        if r >= mapY and r < mapY + mapH then
+          put(c1, r, string.rep(" ", c2 - c1 + 1))
+        end
+      end
+      put(c1, r1, tostring(pl.plot))
+    end
+    -- the factory
+    if base then
+      bg(colors.orange)
+      fg(colors.black)
+      put(col(base.f.x), row(base.f.z), "F")
+    end
+    -- the turtles: first letter of the name, coloured by what they are doing
+    for _, id in ipairs(ids) do
+      local u = units[id]
+      if u.role ~= "factory" and type(u.pos) == "table" and u.pos.x
+        and not (u.pos.x == 0 and u.pos.z == 0) then
+        bg(stateColour(u.state))
+        fg(colors.black)
+        local r = row(u.pos.z)
+        if r >= mapY and r < mapY + mapH then
+          put(col(u.pos.x), r, tostring(u.label or "?"):sub(1, 1))
+        end
+      end
+    end
+    bg(colors.black)
+    fg(colors.gray)
+    put(mapX, mapY + mapH - 1, "N^  1 char = " .. string.format("%.1f", sx) .. " blocks")
+  end
+
+  -- the list
+  bg(colors.black)
+  local y = listY
+  local now = os.epoch("utc")
+  for _, id in ipairs(ids) do
+    if y > h then break end
+    local u = units[id]
+    local age = math.floor((now - (u.seen or now)) / 1000)
+    local state = tostring(u.state or "?")
+    if age > 300 then state = "SILENT " .. math.floor(age / 60) .. "m" end
+    bg(age > 300 and colors.red or stateColour(u.state))
+    put(listX, y, " ")
+    bg(colors.black)
+    fg(colors.white)
+    local detail = ""
+    local j = u.job
+    if u.role == "factory" and type(u.fleet) == "table" then
+      detail = ("fleet %s/%s"):format(tostring(u.fleet.active), tostring(u.fleet.max))
+    elseif type(j) == "table" and j.layers and j.layers > 0 then
+      detail = ("#%s %d%% fuel %s"):format(tostring(j.plot or "-"),
+        math.floor(100 * (j.layer or 0) / j.layers), tostring(u.fuel or "?"))
+    elseif u.fuel then
+      detail = "fuel " .. tostring(u.fuel)
+    end
+    put(listX + 2, y, ("%-14s %-15s %s"):format(
+      tostring(u.label or ("#" .. id)):sub(1, 14), state:sub(1, 15), detail))
+    y = y + 1
+  end
 end
 
 ---------------------------------------------------------------- loops
