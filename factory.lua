@@ -203,6 +203,7 @@ local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
+local served = {}        -- the last order number served, by computer id
 
 local function activeCount()
   local n = 0
@@ -945,6 +946,7 @@ local function serveOrders()
       return false                       -- not on the pad yet: keep the order
     end
     orders[id] = nil
+    served[id] = order.n
     print("Preparing a load for the builder.")
     report("preparing materials")
     turnTo(0)
@@ -1118,7 +1120,8 @@ local function responder()
         fuelQueue[id] = true
       elseif msg.type == "bucket_request" then
         bucketQueue[id] = true
-      elseif msg.type == "materials" and type(msg.items) == "table" then
+      elseif msg.type == "materials" and type(msg.items) == "table"
+        and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
       elseif msg.type == "release" then
         -- a miner turned coal hunter: its plot goes to the next new miner

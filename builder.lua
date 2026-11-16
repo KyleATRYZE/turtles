@@ -27,6 +27,7 @@ local MAX_DROP     = 3      -- never follow the ground down further than this in
                             -- (deeper drops are pits: hover across them instead)
 local CORE         = "advancedperipherals:weak_automata_core"
 local SCANNER      = "advancedperipherals:geo_scanner"
+local PICKAXE      = "minecraft:diamond_pickaxe"
 local SCAN_RADIUS  = 8      -- the scanner's free range
 local SCAN_SPACING = 10     -- distance between scan points on the ground map
 local DOOR_OFFSET  = { x = -1, y = 0, z = 8 }   -- the hut's doorway, from the factory
@@ -208,8 +209,10 @@ local function step(dir)
       waited = waited + 1
       sleep(1)                           -- another turtle: let it pass
     elseif not turtle["detect" .. SUFFIX[dir]]() and not name then
-      if waited >= 20 then return false end
-      turtle["attack" .. SUFFIX[dir]]()  -- a mob
+      -- a mob or a player: wait a few seconds (a player walks off), then
+      -- swing at it
+      if waited >= 30 then return false end
+      if waited >= 12 then turtle["attack" .. SUFFIX[dir]]() end
       waited = waited + 1
       sleep(0.5)
     else
@@ -413,6 +416,38 @@ local function fitScanner()
     sleep(0.5)
   end
   return false
+end
+
+
+local function toolSide()
+  if peripheral.getType("left") == "modem" then return "right" end
+  return "left"
+end
+
+-- "pick" or "scan": put that on the tool side (the other one goes into
+-- the inventory).
+local function useTool(which)
+  if which == "scan" then
+    if scannerSide() then return true end
+    local slot = findSlot(SCANNER)
+    if not slot then return false end
+    turtle.select(slot)
+    local ok = toolSide() == "left" and turtle.equipLeft() or turtle.equipRight()
+    turtle.select(1)
+    for _ = 1, 10 do
+      if scannerSide() then return true end
+      sleep(0.5)
+    end
+    return false
+  end
+  local side = scannerSide()
+  if not side then return true end            -- the pickaxe is already on
+  local slot = findSlot(PICKAXE)
+  if not slot then return false end
+  turtle.select(slot)
+  local ok = side == "left" and turtle.equipLeft() or turtle.equipRight()
+  turtle.select(1)
+  return ok
 end
 
 -- Scan around us. Returns { key = name } for every non-air block, plus a
@@ -818,34 +853,74 @@ local function groundToSafely(x, z)
   return false
 end
 
--- Out of the hut through its doorway, then a few steps clear of it.
-local function goOutside()
-  local dk = doorKey()
-  if not goToCell(dk) then return false, "cannot reach the door" end
-  face(DOOR_OUT)
-  for _ = 1, 3 do groundForward() end
+-- Near the hut: scan, then walk through open space into the room. If there
+-- is no way, send a map of what the scanner saw so it can be looked at.
+local function wayIn()
+  if not useTool("scan") then return false end
+  local found, covered = scanHere()
+  if not found then return false end
+  local room = roomSet()
+  local function open(x, y, z)
+    local k = key(x, y, z)
+    return room[k] or (covered(x, y, z) and (not found[k] or PASSABLE[found[k]]))
+  end
+  local startK = key(pos.x, pos.y, pos.z)
+  local prev, queue, head, goal = { [startK] = false }, { startK }, 1, nil
+  while head <= #queue and #queue < 8000 do
+    local k = queue[head]
+    head = head + 1
+    if room[k] then goal = k break end
+    local x, y, z = unkey(k)
+    for _, m in ipairs(ALL_MOVES) do
+      local nx, ny, nz = neighbour(x, y, z, m)
+      local nk = key(nx, ny, nz)
+      if prev[nk] == nil and open(nx, ny, nz) then
+        prev[nk] = { k, m }
+        queue[#queue + 1] = nk
+      end
+    end
+  end
+  if not goal then
+    local f = base.f
+    local palette, index, cells = {}, {}, {}
+    for k, name in pairs(found) do
+      local x, y, z = unkey(k)
+      if not index[name] then palette[#palette + 1] = name index[name] = #palette end
+      cells[#cells + 1] = { x - f.x, y - f.y, z - f.z, index[name] }
+    end
+    sendMap("door_area", { kind = "room", origin = f, palette = palette, cells = cells,
+      scanned = true, from = { x = pos.x - f.x, y = pos.y - f.y, z = pos.z - f.z } })
+    return false
+  end
+  local moves, c = {}, goal
+  while prev[c] do
+    table.insert(moves, 1, prev[c][2])
+    c = prev[c][1]
+  end
+  for _, m in ipairs(moves) do
+    if not moveBy(m) then return false end
+  end
   return true
 end
 
--- Back in: walk to a spot a few blocks out from the doorway, come down to
--- its level, then walk in through it and on to a cell of the room (the
--- parking spot unless told otherwise).
+-- Out of the hut: to the doorway, then let the scanner find the way up
+-- to open sky.
+local function goOutside()
+  local dk = doorKey()
+  if not goToCell(dk) then return false, "cannot reach the door" end
+  useTool("scan")
+  if not escape() then return false, "no way out from the door" end
+  return true
+end
+
+-- Back in: walk to a spot a few blocks out from the doorway, then let the
+-- scanner find the way into the room, then on to a room cell (the parking
+-- spot unless told otherwise).
 local function comeHome(target)
   local _, d = doorKey()
-  local back = (DOOR_OUT + 2) % 4
   local ox, oz = d.x + 3 * DIRS[DOOR_OUT].x, d.z + 3 * DIRS[DOOR_OUT].z
   if not groundToSafely(ox, oz) then return false end
-  for _ = 1, 8 do
-    if pos.x == d.x and pos.z == d.z then break end
-    while pos.y > d.y and step("d") do end
-    while pos.y < d.y and step("u") do end
-    face(back)
-    if not step("f") then
-      if pos.y ~= d.y or not step("u") then return false end
-    end
-  end
-  while pos.y > d.y and step("d") do end
-  if pos.x ~= d.x or pos.z ~= d.z or pos.y ~= d.y then return false end
+  if not wayIn() then return false end
   return goToCell(target or st.park)
 end
 
@@ -1029,6 +1104,517 @@ local function landSurvey(site)
   return true
 end
 
+
+---------------------------------------------------------------- building
+-- The builder builds from a list made by tools/buildlist.py: one line per
+-- block, in the order to place them (floor first, then up layer by layer).
+-- It hovers one block above each spot and places the block below itself.
+
+local LIST_URL    = "https://raw.githubusercontent.com/KyleATRYZE/turtles/%s/blueprints/%s.txt"
+local MARGIN      = 2      -- cleared ring around the building
+local LOAD_STACKS = 12     -- stacks of blocks to fetch per trip
+local BUILD_FUEL  = 4000   -- fuel to leave the launch pad with
+local FUEL_SPARE  = 600    -- head home for more when down to this (plus the trip)
+local FACING      = { east = 0, south = 1, west = 2, north = 3 }
+
+-- Things that grow or lie about naturally: fine to clear from the site.
+local NATURAL_WORDS = {
+  "leaves", "_log", "grass", "flower", "fern", "sapling", "mushroom", "vine",
+  "moss", "bush", "shrub", "plant", "petals", "roots", "snow", "dripleaf",
+  "berr", "lily", "tulip", "daisy", "hyssop", "fireweed", "tsubaki", "poppy",
+  "dandelion", "orchid", "allium", "bluet", "cornflower", "lilac", "peony",
+  "rose", "clover", "sprout", "cattail", "reed", "pumpkin", "melon",
+  "sugar_cane", "bamboo", "pebble", "dead_bush", "propagule", "flax",
+  "lavender", "pointed_dripstone", "cobweb",
+}
+local function isNatural(name)
+  if isGround(name) then return true end
+  if name:find("computercraft:") or name:find("planks") or name:find("stripped") then
+    return false
+  end
+  for _, w in ipairs(NATURAL_WORDS) do
+    if name:find(w, 1, true) then return true end
+  end
+  return false
+end
+
+-- Worth taking home after clearing (the rest is dropped).
+local function isKeeper(name)
+  return name:find("_log", 1, true) or name:find("sapling", 1, true)
+    or name == "minecraft:dirt" or name == "minecraft:cobblestone"
+    or name == "minecraft:cobbled_deepslate"
+end
+
+local list                   -- { pal = {...}, blocks = {...} }
+
+local function loadList(b)
+  if list then return list end
+  if not fs.exists(b.listFile) then
+    print("Downloading the building plan.")
+    local rev = (fs.exists(".version") and (function()
+      local h = fs.open(".version", "r") local v = h.readAll() h.close() return v
+    end)() or "main"):gsub("%s", "")
+    local res = http and http.get(LIST_URL:format(rev ~= "" and rev or "main", b.plan))
+    if not res then error("Could not download the building plan.", 0) end
+    local text = res.readAll()
+    res.close()
+    local h = fs.open(b.listFile, "w")
+    h.write(text)
+    h.close()
+  end
+  local h = fs.open(b.listFile, "r")
+  local pal, blocks = {}, {}
+  local mode, n = nil, 0
+  while true do
+    local line = h.readLine()
+    if not line then break end
+    local tag, count = line:match("^([PB]) (%d+)$")
+    if tag then
+      mode, n = tag, tonumber(count)
+    elseif mode == "P" then
+      local name, facing = line:match("^(%S+) (%S+)$")
+      pal[#pal + 1] = { name = name, facing = facing ~= "-" and facing or nil }
+    elseif mode == "B" then
+      local x, y, z, i = line:match("^(-?%d+) (-?%d+) (-?%d+) (%d+)$")
+      if x then blocks[#blocks + 1] = { tonumber(x), tonumber(y), tonumber(z), tonumber(i) + 1 } end
+    end
+  end
+  h.close()
+  if #blocks == 0 then
+    fs.delete(b.listFile)
+    error("The building plan is empty.", 0)
+  end
+  list = { pal = pal, blocks = blocks }
+  local sx, sy, sz = 0, 0, 0
+  for _, e in ipairs(blocks) do
+    sx, sy, sz = math.max(sx, e[1] + 1), math.max(sy, e[2] + 1), math.max(sz, e[3] + 1)
+  end
+  list.sx, list.sy, list.sz = sx, sy, sz
+  return list
+end
+
+-- the box we may dig in: the building plus a ring around it, from the
+-- floor up
+local function inSite(b, x, y, z)
+  return x >= b.ox - MARGIN and x <= b.ox + list.sx - 1 + MARGIN
+    and z >= b.oz - MARGIN and z <= b.oz + list.sz - 1 + MARGIN
+    and y >= b.oy and y <= b.oy + list.sy + 20
+end
+
+local function hasPickaxe()
+  return findSlot(PICKAXE) ~= nil or (not scannerSide() and findSlot(SCANNER) ~= nil)
+end
+
+local function freeSlots()
+  local n = 0
+  for s = 1, 16 do if turtle.getItemCount(s) == 0 then n = n + 1 end end
+  return n
+end
+
+-- Drop what is not worth keeping; with all = true drop the keepers too.
+local function dropJunk(b, all)
+  local mats = {}
+  if list then for _, p in ipairs(list.pal) do mats[p.name] = true end end
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and not mats[d.name] and d.name ~= PICKAXE and d.name ~= SCANNER
+      and d.name ~= CORE and d.name ~= "minecraft:coal" and d.name ~= "minecraft:charcoal"
+      and (all or not isKeeper(d.name)) then
+      turtle.select(s)
+      turtle.dropUp()
+    end
+  end
+  turtle.select(1)
+end
+
+---------------------------------------------------------------- moving on the site
+
+-- One step that may dig a natural block out of the way, inside the site.
+local function digStep(b, dir)
+  if step(dir) then return true end
+  local x, y, z = pos.x, pos.y, pos.z
+  if dir == "u" then y = y + 1 elseif dir == "d" then y = y - 1
+  else x, z = x + DIRS[heading].x, z + DIRS[heading].z end
+  if not inSite(b, x, y, z) then return false end
+  local ok, data = turtle["inspect" .. SUFFIX[dir]]()
+  if not ok or not isNatural(data.name) then return false end
+  useTool("pick")
+  local dig = dir == "u" and turtle.digUp or dir == "d" and turtle.digDown or turtle.dig
+  for _ = 1, 6 do              -- sand and gravel may fall in again
+    dig()
+    if step(dir) then return true end
+    local again, d2 = turtle["inspect" .. SUFFIX[dir]]()
+    if not again or not isNatural(d2.name) then break end
+  end
+  return step(dir)
+end
+
+-- Fly to a spot on the site: up first, across, then down. Anything built
+-- that is in the way is flown over.
+local function flyTo(b, x, y, z)
+  for _ = 1, 6 do
+    while pos.y < y do if not digStep(b, "u") then break end end
+    local okX, okZ = true, true
+    while pos.x ~= x do
+      face(x > pos.x and 0 or 2)
+      if not digStep(b, "f") then okX = false break end
+    end
+    if okX then
+      while pos.z ~= z do
+        face(z > pos.z and 1 or 3)
+        if not digStep(b, "f") then okZ = false break end
+      end
+    end
+    if okX and okZ then
+      while pos.y > y do if not digStep(b, "d") then break end end
+      if pos.y == y then return true end
+    end
+    if not digStep(b, "u") then return false end   -- over whatever it is
+    y = math.max(y, pos.y)
+  end
+  return pos.x == x and pos.y == y and pos.z == z
+end
+
+-- The column on the west side of the site we go up and down in.
+local function sideColumn(b, z)
+  local x1 = b.ox - MARGIN
+  local z1, z2 = b.oz - MARGIN, b.oz + list.sz - 1 + MARGIN
+  return x1, math.max(z1, math.min(z2, z))
+end
+
+-- From the doorway to a spot on the site, walking then flying.
+local function goToSite(b, x, y, z)
+  local cx, cz = sideColumn(b, z)
+  if not groundToSafely(cx, cz) then return false end
+  while pos.y > b.oy and step("d") do end
+  return flyTo(b, x, y, z)
+end
+
+-- From the site back to the parking spot or another room cell.
+local function leaveSite(b, target)
+  local cx, cz = sideColumn(b, pos.z)
+  if inSite(b, pos.x, pos.y, pos.z) then
+    flyTo(b, cx, math.max(pos.y, b.oy), cz)
+    while step("d") do end
+  end
+  return comeHome(target)
+end
+
+---------------------------------------------------------------- materials
+
+local function ask(b, items, fuelWanted)
+  if not (swarm and swarm.open()) then return nil end
+  b.orderN = (b.orderN or 0) + 1
+  save()
+  local msg = { type = "materials", id = os.getComputerID(), n = b.orderN,
+    items = items, fuel = fuelWanted }
+  rednet.broadcast(msg, JOB_PROTOCOL)
+  local started, lastAsk = os.clock(), os.clock()
+  while os.clock() - started < 3600 do
+    local id, reply = rednet.receive(JOB_PROTOCOL, 30)
+    if type(reply) == "table" and reply.type == "materials_ready"
+      and reply.forId == os.getComputerID() and reply.n == b.orderN then
+      return reply
+    end
+    if os.clock() - lastAsk > 120 then          -- the factory may have missed it
+      rednet.broadcast(msg, JOB_PROTOCOL)
+      lastAsk = os.clock()
+    end
+    tick("waiting for materials")
+  end
+  return nil
+end
+
+-- What the next part of the list needs, up to a load.
+local function nextLoad(b)
+  local counts, order = {}, {}
+  for i = b.i, #list.blocks do
+    local name = list.pal[list.blocks[i][4]].name
+    if not counts[name] then
+      counts[name] = 0
+      order[#order + 1] = name
+    end
+    counts[name] = counts[name] + 1
+    local stacks = 0
+    for _, c in pairs(counts) do stacks = stacks + math.ceil(c / 64) end
+    if stacks > LOAD_STACKS then
+      counts[name] = counts[name] - 1
+      break
+    end
+  end
+  local items = {}
+  for _, name in ipairs(order) do
+    if counts[name] > 0 then items[#items + 1] = { name, counts[name] } end
+  end
+  return items
+end
+
+-- On the launch pad: hand in what we dug up, then load up with blocks,
+-- fuel and (the first time) a pickaxe.
+local function restock(b)
+  -- the keepers go into the drop-off chest by the factory
+  local dock = base.dock
+  local carrying = false
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and isKeeper(d.name) then carrying = true end
+  end
+  if carrying and goToCell(key(dock.x, dock.y, dock.z)) then
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and isKeeper(d.name) then
+        turtle.select(s)
+        turtle.dropDown()
+      end
+    end
+    turtle.select(1)
+  end
+  goToCell(st.padKey)
+  dropJunk(b, false)
+  local placing = b.stage == "place"
+  while true do
+    local items = placing and nextLoad(b) or {}
+    local first = items[1] and items[1][1]
+    if not hasPickaxe() then table.insert(items, 1, { PICKAXE, 1 }) end
+    local fuelWanted = math.max(0, math.ceil((BUILD_FUEL - fuel()) / 80))
+    if #items == 0 and fuelWanted == 0 then break end
+    print("Asking the factory for a load.")
+    report("waiting for materials")
+    local reply = ask(b, items, math.min(64, fuelWanted))
+    burnInventory(BUILD_FUEL)
+    if not placing or (first and findSlot(first)) then break end
+    if not first then break end
+    print("No " .. first:gsub("^.*:", "") .. " to be had yet. Waiting for the miners.")
+    report("waiting for materials")
+    sleep(300)
+  end
+  if not hasPickaxe() then error("I still have no pickaxe.", 0) end
+  save()
+end
+
+-- Home from the site, restock, and back out of the hut.
+local function supplyRun(b, reason)
+  print("Going home: " .. reason)
+  report("fetching materials")
+  if not leaveSite(b, st.padKey) then
+    report("stuck outside")
+    error("I could not get back to the launch pad.", 0)
+  end
+  restock(b)
+  if not goOutside() then error("I could not get out of the hut.", 0) end
+  return true
+end
+
+---------------------------------------------------------------- clearing
+
+local function saveTargets(t)
+  local h = fs.open("clear.list", "w")
+  for _, c in ipairs(t) do h.writeLine(c[1] .. " " .. c[2] .. " " .. c[3]) end
+  h.close()
+end
+
+local function loadTargets()
+  local t = {}
+  if not fs.exists("clear.list") then return t end
+  local h = fs.open("clear.list", "r")
+  while true do
+    local line = h.readLine()
+    if not line then break end
+    local x, y, z = line:match("^(-?%d+) (-?%d+) (-?%d+)$")
+    if x then t[#t + 1] = { tonumber(x), tonumber(y), tonumber(z) } end
+  end
+  h.close()
+  return t
+end
+
+-- Scan the site from points on a grid, at two heights, then clear every
+-- natural block above the ground there, top down. Stops (touching nothing)
+-- if anything there looks built.
+local function clearSite(b)
+  local x1, x2 = b.ox - MARGIN, b.ox + list.sx - 1 + MARGIN
+  local z1, z2 = b.oz - MARGIN, b.oz + list.sz - 1 + MARGIN
+  if not b.scanned then
+    print("Scanning the site.")
+    report("scanning the site")
+    local found, built = {}, {}
+    local points = {}
+    local zs, xs = {}, {}
+    for z = z1 + 4, z2 + 3, 8 do zs[#zs + 1] = math.min(z, z2) end
+    for x = x1 + 4, x2 + 3, 8 do xs[#xs + 1] = math.min(x, x2) end
+    for r, z in ipairs(zs) do
+      for c = 1, #xs do
+        points[#points + 1] = { r % 2 == 1 and xs[c] or xs[#xs + 1 - c], z }
+      end
+    end
+    for n, p in ipairs(points) do
+      progress = { kind = "site scan", point = n, points = #points }
+      for _, h in ipairs({ b.oy + 1, b.oy + 11 }) do
+        useTool("pick")
+        if flyTo(b, p[1], h, p[2]) and useTool("scan") then
+          local f = scanHere()
+          for k, name in pairs(f or {}) do
+            local x, y, z = unkey(k)
+            if inSite(b, x, y, z) and not name:find("computercraft:turtle", 1, true) then
+              if isNatural(name) then
+                if not name:find("water", 1, true) and not name:find("lava", 1, true) then
+                  found[k] = true
+                end
+              else
+                built[#built + 1] = ("%s at %d %d %d"):format(name:gsub("^.*:", ""), x, y, z)
+              end
+            end
+          end
+        end
+        tick("scanning the site")
+      end
+    end
+    useTool("pick")
+    if #built > 0 then
+      print("Something built is on the site: " .. built[1])
+      b.blocked = built
+      save()
+      report("site not clear")
+      return false
+    end
+    local t = {}
+    for k in pairs(found) do
+      local x, y, z = unkey(k)
+      t[#t + 1] = { x, y, z }
+    end
+    table.sort(t, function(a, c)
+      if a[2] ~= c[2] then return a[2] > c[2] end
+      if a[3] ~= c[3] then return a[3] < c[3] end
+      return (a[3] % 2 == 0) == (a[1] < c[1])
+    end)
+    saveTargets(t)
+    b.scanned, b.ci = true, 1
+    save()
+    print(("Site scanned: %d blocks to clear."):format(#t))
+  end
+  local t = loadTargets()
+  useTool("pick")
+  for i = b.ci or 1, #t do
+    local c = t[i]
+    progress = { kind = "clearing", done = i, total = #t }
+    if fuel() < FUEL_SPARE + 200 then supplyRun(b, "low on fuel") end
+    if freeSlots() < 3 then
+      dropJunk(b, false)
+      if freeSlots() < 3 then supplyRun(b, "my inventory is full") end
+    end
+    if flyTo(b, c[1], c[2] + 1, c[3]) then
+      local ok, data = turtle.inspectDown()
+      if ok and isNatural(data.name) and not data.name:find("water", 1, true) then
+        turtle.digDown()
+      end
+    end
+    b.ci = i + 1
+    if i % 16 == 0 then save() end
+    tick("clearing the site")
+  end
+  b.stage = "place"
+  b.i = b.i or 1
+  save()
+  print("Site cleared.")
+  return true
+end
+
+---------------------------------------------------------------- placing
+
+local function facingOf(data)
+  return type(data) == "table" and type(data.state) == "table" and data.state.facing or nil
+end
+
+local function placeShell(b)
+  local blocks, pal = list.blocks, list.pal
+  local placedNow = 0
+  useTool("pick")
+  while b.i <= #blocks do
+    if b.limit and placedNow >= b.limit then
+      print("Trial done: placed " .. placedNow .. " blocks.")
+      b.limit = nil
+      b.paused = true
+      save()
+      return false
+    end
+    local e = blocks[b.i]
+    local want = pal[e[4]]
+    local wx, wy, wz = b.ox + e[1], b.oy + e[2], b.oz + e[3]
+    progress = { kind = "building", done = b.i - 1, total = #blocks, layer = e[2] }
+    local slot = findSlot(want.name)
+    local trip = math.abs(pos.x - st.doorX) + math.abs(pos.z - st.doorZ) + math.abs(pos.y - b.oy) + 50
+    if not slot then
+      supplyRun(b, "out of " .. want.name:gsub("^.*:", ""))
+    elseif fuel() < FUEL_SPARE + trip then
+      supplyRun(b, "low on fuel")
+    else
+      if not flyTo(b, wx, wy + 1, wz) then
+        print(("Cannot reach %d %d %d. Skipping it."):format(wx, wy, wz))
+        b.skipped = (b.skipped or 0) + 1
+        b.i = b.i + 1
+      else
+        local ok, data = turtle.inspectDown()
+        local done = ok and data.name == want.name
+          and (not want.facing or facingOf(data) == want.facing)
+        if not done then
+          if ok and (isNatural(data.name) or data.name == want.name) then
+            turtle.digDown()                         -- clutter, or our own block facing wrong
+          end
+          if want.facing then face((FACING[want.facing] + (b.turn or 0)) % 4) end
+          turtle.select(slot)
+          if turtle.placeDown() and want.facing then
+            local _, d2 = turtle.inspectDown()
+            local got = facingOf(d2)
+            if got and FACING[got] and got ~= want.facing then
+              -- learn how placing turns the block, then put it right
+              b.turn = ((b.turn or 0) + FACING[want.facing] - FACING[got]) % 4
+              turtle.digDown()
+              face((FACING[want.facing] + b.turn) % 4)
+              turtle.placeDown()
+            end
+          end
+          turtle.select(1)
+          placedNow = placedNow + 1
+        end
+        b.i = b.i + 1
+        if b.i % 8 == 0 then save() end
+      end
+    end
+    if freeSlots() < 2 then dropJunk(b, true) end
+    tick("building")
+  end
+  b.stage = "done"
+  save()
+  print("The shell is finished!")
+  return true
+end
+
+-- Build what st.build describes, from wherever we are.
+local function runBuild()
+  local b = st.build
+  loadList(b)
+  local _, d = doorKey()
+  st.doorX, st.doorZ = d.x, d.z
+  local here = key(pos.x, pos.y, pos.z)
+  local inside = roomSet()[here] or here == st.padKey
+  if not hasPickaxe() or fuel() < BUILD_FUEL / 2 then
+    if inside then goToCell(st.padKey) else leaveSite(b, st.padKey) end
+    restock(b)
+    inside = true
+  end
+  if inside and not goOutside() then error("I could not get out of the hut.", 0) end
+  report(b.stage == "clear" and "clearing the site" or "building")
+  if not inSite(b, pos.x, pos.y, pos.z) then
+    local x1, z1 = sideColumn(b, b.oz)
+    if not goToSite(b, x1, b.oy, z1) then error("I could not reach the site.", 0) end
+  end
+  if b.stage == "clear" and not clearSite(b) then
+    leaveSite(b)
+    return
+  end
+  if b.stage == "place" then placeShell(b) end
+  leaveSite(b)
+end
+
 ---------------------------------------------------------------- jobs
 
 local function work()
@@ -1052,6 +1638,10 @@ local function work()
   if not st.done.ground then landSurvey() end
   if st.site then landSurvey(st.site) end
   goToCell(st.park)
+  if st.build and st.build.stage ~= "done" and not st.build.paused then
+    runBuild()
+    goToCell(st.park)
+  end
   if st.done.ground then
     print("Maps done. Waiting for jobs.")
   else
@@ -1129,6 +1719,29 @@ while true do
     task = idle
   elseif cmd.cmd == "resume" then
     st.paused = nil
+    save()
+    task = guarded(work)
+  elseif cmd.cmd == "build" then
+    -- build the shell with its corner (the plan's 0,0,0) at ox, oy, oz.
+    -- limit = only place this many blocks (a trial); clear = 0 skips
+    -- clearing the site first.
+    st.paused = nil
+    if tonumber(cmd.ox) and tonumber(cmd.oy) and tonumber(cmd.oz) then
+      local same = st.build and st.build.ox == math.floor(tonumber(cmd.ox))
+        and st.build.oy == math.floor(tonumber(cmd.oy)) and st.build.oz == math.floor(tonumber(cmd.oz))
+      if not same then
+        st.build = { ox = math.floor(tonumber(cmd.ox)), oy = math.floor(tonumber(cmd.oy)),
+          oz = math.floor(tonumber(cmd.oz)), plan = "factory_shell", listFile = "build.list",
+          stage = "clear", i = 1 }
+        if fs.exists("build.list") then fs.delete("build.list") end
+        if fs.exists("clear.list") then fs.delete("clear.list") end
+      end
+    end
+    if st.build then
+      st.build.paused = nil
+      st.build.limit = tonumber(cmd.limit) and math.floor(tonumber(cmd.limit)) or nil
+      if tostring(cmd.clear) == "0" and st.build.stage == "clear" then st.build.stage = "place" end
+    end
     save()
     task = guarded(work)
   elseif cmd.cmd == "survey" then

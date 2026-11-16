@@ -1,8 +1,8 @@
 {
   "commands": [
     {
-      "id": 1794798563,
-      "issued": 1794798563000,
+      "id": 1794798811,
+      "issued": 1794798811000,
       "cmd": "reboot",
       "target": "BrickJagger"
     }
