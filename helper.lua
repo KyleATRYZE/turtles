@@ -348,7 +348,7 @@ end
 
 -- Home for a load: wait in the air until the factory has it ready, drop
 -- onto the pad, take it, and get straight back out of the way.
-local function supplyRun(indices, reason)
+local function supplyRun(indices, reason, once)
   print("Going for a load: " .. reason)
   report("fetching materials")
   riseTo(highway())
@@ -407,6 +407,7 @@ local function supplyRun(indices, reason)
       lastState = "building"
       if gotAny or fuel() > FUEL_SPARE * 2 then return true end
     end
+    if once then return false end
     print("Nothing to be had yet. Waiting for the miners.")
     report("waiting for materials")
     sleep(240)
@@ -617,6 +618,95 @@ local function deliver()
   return false
 end
 
+local function burnLogs()
+  if fuel() >= 600 then return end
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and isLog(d.name) and fuel() < 900 then
+      turtle.select(s)
+      turtle.refuel(math.min(d.count, 24))
+    end
+  end
+  turtle.select(1)
+end
+
+-- forage: sweep an area for trees nobody has mapped. Rows five apart,
+-- flown a few blocks above the ground, so the turtle runs into the
+-- canopies; every one it meets is felled.
+local ROW_GAP, ABOVE_GROUND = 5, 4
+
+local function toGroundLevel()
+  local n = 0
+  while n < 40 do
+    local below = look("d")
+    if isLeaf(below) then
+      fell(pos.x, pos.z, 0, { n = CHOP_BUDGET })
+    elseif below then
+      break
+    elseif not step("d") then
+      break
+    end
+    n = n + 1
+  end
+  for _ = 1, ABOVE_GROUND do if not step("u") then break end end
+end
+
+local function runForage()
+  local a = st.job.area
+  local x1, x2 = math.min(a[1], a[3]), math.max(a[1], a[3])
+  local z1, z2 = math.min(a[2], a[4]), math.max(a[2], a[4])
+  local rows = math.floor((z2 - z1) / ROW_GAP) + 1
+  st.row = st.row or 0
+  local top = highway() + 120
+  while st.row < rows do
+    local z = z1 + st.row * ROW_GAP
+    local east = st.row % 2 == 0
+    local from, to = east and x1 or x2, east and x2 or x1
+    if st.rowX then from = st.rowX end
+    report("looking for trees")
+    riseTo(highway())
+    across(from, z, top)
+    toGroundLevel()
+    local n, logs0 = 0, countLogs()
+    while pos.x ~= to do
+      face(east and 0 or 2)
+      local ahead = look("f")
+      if isLeaf(ahead) then
+        local before = countLogs()
+        fell(pos.x, pos.z, 0, { n = CHOP_BUDGET })
+        if countLogs() > before then print(("A tree at %d, %d: %d logs."):format(pos.x, pos.z, countLogs() - before)) end
+        face(east and 0 or 2)
+      end
+      if not step("f") then
+        if pos.y >= top or not step("u") then break end
+      else
+        n = n + 1
+        if n % 4 == 0 then
+          toGroundLevel()
+          burnLogs()
+          progress = { kind = "foraging", done = st.row, total = rows, logs = countLogs() }
+          tick("looking for trees")
+          if countLogs() >= CHOP_LOAD or freeSlots() < 3 then
+            st.rowX = pos.x
+            save()
+            deliver()
+            if fuel() < 1200 then supplyRun(function() return {} end, "fuel", true) end
+            riseTo(highway())
+            across(st.rowX, z, top)
+            toGroundLevel()
+          end
+        end
+      end
+    end
+    st.row, st.rowX = st.row + 1, nil
+    save()
+  end
+  if countLogs() > 0 then deliver() end
+  print("Area searched.")
+  st.done = true
+  save()
+end
+
 local function runChop()
   local job = st.job
   st.ci = st.ci or 1
@@ -635,7 +725,7 @@ local function runChop()
     end
     if countLogs() >= CHOP_LOAD or freeSlots() < 3 then
       deliver()
-      if fuel() < 1200 then supplyRun(function() return {} end, "fuel") end
+      if fuel() < 1200 then supplyRun(function() return {} end, "fuel", true) end
     end
     local t = job.trees[st.ci]
     report("chopping")
@@ -681,7 +771,7 @@ local function work()
     if not findHeading() then error("I am boxed in.", 0) end
   end
   if st.job and not st.done and not st.paused then
-    if st.job.trees then runChop() else
+    if st.job.area then runForage() elseif st.job.trees then runChop() else
       report("building")
       runBuild()
       lastState = "idle"
@@ -737,6 +827,15 @@ while true do
     st.paused = nil
     save()
     task = guarded(work)
+  elseif cmd.cmd == "chop" and type(cmd.area) == "string" then
+    -- search an area for trees and fell them: area = "x1:z1:x2:z2"
+    local x1, z1, x2, z2 = cmd.area:match("^(-?%d+):(-?%d+):(-?%d+):(-?%d+)$")
+    if x1 then
+      st = { job = { area = { tonumber(x1), tonumber(z1), tonumber(x2), tonumber(z2) } },
+        turn = st.turn, orderSeq = st.orderSeq }
+      save()
+      task = guarded(work)
+    end
   elseif cmd.cmd == "chop" and type(cmd.trees) == "string" then
     -- fell wild trees: trees = "x:z;x:z;..." (treetops from the ground map)
     local trees = {}
