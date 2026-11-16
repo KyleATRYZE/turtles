@@ -123,7 +123,8 @@ local function step(dir)
   local waited = 0
   while true do
     if fuel() < 1 then refuel(200) end
-    if turtle[MOVE[dir]]() then
+    local moved, whyNot = turtle[MOVE[dir]]()
+    if moved then
       if dir == "f" then
         pos.x, pos.z = pos.x + DIRS[heading].x, pos.z + DIRS[heading].z
       elseif dir == "u" then pos.y = pos.y + 1 else pos.y = pos.y - 1 end
@@ -137,6 +138,10 @@ local function step(dir)
       sleep(1)
     elseif not name and not turtle["detect" .. SUFFIX[dir]]() then
       if waited >= 30 then return false, "mob" end
+      if waited == 4 then
+        print("Cannot move " .. dir .. ": " .. tostring(whyNot))
+        report("cannot move: " .. tostring(whyNot))
+      end
       waited = waited + 1
       sleep(0.5)
     else
