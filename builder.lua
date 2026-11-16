@@ -28,7 +28,9 @@ local MAX_DROP     = 3      -- never follow the ground down further than this in
 local CORE         = "advancedperipherals:weak_automata_core"
 local SCANNER      = "advancedperipherals:geo_scanner"
 local SCAN_RADIUS  = 8      -- the scanner's free range
-local SCAN_SPACING = 12     -- distance between scan points on the ground map
+local SCAN_SPACING = 10     -- distance between scan points on the ground map
+local DOOR_OFFSET  = { x = -1, y = 0, z = 8 }   -- the way in and out of the hut,
+                                                -- from the factory (south side)
 
 -- Blocks that count as the ground itself (anything above these is a tree,
 -- a plant, or something somebody built).
@@ -353,9 +355,17 @@ local function roomSet()
   return s
 end
 
+local function doorKey()
+  local d = st.door or { x = base.f.x + DOOR_OFFSET.x, y = base.f.y + DOOR_OFFSET.y,
+    z = base.f.z + DOOR_OFFSET.z }
+  return key(d.x, d.y, d.z), d
+end
+
 -- Walk to a cell of the base room by known open cells.
 local function goToCell(goalK)
-  local path = pathTo(goalK, roomSet())
+  local allowed = roomSet()
+  allowed[doorKey()] = true
+  local path = pathTo(goalK, allowed)
   if not path then return false end
   for _, m in ipairs(path) do
     if not moveBy(m) then return false end
@@ -702,27 +712,6 @@ local function fuelUpOnPad(target)
   end
 end
 
--- From the room up through the hole above the launch pad to the surface.
-local function goOutside()
-  if not goToCell(st.padKey) then return false, "cannot reach the launch pad" end
-  -- up through the space above the pad (a miners' lane), then the hole,
-  -- until we are above the room and open to the side
-  local climbed = 0
-  while true do
-    if pos.y > base.f.y + ROOM_ABOVE then
-      for h = 0, 3 do
-        face(h)
-        if not turtle.detect() then return true end   -- open to the side: we are out
-      end
-    end
-    if not step("u") then
-      return false, "the hole above the launch pad is blocked"
-    end
-    climbed = climbed + 1
-    if climbed > 80 then return false, "no way up" end
-  end
-end
-
 -- Stuck somewhere (a pit, a cave): climb as high as we can, sidestepping
 -- anything overhead, so that groundTo can find a way.
 local function climbOut()
@@ -750,25 +739,22 @@ local function groundToSafely(x, z)
   return false
 end
 
--- Back down the hole onto the launch pad, then to the parking spot.
-local function comeHome()
-  if not groundToSafely(base.exit2.x, base.exit2.z) then return false end
-  while pos.y > base.exit2.y + 1 do
-    if not step("d") then return false end
-  end
-  -- down through the miners' lane above the pad, onto the pad, but only
-  -- when both are clear: never wait inside the lane
-  for _ = 1, 200 do
-    if not turtle.inspectDown() and step("d") then        -- into the lane
-      if not turtle.inspectDown() and step("d") then      -- onto the pad
-        return goToCell(st.park)
-      end
-      step("u")                                          -- pad busy: back out
-    end
-    report("waiting for a turtle")
-    sleep(5)
-  end
-  return false
+-- Out of the hut through its door (the open south side).
+local function goOutside()
+  local dk = doorKey()
+  if not goToCell(dk) then return false, "cannot reach the door" end
+  return true
+end
+
+-- Back in through the door, then to a cell of the room (the parking
+-- spot unless told otherwise).
+local function comeHome(target)
+  local dk, d = doorKey()
+  if not groundToSafely(d.x, d.z) then return false end
+  -- step up or down to the door's height
+  while pos.y < d.y do if not step("u") then return false end end
+  while pos.y > d.y do if not step("d") then return false end end
+  return goToCell(target or st.park)
 end
 
 -- Ground map by scanning from points on a grid.
@@ -796,7 +782,14 @@ local function landScan(size, cx, cz, name)
   for _, p in ipairs(points) do
     if p then
       groundToSafely(p.x, p.z)
+      -- down to the ground to scan (the scanner only reaches 8 blocks),
+      -- then back up to where we were, so a pit can never trap us
+      local before = pos.y
+      for _ = 1, 40 do
+        if turtle.inspectDown() or not step("d") then break end
+      end
       local found, covered = scanHere()
+      while pos.y < before and step("u") do end
       done = done + 1
       progress = { kind = "ground", scans = done, of = total }
       tick("mapping the ground")
