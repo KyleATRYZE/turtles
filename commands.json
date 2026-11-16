@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794871471,
-      "issued": 1794871471000,
+      "id": 1794871582,
+      "issued": 1794871582000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "GroundControl"
     }
   ]
 }
