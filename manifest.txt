@@ -4,3 +4,4 @@ miner.lua
 controller.lua
 factory.lua
 builder.lua
+loader.lua
