@@ -2,8 +2,10 @@ import json, math, sys, os
 from lupa import LuaRuntime
 sys.argv = ["x", "/tmp/status_now.json", "/tmp/maps", "/tmp/screens"]
 lua = LuaRuntime(encoding="latin-1", unpack_returned_tuples=True)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+lua.globals().ROOT = ROOT
 lua.execute('''
-package.path = "/home/claude/turtles/?.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. package.path
 INV = {}
 local function mk(n, size) INV[n] = { size = size, slots = {} } end
 for i = 0, 59 do mk("minecraft:chest_" .. i, 54) end
@@ -45,7 +47,7 @@ peripheral = {
 fs = { exists = function() return false end }
 textutils = {}
 SORTNADO_TEST = true
-S = dofile("/home/claude/turtles/sortnado.lua")
+S = dofile(ROOT .. "/sortnado.lua")
 S.cfg({ inbox = "minecraft:chest_100", outbox = "minecraft:chest_101" })
 function total(n) local t = 0 for _, st in pairs(INV[n].slots) do t = t + st.count end return t end
 ''')

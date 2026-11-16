@@ -295,22 +295,45 @@ for z in range(5, 28, 2):
 fill(1, 1, 4, 1, 1, 28, "computercraft:cable")
 for z in range(5, 28, 2):
     put(1, 1, z, "computercraft:wired_modem_full")
-# storage room (docs/storage-plan.html): double chests three high down both
-# walls, a wired modem behind each pair and cable between, so the walls are
-# one network; the front desk (In chest, Sortnado, Out chest) at the south end
+# storage room (docs/storage-plan.html): Sophisticated Storage, all of it
+# touching, so one controller makes the whole room a single inventory.
+#   west wall  limited barrels I   (one kind each, the bulk: shown on the front)
+#   east wall  limited barrels IV  (four kinds each, the middling piles)
+#   north wall chests              (the long tail: one-offs, tools, odd drops)
+# Each side wall is three high with a row over its doorway to join the two
+# halves. No modem behind every chest any more: the only cable is the
+# counter the front desk stands on.
 STORE_DOOR = range(14, 17)
-STORE_Z = [z for z in range(4, 27) if z not in STORE_DOOR]
-for z in STORE_Z:
-    first = (z - (4 if z < 14 else 17)) % 2 == 0          # first half of a pair
+STORE = {"bulk": [], "mixed": [], "chests": []}
+def store(kind, x, y, z, name):
+    put(x, y, z, name)
+    STORE[kind].append([x, y, z])
+for z in range(4, 29):                                         # west wall, down to the desk
+    for y in ((4,) if z in STORE_DOOR else (1, 2, 3, 4) if z in (13, 17) else (1, 2, 3)):
+        store("bulk", 10, y, z, "sophisticatedstorage:limited_barrel_1[facing=east]")
+for z in range(4, 27):                                         # east wall (the ladder is at z 29)
+    for y in ((4,) if z in STORE_DOOR else (1, 2, 3, 4) if z in (13, 17) else (1, 2, 3)):
+        store("mixed", 17, y, z, "sophisticatedstorage:limited_barrel_4[facing=west]")
+for x in range(11, 17):                                        # north wall, in front of the lane's screen
     for y in (1, 2, 3):
-        put(11, y, z, "minecraft:chest[facing=east]")
-        put(16, y, z, "minecraft:chest[facing=west]")
-        for x in (10, 17):
-            put(x, y, z, "computercraft:wired_modem_full" if first else "computercraft:cable")
-put(12, 1, HZ - 1, "minecraft:chest[facing=north]")            # In
-put(13, 1, HZ - 1, "computercraft:computer_advanced")          # Sortnado
-put(14, 1, HZ - 1, "minecraft:chest[facing=north]")            # Out
-fill(11, 2, HZ - 1, 15, 4, HZ - 1, "computercraft:monitor_advanced[facing=north]")   # 5 x 3 touch screen
+        store("chests", x, y, 4, "sophisticatedstorage:chest[facing=south]")
+# the front desk, on a counter of wired modems (one under each thing that
+# has to be on the network). From the west: the controller (touching the
+# west wall), the Inventory Manager (it hands items to the player: the
+# controller on one side of it, the Out barrel on the other), the Out
+# barrel, Sortnado with an ender modem on its side (to hear GroundControl),
+# and the In barrel. Barrels, not chests: a chest will not open under the
+# screen. The 5 x 3 touch screen stands on the desk.
+DESK_Z = HZ - 1
+for x in range(10, 16):
+    put(x, 1, DESK_Z, "computercraft:wired_modem_full")
+put(10, 2, DESK_Z, "sophisticatedstorage:controller")
+put(11, 2, DESK_Z, "advancedperipherals:inventory_manager")
+put(12, 2, DESK_Z, "minecraft:barrel[facing=north]")           # Out
+put(13, 2, DESK_Z, "computercraft:computer_advanced[facing=north]")   # Sortnado
+put(14, 2, DESK_Z, "computercraft:wireless_modem_advanced[facing=west]")
+put(15, 2, DESK_Z, "minecraft:barrel[facing=north]")           # In
+fill(11, 3, DESK_Z, 15, 5, DESK_Z, "computercraft:monitor_advanced[facing=north]")   # 5 x 3 touch screen
 # launch bay: the pit stop on the back track, against the back wall. Miners
 # come up the in-shaft (x 24), drop their load in the chest, get serviced
 # over ForgeClooney, pass the pad and drop down the out-shaft (x 20).
@@ -402,6 +425,7 @@ out = {
     "panels": PANELS,
     "routes": ROUTES,
     "lights": LIGHTS,
+    "store": STORE,
     "materials": dict(materials.most_common()),
 }
 os.makedirs(os.path.join(os.path.dirname(__file__), "..", "blueprints"), exist_ok=True)
