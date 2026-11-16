@@ -1484,7 +1484,9 @@ local function clearSite(b)
     table.sort(t, function(a, c)
       if a[2] ~= c[2] then return a[2] > c[2] end
       if a[3] ~= c[3] then return a[3] < c[3] end
-      return (a[3] % 2 == 0) == (a[1] < c[1])
+      if a[1] == c[1] then return false end
+      if a[3] % 2 == 0 then return a[1] < c[1] end
+      return a[1] > c[1]
     end)
     saveTargets(t)
     b.scanned, b.ci = true, 1
@@ -1504,6 +1506,7 @@ local function clearSite(b)
     if flyTo(b, c[1], c[2] + 1, c[3]) then
       local ok, data = turtle.inspectDown()
       if ok and isNatural(data.name) and not data.name:find("water", 1, true) then
+        useTool("pick")
         turtle.digDown()
       end
     end
@@ -1557,6 +1560,7 @@ local function placeShell(b)
           and (not want.facing or facingOf(data) == want.facing)
         if not done then
           if ok and (isNatural(data.name) or data.name == want.name) then
+            useTool("pick")
             turtle.digDown()                         -- clutter, or our own block facing wrong
           end
           if want.facing then face((FACING[want.facing] + (b.turn or 0)) % 4) end
@@ -1567,7 +1571,10 @@ local function placeShell(b)
             if got and FACING[got] and got ~= want.facing then
               -- learn how placing turns the block, then put it right
               b.turn = ((b.turn or 0) + FACING[want.facing] - FACING[got]) % 4
+              useTool("pick")
+              turtle.select(1)
               turtle.digDown()
+              turtle.select(slot)
               face((FACING[want.facing] + b.turn) % 4)
               turtle.placeDown()
             end
