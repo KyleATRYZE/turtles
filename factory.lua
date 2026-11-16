@@ -58,6 +58,7 @@ local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
 local PICKAXE  = "minecraft:diamond_pickaxe"
+local CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its chunk loaded
 
 -- Names starting with "#" are groups, matched by the end of the item name.
 local GROUPS = {
@@ -272,6 +273,11 @@ local HELPERS      = 3   -- builder's mates to make (mining turtles running help
                          -- the third is the lumberjack
 local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "HodStewart" }
 local launchingHelper = false
+-- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
+-- while there are controllers in stock, up to this many. One stays at the
+-- base; the others go out with whoever is working far away.
+local LOADERS      = 2
+local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey" }
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local bootstrapFuel      -- defined further down (fuel from nothing)
@@ -613,7 +619,11 @@ local function keepFurnacesBusy(stock)
         local raw = stock[job.input] or 0
         local minRaw = job.input == "minecraft:stone_bricks" and 128 or (job.fuel and 3 or 16)
         -- leave = raw kept back for building turtles
-        if (job.fuel or not (shortOfCoal or busy)) and have < job.keep
+        -- (logs become charcoal only when coal is short: lava is the main
+        -- fuel now, and wood is wanted for chests, ladders and new turtles)
+        local wanted
+        if job.fuel then wanted = shortOfCoal else wanted = not (shortOfCoal or busy) end
+        if wanted and have < job.keep
           and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
           local okLoad, got = pcall(loadFurnace, f, job.input, 64)
           if okLoad and got and got > 0 then
@@ -723,13 +733,15 @@ local function assemble()
 
   if not stage then
     stashAll()
-    -- [pickaxe][turtle] : the tool goes on the turtle's left side
-    if not (pull(PICKAXE, 1, 1) and pull(TURTLE, 1, 2)) then
+    -- [pickaxe][turtle] : the tool goes on the turtle's left side (a chunk
+    -- loader gets a Chunk Controller there instead)
+    local tool = plots.makingLoader and CHUNKY or PICKAXE
+    if not (pull(tool, 1, 1) and pull(TURTLE, 1, 2)) then
       error("Parts went missing before assembly.", 0)
     end
     turtle.select(16)
     local ok, err = turtle.craft()
-    if not ok then error("Could not fit the pickaxe: " .. tostring(err), 0) end
+    if not ok then error("Could not fit the " .. shortName(tool) .. ": " .. tostring(err), 0) end
     stage = "pickaxe"
     setStage(stage)
   end
@@ -1365,6 +1377,20 @@ local function deploy()
       end
       sleep(0.5)
     end
+  elseif plots.makingLoader then
+    -- a chunk loader: note which turtle it is, so it gets that job
+    for _ = 1, 10 do
+      local okId, id = pcall(peripheral.call, "front", "getID")
+      if okId and id then
+        plots.loaders = plots.loaders or {}
+        plots.loaders[#plots.loaders + 1] = id
+        print("That one is a chunk loader.")
+        break
+      end
+      sleep(0.5)
+    end
+    plots.makingLoader = nil
+    saveTable(PLOTS_FILE, plots)
   else
     giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
     if launchingHelper then
@@ -1427,6 +1453,12 @@ local function jobFor(id)
     if tostring(hid) == key then
       if pending > 0 then pending = pending - 1 end
       return { type = "role", role = "helper", forId = id, base = base, name = HELPER_NAMES[n] }
+    end
+  end
+  for n, lid in ipairs(plots.loaders or {}) do
+    if tostring(lid) == key then
+      if pending > 0 then pending = pending - 1 end
+      return { type = "role", role = "loader", forId = id, base = base, name = LOADER_NAMES[n] or ("Loader" .. n) }
     end
   end
   local index = plots.byId[key]
@@ -1670,6 +1702,41 @@ local function tryBuild()
       deploy()
       built = built + 1
       report("launched builder")
+      return true
+    end
+  end
+
+  -- a chunk loader, while there is a Chunk Controller to put on one
+  if #(plots.loaders or {}) < LOADERS and (lastStock[CHUNKY] or 0) > 0 and not plots.noLoaders then
+    local pretend = {}
+    for name, c in pairs(lastStock) do pretend[name] = c end
+    local steps, missing = {}, {}
+    plan(pretend, TURTLE, 1, steps, missing)
+    plan(pretend, MODEM, 1, steps, missing)
+    plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)
+    if not next(missing) then
+      print("Building a chunk loader...")
+      report("building")
+      runSteps(steps)
+      plots.makingLoader = true
+      saveTable(PLOTS_FILE, plots)
+      local okFit, why = pcall(assemble)
+      if not okFit then
+        if why == "Terminated" then error(why, 0) end
+        if not getStage() then
+          -- the controller would not go on: put the parts back and leave it
+          -- (until .plots is edited), rather than trying for ever
+          plots.makingLoader, plots.noLoaders = nil, true
+          saveTable(PLOTS_FILE, plots)
+          stashAll()
+        end
+        error("chunk loader: " .. tostring(why), 0)
+      end
+      print("Launching the chunk loader")
+      deploy()
+      built = built + 1
+      lastStock = stockTotals()
+      report("launched a loader")
       return true
     end
   end

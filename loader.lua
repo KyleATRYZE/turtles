@@ -7,6 +7,8 @@
 --   park                 sit at the base and keep it loaded (the default)
 --   escort who=<name>    fly to that turtle and stay above it until it is
 --                        back near the base, then park again
+--   escort who=.. stay=1 the same, but keep watching: go out with it again
+--                        every time it leaves
 --   goto x=.. z=..       hover over a spot until told otherwise
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
@@ -228,7 +230,11 @@ local function park()
 end
 
 local function work()
-  if os.getComputerLabel() ~= NAME then os.setComputerLabel(NAME) end
+  -- (the factory names the loaders it builds; the first one was made by hand)
+  local label = os.getComputerLabel()
+  if not label or label == "" or label:lower():match("^loader") or label:lower():match("^miner") then
+    os.setComputerLabel(NAME)
+  end
   refuel(1000)
   while fuel() < 100 do
     -- say where we are (GPS needs no fuel) so coal can be brought here
@@ -254,7 +260,8 @@ local function work()
           report("escorting")
           flyTo(t.x, t.z)                       -- stay in its chunk
         end
-        if base and math.abs(t.x - base.f.x) <= NEAR_BASE and math.abs(t.z - base.f.z) <= NEAR_BASE then
+        if base and math.abs(t.x - base.f.x) <= NEAR_BASE and math.abs(t.z - base.f.z) <= NEAR_BASE
+          and not st.stay then
           print(st.who .. " is back near the base.")
           st.mode, st.who = "park", nil
           save()
@@ -327,10 +334,11 @@ while true do
     elseif cmd.cmd == "escort" and type(cmd.who) == "string" then
       st.mode, st.who = "escort", cmd.who
       st.x, st.z = tonumber(cmd.x), tonumber(cmd.z)
+      st.stay = cmd.stay and true or nil
     elseif cmd.cmd == "goto" and tonumber(cmd.x) and tonumber(cmd.z) then
       st.mode, st.x, st.z = "goto", math.floor(tonumber(cmd.x)), math.floor(tonumber(cmd.z))
     elseif cmd.cmd == "park" then
-      st.mode, st.who = "park", nil
+      st.mode, st.who, st.stay = "park", nil, nil
       if tonumber(cmd.x) and tonumber(cmd.z) then
         st.park = { x = math.floor(tonumber(cmd.x)), z = math.floor(tonumber(cmd.z)) }
       end
