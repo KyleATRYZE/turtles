@@ -1325,6 +1325,7 @@ end
 --   types|side   methods|side   call|side|method|arg|...   inspect|front/up/down
 --   inv   fuel   wait|seconds   home   note|text
 --   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
+--   expect|front/up/down|text   (stop unless the block that way has text in its name)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -1471,9 +1472,19 @@ local function runLab()
         else
           res = "left alone: " .. name
         end
+      elseif verb == "expect" then
+        -- stop here unless the block that way is what the steps assume
+        local s = a[2] == "up" and "Up" or a[2] == "down" and "Down" or ""
+        local seen, data = turtle["inspect" .. s]()
+        local name = seen and data.name or "nothing"
+        res = name
+        stop = not name:find(a[3] or "", 1, true)
       elseif base == "drop" and SFX[sfx] then
         local slot = findSlot(a[2])
-        if not slot then res = "none on board" else
+        if not turtle["detect" .. sfx]() then
+          res = "nothing there to put it in"        -- (it would fall on the ground)
+          stop = true
+        elseif not slot then res = "none on board" else
           turtle.select(slot)
           local before = turtle.getItemCount(slot)
           local done, why = turtle["drop" .. sfx](tonumber(a[3]) or 1)

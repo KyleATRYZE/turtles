@@ -104,7 +104,7 @@ T.x, T.y, T.z = -4462, 15, 1521
 T.inv = {}
 T.inv[1] = {name="minecraft:coal", count=3}
 TOOL = "minecraft:diamond_pickaxe"
-OPS = [[note|hello;fetch|mekanism:metallurgic_infuser=1,minecraft:iron_ingot=4;goto|-4440|40|1500;ground;up|1;place|mekanism:metallurgic_infuser;types|front;methods|front;call|front|getEnergy;call|front|setMode|{name=\"x\",n=2}|true;drop|minecraft:iron_ingot|2;suck|4;inspect|front;back|1;fwd|1;dig;inv;fuel;bogus;home]]
+OPS = [[note|hello;fetch|mekanism:metallurgic_infuser=1,minecraft:iron_ingot=4;goto|-4440|40|1500;ground;up|1;place|mekanism:metallurgic_infuser;expect|front|infuser;types|front;methods|front;call|front|getEnergy;call|front|setMode|{name=\"x\",n=2}|true;drop|minecraft:iron_ingot|2;suck|4;inspect|front;back|1;fwd|1;dig;inv;fuel;bogus;home]]
 FS["helper.state"] = textutils.serialize({ done = true, job = { plan="factory_shell", ox=OX, oy=OY, oz=OZ, xmin=3, xmax=5, layer=0 }, lab = { ops = OPS } })
 FS[".version"] = "abc123"
 local D = {[0]={1,0},[1]={0,1},[2]={-1,0},[3]={0,-1}}
@@ -120,6 +120,7 @@ turtle.drop = function(n) local i = T.inv[T.sel] local b = getBlock(front()) if 
   n = math.min(n or 64, i.count) MACHINE[#MACHINE+1] = {name=i.name, count=n} i.count = i.count - n if i.count == 0 then T.inv[T.sel] = nil end return true end
 turtle.suck = function(n) local m = table.remove(MACHINE) if not m then return false, "No items to take" end
   for s=1,16 do if not T.inv[s] then T.inv[s] = m break end end return true end
+turtle.detect = function() return getBlock(front()) ~= nil end
 turtle.back = function() local x, z = T.x - D[T.d][1], T.z - D[T.d][2] if getBlock(x, T.y, z) then return false end T.x, T.z = x, z T.fuel = T.fuel - 1 return true end
 local gt = peripheral.getType
 peripheral.getType = function(side) if side == "front" and getBlock(front()) then return "metallurgicInfuser", "inventory" end return gt(side) end
