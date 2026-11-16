@@ -29,10 +29,11 @@ local SCANNER     = "advancedperipherals:geo_scanner"
 local PICKAXE     = "minecraft:diamond_pickaxe"
 local HUNT_RADIUS = 8      -- scan range in blocks (the free range)
 local HUNT_STEP   = 14     -- distance between scan points
-local HUNT_REACH  = 70     -- how far from the factory to roam
+local HUNT_REACH  = 40     -- how far from the factory to roam (further out the
+                           -- chunks may not be loaded, and a turtle there freezes)
 local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
-local HUNT_MAX    = 112    -- the hunting area grows each round, up to this
+local HUNT_MAX    = 48     -- the hunting area grows each round, up to this
 local RESCUE_PROTOCOL = "swarm_rescue"
 local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
@@ -767,7 +768,9 @@ end
 -- Building stone carried home for the factory building: this many stacks
 -- of each are kept back from the rubble (one cobblestone stack always stays
 -- on board for flooring the roads).
-local HAUL = { ["minecraft:cobblestone"] = 2, ["minecraft:cobbled_deepslate"] = 2 }
+-- stacks of building stone to bring home each trip (the factory has more
+-- cobbled deepslate than the building needs, so that stays down here)
+local HAUL = { ["minecraft:cobblestone"] = 2 }
 
 local function dropJunk()
   local kept = {}
@@ -1182,7 +1185,7 @@ local function hunt()
   end
 
   st.huntDone = st.huntDone or {}
-  st.huntReach = st.huntReach or HUNT_REACH
+  st.huntReach = math.min(st.huntReach or HUNT_REACH, HUNT_MAX)
   local scannedHere = false
   while true do
     if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
