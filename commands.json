@@ -1,17 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794870595,
-      "issued": 1794870595000,
-      "cmd": "fit",
-      "target": "WallStreet",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_storeroom",
-      "shell": "factory_asfit3",
-      "xmin": 10,
-      "xmax": 10
+      "id": 1794872430,
+      "issued": 1794872430000,
+      "cmd": "foundry",
+      "target": "Pushy",
+      "job": "move_infuser"
     }
   ]
 }

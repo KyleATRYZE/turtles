@@ -1,6 +1,6 @@
 -- sortnado.lua : the storage room's computer. Whatever lands in the In
 -- chest is put away; whatever is asked for (on the touch screen, by chat
--- through GroundControl, or by another turtle) is sent to the Out chest, or
+-- through CommandBlock, or by another turtle) is sent to the Out chest, or
 -- straight into the owner's inventory through an Inventory Manager.
 --
 -- The store is one of two things, whichever is on the wired network:
@@ -606,7 +606,7 @@ end
 
 ---------------------------------------------------------------- running
 
--- A request from GroundControl or a turtle: { type = "get", item, count,
+-- A request from CommandBlock or a turtle: { type = "get", item, count,
 -- to }. to = "player" puts it in the owner's inventory; otherwise it goes
 -- to the Out chest (or the inventory named).
 function S.request(msg)
@@ -700,7 +700,7 @@ parallel.waitForAny(
       end
     end
   end,
-  function()                                    -- requests from GroundControl and the turtles
+  function()                                    -- requests from CommandBlock and the turtles
     while true do
       local id, msg = rednet.receive(PROTOCOL)
       if type(msg) == "table" and id then

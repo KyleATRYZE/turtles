@@ -21,13 +21,13 @@ reads `getDirection` rather than assume it.
 
 ## Orders
 
-    tools/order.py foundry SteelyDan job=setup                 find the machines in the bay and set their sides
-    tools/order.py foundry SteelyDan ore=minecraft:raw_iron n=48   ore -> chamber -> smelter -> ingots (3 raw make 4)
-    tools/order.py foundry SteelyDan enrich=minecraft:redstone n=16   chamber only
-    tools/order.py foundry SteelyDan make=steel n=16           infuser: steel dust (also circuit, alloy)
-    tools/order.py foundry SteelyDan job=move_infuser          bring the infuser in from the bench outside
-    tools/order.py foundry SteelyDan on=0                      back to an ordinary helper
-    tools/order.py foundry SteelyDan clear=1 / reset=1         drop the jobs in hand / forget what is set up
+    tools/order.py foundry DropIt job=setup                 find the machines in the bay and set their sides
+    tools/order.py foundry DropIt ore=minecraft:raw_iron n=48   ore -> chamber -> smelter -> ingots (3 raw make 4)
+    tools/order.py foundry DropIt enrich=minecraft:redstone n=16   chamber only
+    tools/order.py foundry DropIt make=steel n=16           infuser: steel dust (also circuit, alloy)
+    tools/order.py foundry DropIt job=move_infuser          bring the infuser in from the bench outside
+    tools/order.py foundry DropIt on=0                      back to an ordinary helper
+    tools/order.py foundry DropIt clear=1 / reset=1         drop the jobs in hand / forget what is set up
 
 Any job puts the helper "on the foundry": between jobs it waits over the base
 and takes jobs from the factory. Building, fit-out and lab orders still come

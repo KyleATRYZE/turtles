@@ -1,4 +1,4 @@
--- builder.lua : BrickJagger, the swarm's builder.
+-- builder.lua : BlockParty, the swarm's builder.
 --
 -- For now it surveys, without breaking anything. It carries a Geo Scanner
 -- (Advanced Peripherals) and maps by scanning; without one it walks instead.
@@ -7,14 +7,14 @@
 --   * the ground around the base: it climbs out through the hole above the
 --     launch pad and scans from points on a grid (or walks the surface in
 --     rows), recording the ground and everything standing on it
--- The maps go to GroundControl, which uploads them (maps/*.json on the
+-- The maps go to CommandBlock, which uploads them (maps/*.json on the
 -- status branch) so they can be looked at outside the game.
 -- Building from those maps comes next.
 
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local NAME         = "BrickJagger"
+local NAME         = "BlockParty"
 local STATE_FILE   = "builder.state"
 local BASE_FILE    = ".base"
 local MAP_PROTOCOL = "swarm_map"
@@ -2088,7 +2088,7 @@ local function feedShaft()
   return gave > 0
 end
 
--- Hand n coal to a turtle at x, y, z next to the hut (ChunkNorris on the
+-- Hand n coal to a turtle at x, y, z next to the hut (Ghastly on the
 -- roof, say): go to an open cell beside it and drop the coal into it.
 local function giveCoalTo(tx, ty, tz, n)
   local have = 0

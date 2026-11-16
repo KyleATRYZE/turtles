@@ -162,7 +162,7 @@ check("a full inventory takes what it can, and says so", got == 30 and why == "y
 check("the rest stayed in the store, not on the desk", g.total(g.OUT) == 0 and g.total(g.CTL, COAL) == 270)
 g.PLAYER_ROOM = 1e9
 
-# ---- 4. asked the way GroundControl asks
+# ---- 4. asked the way CommandBlock asks
 r = S.request(lua.table_from({"type": "get", "item": "iron ingot", "count": 64, "to": "player", "n": 7}))
 check("request by what it is called", r.item == IRON and r.count == 64 and r.left == 336 and r.n == 7, (r.item, r.count, r.left))
 r = S.request(lua.table_from({"type": "get", "item": "diamond pickaxe", "count": "all", "to": "player", "n": 8}))

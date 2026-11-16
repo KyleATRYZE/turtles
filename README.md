@@ -60,7 +60,12 @@ miner, and to any older miner that asks on its next visit. Rubble is dumped befo
 ## Names
 
 Machines remember their job in a `.role` file, so they can be renamed freely. Miners name
-themselves from a list of puns; the factory is ForgeClooney and the controller GroundControl.
+themselves from a list of puns; the factory is Crafty and the controller CommandBlock.
+
+The whole swarm was renamed once (shorter names, Minecraft puns). The table of old name -> new
+name is in `swarm.lua` (`RENAMES`), the only place the old names are kept. Each machine renames
+itself when it starts: its label and every name in its state files, so a turtle that wakes weeks
+later comes up under its new name. Orders may be addressed to either name.
 
 ## Coal hunting
 
@@ -68,7 +73,7 @@ A swarm miner holding a Geo Scanner (Advanced Peripherals) stops digging its plo
 it roams a grid of scan points 28 to 70 blocks from the factory at Y 60, swaps the scanner in to
 find coal ore within 8 blocks, digs each one out and carries the coal home. When the factory has
 no coal for a miner that asks, it hands over its scanner so that miner becomes the hunter
-(renamed CoalPorter). After covering the whole area it goes back to its plot.
+(renamed Coalition). After covering the whole area it goes back to its plot.
 
 The coal hunter is permanent: it gives its plot back (the next new miner finishes it), widens
 its search area each round (up to 112 blocks), scans where it is first when low on fuel, and
@@ -77,10 +82,10 @@ hunter digs down to it and drops 16 coal on it.
 
 ## Builder
 
-`builder.lua` (BrickJagger). The factory builds one (a turtle with an ender modem, no tool needed),
+`builder.lua` (BlockParty). The factory builds one (a turtle with an ender modem, no tool needed),
 hands it the spare Geo Scanner and the Weak Automata Core, and tells it its role when it first asks
 for work. It maps the base room with one scan, then climbs out through the hole above the launch
 pad and scans the ground 40 x 40 around the base from a grid of points, recording the ground and
-everything standing on it. Without a scanner it walks instead. Maps are uploaded by GroundControl
+everything standing on it. Without a scanner it walks instead. Maps are uploaded by CommandBlock
 as `maps/base_room.json` and `maps/ground.json` on the status branch. It never breaks anything.
 Order `survey` (optionally with `size`) to map again.

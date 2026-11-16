@@ -1,5 +1,5 @@
 -- helper.lua : a builder's mate. A mining turtle (pickaxe + ender modem, no
--- scanner) that places part of a building plan while BrickJagger does the
+-- scanner) that places part of a building plan while BlockParty does the
 -- rest, so a big build goes two or three times as fast.
 --
 -- It never goes into the base room and never tunnels. It lives in the open
@@ -280,7 +280,7 @@ end
 
 -- Each helper has its own waiting spot and flying height (two with the same
 -- id % 4 used to stack up on one spot).
-local SLOTS = { MortarKombat = 0, WallStreet = 1, TimberLake = 2, SteelyDan = 3 }
+local SLOTS = { Pushy = 0, HopTo = 1, LeverAlone = 2, DropIt = 3 }
 local function slot() return SLOTS[os.getComputerLabel() or ""] or (os.getComputerID() % 4) end
 local function highway() return (st.job and st.job.oy or base.f.y) + OVER_SITE + 2 * slot() end
 -- where we wait: in the open air beside the hole over the launch pad

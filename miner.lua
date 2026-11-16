@@ -38,18 +38,20 @@ local HUNT_NORTH  = 20     -- no hunting further north than this: a friend's bas
                            -- the mountain there (until we know exactly where it is)
 local LAVA_RUN    = 8      -- buckets of lava the hunter brings home per trip
 local DEEP_REACH  = 23     -- under the base (inside the ring of plots) coal is taken at any depth
-local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (ChunkNorris escorts)
+local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (Ghastly escorts)
 local RESCUE_PROTOCOL = "swarm_rescue"
 local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
--- Names for miners, picked by computer number.
+-- Names for miners, picked by computer number. (Each stands where the name
+-- it replaced stood, so a miner gets the same name whether it took the old
+-- one before the renaming or starts fresh: see swarm.lua.)
 local NAMES = {
-  "ShaftPunk", "PickJagger", "CoalPorter", "DrillMurray", "OreLando",
-  "RockLobster", "DigDug", "TunnelVision", "BoulderDash", "QuarryStyles",
-  "MinerThreat", "NotoriousDIG", "DiggyStardust", "LeonardoDigCaprio",
-  "OreSonWelles", "ObiWanKenOrebi", "IndianaStones", "DwayneTheBlock",
-  "GoldieHaul", "PitStop", "VeinDiesel", "SlateWinslet", "GraniteDavis",
-  "CobbleWobble", "MoleDiggins", "DeepPurple", "StoneCold", "ElvisPitsley",
+  "Ironic", "InVein", "Coalition", "MotherLode", "Oresome",
+  "NetherMind", "DigIt", "Dioright", "Cobbler", "CleanSlate",
+  "Andesight", "TuffLuck", "Calcited", "Gravelly",
+  "Bedrocker", "Granted", "Flinty", "CopperTop",
+  "GoldRush", "Basalty", "RockSolid", "Quartzy", "Smelty",
+  "LapisLazy", "Dripstoned", "GeodeToGo", "Nuggety", "Pickle",
 }
 
 -- Thrown away when the inventory fills up
@@ -1483,7 +1485,8 @@ end
 -- any miner that has run dry. It never goes back to a plot.
 local function hunt()
   -- (a second hunter, made by remote order while the first is missing, has its own name)
-  local name = st.huntName or "CoalPorter"
+  local name = st.huntName or "Coalition"
+  if swarm.newName then name = swarm.newName(name) end
   if os.getComputerLabel() ~= name then os.setComputerLabel(name) end
   print("Hunting coal.")
   report("hunting coal")
@@ -1726,7 +1729,7 @@ end
 
 ---------------------------------------------------------------- startup
 
--- A turtle labelled "loader..." is ChunkNorris (it carries a Chunk
+-- A turtle labelled "loader..." is Ghastly (it carries a Chunk
 -- Controller, not a pickaxe): switch it to its own program.
 if turtle and (os.getComputerLabel() or ""):lower():match("^loader") then
   local h = fs.open(".role", "w")
@@ -2010,6 +2013,7 @@ local function main(args)
       if st or loadState() then
         st.hunt, st.paused = true, nil
         st.huntName = type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or st.huntName
+        if st.huntName and swarm.newName then st.huntName = swarm.newName(st.huntName) end
         st.phase, st.back = nil, nil
         save()
         located = false

@@ -7,7 +7,7 @@ CLOCK = 5
 os.clock = function() return CLOCK end
 os.epoch = function() return 1700000000000 + CLOCK * 1000 end
 os.getComputerID = function() return 17 end
-os.getComputerLabel = function() return "CoalPorter" end
+os.getComputerLabel = function() return "Coalition" end
 FS = { [".version"] = "abc1234", [".role"] = "miner" }
 fs = { exists = function(f) return FS[f] ~= nil end,
   open = function(f) return { readAll = function() return FS[f] end, close = function() end, write = function(s) FS[f] = s end } end }
@@ -29,7 +29,7 @@ L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute(ENV); L.execute("HAS
 L.execute('swarm = dofile("%s/swarm.lua") swarm.hello("miner")' % ROOT)
 g = L.globals(); m = g.SENT[1].m
 check("one report on the status channel", len(list(g.SENT.values())) == 1 and g.SENT[1].p == "swarm")
-check("says who, where and how much fuel", m.label == "CoalPorter" and m.state == "woke up" and (m.pos.x, m.pos.y, m.pos.z) == (-4377, 60, 1577) and m.fuel == 83 and m.role == "miner")
+check("says who, where and how much fuel", m.label == "Coalition" and m.state == "woke up" and (m.pos.x, m.pos.y, m.pos.z) == (-4377, 60, 1577) and m.fuel == 83 and m.role == "miner")
 check("the log line names the place", m.log[1] == "Woke up at -4377 60 1577.")
 L.execute('swarm.hello("miner")')
 check("said once per start", len(list(g.SENT.values())) == 1)

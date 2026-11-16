@@ -4,6 +4,123 @@ local M = {}
 
 M.PROTOCOL = "swarm"
 
+---------------------------------------------------------------- names
+-- The swarm was renamed (shorter names, Minecraft puns). This is the one
+-- place the old names appear: old name -> new name. Every turtle and
+-- computer renames itself when this file is loaded (see M.rename, at the
+-- end of the file): its label, and every name saved in its state files. A
+-- turtle that wakes weeks later does it on its first start.
+-- Until all are renamed, a name means the same machine under either name:
+-- orders addressed to an old name are obeyed (M.forMe), and anything filed
+-- by name is filed under M.nameKey, which is the same for both.
+M.RENAMES = {
+  -- the base
+  GroundControl = "CommandBlock", ForgeClooney = "Crafty", BrickJagger = "BlockParty",
+  -- builder's mates
+  MortarKombat = "Pushy", WallStreet = "HopTo", TimberLake = "LeverAlone", SteelyDan = "DropIt",
+  -- chunk loaders (the last six were names waiting for loaders not yet built)
+  ChunkNorris = "Ghastly", LoadRunner = "Phantastic", ChunkBerry = "Ablaze",
+  ChunkyMonkey = "Vexed", LoadZeppelin = "Beehave", ChunkSinatra = "Batty",
+  LoadOfTheRings = "Breezy", ChunkDaddy = "AllayOop", HeavyLoad = "WitherOrNot",
+  -- coal hunters
+  CoalPorter = "Coalition", NatKingCoal = "Charcool",
+  -- miners
+  OreLando = "Oresome", ElvisPitsley = "Pickle", BoulderDash = "Cobbler",
+  NotoriousDIG = "TuffLuck", QuarryStyles = "CleanSlate", ObiWanKenOrebi = "Granted",
+  OreSonWelles = "Bedrocker",
+  -- names miners used to pick by computer number (none in use; a miner
+  -- built before the change-over may carry one)
+  ShaftPunk = "Ironic", PickJagger = "InVein", DrillMurray = "MotherLode",
+  RockLobster = "NetherMind", DigDug = "DigIt", TunnelVision = "Dioright",
+  MinerThreat = "Andesight", DiggyStardust = "Calcited", LeonardoDigCaprio = "Gravelly",
+  IndianaStones = "Flinty", DwayneTheBlock = "CopperTop", GoldieHaul = "GoldRush",
+  PitStop = "Basalty", VeinDiesel = "RockSolid", SlateWinslet = "Quartzy",
+  GraniteDavis = "Smelty", CobbleWobble = "LapisLazy", MoleDiggins = "Dripstoned",
+  DeepPurple = "GeodeToGo", StoneCold = "Nuggety",
+}
+local OLD_NAMES = {}                  -- old name, lower case -> new name
+for old, new in pairs(M.RENAMES) do OLD_NAMES[old:lower()] = new end
+
+-- The name a machine goes by now (given its old or its new name, any case
+-- for an old one). Anything that is not an old name comes back unchanged.
+function M.newName(name)
+  if type(name) ~= "string" then return name end
+  return OLD_NAMES[name:lower()] or name
+end
+
+-- What a name is filed under: the same for a machine's old and new names,
+-- whatever the case.
+function M.nameKey(name)
+  return tostring(M.newName(name)):lower()
+end
+
+function M.sameName(a, b)
+  return type(a) == "string" and type(b) == "string" and M.nameKey(a) == M.nameKey(b)
+end
+
+-- Old names -> new names all through a table (a state file): values that
+-- are exactly an old name, and keys that are. Returns true if anything changed.
+local function renameDeep(t, seen)
+  seen = seen or {}
+  if seen[t] then return false end
+  seen[t] = true
+  local changed, rekey = false, nil
+  for k, v in pairs(t) do
+    if type(v) == "table" then
+      if renameDeep(v, seen) then changed = true end
+    elseif type(v) == "string" and OLD_NAMES[v:lower()] then
+      t[k] = OLD_NAMES[v:lower()]
+      changed = true
+    end
+    if type(k) == "string" and OLD_NAMES[k:lower()] then
+      rekey = rekey or {}
+      rekey[#rekey + 1] = k
+    end
+  end
+  for _, k in ipairs(rekey or {}) do
+    local new = OLD_NAMES[k:lower()]
+    if t[new] == nil then t[new] = t[k] end
+    t[k] = nil
+    changed = true
+  end
+  return changed
+end
+M.renameIn = renameDeep
+
+-- The files a machine keeps its work in (whichever of them it has).
+M.STATE_FILES = { "miner.state", "helper.state", "loader.state", "builder.state", ".plots", ".foundry" }
+
+-- Rename this machine: its label, and the names in its state files. Safe to
+-- call any number of times (the second time there is nothing left to do).
+-- Returns the old label if the label changed.
+function M.rename()
+  local was
+  if os.getComputerLabel and os.setComputerLabel then
+    local label = os.getComputerLabel()
+    local new = M.newName(label)
+    if label and new ~= label then
+      os.setComputerLabel(new)
+      was = label
+    end
+  end
+  if fs and textutils and textutils.unserialize and textutils.serialize then
+    for _, file in ipairs(M.STATE_FILES) do
+      if fs.exists(file) then
+        local h = fs.open(file, "r")
+        local text = h and h.readAll()
+        if h then h.close() end
+        local t = type(text) == "string" and textutils.unserialize(text) or nil
+        if type(t) == "table" and renameDeep(t) then
+          h = fs.open(file, "w")
+          h.write(textutils.serialize(t))
+          h.close()
+        end
+      end
+    end
+  end
+  return was
+end
+
 local opened = false
 
 local function open()
@@ -284,12 +401,13 @@ local function setLastCmd(id)
   h.close()
 end
 
--- Is this order addressed to this machine?
+-- Is this order addressed to this machine? (By its number, or its name:
+-- the old name or the new one, in any case.)
 function M.forMe(cmd)
   local t = cmd.target
   if t == "all" or t == os.getComputerID() then return true end
   local label = os.getComputerLabel()
-  return type(t) == "string" and label ~= nil and t:lower() == label:lower()
+  return type(t) == "string" and label ~= nil and M.sameName(t, label)
 end
 
 -- True the first time an order for this machine is seen; false for repeats.
@@ -378,6 +496,12 @@ function M.runWithCommands(task, inline)
     end
   end, task)
   return cmd
+end
+
+-- Every machine takes its new name as it starts (see "names" above).
+do
+  local ok, was = pcall(M.rename)
+  if ok and was then print("I am " .. tostring(os.getComputerLabel()) .. " now (was " .. was .. ").") end
 end
 
 return M

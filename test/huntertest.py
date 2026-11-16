@@ -16,7 +16,7 @@ def show(L,tag):
     print(f"[{tag}] pos=({g.T.x},{g.T.y},{g.T.z}) fuel={g.T.fuel} moves={g.T.moves} scans={g.SCANS} coal_home={dict(g.DOCKCHEST).get('minecraft:coal')} released={list(g.RELEASED.values())} rescued={g.RESCUED} wrongway={g.VISITED_DOCKCOL_UP} label={g.LABEL} states={st[-6:]}")
     print("   log:", [l for l in g.LOG.values()][-4:])
 
-# A) stranded far west with 83 fuel at hunting height (the real CoalPorter's situation)
+# A) stranded far west with 83 fuel at hunting height (the real Coalition's situation)
 L=fresh(83, -4531, 25, 1500)
 L.execute('KILL_AT=3000')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"low fuel far out")
@@ -76,7 +76,7 @@ print("   lava buckets home:", dict(g.DOCKCHEST).get('minecraft:lava_bucket'), "
 # F) a miner told to hunt by remote order: no scanner on board, own name; fetches a scanner from the factory, then hunts
 L=fresh(2500, -4442, 26, 1540, coal=8)
 L.execute('''T.inv[2]=nil
-local st = textutils.unserialize(FS["miner.state"]) st.huntName = "NatKingCoal" FS["miner.state"] = textutils.serialize(st)
+local st = textutils.unserialize(FS["miner.state"]) st.huntName = "Charcool" FS["miner.state"] = textutils.serialize(st)
 setSpecial(-4470, 20, 1560, "minecraft:coal") setSpecial(-4471, 20, 1560, "minecraft:coal")
 KILL_AT=900''')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"new hunter")
