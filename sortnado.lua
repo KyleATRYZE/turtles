@@ -298,8 +298,20 @@ end
 -- never looked at. Returns how many arrived, and a note when some did not.
 local SIDES = { "@west", "@east", "@north", "@south", "@up", "@down" }
 local function import(from, name, count)
-  local ok, n = pcall(peripheral.call, S.manager, "importItem", from, { name = name, count = count })
+  -- (where first, then what: the order that worked in the world. If a
+  -- version wants them the other way round, that is found out and kept.)
+  local what = { name = name, count = count }
+  local ok, n
+  if cfg.giveSwap then ok, n = pcall(peripheral.call, S.manager, "importItem", what, from)
+  else ok, n = pcall(peripheral.call, S.manager, "importItem", from, what) end
   if ok and type(n) == "number" then return n end
+  if not cfg.giveSwap and not cfg.giveVia then
+    local ok2, n2 = pcall(peripheral.call, S.manager, "importItem", what, from)
+    if ok2 and type(n2) == "number" then
+      if n2 > 0 then cfg.giveSwap = true S.saveConfig() end
+      return n2
+    end
+  end
   return nil, tostring(n)
 end
 

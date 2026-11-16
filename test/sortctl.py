@@ -63,8 +63,12 @@ peripheral = {
   end,
   call = function(n, m, a, b, c)
     if n == MAN then
-      CALLS[#CALLS + 1] = m .. " " .. tostring(a)
+      CALLS[#CALLS + 1] = m .. " " .. tostring(type(a) == "table" and b or a)
       assert(m == "importItem", "only importItem is ever called on the manager, not " .. m)
+      if LAYOUT.whatFirst then                -- a version that wants the item first, then where
+        if type(a) ~= "table" then error("bad argument #1 (table expected)", 0) end
+        a, b = b, a
+      elseif type(a) ~= "string" then error("bad argument #1 (string expected)", 0) end
       local from = LAYOUT.sides[a]
       if not from and LAYOUT.names and INV[a] then from = a end
       if not from then error("inventory not found: " .. tostring(a), 0) end
@@ -193,6 +197,15 @@ lua, g, S = new('{ sides = {}, names = true }')
 g.addTo(g.CTL, COAL, 128); S.scan()
 got, why = give(S, COAL, 64)
 check("by name on the network", got == 64 and g.CALLS[1] == "importItem " + g.CTL and g.total(g.OUT) == 0, list(g.CALLS.values()))
+
+# ---- 7b. a version that takes the item first and the place second
+lua, g, S = new('{ sides = { ["@west"] = CTL }, whatFirst = true }')
+g.addTo(g.CTL, COAL, 128); S.scan()
+got, why = give(S, COAL, 64)
+check("arguments the other way round: found out", got == 64 and g.PLAYER[COAL] == 64 and g.total(g.OUT) == 0, (got, why, list(g.CALLS.values())))
+before = len(g.CALLS)
+got, why = give(S, COAL, 32)
+check("and kept: one call next time", got == 32 and len(g.CALLS) == before + 1, list(g.CALLS.values())[before:])
 
 # ---- 8. some of it already lying in the Out barrel, layout not yet known:
 #         must not mistake the store's side for the Out barrel's
