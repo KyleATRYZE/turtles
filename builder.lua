@@ -1960,6 +1960,33 @@ local function giveCoalTo(tx, ty, tz, n)
       return n - left
     end
   end
+  -- not next to the room: go round outside and come down on top of it
+  local here = key(pos.x, pos.y, pos.z)
+  if (roomSet()[here] or here == st.padKey) and pos.y <= base.f.y + 2 then
+    if not goOutside() then
+      print("I could not get out to that turtle.")
+      return 0
+    end
+  end
+  if groundToSafely(tx, tz) then
+    while pos.y > ty + 1 and not turtle.detectDown() and step("d") do end
+    local ok, data = turtle.inspectDown()
+    if pos.y == ty + 1 and ok and tostring(data.name):find("turtle", 1, true) then
+      local left = n
+      for s = 1, 16 do
+        local d = turtle.getItemDetail(s)
+        if left > 0 and d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then
+          turtle.select(s)
+          local before = turtle.getItemCount(s)
+          turtle.dropDown(math.min(left, before))
+          left = left - (before - turtle.getItemCount(s))
+        end
+      end
+      turtle.select(1)
+      print(("Gave %d coal to the turtle at %d %d %d."):format(n - left, tx, ty, tz))
+      return n - left
+    end
+  end
   print("I could not get next to that turtle.")
   return 0
 end
