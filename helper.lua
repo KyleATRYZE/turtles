@@ -388,7 +388,7 @@ local function supplyRun(indices, reason, once)
         goHover()
         onPad = false
       end
-      if not onPad and os.clock() - lastAsk > 120 then
+      if os.clock() - lastAsk > 120 then               -- (the factory may have restarted)
         rednet.broadcast(msg, JOB_PROTOCOL)
         lastAsk = os.clock()
       end

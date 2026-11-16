@@ -33,7 +33,8 @@ local HUNT_REACH  = 40     -- how far from the factory to roam (further out the
                            -- chunks may not be loaded, and a turtle there freezes)
 local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
-local HUNT_MAX    = 96     -- the hunting area grows each round, up to this (ChunkNorris escorts)
+local DEEP_REACH  = 23     -- under the base (inside the ring of plots) coal is taken at any depth
+local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (ChunkNorris escorts)
 local RESCUE_PROTOCOL = "swarm_rescue"
 local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
@@ -1041,7 +1042,7 @@ end
 
 -- Swap the pickaxe for the scanner, look around, swap back.
 -- Returns a list of coal ore positions, or nil and a reason.
-local function scanForCoal()
+local function scanForCoal(deep)
   local slot = findItem(SCANNER)
   if not slot then return nil, "I have no Geo Scanner" end
   local side = toolSide()
@@ -1079,7 +1080,15 @@ local function scanForCoal()
       and not b.name:find("charcoal", 1, true) and b.x and b.y and b.z then
       local x, y, z = pos.x + b.x, pos.y + b.y, pos.z + b.z
       local nearBase = math.abs(x - st.exit1.x) <= 12 and math.abs(z - st.exit1.z) <= 12
-      if y > st.home.y and not nearBase then
+      local wanted
+      if deep then
+        -- under the base: below the roads, inside the ring of plots
+        wanted = y <= st.home.y - 4 and math.abs(x - st.exit1.x) <= DEEP_REACH
+          and math.abs(z - st.exit1.z) <= DEEP_REACH
+      else
+        wanted = y > st.home.y and not nearBase
+      end
+      if wanted then
         ores[#ores + 1] = { x = x, y = y, z = z }
       end
     end
@@ -1139,8 +1148,8 @@ local function huntHomeDistance(x, z)
 end
 
 -- Scan where we are and dig out every coal ore found. Returns how many.
-local function harvestHere()
-  local ores, why = scanForCoal()
+local function harvestHere(deep)
+  local ores, why = scanForCoal(deep)
   if not ores then
     print("Scanner problem: " .. tostring(why))
     report("scanner problem")
@@ -1159,8 +1168,38 @@ local function harvestHere()
     digTo(o.x, o.y, o.z)
     if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
   end
-  axisMove("y", huntY(), true)
+  axisMove("y", deep or huntY(), true)
   return n
+end
+
+-- Under the base nobody mines: the plots start 24 blocks out. Four columns
+-- down through it, scanning every 16 blocks, reach nearly all of it.
+local DEEP_PTS = { { 14, 14 }, { 14, -14 }, { -14, 14 }, { -14, -14 } }
+local function deepStep()
+  st.deepDone = st.deepDone or {}
+  local levels = {}
+  for y = st.home.y - 6, (st.bottom or -58) + 6, -16 do levels[#levels + 1] = y end
+  for i, p in ipairs(DEEP_PTS) do
+    local k = (st.deepDone[i] or 0) + 1
+    if k <= #levels then
+      local x, z = st.exit1.x + p[1], st.exit1.z + p[2]
+      print(("Under the base: column %d of 4, y %d"):format(i, levels[k]))
+      local there = pos.x == x and pos.z == z
+      if not there then
+        there = axisMove("y", huntY(), false) and axisMove("x", x, false) and axisMove("z", z, false)
+      end
+      if there and axisMove("y", levels[k], false) then
+        harvestHere(levels[k])
+        st.deepDone[i] = k
+      else
+        st.deepDone[i] = #levels             -- cannot get there: leave this column
+      end
+      if st.deepDone[i] >= #levels then axisMove("y", huntY(), true) end
+      save()
+      return true
+    end
+  end
+  return false
 end
 
 -- Fly to a stranded miner, drop coal on it, come back up.
@@ -1250,6 +1289,7 @@ local function hunt()
     end
     listenForRescue(6)
 
+    if not (fuel() >= 600 and deepStep()) then
     -- nearest scan point not yet visited
     local pts = huntPoints(st.huntReach)
     local best, bestD
@@ -1299,6 +1339,7 @@ local function hunt()
         st.huntDone[best] = true
         save()
       end
+    end
     end
   end
 end
