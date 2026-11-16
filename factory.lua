@@ -50,6 +50,7 @@ os.setComputerLabel("miner-" .. os.getComputerID())
 shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua")
 ]]
 
+local BUCKET   = "minecraft:bucket"
 local TURTLE   = "computercraft:turtle_normal"
 local COMPUTER = "computercraft:computer_normal"
 local MODEM    = "computercraft:wireless_modem_advanced"
@@ -95,6 +96,10 @@ local RECIPES = {
   [MODEM] = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
+  },
+  [BUCKET] = {
+    grid = { "I", "", "I", "", "I", "", "", "", "" },
+    key = { I = "minecraft:iron_ingot" },
   },
   ["minecraft:blaze_powder"] = {
     yield = 2,
@@ -159,6 +164,7 @@ local base = loadTable(BASE_FILE)                 -- where everything is
 local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
+local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 
 local function activeCount()
   local n = 0
@@ -672,17 +678,17 @@ local function collect()
   end
 end
 
--- Hand coal to the turtle in front, without disturbing anything I hold.
+-- Hand items to the turtle in front, without disturbing anything I hold.
 -- sure = true when we know a turtle is there (we have just placed it; it
 -- can take a moment to show up as a peripheral).
-local function fuelTurtleInFront(amount, sure)
+local function giveToFront(item, amount, sure)
   if not sure and not peripheral.hasType("front", "turtle") then return false end
   local slot
   for s = 16, 1, -1 do
     if turtle.getItemCount(s) == 0 then slot = s break end
   end
   if not slot then return false end
-  pull("#fuel", amount, slot)
+  pull(item, amount, slot)
   if turtle.getItemCount(slot) == 0 then return false end
   turtle.select(slot)
   turtle.drop()
@@ -691,18 +697,60 @@ local function fuelTurtleInFront(amount, sure)
   return true
 end
 
--- Give coal to a miner waiting on the launch pad.
-local function serveFuel()
-  if not next(fuelQueue) then return end
+local function fuelTurtleInFront(amount, sure)
+  return giveToFront("#fuel", amount, sure)
+end
+
+-- Run a list of planned smelting and crafting jobs.
+local function runSteps(steps)
+  for _, step in ipairs(steps) do
+    local recipe = RECIPES[step.name]
+    if recipe.smelt then
+      print("Smelting " .. step.batches .. " " .. shortName(recipe.smelt))
+      smelt(step.name, step.batches)
+    else
+      print("Crafting " .. shortName(step.name))
+      for _ = 1, step.batches do craftOnce(step.name) end
+    end
+  end
+end
+
+-- Make sure storage holds at least n of something, making it if possible.
+-- Must not be called while holding a finished miner.
+local function ensureStock(name, n)
+  local stock = stockTotals()
+  if countIn(stock, name) >= n then return true end
+  local steps, missing = {}, {}
+  plan(stock, name, n, steps, missing)
+  if next(missing) then return false end
+  runSteps(steps)
+  return true
+end
+
+-- Serve miners waiting on the launch pad: coal for the empty, buckets for
+-- those without one. canCraft = false while I am holding a finished miner.
+local function serveRequests(canCraft)
+  if not next(fuelQueue) and not next(bucketQueue) then return end
+  if canCraft and next(bucketQueue) then
+    pcall(ensureStock, BUCKET, 1)
+  end
   turnTo(base.padTurns)
   if not peripheral.hasType("front", "turtle") then
-    fuelQueue = {}          -- whoever asked is not on the pad
-  elseif fuelTurtleInFront(16) then
-    fuelQueue = {}
-    print("Gave fuel to a miner.")
+    fuelQueue, bucketQueue = {}, {}     -- whoever asked is not on the pad
   else
-    print("A miner needs fuel but I have no coal.")
-    report("out of coal")
+    if next(fuelQueue) then
+      if fuelTurtleInFront(16) then
+        fuelQueue = {}
+        print("Gave fuel to a miner.")
+      else
+        print("A miner needs fuel but I have no coal.")
+        report("out of coal")
+      end
+    end
+    if next(bucketQueue) and giveToFront(BUCKET, 1) then
+      bucketQueue = {}
+      print("Gave a bucket to a miner.")
+    end
   end
   turnTo(0)
 end
@@ -716,10 +764,15 @@ local function deploy()
   while true do
     local coal = countIn(stockTotals(), "#fuel")
     local busy = turtle.detect()
-    -- a miner sitting on the pad without fuel: feed it so it can leave
+    -- a miner sitting on the pad waiting for fuel or a bucket: serve it
+    -- so it can leave
     if busy and next(fuelQueue) and fuelTurtleInFront(16) then
       fuelQueue = {}
       print("Gave fuel to a miner.")
+    end
+    if busy and next(bucketQueue) and giveToFront(BUCKET, 1) then
+      bucketQueue = {}
+      print("Gave a bucket to a miner.")
     end
     if not busy and coal >= NEWBORN_COAL then break end
     if waited % 6 == 0 then
@@ -740,6 +793,7 @@ local function deploy()
   pending = pending + 1
   sleep(0.5)
   fuelTurtleInFront(NEWBORN_COAL, true)
+  giveToFront(BUCKET, 1, true)      -- for scooping lava as fuel
   stashAll()
   for _ = 1, 10 do
     if pcall(peripheral.call, "front", "turnOn") then break end
@@ -815,6 +869,8 @@ local function responder()
         end
       elseif msg.type == "fuel_request" then
         fuelQueue[id] = true
+      elseif msg.type == "bucket_request" then
+        bucketQueue[id] = true
       end
     end
   end
@@ -868,7 +924,7 @@ local function tryBuild()
   if not ok then return notReady(why) end
 
   if not held then collect() end
-  serveFuel()
+  serveRequests(not held)
   lastStock = stockTotals()
 
   if held then
@@ -894,6 +950,7 @@ local function tryBuild()
     plan(pretend, name, n, steps, missing)
   end
   plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)   -- fuel to send it off with
+  plan(pretend, BUCKET, 1, steps, missing)               -- and a bucket for lava
   lastMissing = missing
   if next(missing) then
     print("Waiting for: " .. describeMissing(missing))
@@ -903,17 +960,7 @@ local function tryBuild()
 
   print("Building a miner...")
   report("building")
-  for _, step in ipairs(steps) do
-    local recipe = RECIPES[step.name]
-    if recipe.smelt then
-      print("Smelting " .. step.batches .. " " .. shortName(recipe.smelt))
-      report("building")
-      smelt(step.name, step.batches)
-    else
-      print("Crafting " .. shortName(step.name))
-      for _ = 1, step.batches do craftOnce(step.name) end
-    end
-  end
+  runSteps(steps)
   print("Assembling")
   assemble()
   print("Launching")
@@ -953,6 +1000,15 @@ end
 if not turtle then
   print("This program only runs on a turtle.")
   return
+end
+
+-- remember what this machine is, and give it a proper name
+do
+  local h = fs.open(".role", "w")
+  h.write("factory")
+  h.close()
+  local label = os.getComputerLabel()
+  if not label or label == "factory" then os.setComputerLabel("ForgeClooney") end
 end
 
 local task = fs.exists(PAUSE_FILE) and paused or work

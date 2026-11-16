@@ -46,3 +46,14 @@ drop-off chest), unload into the chest beside the factory turtle, and go down th
 (beyond the launch pad). Nothing on the surface is touched.
 
 Miners keep only enough coal to stay fuelled (about 3000 fuel) and bring the rest back.
+
+## Fuel
+
+Each miner carries a bucket and scoops up any lava source it meets while mining (1000 fuel per
+bucket) until its tank holds 10000. The factory crafts the buckets and hands one to every new
+miner, and to any older miner that asks on its next visit. Rubble is dumped before each trip home.
+
+## Names
+
+Machines remember their job in a `.role` file, so they can be renamed freely. Miners name
+themselves from a list of puns; the factory is ForgeClooney and the controller GroundControl.

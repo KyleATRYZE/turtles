@@ -382,6 +382,14 @@ end
 
 ---------------------------------------------------------------- start
 
+do
+  local h = fs.open(".role", "w")
+  h.write("controller")
+  h.close()
+  local label = os.getComputerLabel()
+  if not label or label == "controller" then os.setComputerLabel("GroundControl") end
+end
+
 if not http then
   print("HTTP is disabled on this server, so I cannot upload.")
   return

@@ -86,10 +86,26 @@ print("Version " .. REV:sub(1, 7))
 
 -- Keep startup.lua correct for this machine's job, so a change of job never
 -- needs the installer to be run again.
+-- What this machine is: remembered in .role (so it can be renamed freely);
+-- worked out from the label the first time.
+local role = readFile(".role")
+if role then role = role:gsub("%s", "") end
+if role ~= "controller" and role ~= "factory" and role ~= "miner" then
+  if not turtle then
+    role = "controller"
+  elseif (os.getComputerLabel() or ""):match("^factory") then
+    role = "factory"
+  else
+    role = "miner"
+  end
+  local h = fs.open(".role", "w")
+  h.write(role)
+  h.close()
+end
 local job
-if not turtle then
+if role == "controller" then
   job = 'shell.run("controller")'
-elseif (os.getComputerLabel() or ""):match("^factory") then
+elseif role == "factory" then
   job = 'shell.run("factory")'
 else
   job = 'shell.run("miner", "resume")'

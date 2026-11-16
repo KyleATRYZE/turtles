@@ -17,6 +17,22 @@ local JOB_PROTOCOL = "swarm_job"   -- talking to the factory about plots
 -- stone for new turtles, and miners use it to floor gaps in the roads.
 local KEEP_ONE_STACK = "minecraft:cobblestone"
 
+-- Lava is fuel: a miner carrying a bucket scoops up any lava it meets
+-- (one bucket = 1000 fuel) until its tank reaches LAVA_TARGET.
+local BUCKET      = "minecraft:bucket"
+local LAVA_BUCKET = "minecraft:lava_bucket"
+local LAVA_TARGET = 10000
+
+-- Names for miners, picked by computer number.
+local NAMES = {
+  "ShaftPunk", "PickJagger", "CoalPorter", "DrillMurray", "OreLando",
+  "RockLobster", "DigDug", "TunnelVision", "BoulderDash", "QuarryStyles",
+  "MinerThreat", "NotoriousDIG", "DiggyStardust", "LeonardoDigCaprio",
+  "OreSonWelles", "ObiWanKenOrebi", "IndianaStones", "DwayneTheBlock",
+  "GoldieHaul", "PitStop", "VeinDiesel", "SlateWinslet", "GraniteDavis",
+  "CobbleWobble", "MoleDiggins", "DeepPurple", "StoneCold", "ElvisPitsley",
+}
+
 -- Thrown away when the inventory fills up
 local JUNK = {
   ["minecraft:cobblestone"] = true,
@@ -29,6 +45,11 @@ local JUNK = {
   ["minecraft:granite"] = true,
   ["minecraft:calcite"] = true,
   ["minecraft:netherrack"] = true,
+  ["minecraft:smooth_basalt"] = true,
+  ["minecraft:dripstone_block"] = true,
+  ["minecraft:pointed_dripstone"] = true,
+  ["minecraft:deepslate"] = true,
+  ["minecraft:stone"] = true,
 }
 
 -- Burned for fuel while mining
@@ -88,6 +109,7 @@ local function report(state)
     fuel = f == "unlimited" and -1 or f,
     freeSlots = free,
     inv = inv,
+    bucket = (inv[BUCKET] or inv[LAVA_BUCKET]) and true or false,
     job = st and {
       home = st.home, size = st.size, bottom = st.bottom,
       layer = st.layer, layers = totalLayers, rowsDone = st.rowsDone,
@@ -500,10 +522,22 @@ local function tripFuel(y)
   return 2 * (math.abs(st.home.y - y) + st.size * 2) + 300
 end
 
--- Drop everything into the drop-off chest below.
+-- Drop the haul into the drop-off chest below. The bucket and one stack of
+-- cobblestone (for flooring the roads) stay on board.
 local function unloadDock()
+  local keptCobble = false
   for s = 1, 16 do
-    while turtle.getItemCount(s) > 0 do
+    local d = turtle.getItemDetail(s)
+    local keep = false
+    if d then
+      if d.name == BUCKET or d.name == LAVA_BUCKET then
+        keep = true
+      elseif d.name == KEEP_ONE_STACK and not keptCobble then
+        keptCobble = true
+        keep = true
+      end
+    end
+    while not keep and turtle.getItemCount(s) > 0 do
       turtle.select(s)
       if not turtle.dropDown() then
         print("The drop-off chest is full. Waiting...")
@@ -513,6 +547,14 @@ local function unloadDock()
     end
   end
   turtle.select(1)
+end
+
+local function hasBucket()
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and (d.name == BUCKET or d.name == LAVA_BUCKET) then return s end
+  end
+  return nil
 end
 
 -- Off the drop-off column, across to the exit column.
@@ -557,6 +599,22 @@ local function inPlot()
   local lf, lr = toLocal()
   return lf >= 1 and lf <= st.size and lr >= 0 and lr < st.size
     and pos.y <= st.home.y
+end
+
+-- No bucket yet: wait on the launch pad and ask the factory for one. Gives
+-- up after a short wait, and stops asking after a few failed tries.
+local function bucketStop()
+  if hasBucket() or (st.bucketTries or 0) >= 3 then return end
+  toExitColumn()
+  axisMove("y", st.exit2.y - 1, true)
+  print("Asking the factory for a bucket.")
+  for _ = 1, 8 do
+    rednet.broadcast({ type = "bucket_request", id = os.getComputerID() }, JOB_PROTOCOL)
+    sleep(5)
+    if hasBucket() then return end
+  end
+  st.bucketTries = (st.bucketTries or 0) + 1
+  save()
 end
 
 -- On the way out of the base: beside the factory, on the launch pad, or
@@ -674,7 +732,9 @@ end
 local function unload()
   face((st.homeD + 2) % 4)
   for s = 1, 16 do
-    while turtle.getItemCount(s) > 0 do
+    local d = turtle.getItemDetail(s)
+    local keep = d and (d.name == BUCKET or d.name == LAVA_BUCKET)
+    while not keep and turtle.getItemCount(s) > 0 do
       turtle.select(s)
       if not turtle.drop() then
         print("Chest is full. Waiting...")
@@ -696,6 +756,7 @@ local function finishUnload()
   refuelFromInventory(FUEL_TARGET)
   unloadDock()
   fuelStop(tripFuel(st.back.y))
+  bucketStop()
   st.phase = "return"
   save()
 end
@@ -712,6 +773,8 @@ end
 -- Swarm version of a trip home: fly to the base, unload, fly back.
 local function dockTrip(reason)
   local lf, lr = toLocal()
+  dropJunk()   -- no point carrying rubble home
+  compact()
   st.back = { lf = lf, lr = lr, y = pos.y }
   st.phase = "unload"
   save()
@@ -724,6 +787,8 @@ end
 
 local function homeTrip(reason)
   if st.swarm then return dockTrip(reason) end
+  dropJunk()
+  compact()
   local lf, lr = toLocal()
   local y = pos.y
   print("Going home: " .. reason)
@@ -757,8 +822,39 @@ local function digUpDown()
   if turtle.detectDown() then safeDigDown() end
 end
 
+-- Scoop lava into the bucket and burn it. inspect sees fluids; level 0 is a
+-- full source block, the only kind a bucket can pick up.
+local function scoop(inspectFn, placeFn)
+  local ok, data = inspectFn()
+  if not (ok and data.name == "minecraft:lava" and data.state and data.state.level == 0) then
+    return false
+  end
+  local slot = hasBucket()
+  if not slot then return false end
+  turtle.select(slot)
+  if placeFn() then turtle.refuel() end
+  turtle.select(1)
+  return true
+end
+
+local bucketChecked, bucketKnown = -1000, false
+
+local function lavaFuel()
+  if fuel() >= LAVA_TARGET then return end
+  -- looking through the inventory is slow, so only re-check now and then
+  if os.clock() - bucketChecked > 60 then
+    bucketChecked = os.clock()
+    bucketKnown = hasBucket() ~= nil
+  end
+  if not bucketKnown then return end
+  scoop(turtle.inspectDown, turtle.placeDown)
+  scoop(turtle.inspectUp, turtle.placeUp)
+  scoop(turtle.inspect, turtle.place)
+end
+
 local function mineStep()
   digUpDown()
+  lavaFuel()
   housekeeping()
   if os.clock() - lastReport > 30 then report("mining") end
 end
@@ -863,6 +959,7 @@ local function run()
     end
     if at(st.dock) or onExitSide() then
       fuelStop(600)
+      bucketStop()
       -- ask for the next plot while still at the base, so we can go
       -- straight there along the out road
       local j = requestJob(6)
@@ -1011,6 +1108,17 @@ local function main(args)
   if not turtle then
     print("This program only runs on a turtle.")
     return
+  end
+
+  -- remember what this machine is, and give it a proper name
+  do
+    local h = fs.open(".role", "w")
+    h.write("miner")
+    h.close()
+    local label = os.getComputerLabel()
+    if not label or label:match("^miner%-%d+$") then
+      os.setComputerLabel(NAMES[(os.getComputerID() - 1) % #NAMES + 1])
+    end
   end
 
   local size = tonumber(args[1])

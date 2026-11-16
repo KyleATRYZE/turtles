@@ -71,7 +71,9 @@ end
 -- Is this order addressed to this machine?
 function M.forMe(cmd)
   local t = cmd.target
-  return t == "all" or t == os.getComputerID() or t == os.getComputerLabel()
+  if t == "all" or t == os.getComputerID() then return true end
+  local label = os.getComputerLabel()
+  return type(t) == "string" and label ~= nil and t:lower() == label:lower()
 end
 
 -- True the first time an order for this machine is seen; false for repeats.
