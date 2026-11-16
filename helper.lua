@@ -864,7 +864,7 @@ end
 -- leaves go). Only leaves and logs are ever broken, a canopy has to be met
 -- before any log is touched, and nothing within reach of the base.
 local CHOP_REACH  = 7      -- how far from where we came down a tree is followed
-local CHOP_BUDGET = 500    -- blocks taken per treetop
+local CHOP_BUDGET = 900    -- blocks taken (and spots looked at) per treetop
 local CHOP_LOAD   = 128    -- logs to carry before taking them home
 local KEEP_OFF    = 16     -- no chopping this close to the base
 
@@ -894,16 +894,34 @@ end
 -- Follow the tree from where we are: into every leaf or log next to us,
 -- and back. Leaves are only followed a few steps from the last log.
 local function fell(x0, z0, leafRun, left)
+  left.seen = left.seen or {}
   local function try(dir, d)
     if left.n <= 0 then return end
     if d then face(d) end
     local name = look(dir)
     local log = isLog(name)
-    if not (log or (isLeaf(name) and leafRun < 5)) then return end
     local nx = pos.x + (dir == "f" and DIRS[heading].x or 0)
     local nz = pos.z + (dir == "f" and DIRS[heading].z or 0)
+    local ny = pos.y + (dir == "u" and 1 or dir == "d" and -1 or 0)
     if math.abs(nx - x0) > CHOP_REACH or math.abs(nz - z0) > CHOP_REACH then return end
     if math.abs(nx - base.f.x) <= KEEP_OFF and math.abs(nz - base.f.z) <= KEEP_OFF then return end
+    if name == nil and leafRun == 0 then
+      -- open air beside a log: branches often run on corner to corner, so
+      -- step out and look round for more logs (once per spot)
+      local k = nx .. "," .. ny .. "," .. nz
+      if left.seen[k] then return end
+      left.seen[k] = true
+      left.n = left.n - 1
+      if not step(dir) then return end
+      fell(x0, z0, 5, left)
+      if dir == "u" then step("d") elseif dir == "d" then step("u")
+      else
+        face(d)
+        if turtle.back() then pos.x, pos.z = pos.x - DIRS[heading].x, pos.z - DIRS[heading].z end
+      end
+      return
+    end
+    if not (log or (isLeaf(name) and leafRun < 5)) then return end
     if not turtle["dig" .. SUFFIX[dir]]() then return end
     left.n = left.n - 1
     if left.n % 25 == 0 then
@@ -1030,9 +1048,23 @@ local function runForage()
     while pos.x ~= to do
       face(east and 0 or 2)
       local ahead = look("f")
+      if isLog(ahead) then
+        -- a trunk, or somebody's log wall? climb it: a tree has leaves
+        local y0, leafy = pos.y, false
+        while pos.y < y0 + 24 and isLog(look("f")) do
+          if not step("u") then break end
+        end
+        leafy = isLeaf(look("f")) or isLeaf(look("u"))
+        if not leafy then
+          while pos.y > y0 and step("d") do end
+          ahead = look("f")
+        else
+          ahead = "leaves"
+        end
+      end
       if isLeaf(ahead) then
         local before = countLogs()
-        fell(pos.x, pos.z, 0, { n = CHOP_BUDGET })
+        fell(pos.x, pos.z, 4, { n = CHOP_BUDGET })
         if countLogs() > before then print(("A tree at %d, %d: %d logs."):format(pos.x, pos.z, countLogs() - before)) end
         face(east and 0 or 2)
       end

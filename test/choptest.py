@@ -104,6 +104,7 @@ TX, TZ = -4455, 1550
 for y=15,19 do setSpecial(TX, y, TZ, "regions_unexplored:magnolia_log") end
 setSpecial(TX+1, 18, TZ+1, "regions_unexplored:magnolia_log")
 setSpecial(TX+2, 19, TZ+1, "regions_unexplored:magnolia_log")
+setSpecial(TX-1, 17, TZ-1, "regions_unexplored:magnolia_log") setSpecial(TX-2, 16, TZ-2, "regions_unexplored:magnolia_log") setSpecial(TX-2, 16, TZ-3, "regions_unexplored:magnolia_log")
 for y=18,21 do for dx=-2,2 do for dz=-2,2 do
   if not getBlock(TX+dx, y, TZ+dz) then setSpecial(TX+dx, y, TZ+dz, "regions_unexplored:magnolia_leaves") end
 end end end
