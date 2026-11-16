@@ -1,19 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794859001,
-      "issued": 1794859001000,
-      "cmd": "reboot",
-      "target": "ForgeClooney"
-    },
-    {
-      "id": 1794859002,
-      "issued": 1794859001000,
-      "cmd": "feed",
-      "target": "WallStreet",
-      "x": -4457,
-      "y": 71,
-      "z": 1520
+      "id": 1794859242,
+      "issued": 1794859242000,
+      "cmd": "chop",
+      "target": "TimberLake",
+      "area": "-4400:1440:-4340:1500"
     }
   ]
 }
