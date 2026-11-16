@@ -1,18 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794863801,
-      "issued": 1794863801000,
-      "cmd": "reboot",
-      "target": "WallStreet"
+      "id": 1794864105,
+      "issued": 1794864105000,
+      "cmd": "home",
+      "target": "BoulderDash"
     },
     {
-      "id": 1794863802,
-      "issued": 1794863801000,
-      "cmd": "lab",
-      "target": "WallStreet",
-      "ops": "fetch|minecraft:coal=8,minecraft:redstone=8;goto|-4453|80|1533;ground;face|0;expect|front|metallurgic_infuser;drop|minecraft:coal|4;drop|minecraft:coal|4;call|front|getInfuseType;wait|25;call|front|getRecipeProgress;call|front|getOutput;wait|30;call|front|getOutput;call|front|getEnergy;up|1;fwd|2;down|1;turn|around;expect|front|metallurgic_infuser;suck|64;inv;up|1;fwd|1;expect|down|metallurgic_infuser;dropDown|mekanism:enriched_iron|4;wait|50;call|bottom|getOutput;back|1;down|1;suck|64;inv",
-      "clear": 1
+      "id": 1794864106,
+      "issued": 1794864105000,
+      "cmd": "home",
+      "target": "DiggyStardust"
+    },
+    {
+      "id": 1794864107,
+      "issued": 1794864105000,
+      "cmd": "home",
+      "target": "NotoriousDIG"
     }
   ]
 }
