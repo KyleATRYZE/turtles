@@ -301,10 +301,13 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn, dr
         end
         print("Blocked by " .. what .. ". Waiting...")
         report("path blocked")
+        -- keep checking: coal passed down from behind arrives later
         if not passed and dropFn and stuck >= 24 and what:find("turtle", 1, true) then
-          passed = true
           local n = passCoal(dropFn)
-          if n > 0 then print("Passed " .. n .. " coal to the turtle in the way.") end
+          if n > 0 then
+            passed = true
+            print("Passed " .. n .. " coal to the turtle in the way.")
+          end
         end
       end
       sleep(2)

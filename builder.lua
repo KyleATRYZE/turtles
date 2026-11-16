@@ -1406,7 +1406,7 @@ end
 
 -- Order a load. We wait at the parking spot while the factory makes it,
 -- go onto the launch pad when it says the load is ready, and get it there.
-local function ask(b, items, fuelWanted)
+local function ask(b, items, fuelWanted, timeout)
   if not (swarm and swarm.open()) then return nil end
   -- order numbers are unique across all jobs (the factory ignores a number
   -- it has just served)
@@ -1418,7 +1418,7 @@ local function ask(b, items, fuelWanted)
   rednet.broadcast(msg, JOB_PROTOCOL)
   goToCell(st.park)
   local started, lastAsk = os.clock(), os.clock()
-  while os.clock() - started < 3600 do
+  while os.clock() - started < (timeout or 3600) do
     local _, reply = rednet.receive(JOB_PROTOCOL, 30)
     if type(reply) == "table" and reply.forId == me and reply.n == b.orderN then
       if reply.type == "materials_ready" then return reply end
@@ -1816,6 +1816,26 @@ local function runBuild()
   leaveSite(b)
 end
 
+-- Scan around us and send the picture as a map (for looking at from
+-- outside when something is in the way).
+local function sendScan(name, extra)
+  if not useTool("scan") then return false end
+  local found = scanHere()
+  if not found then return false end
+  local f = base.f
+  local palette, index, cells = {}, {}, {}
+  for k, n in pairs(found) do
+    local x, y, z = unkey(k)
+    if not index[n] then palette[#palette + 1] = n index[n] = #palette end
+    cells[#cells + 1] = { x - f.x, y - f.y, z - f.z, index[n] }
+  end
+  local data = { kind = "room", origin = f, palette = palette, cells = cells, scanned = true,
+    from = { x = pos.x - f.x, y = pos.y - f.y, z = pos.z - f.z } }
+  for k, v in pairs(extra or {}) do data[k] = v end
+  sendMap(name, data)
+  return true
+end
+
 ---------------------------------------------------------------- feeding a stuck queue
 -- If a turtle runs dry in the miners' exit shaft, everything behind it
 -- waits. Fetch coal from the factory, go to the top of the shaft and drop it
@@ -1833,18 +1853,22 @@ local function feedShaft()
     return n
   end
   st.feed = st.feed or {}
-  if coal() < 48 then
+  if coal() == 0 then
     print("Fetching coal for the stuck queue.")
     report("fetching coal")
-    ask(st.feed, { { "minecraft:coal", 64 } }, 0)
+    ask(st.feed, { { "minecraft:coal", 64 } }, 0, 300)
   end
   if coal() == 0 then
     print("The factory gave me no coal.")
     return false
   end
-  print("Taking coal to the exit shaft.")
+  print("Taking " .. coal() .. " coal to the exit shaft.")
   report("feeding the queue")
-  if not goToCell(key(e2.x, e2.y, e2.z)) then return false end
+  if not goToCell(key(e2.x, e2.y, e2.z)) then
+    print("Something is in my way to the exit shaft.")
+    sendScan("feed_blocked")
+    return false
+  end
   face(out.x < e2.x and 2 or out.x > e2.x and 0 or (out.z > e2.z and 1 or 3))
   if not step("f") then return false end
   local down = 0
@@ -1991,6 +2015,12 @@ while true do
     st.paused = nil
     save()
     task = guarded(work)
+  elseif cmd.cmd == "scan" then
+    task = guarded(function()
+      relocate()
+      sendScan(type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or "scan_here")
+      work()
+    end)
   elseif cmd.cmd == "feed" then
     task = guarded(function()
       relocate()
