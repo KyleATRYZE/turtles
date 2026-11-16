@@ -1297,6 +1297,12 @@ local function work()
       lastState = "idle"
     end
   end
+  if st.done and st.next and not st.paused then
+    print("On to the next job.")
+    st = { job = st.next, turn = st.turn, orderSeq = st.orderSeq }
+    save()
+    return work()
+  end
   riseTo(math.max(pos.y, base.f.y + 12))
   goHover()
   print(st.done and "Share done. Waiting for jobs." or "Waiting for jobs.")
@@ -1358,10 +1364,14 @@ while true do
     for _, f in ipairs({ plan .. ".plan", shell .. ".plan" }) do
       if fs.exists(f) then fs.delete(f) end
     end
-    st = { job = { fit = true, plan = plan, shell = shell, ox = math.floor(tonumber(cmd.ox)),
+    local job = { fit = true, plan = plan, shell = shell, ox = math.floor(tonumber(cmd.ox)),
       oy = math.floor(tonumber(cmd.oy)), oz = math.floor(tonumber(cmd.oz)),
-      xmin = tonumber(cmd.xmin), xmax = tonumber(cmd.xmax) },
-      turn = st.turn, orderSeq = st.orderSeq }
+      xmin = tonumber(cmd.xmin), xmax = tonumber(cmd.xmax) }
+    if cmd.after and st.job and not st.done then
+      st.next = job                     -- when the job in hand is finished
+    else
+      st = { job = job, turn = st.turn, orderSeq = st.orderSeq }
+    end
     save()
     task = guarded(work)
   elseif cmd.cmd == "strip" and st.job and (tonumber(cmd.xmin) or tonumber(cmd.xmax)) then

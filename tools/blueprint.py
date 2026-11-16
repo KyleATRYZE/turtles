@@ -167,10 +167,10 @@ fill(17, 1, HZ - 1, 17, UPPER + 1, HZ - 1, "minecraft:ladder[facing=north]")
 # an IN and an OUT light; portholes through the partitions; hazard stripes on
 # the floor. The miners' pit stop sits on the back track in the launch bay.
 LANE = (1, 2)
-HAZARD = ("minecraft:raw_copper_block", "minecraft:obsidian")   # orange and black
+HAZARD = "chipped:striped_yellow_concrete"          # yellow and black stripes (Kyle's pick)
 for x in range(0, HX + 1):
     for z in LANE:
-        put(x, 0, z, HAZARD[0] if (x + z) % 4 < 2 else HAZARD[1])
+        put(x, 0, z, HAZARD)
 for x in (0, HX):                                   # the gates, framed
     clear(x, 1, 1, x, 3, 2)
     fill(x, 1, 3, x, 4, 3, "minecraft:polished_deepslate")

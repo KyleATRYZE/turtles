@@ -34,6 +34,7 @@ F_FINAL = ARGS[0] if ARGS else os.path.join(ROOT, "blueprints", "factory.json")
 F_SHELL = ARGS[1] if ARGS else os.path.join(ROOT, "blueprints", "factory_shell.txt")
 F_OUT = ARGS[2] if ARGS else os.path.join(ROOT, "blueprints", "factory_fitout.txt")
 START = tuple(map(int, ARGS[3].split(","))) if ARGS else (22, 2, 33)   # outside the big door
+GLASS_TOO = len(ARGS) > 4 and ARGS[4] == "glass"    # a touch-up pass: the windows the builders left out
 bp = json.load(open(F_FINAL))
 
 def split(full):
@@ -59,6 +60,8 @@ SKIP = {"computercraft:turtle_advanced", "computercraft:turtle_normal",      # d
         "computercraft:computer_advanced", "advancedperipherals:chat_box",   # carried over by hand
         "advancedperipherals:player_detector", "computercraft:disk_drive",
         "minecraft:glass_pane", "minecraft:glass"}                            # the builders' own second go
+if GLASS_TOO:
+    SKIP -= {"minecraft:glass_pane", "minecraft:glass"}
 digs, puts, swaps = [], [], []
 for c, (name, facing) in shell.items():
     if c[1] < 0:
@@ -179,12 +182,16 @@ def pal_i(entry):
         pal.append(entry)
     return pindex[entry]
 
+hidden = set()
 # swaps (the lane floor) go right after the digging: from above
 reach = reachable(space(after_digs))
 for c in sorted(swaps, key=lambda c: (c[2], c[0])):
     s = stand_for(c, "", "-", reach)
     if s is None:
         print("cannot reach to swap", c)
+        if GLASS_TOO:                              # under a fitting by now: out of sight, leave it
+            hidden.add(c)
+            continue
         sys.exit(1)
     ops.append(("R", c, pal_i(final[c]), s))
 # then the fittings, deepest round first; within a round sweep room by room
@@ -222,7 +229,7 @@ for kind, c, i, s in ops:
         now[c] = pal[i]
 want = {c: v for c, v in final.items() if v[0] not in SKIP}
 have = {c: v for c, v in now.items() if c[1] >= 0}
-wrong = [c for c in want if have.get(c) != want[c]]
+wrong = [c for c in want if have.get(c) != want[c] and c not in hidden]
 extra = [c for c in have if c not in final]
 print(f"replay: {len(ops)} jobs, {bad} out of reach, {len(wrong)} blocks wrong at the end, {len(extra)} left over")
 

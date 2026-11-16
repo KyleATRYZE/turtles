@@ -48,10 +48,8 @@ for name, n in need.items():
         raw["iron_ingot"] += n            # 8 nuggets each, plus a torch
     elif b == "iron_bars":
         raw["iron_ingot"] += math.ceil(n / 16) * 6
-    elif b == "obsidian":
-        raw["obsidian"] += n
-    elif b == "raw_copper_block":
-        raw["raw_copper_block"] += n
+    elif b == "striped_yellow_concrete":
+        raw["striped_yellow_concrete"] += n
     elif b == "chain":
         raw["iron_ingot"] += math.ceil(n * 11 / 9)
     elif b == "birch_sapling":
@@ -65,14 +63,13 @@ raw["coal"] += math.ceil(total_smelts / 8)
 NICE = {
     "cobbled_deepslate": ("Cobbled deepslate", "In stock: the miners brought home more than enough"),
     "cobblestone": ("Cobblestone", "In stock, plus the stone you added"),
-    "sand": ("Glass", "About 270 in stock (glass and sand): roughly 200 more sand to find"),
+    "sand": ("Glass", "In stock as glass, panes and sand, now Kyle has topped up the sand"),
     "dirt": ("Dirt", "Tree farm soil: in stock from clearing the site"),
     "logs": ("Logs", "Chests and ladders: from the tree farm, once it is growing"),
     "gold_ingot": ("Gold ingots", "Monitors: about 370 in stock counting raw gold"),
     "copper_ingot": ("Copper ingots", "Chimney caps, pipes and drone pads: 512 ingots and 667 raw copper in stock"),
     "iron_ingot": ("Iron ingots", "Lanterns, chains and the lane's iron bars: 88 ingots and about 900 raw iron in stock"),
-    "obsidian": ("Obsidian", "Black hazard stripes: 295 in stock"),
-    "raw_copper_block": ("Raw copper blocks", "Orange hazard stripes: 202 in stock"),
+    "striped_yellow_concrete": ("Striped yellow concrete", "The drone lane's hazard floor: 144 in stock, from Kyle"),
     "coal": ("Coal", "Fuel for all the smelting"),
     "birch_sapling": ("Birch saplings", "To start the tree farm: from you"),
 }
