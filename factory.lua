@@ -51,7 +51,8 @@ shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/m
 ]]
 
 local BUCKET   = "minecraft:bucket"
-local LAVA     = "minecraft:lava_bucket"   -- fuel for turtles (1,000 moves each); never for the furnaces
+local LAVA     = "minecraft:lava_bucket"   -- fuel for turtles (1,000 moves each) and, for big batches, the furnaces
+local LAVA_KEEP = 8                        -- lava buckets kept back for the turtles
 local SCANNER  = "advancedperipherals:geo_scanner"
 local CORE     = "advancedperipherals:weak_automata_core"
 local TURTLE   = "computercraft:turtle_normal"
@@ -584,7 +585,31 @@ local function loadFurnace(f, input, count)
   drainFurnace(f)
   local fuelNeeded = math.ceil(count / 8)
   local fuelSlot = furnaceList(f)[2]
+  if fuelSlot and fuelSlot.name == BUCKET then
+    -- a lava bucket has been burned: the empty one goes back to storage
+    for _, inv in ipairs(stores) do
+      if (peripheral.call(f, "pushItems", inv, 2) or 0) > 0 then break end
+    end
+    fuelSlot = furnaceList(f)[2]
+  end
   local fuelHave = fuelSlot and fuelSlot.count or 0
+  if fuelSlot and fuelSlot.name == LAVA then fuelHave = 13 end       -- a bucket cooks 100
+  if fuelHave < fuelNeeded and not fuelSlot and count >= 32 then
+    -- a big batch: lava, when there is more than the turtles need (it
+    -- saves 8 coal a stack, and coal is what the miners run on)
+    local storage, lava = listStorage(), 0
+    for _, st in ipairs(storage) do
+      if st.name == LAVA then lava = lava + st.count end
+    end
+    if lava > LAVA_KEEP then
+      for _, st in ipairs(storage) do
+        if st.name == LAVA and (peripheral.call(st.inv, "pushItems", f, st.slot, 1, 2) or 0) > 0 then
+          fuelHave = 13
+          break
+        end
+      end
+    end
+  end
   if fuelHave < fuelNeeded then
     local want = fuelNeeded - fuelHave
     for _, st in ipairs(listStorage()) do

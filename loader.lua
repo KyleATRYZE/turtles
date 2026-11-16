@@ -219,7 +219,10 @@ local function chunkOf(x, z) return math.floor(x / 16), math.floor(z / 16) end
 local LOW_FUEL, GOOD_FUEL = 600, 1500
 local function fuelUp()
   if fuel() >= LOW_FUEL or not (base and type(base.pad) == "table") then return false end
-  if fuel() < 260 then return false end                 -- too little even for the trip: stay put
+  -- (enough to get down onto the pad is enough: the coal is there)
+  local trip = math.abs(pos.x - base.pad.x) + math.abs(pos.z - base.pad.z)
+    + math.max(0, CRUISE - pos.y) + (CRUISE - base.pad.y) + 12
+  if fuel() < trip then return false end
   print("Low on fuel. Down to the launch pad for coal.")
   report("fetching fuel")
   if not flyTo(base.pad.x, base.pad.z) then return false end

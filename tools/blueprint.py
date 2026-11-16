@@ -70,12 +70,13 @@ def roof_h(x):
 
 # ---------------------------------------------------------------- floor
 fill(0, 0, 0, HX, 0, HZ, "minecraft:polished_deepslate")
-# the foundry (it was going to be a tree farm): a plain floor, a copper plinth
+# the foundry (it was going to be a tree farm): a plain floor, a brick plinth
 # along the east wall for the machine line and one in the corner for power,
 # and a tiled lane in front of the machines for the turtle that runs them
-fill(41, 0, 6, 42, 0, 27, "minecraft:cut_copper")
+# (plinths in deepslate bricks: copper would mean smelting 500 ingots for a floor)
+fill(41, 0, 6, 42, 0, 27, "minecraft:deepslate_bricks")
 fill(39, 0, 6, 40, 0, 27, "minecraft:deepslate_tiles")
-fill(29, 0, 5, 33, 0, 7, "minecraft:cut_copper")
+fill(29, 0, 5, 33, 0, 7, "minecraft:deepslate_bricks")
 fill(TX1, 0, TZ1, TX2, 0, TZ2, "minecraft:polished_deepslate")
 
 # ---------------------------------------------------------------- hall walls

@@ -173,7 +173,7 @@ local function tick()
       if i and SMELT[i.name] then
         local b=burns[name] or 0
         local ok=true
-        if b==0 then local f=F[2]; if not f then ok=false else f.count=f.count-1 if f.count==0 then F[2]=nil end b=8 end end
+        if b==0 then local f=F[2]; if not f or f.name=="minecraft:bucket" then ok=false elseif f.name=="minecraft:lava_bucket" then F[2]={name="minecraft:bucket",count=1} b=100 LAVA_BURNED=(LAVA_BURNED or 0)+1 else f.count=f.count-1 if f.count==0 then F[2]=nil end b=8 end end
         if ok then
           b=b-1; burns[name]=b; i.count=i.count-1; if i.count==0 then F[1]=nil end
           local o=F[3]; if o then o.count=o.count+1 else F[3]={name=SMELT[i.name],count=1} end
