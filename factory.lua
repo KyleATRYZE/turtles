@@ -2655,7 +2655,7 @@ while true do
     if c.cmd == "ping" then
       report(lastState)
       return true
-    elseif c.cmd == "wood" then            -- wood ForgeClooney first=<wood>: no need to stop work
+    elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
       return true
     end
