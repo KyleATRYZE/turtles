@@ -1889,7 +1889,9 @@ local function frontId()
   return ok and id or nil
 end
 
-local function serveOrders()
+local function serveOrders(onlyReady)
+  -- onlyReady: just hand a finished load to the turtle on the pad (safe with
+  -- a new turtle in hand: nothing is stashed or crafted)
   -- a builder already on the pad with its load made goes first
   local waiting = false
   for _, o in pairs(orders) do if o.ready then waiting = true end end
@@ -1900,7 +1902,7 @@ local function serveOrders()
     turnTo(0)
   end
   for id, order in pairs(orders) do
-    if not waiting and not order.ready then
+    if not waiting and not order.ready and not onlyReady then
       served[id] = order.n
       print("Preparing a load for the builder.")
       report("preparing materials")
@@ -1913,6 +1915,7 @@ local function serveOrders()
         if not okRun then print("Problem: " .. tostring(err)) end
       end
       order.lines, order.ready, order.told = lines, true, os.clock()
+      order.readyAt = os.clock()
       rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
       print("Load ready. Waiting for the builder.")
       return true
@@ -2002,6 +2005,12 @@ local function deploy()
     if busy and next(bucketQueue) and giveToFront(BUCKET, 1) then
       bucketQueue = {}
       print("Gave a bucket to a miner.")
+    end
+    -- a builder's mate that came down for its load while the new turtle was
+    -- being made: give it the load, or both wait for ever
+    if busy and next(orders) then
+      serveOrders(true)
+      turnTo(base.padTurns)
     end
     if not busy and coal >= NEWBORN_COAL then break end
     if waited % 6 == 0 then
@@ -2484,6 +2493,18 @@ local function tryBuild()
   if not held and serveOrders() then
     lastStock = stockTotals()
     return true
+  end
+  -- a load is made and its turtle is on the way down: do not start a build
+  -- that ends with the launch pad taken (three minutes' grace)
+  if not held then
+    for _, o in pairs(orders) do
+      if o.ready and os.clock() - (o.readyAt or 0) < 180 then
+        report("waiting for the builder")
+        sleep(2)
+        lastStock = stockTotals()
+        return true
+      end
+    end
   end
   lastStock = stockTotals()
 

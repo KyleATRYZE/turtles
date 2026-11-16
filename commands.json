@@ -1,16 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794872248,
-      "issued": 1794872248000,
+      "id": 1794872328,
+      "issued": 1794872328000,
       "cmd": "reboot",
-      "target": "WallStreet"
-    },
-    {
-      "id": 1794872249,
-      "issued": 1794872248000,
-      "cmd": "reboot",
-      "target": "SteelyDan"
+      "target": "Crafty"
     }
   ]
 }
