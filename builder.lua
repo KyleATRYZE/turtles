@@ -761,11 +761,31 @@ local PASSABLE = {
 -- space to a spot with open sky above, then climb up. If the way out is
 -- further than the scanner reaches, go to the highest open spot and look
 -- again.
+local sentStuckMap = false
 local function escape()
-  if not useTool("scan") then return false end
+  if not useTool("scan") then
+    print("No scanner to look around with.")
+    return false
+  end
   for _ = 1, 6 do
     local found, covered = scanHere()
-    if not found then return false end
+    if not found then
+      print("The scanner did not work: " .. tostring(covered))
+      return false
+    end
+    if not sentStuckMap then
+      -- a picture of where we are stuck, for looking at from outside
+      sentStuckMap = true
+      local f = base.f
+      local palette, index, cells = {}, {}, {}
+      for k, name in pairs(found) do
+        local x, y, z = unkey(k)
+        if not index[name] then palette[#palette + 1] = name index[name] = #palette end
+        cells[#cells + 1] = { x - f.x, y - f.y, z - f.z, index[name] }
+      end
+      sendMap("stuck_area", { kind = "room", origin = f, palette = palette, cells = cells,
+        scanned = true, from = { x = pos.x - f.x, y = pos.y - f.y, z = pos.z - f.z } })
+    end
     local function open(x, y, z)
       local k = key(x, y, z)
       return covered(x, y, z) and (not found[k] or PASSABLE[found[k]])
@@ -801,13 +821,19 @@ local function escape()
       end
     end
     local goal = exitK or bestK
-    if goal == startK and not exitK then return false end
+    if goal == startK and not exitK then
+      print(("Shut in: %d open spaces around me and no way up."):format(#queue))
+      return false
+    end
     local allowed = {}
     for k in pairs(seen) do allowed[k] = true end
     local moves = pathTo(goal, allowed)
     if not moves then return false end
     for _, m in ipairs(moves) do
-      if not moveBy(m) then break end
+      if not moveBy(m) then
+        print("Something is in the way of my way out.")
+        break
+      end
     end
     if exitK and key(pos.x, pos.y, pos.z) == exitK then
       -- up the hole until we are above everything solid around it
@@ -822,7 +848,10 @@ local function escape()
       while pos.y <= top do
         if not step("u") then break end
       end
-      if pos.y <= top then return false end
+      if pos.y <= top then
+        print("Blocked above me on the way out.")
+        return false
+      end
       print("Found a way out to open sky.")
       return true
     end
