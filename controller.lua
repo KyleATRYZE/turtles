@@ -88,6 +88,8 @@ local function upload()
     controller = { id = os.getComputerID(), label = os.getComputerLabel() },
     lastOrder = orderNote,
     version = swarm.version(),
+    chatBox = chatBox() ~= nil,
+    chatOwner = owner,
     units = units,
   }
   local okJson, json = pcall(textutils.serialiseJSON, doc)
@@ -124,6 +126,124 @@ local function upload()
   uploadNote = "upload failed (" .. tostring(code or err) .. "): "
     .. tostring(reason or err or "no reason given")
   return false
+end
+
+---------------------------------------------------------------- chat
+-- With an Advanced Peripherals Chat Box next to this computer, the swarm
+-- speaks up in game chat when something needs a person, and takes simple
+-- orders typed in chat:   $swarm status      $swarm stop miner-2
+-- (a leading $ hides the message from other players).
+
+local OWNER_FILE = ".owner"
+local owner
+if fs.exists(OWNER_FILE) then
+  local h = fs.open(OWNER_FILE, "r")
+  owner = h.readAll()
+  h.close()
+end
+
+local function chatBox()
+  return peripheral.find("chat_box") or peripheral.find("chatBox")
+end
+
+local chatQueue = {}
+
+local function say(text)
+  chatQueue[#chatQueue + 1] = text
+  while #chatQueue > 20 do table.remove(chatQueue, 1) end
+end
+
+-- States worth interrupting a person for.
+local ALERTS = {
+  ["needs fuel"] = "has run out of fuel",
+  ["drop-off full"] = "cannot unload: the drop-off chest is full",
+  ["chest full"] = "cannot unload: its chest is full",
+  ["path blocked"] = "is stuck: its path is blocked",
+  ["lost"] = "is lost, outside its mining area",
+  ["error"] = "has crashed",
+  ["problem"] = "has a problem",
+  ["not ready"] = "is not ready",
+  ["waiting for parts"] = "is waiting for parts",
+  ["launched one"] = "launched a new miner",
+  ["fleet full"] = "has built the whole fleet",
+}
+
+local lastAlert = {}   -- "id:state" -> time of the last chat message
+
+local function alertFor(id, msg)
+  local text = ALERTS[msg.state]
+  if not text then return end
+  local key = tostring(id) .. ":" .. msg.state
+  local now = os.epoch("utc")
+  if lastAlert[key] and now - lastAlert[key] < 10 * 60000 then return end
+  lastAlert[key] = now
+  local name = msg.label or ("#" .. tostring(id))
+  local detail = ""
+  if type(msg.log) == "table" and #msg.log > 0
+    and (msg.state == "problem" or msg.state == "not ready"
+      or msg.state == "waiting for parts" or msg.state == "error") then
+    detail = " (" .. tostring(msg.log[#msg.log]) .. ")"
+  end
+  say(name .. " " .. text .. detail)
+end
+
+-- Sends queued chat lines one at a time (the Chat Box has a cooldown).
+local function chatter()
+  while true do
+    local box = chatBox()
+    if box and #chatQueue > 0 then
+      local text = table.remove(chatQueue, 1)
+      if owner then
+        pcall(box.sendMessageToPlayer, text, owner, "Swarm")
+      else
+        pcall(box.sendMessage, text, "Swarm")
+      end
+    elseif not box then
+      chatQueue = {}
+    end
+    sleep(1.5)
+  end
+end
+
+local ORDER_WORDS = { stop = true, home = true, resume = true, reboot = true, ping = true }
+
+-- Listens for "swarm ..." typed in chat.
+local function chatOrders()
+  while true do
+    local _, user, message = os.pullEvent("chat")
+    local text = type(message) == "string" and message:lower():gsub("^%$", "") or ""
+    local word, arg = text:match("^swarm%s+(%S+)%s*(%S*)")
+    if word and (not owner or owner == user) then
+      if not owner then
+        owner = user
+        local h = fs.open(OWNER_FILE, "w")
+        h.write(owner)
+        h.close()
+        say("Hello " .. user .. ". I will message only you from now on.")
+      end
+      if word == "status" then
+        local any = false
+        for id, u in pairs(units) do
+          any = true
+          local p = u.pos
+          say(("%s: %s%s"):format(tostring(u.label or ("#" .. id)), tostring(u.state),
+            p and (" at %s, %s, %s"):format(p.x, p.y, p.z) or ""))
+        end
+        if not any then say("No turtles have reported yet.") end
+      elseif ORDER_WORDS[word] then
+        local target = arg ~= "" and arg or "all"
+        if tonumber(target) then target = tonumber(target) end
+        local cmd = {
+          id = math.floor(os.epoch("utc") / 1000), issued = os.epoch("utc"),
+          cmd = word, target = target,
+        }
+        rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
+        say("Order sent: " .. word .. " -> " .. tostring(target))
+      else
+        say("Try: swarm status | swarm stop/home/resume/reboot <name or all>")
+      end
+    end
+  end
 end
 
 ---------------------------------------------------------------- screen
@@ -163,7 +283,10 @@ local function receiver()
       local old = units[key]
       msg.seen = os.epoch("utc")
       units[key] = msg
-      if not old or old.state ~= msg.state then urgent = true end
+      if not old or old.state ~= msg.state then
+        urgent = true
+        alertFor(id, msg)
+      end
       draw()
     end
   end
@@ -255,4 +378,4 @@ if not swarm.open() then
 end
 token = loadToken()
 draw()
-parallel.waitForAny(receiver, uploader, orders)
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders)
