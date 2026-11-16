@@ -86,6 +86,7 @@ local function upload()
     updated = os.epoch("utc"),
     updatedText = os.date("!%Y-%m-%d %H:%M:%S UTC"),
     controller = { id = os.getComputerID(), label = os.getComputerLabel() },
+    lastOrder = orderNote,
     units = units,
   }
   local okJson, json = pcall(textutils.serialiseJSON, doc)
