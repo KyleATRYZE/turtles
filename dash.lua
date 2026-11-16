@@ -10,6 +10,8 @@
 --   dash.gate(mon, gate)            -- a gate's IN / OUT light
 --   dash.rack(mon, slots)           -- the name board over the drone rack
 --   dash.store(mon, view)           -- the storage room's touch screen
+--   dash.panel(mon, view)           -- a touch panel: a few safe buttons
+--   dash.notice(mon, lines)         -- plain words on any screen (no data yet)
 --
 -- Every screen returns the touch zones it drew ({x1, y1, x2, y2, id}), so
 -- the caller can match monitor_touch events to buttons.
@@ -291,11 +293,12 @@ D.stateColour = stateColour
 -- drone on the map, in the fleet list and on the depth gauge, so names
 -- never have to sit on the map.
 local HUES = { C.amber, C.cyan, C.green, C.pink, C.violet, C.red, C.text, C.copper }
-local SPECIAL = { builder = { "B", C.cyan }, loader = { "L", C.violet }, factory = { "F", C.green } }
+local SPECIAL = { builder = { "B", C.cyan }, loader = { "L", C.violet }, factory = { "F", C.green },
+                  helper = { "H", C.pink }, screen = { "S", C.dim }, storage = { "S", C.dim } }
 function D.chips(units)
   local list = {}
   for _, u in pairs(units) do list[#list + 1] = u end
-  local rank = { factory = 0, builder = 1, loader = 2, miner = 3 }
+  local rank = { factory = 0, builder = 1, helper = 2, loader = 3, miner = 4, screen = 8, storage = 8 }
   table.sort(list, function(a, b)
     local ra, rb = rank[a.role] or 9, rank[b.role] or 9
     if ra ~= rb then return ra < rb end
@@ -304,7 +307,7 @@ function D.chips(units)
   local n = 0
   for _, u in ipairs(list) do
     local sp = SPECIAL[u.role]
-    if (u.state or ""):find("hunting") or u.label == "CoalPorter" then
+    if (u.state or ""):find("hunting") or u.hunter then
       u.chip, u.hue = "C", C.copper
     elseif sp then
       u.chip, u.hue = sp[1], sp[2]
@@ -518,20 +521,41 @@ function D.wall(mon, data, frame)
   end
   heading(7, "FLEET")
   local y = 8
-  for k, u in ipairs(list) do
-    local col = stateColour(u, now)
-    chip(s, RX, y, u)
-    text(s, RX + 4, y, pad(u.label or "?", 15), C.text)
-    local busy = (u.state or ""):find("mining") or (u.state or ""):find("building") or (u.state or ""):find("hunting")
-    text(s, RX + 20, y, busy and string.sub("|/-\\", (frame + k) % 4 + 1, (frame + k) % 4 + 1) or string.char(7), col)
-    text(s, RX + 22, y, pad(u.state or "", 14), col)
-    if type(u.fuel) == "number" then
-      bar(s, RX + 37, y, 13, u.fuel / 2500, (u.fuel < 400 and C.red) or (u.fuel < 1000 and C.amber) or C.green)
-      text(s, RX + 51, y, pad(u.fuel, 5, true), (u.fuel < 400 and frame % 2 == 0) and C.red or C.dim)
-    end
-    s.zones[#s.zones + 1] = { RX, y, W, y, "unit:" .. (u.label or "") }
-    y = y + 1
+  -- the screens' own stations are not drones: they are left off the list
+  local fleet = {}
+  for _, u in ipairs(list) do
+    if u.role ~= "screen" and u.role ~= "storage" then fleet[#fleet + 1] = u end
   end
+  local roomy = #fleet <= H - 36                 -- one a line while there is room, else two
+  local half = roomy and #fleet or math.ceil(#fleet / 2)
+  for k, u in ipairs(fleet) do
+    local col = stateColour(u, now)
+    local low = type(u.fuel) == "number" and u.fuel >= 0 and u.fuel < 400
+    if roomy then
+      chip(s, RX, y, u)
+      text(s, RX + 4, y, pad(u.label or "?", 15), C.text)
+      local busy = (u.state or ""):find("mining") or (u.state or ""):find("building") or (u.state or ""):find("hunting")
+      text(s, RX + 20, y, busy and string.sub("|/-\\", (frame + k) % 4 + 1, (frame + k) % 4 + 1) or string.char(7), col)
+      text(s, RX + 22, y, pad(u.state or "", 14), col)
+      if type(u.fuel) == "number" and u.fuel >= 0 then
+        bar(s, RX + 37, y, 13, u.fuel / 2500, (low and C.red) or (u.fuel < 1000 and C.amber) or C.green)
+        text(s, RX + 51, y, pad(u.fuel, 5, true), (low and frame % 2 == 0) and C.red or C.dim)
+      end
+      s.zones[#s.zones + 1] = { RX, y, W, y, "unit:" .. (u.label or "") }
+      y = y + 1
+    else
+      local cx = RX + (k > half and 30 or 0)
+      local cy = 8 + (k > half and k - half or k) - 1
+      chip(s, cx, cy, u)
+      text(s, cx + 4, cy, pad(u.label or "?", 11), C.text)
+      text(s, cx + 16, cy, pad(u.state or "", 8), col)
+      if type(u.fuel) == "number" and u.fuel >= 0 then
+        text(s, cx + 25, cy, pad(u.fuel, 4, true), (low and frame % 2 == 0) and C.red or C.dim)
+      end
+      s.zones[#s.zones + 1] = { cx, cy, cx + 28, cy, "unit:" .. (u.label or "") }
+    end
+  end
+  if not roomy then y = 8 + half end
 
   -- depth gauge: a slice through the ground, every drone at its own depth
   y = y + 1
@@ -546,9 +570,9 @@ function D.wall(mon, data, frame)
     set(g, xx, gy(floorY), C.high)
     if xx % 3 == 0 then set(g, xx, gy(50), C.line) end      -- the roads
   end
-  local col0, step = 14, floor((g.w - 18) / max(1, #list - 1))
+  local col0, step = 14, floor((g.w - 18) / max(1, #fleet - 1))
   local marks = {}
-  for k, u in ipairs(list) do
+  for k, u in ipairs(fleet) do
     if u.pos and u.role ~= "factory" then
       local xx = col0 + (k - 1) * step
       local d = gy(u.pos.y)
@@ -582,17 +606,27 @@ function D.wall(mon, data, frame)
     text(s, RX + 46, y, fs.free .. " free", C.dim)
   end
   y = y + 1
-  local pct = floor((f.progress or 0) * 100)
-  text(s, RX, y, "Shell", C.dim)
-  text(s, RX + 9, y, pad(pct .. "%", 5, true), C.cyan)
-  -- the build bar has a glint running along the built part
-  local pb = canvas(56, 3, C.line)
-  local fill = floor(56 * (f.progress or 0) + 0.5)
-  box(pb, 0, 1, fill - 1, 2, C.cyan)
-  box(pb, 0, 0, 55, 0, C.night)
-  if fill > 2 then local gl = (frame * 2) % fill; box(pb, gl, 1, min(fill - 1, gl + 1), 2, C.text) end
-  put(s, pb, RX + 16, y)
-  text(s, RX + 46, y, "layer " .. (f.layer or "?") .. "/" .. (f.layers or "?"), C.dim)
+  if f.progress and f.progress > 0 and f.progress < 0.999 then
+    local pct = floor((f.progress or 0) * 100)
+    text(s, RX, y, "Shell", C.dim)
+    text(s, RX + 9, y, pad(pct .. "%", 5, true), C.cyan)
+    -- the build bar has a glint running along the built part
+    local pb = canvas(56, 3, C.line)
+    local fill = floor(56 * (f.progress or 0) + 0.5)
+    box(pb, 0, 1, fill - 1, 2, C.cyan)
+    box(pb, 0, 0, 55, 0, C.night)
+    if fill > 2 then local gl = (frame * 2) % fill; box(pb, gl, 1, min(fill - 1, gl + 1), 2, C.text) end
+    put(s, pb, RX + 16, y)
+    text(s, RX + 46, y, "layer " .. (f.layer or "?") .. "/" .. (f.layers or "?"), C.dim)
+    y = y + 1
+  end
+  -- what is in stock, the foundry, the chunk loaders: a line each, in words
+  for _, row in ipairs(data.lines or {}) do
+    text(s, RX, y, pad(row[1], 9), C.dim)
+    text(s, RX + 9, y, pad(row[2], RW - 10), row[3] and C[row[3]] or C.text)
+    y = y + 1
+  end
+  y = y - 1
 
   -- latest: the newest line slides in at the top
   y = y + 2
@@ -614,7 +648,20 @@ function D.wall(mon, data, frame)
   button(s, 36, by, 18, "PAUSE BUILD", C.amber, "pause", data.armed)
   button(s, 55, by, 16, "FIND DRONE", C.cyan, "find")
   button(s, 72, by, 14, "STORAGE", C.violet, "storage")
-  text(s, RX, by + 1, "Tap a drone to recall it or send it to work", C.dim)
+  if data.pick then
+    text(s, RX, by, pad(data.pick[1], RW - 1), C.text)
+    text(s, RX, by + 1, pad(data.pick[2] or "", RW - 1), C.dim)
+    text(s, RX, by + 2, pad(data.pick[3] or "", RW - 1), C.dim)
+  else
+    text(s, RX, by + 1, pad(data.note or "Tap a drone to see where it is and what it is doing", RW - 1),
+         data.note and C.amber or C.dim)
+  end
+  if data.stale then                             -- nothing heard: say so, big, over the map
+    local t = " " .. data.stale .. " "
+    local bx0 = MX + floor((MW - #t) / 2)
+    fillCells(s, bx0 - 1, MY + 3, bx0 + #t, MY + 5, C.red)
+    text(s, bx0, MY + 4, t, C.text, C.red)
+  end
   for _, b in ipairs(blips) do
     if b.u.cell then s.zones[#s.zones + 1] = { b.u.cell[1] - 1, b.u.cell[2] - 1, b.u.cell[1] + 1, b.u.cell[2] + 1, "unit:" .. (b.u.label or "") } end
   end
@@ -688,6 +735,63 @@ function D.rack(mon, slots, now)
         text(s, x + 3, y + 1, "free", C.line, C.panel)
       end
     end
+  end
+  return show(mon, s)
+end
+
+---------------------------------------------------------------- touch panel
+-- A small touch screen with a few safe buttons (3 x 2 in the tower, 2 x 2
+-- by the launch bay door). Whoever draws it sends what is tapped to the
+-- controller, which gives the orders: the panel itself can order nothing.
+-- view = {
+--   title = "LAUNCH BAY", counts = { {n, "word", colour name}, ... },
+--   buttons = { {id, "LABEL", colour name}, ... },   -- top to bottom
+--   armed = id or nil,                               -- tapped once: tap again
+--   note = "text", noteColour = colour name, stale = "text" or nil,
+-- }
+function D.panel(mon, view, frame)
+  frame = frame or 0
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  local hc = canvas(W * 2, 9, C.night)
+  big(hc, 2, 2, view.title or "SWARM", C.text, 1)
+  put(s, hc, 1, 1)
+  hazard(s, 1, 4, W, -frame)
+  local x = 2
+  for _, c in ipairs(view.counts or {}) do
+    local t = tostring(c[1]) .. " " .. c[2]
+    if x + #t > W then break end
+    text(s, x, 5, t, C[c[3] or "text"] or C.text)
+    x = x + #t + 2
+  end
+  if view.stale then
+    text(s, 2, 6, pad(view.stale, W - 2), (frame % 4 < 2) and C.red or C.amber)
+  end
+  local n = #(view.buttons or {})
+  local top, bottom = 8, H - 2
+  local each = max(3, min(4, floor((bottom - top + 1) / max(1, n))))
+  for i, b in ipairs(view.buttons or {}) do
+    local by = top + (i - 1) * each
+    if by + 2 <= bottom then
+      button(s, 2, by, W - 2, b[2], C[b[3] or "cyan"] or C.cyan, b[1], view.armed)
+    end
+  end
+  fillCells(s, 1, H, W, H, C.panel)
+  text(s, 2, H, pad(view.note or "", W - 2), C[view.noteColour or "dim"] or C.dim, C.panel)
+  return show(mon, s)
+end
+
+---------------------------------------------------------------- plain words
+-- For a screen with nothing to show yet (no post found, no data): a few
+-- lines of words, so a dark screen is never a mystery.
+function D.notice(mon, lines)
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  hazard(s, 1, 1, W)
+  for i, l in ipairs(lines) do
+    text(s, 2, 2 + i, pad(l, W - 2), i == 1 and C.text or C.dim)
   end
   return show(mon, s)
 end

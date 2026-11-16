@@ -310,6 +310,43 @@ function M.accept(cmd)
   return true
 end
 
+---------------------------------------------------------------- the touch panels
+-- The screens in the factory (screens.lua) give no orders: a tapped button
+-- asks the controller, and the controller passes on only what is listed
+-- here. Nothing in the list can lose anything: come home, carry on, say
+-- how you are, and (as the map wall always could) builders stop building.
+M.PANEL_PROTOCOL = "swarm_panel"
+local function isBuilding(u)
+  return u.role == "builder" or (u.role == "helper" and type(u.progress) == "table"
+    and u.progress.kind == "building")
+end
+local PANEL_ASKS = {
+  recall        = { cmd = "home",   all = true, words = "everyone home" },
+  resume        = { cmd = "resume", all = true, words = "everyone carry on" },
+  refresh       = { cmd = "ping",   all = true, words = "everyone report" },
+  miners_home   = { cmd = "home",   who = function(u) return u.role == "miner" end, words = "miners home" },
+  miners_resume = { cmd = "resume", who = function(u) return u.role == "miner" end, words = "miners carry on" },
+  pause         = { cmd = "stop",   who = isBuilding, words = "builders stop" },
+}
+
+-- What a panel's request comes to: a list of { cmd =, target = } and a few
+-- words for the chat and the panel; nil and the reason for anything else.
+function M.panelOrders(ask, units)
+  local a = type(ask) == "string" and PANEL_ASKS[ask]
+  if not a then return nil, "not something a panel may ask" end
+  if a.all then return { { cmd = a.cmd, target = "all" } }, a.words end
+  local list, seen = {}, {}
+  for _, u in pairs(units or {}) do
+    if type(u) == "table" and type(u.label) == "string" and not seen[u.label] and a.who(u) then
+      seen[u.label] = true
+      list[#list + 1] = { cmd = a.cmd, target = u.label }
+    end
+  end
+  table.sort(list, function(x, y) return x.target < y.target end)
+  if #list == 0 then return nil, "nobody to tell" end
+  return list, ("%s (%d)"):format(a.words, #list)
+end
+
 -- Block until a new order for this machine arrives.
 function M.waitCommand()
   if not open() then

@@ -853,6 +853,37 @@ local function wallTouch()
   end
 end
 
+-- The touch panels and screens out in the factory (screens.lua) ask here;
+-- only what swarm.panelOrders allows is passed on, and not twice in a row.
+local function panelOrders()
+  local lastAt = {}
+  while true do
+    local from, msg = rednet.receive(swarm.PANEL_PROTOCOL)
+    if type(msg) == "table" and msg.type == "ask" then
+      local reply = { type = "ack", n = msg.n, ok = false }
+      local key = tostring(msg.ask)
+      if lastAt[key] and os.clock() - lastAt[key] < 10 then
+        reply.text = "Just sent: give it a moment"
+      else
+        local list, words = swarm.panelOrders(msg.ask, units)
+        if list then
+          lastAt[key] = os.clock()
+          local id = math.floor(os.epoch("utc") / 1000)
+          for _, o in ipairs(list) do      -- (one number will do: each goes to a different machine)
+            rednet.broadcast({ id = id, issued = os.epoch("utc"), cmd = o.cmd, target = o.target },
+              swarm.CMD_PROTOCOL)
+          end
+          reply.ok, reply.text = true, "Sent: " .. words
+          say(("Order from the %s: %s"):format(tostring(msg.from or "panel"):sub(1, 24), words))
+        else
+          reply.text = "Not sent: " .. tostring(words)
+        end
+      end
+      rednet.send(from, reply, swarm.PANEL_PROTOCOL)
+    end
+  end
+end
+
 -- Fetch the orders file from GitHub and pass fresh orders on to the swarm.
 -- Each order is re-broadcast until it expires, so a turtle that was busy or
 -- out of range still gets it; turtles ignore orders they have already seen.
@@ -945,4 +976,4 @@ local function safe(fn)
     end
   end
 end
-parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, storeReplies, maps, mapListener, safe(wall), safe(wallTouch))
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, storeReplies, maps, mapListener, safe(wall), safe(wallTouch), safe(panelOrders))
