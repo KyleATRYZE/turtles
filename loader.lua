@@ -323,8 +323,10 @@ local function work()
       local t = seen[st.who:lower()]
       return t and t.at > t0
     end
+    -- (a turtle that wakes has to start up, and maybe fetch new programs,
+    -- before it says anything: dwell = seconds to wait over each chunk)
     local function listenHere()
-      for _ = 1, 9 do
+      for _ = 1, math.ceil((tonumber(st.dwell) or 27) / 3) do
         if heard() then return true end
         sleep(3)
       end
@@ -411,6 +413,7 @@ while true do
       st.stay = cmd.stay and true or nil
     elseif cmd.cmd == "search" and type(cmd.who) == "string" and type(cmd.path) == "string" then
       st.mode, st.who, st.path = "search", cmd.who, cmd.path
+      st.dwell = tonumber(cmd.dwell)
     elseif cmd.cmd == "goto" and tonumber(cmd.x) and tonumber(cmd.z) then
       st.mode, st.x, st.z = "goto", math.floor(tonumber(cmd.x)), math.floor(tonumber(cmd.z))
     elseif cmd.cmd == "park" then
