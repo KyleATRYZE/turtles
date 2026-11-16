@@ -526,6 +526,11 @@ local BACKGROUND = {
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
   { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
+  -- for the fit-out: glass for the windows, iron for bars and lanterns,
+  -- gold for the monitors
+  { leave = 64, input = "minecraft:sand", output = "minecraft:glass", keep = 400 },
+  { leave = 64, input = "minecraft:raw_iron", output = "minecraft:iron_ingot", keep = 200 },
+  { leave = 64, input = "minecraft:raw_gold", output = "minecraft:gold_ingot", keep = 160 },
 }
 
 local function keepFurnacesBusy(stock)
@@ -537,7 +542,8 @@ local function keepFurnacesBusy(stock)
         local have = stock[job.output] or 0
         local raw = stock[job.input] or 0
         local minRaw = job.input == "minecraft:stone_bricks" and 128 or 16
-        if have < job.keep and raw >= minRaw then
+        -- leave = raw kept back for building turtles
+        if have < job.keep and raw >= minRaw + (job.leave and (job.leave + 48) or 0) then
           local okLoad, got = pcall(loadFurnace, f, job.input, 64)
           if okLoad and got and got > 0 then
             stock[job.input] = raw - got

@@ -2050,6 +2050,125 @@ local function giveCoalTo(tx, ty, tz, n)
   return 0
 end
 
+---------------------------------------------------------------- gathering
+-- Fetch something the miners never find underground (sand for glass): go
+-- to where the ground map shows it, and take it column by column. Only the
+-- named block is ever dug, so nothing else out there can be harmed. Each
+-- column that gives some adds its four neighbours to the list, so a patch
+-- is followed wherever it goes, under water too.
+local GATHER_DEPTH = 4     -- blocks taken from one column
+local GATHER_FUEL = 400    -- head home with this much left
+
+local function countOf(name)
+  local n = 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and d.name == name then n = n + d.count end
+  end
+  return n
+end
+
+-- Put everything pred picks into the drop-off chest by the factory.
+local function handIn(pred)
+  local dock = base.dock
+  local cx, cy, cz = dock.x, dock.y - 1, dock.z
+  local room, lanes = roomSet(), laneCells()
+  for h = 0, 3 do
+    local x, z = cx - DIRS[h].x, cz - DIRS[h].z
+    local k = key(x, cy, z)
+    if room[k] and not lanes[k] and goToCell(k) then
+      face(h)
+      for s = 1, 16 do
+        local d = turtle.getItemDetail(s)
+        if d and pred(d.name) then
+          turtle.select(s)
+          turtle.drop()
+        end
+      end
+      turtle.select(1)
+      return true
+    end
+  end
+  return false
+end
+
+local function runGather()
+  local g = st.gather
+  local short = g.name:gsub("^.*:", "")
+  local function near(x, z)
+    if math.abs(x - base.f.x) <= ROOM_REACH + 4 and math.abs(z - base.f.z) <= ROOM_REACH + 4 then return false end
+    for _, sd in ipairs(g.from) do
+      if math.abs(x - sd[1]) <= g.r and math.abs(z - sd[2]) <= g.r then return true end
+    end
+    return false
+  end
+  for trip = 1, 6 do
+    if g.want <= 0 or #g.seeds == 0 then break end
+    if not hasPickaxe() then print("No pickaxe: I cannot gather.") break end
+    print(("Off to gather %s (%d wanted)."):format(short, g.want))
+    report("gathering " .. short)
+    if not goOutside() then error("I could not get out of the hut.", 0) end
+    local seen, queue, head = {}, {}, 1
+    for _, sd in ipairs(g.seeds) do
+      local k = sd[1] .. "," .. sd[2]
+      if not seen[k] then seen[k] = true queue[#queue + 1] = sd end
+    end
+    local got, tried = 0, 0
+    while head <= #queue and got < g.want and freeSlots() >= 2 and fuel() > GATHER_FUEL and tried < 500 do
+      local x, z = queue[head][1], queue[head][2]
+      head = head + 1
+      tried = tried + 1
+      if groundToSafely(x, z) then
+        local top, took = pos.y, 0
+        useTool("pick")
+        local sunk = 0                       -- down through water to the bed
+        while sunk < 8 do
+          local ok, d = turtle.inspectDown()
+          if ok and d.name ~= "minecraft:water" then break end
+          if not step("d") then break end
+          sunk = sunk + 1
+        end
+        for _ = 1, GATHER_DEPTH do
+          local ok, d = turtle.inspectDown()
+          if not (ok and d.name == g.name) then break end
+          local before = countOf(g.name)
+          if not turtle.digDown() then break end
+          took = took + countOf(g.name) - before
+          if not step("d") then break end
+        end
+        while pos.y < top and step("u") do end
+        if took > 0 then
+          got = got + took
+          for _, m in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+            local nx, nz = x + m[1], z + m[2]
+            local k = nx .. "," .. nz
+            if not seen[k] and near(nx, nz) then seen[k] = true queue[#queue + 1] = { nx, nz } end
+          end
+        end
+      end
+      tick("gathering " .. short)
+    end
+    print(("Gathered %d %s. Taking it home."):format(got, short))
+    g.want = g.want - got
+    g.seeds = {}
+    for i = head, math.min(#queue, head + 60) do g.seeds[#g.seeds + 1] = queue[i] end
+    save()
+    report("bringing " .. short .. " home")
+    if not comeHome(st.park) then
+      report("stuck outside")
+      error("I could not get back in.", 0)
+    end
+    handIn(function(name) return name == g.name end)
+    goToCell(st.park)
+    burnInventory(BUILD_FUEL)
+    if got == 0 then break end
+  end
+  print(g.want > 0 and ("That is all the %s I could find: %d short."):format(short, g.want)
+    or ("Got all the %s that was wanted."):format(short))
+  st.gather = nil
+  save()
+end
+
 ---------------------------------------------------------------- jobs
 
 local function work()
@@ -2077,6 +2196,7 @@ local function work()
   if not st.done.ground then landSurvey() end
   if st.site then landSurvey(st.site) end
   goToCell(st.park)
+  if st.gather then runGather() end
   for _ = 1, 4 do
     if not st.build or st.build.paused then break end
     if st.build.stage == "done" then
@@ -2251,6 +2371,27 @@ while true do
     end
     save()
     task = guarded(work)
+  elseif cmd.cmd == "gather" then
+    -- fetch a surface block: name (default sand), want, and seeds: the
+    -- columns to start from, as "x:z;x:z;..." (from the ground map);
+    -- r = how far from a seed a patch may be followed
+    local seeds = {}
+    for x, z in tostring(cmd.seeds or ""):gmatch("(-?%d+):(-?%d+)") do
+      seeds[#seeds + 1] = { tonumber(x), tonumber(z) }
+    end
+    if #seeds > 0 then
+      local from = {}
+      for i, sd in ipairs(seeds) do from[i] = { sd[1], sd[2] } end
+      st.paused = nil
+      st.gather = {
+        name = (type(cmd.name) == "string" and cmd.name:match("^[%w_]+:[%w_]+$")) or "minecraft:sand",
+        want = math.max(1, math.min(960, math.floor(tonumber(cmd.want) or 256))),
+        r = math.max(2, math.min(24, math.floor(tonumber(cmd.r) or 10))),
+        seeds = seeds, from = from,
+      }
+      save()
+      task = guarded(work)
+    end
   elseif cmd.cmd == "survey" then
     -- map again: with x and z, map the ground around that spot (named
     -- cmd.name); without, redo both base maps. size sets the map size.
