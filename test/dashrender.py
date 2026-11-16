@@ -151,11 +151,31 @@ def ltab(d):
         return t
     return tolua(d)
 
-t0 = time.time()
-wall = lua.eval("makeMon")(9, 4)
-zones = dash.wall(wall, ltab(data))
-print("wall", lua.eval("function(m) return m.getSize() end")(wall), "drawn in", round(time.time() - t0, 2), "s")
-print(" ->", render(wall, os.path.join(OUT, "wall.png")))
+import copy
+flyer = next((u for u in units.values() if "flying" in u.get("state", "")), None)
+start = dict(flyer["pos"]) if flyer else None
+frames = []
+N = 40
+for i in range(N):
+    d = copy.deepcopy(data)
+    if flyer:   # demo only: walk it home along its line, leaving a trail
+        k = min(1, i / (N - 6))
+        u = next(v for v in d["units"].values() if v["label"] == flyer["label"])
+        u["pos"]["x"] = round(start["x"] + (f["x"] - start["x"]) * k)
+        u["pos"]["z"] = round(start["z"] + (f["z"] - start["z"]) * k)
+        d["trails"] = {flyer["label"]: [[round(start["x"] + (f["x"] - start["x"]) * min(1, j / (N - 6))),
+                                         round(start["z"] + (f["z"] - start["z"]) * min(1, j / (N - 6)))]
+                                        for j in range(max(0, i - 6), i, 2)]}
+    wall = lua.eval("makeMon")(9, 4)
+    t0 = time.time()
+    dash.wall(wall, ltab(d), i)
+    dt = time.time() - t0
+    render(wall, os.path.join(OUT, "f.png"), zoom=1)
+    frames.append(Image.open(os.path.join(OUT, "f.png")).convert("P", palette=Image.ADAPTIVE, colors=32))
+    if i == 7:
+        print("wall frame drawn in", round(dt, 3), "s", render(wall, os.path.join(OUT, "wall.png")))
+frames[0].save(os.path.join(OUT, "wall.gif"), save_all=True, append_images=frames[1:], duration=250, loop=0, optimize=True)
+print("gif", os.path.getsize(os.path.join(OUT, "wall.gif")) // 1024, "KB")
 
 for name, g in (("gate_idle", {"left": "OUT", "right": "IN"}),
                 ("gate_out", {"left": "OUT", "right": "IN", "active": "OUT", "frame": 1}),

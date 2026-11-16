@@ -25,7 +25,7 @@ D.PAL = {
   0x6b7c9c,       -- 4  dim text
   0xd6dfef,       -- 5  text
   0x3ad4e8,       -- 6  cyan: building, highlights
-  0x2a9d84,       -- 7  teal: plots, parked
+  0xa77bf0,       -- 7  violet
   0x47c46f,       -- 8  green: IN, good
   0xf2ab3c,       -- 9  amber: mining, warnings
   0xe5484d,       -- 10 red: OUT, alerts
@@ -33,11 +33,11 @@ D.PAL = {
   0x15301f,       -- 12 land, low
   0x1f442b,       -- 13 land
   0x2c5c38,       -- 14 land, high
-  0x8d95a6,       -- 15 stone, buildings
+  0xf07ab8,       -- 15 pink
 }
 local HEX = "0123456789abcdef"
-local C = { night = 0, panel = 1, raised = 2, line = 3, dim = 4, text = 5, cyan = 6, teal = 7,
-            green = 8, amber = 9, red = 10, copper = 11, low = 12, land = 13, high = 14, stone = 15 }
+local C = { night = 0, panel = 1, raised = 2, line = 3, dim = 4, text = 5, cyan = 6, violet = 7, teal = 8,
+            green = 8, amber = 9, red = 10, copper = 11, low = 12, land = 13, high = 14, pink = 15, stone = 4 }
 D.C = C
 
 local floor, max, min, abs = math.floor, math.max, math.min, math.abs
@@ -253,11 +253,11 @@ local function bar(s, x, y, n, share, col, back)
 end
 
 -- orange and black stripes, like the lane floor
-local function hazard(s, x, y, n)
+local function hazard(s, x, y, n, shift)
   local c = canvas(n * 2, 3)
   for px = 0, n * 2 - 1 do
     for py = 0, 2 do
-      set(c, px, py, ((px + py) % 6 < 3) and C.copper or C.night)
+      set(c, px, py, ((px + py + (shift or 0)) % 6 < 3) and C.copper or C.night)
     end
   end
   put(s, c, x, y)
@@ -272,8 +272,8 @@ end
 
 ---------------------------------------------------------------- states
 local STATE = {
-  mining = C.amber, ["hunting coal"] = C.copper, building = C.cyan, parked = C.teal,
-  ["flying to base"] = C.text, ["fleet full"] = C.green, idle = C.teal,
+  mining = C.amber, ["hunting coal"] = C.copper, building = C.cyan, parked = C.dim,
+  ["flying to base"] = C.text, ["fleet full"] = C.green, idle = C.dim,
 }
 local function stateColour(u, now)
   if now and u.seen and now - u.seen > 120000 then return C.dim end
@@ -284,30 +284,73 @@ local function stateColour(u, now)
 end
 D.stateColour = stateColour
 
+---------------------------------------------------------------- identity
+-- Every drone has its own chip: one cell, its own colour, one character.
+-- Miners are numbered, the specials get a letter. The same chip marks the
+-- drone on the map, in the fleet list and on the depth gauge, so names
+-- never have to sit on the map.
+local HUES = { C.amber, C.cyan, C.green, C.pink, C.violet, C.red, C.text, C.copper }
+local SPECIAL = { builder = { "B", C.cyan }, loader = { "L", C.violet }, factory = { "F", C.green } }
+function D.chips(units)
+  local list = {}
+  for _, u in pairs(units) do list[#list + 1] = u end
+  local rank = { factory = 0, builder = 1, loader = 2, miner = 3 }
+  table.sort(list, function(a, b)
+    local ra, rb = rank[a.role] or 9, rank[b.role] or 9
+    if ra ~= rb then return ra < rb end
+    return (a.label or "") < (b.label or "")
+  end)
+  local n = 0
+  for _, u in ipairs(list) do
+    local sp = SPECIAL[u.role]
+    if (u.state or ""):find("hunting") or u.label == "CoalPorter" then
+      u.chip, u.hue = "C", C.copper
+    elseif sp then
+      u.chip, u.hue = sp[1], sp[2]
+    else
+      n = n + 1
+      u.chip, u.hue = tostring(n % 10), HUES[(n - 1) % #HUES + 1]
+    end
+  end
+  return list
+end
+
+local function chip(s, x, y, u)
+  text(s, x, y, " " .. u.chip .. " ", C.night, u.hue)
+end
+
 ---------------------------------------------------------------- the map wall
 -- data = {
 --   units  = { [id] = unit status, ... },   -- as GroundControl keeps them
 --   maps   = { map, ... },                  -- BrickJagger's ground scans
---   base   = { x, z },                      -- ForgeClooney (the pad stop)
+--   base   = { x, y, z },                   -- ForgeClooney (the pit stop)
 --   site   = { x1, z1, x2, z2, progress, layer, layers, done, total },
 --   hut    = { x1, z1, x2, z2 },
---   plots  = { size, done = { {x, z}, ... }, active = { {x, z, id}, ... } },
---   clock  = "14:42", now = epoch ms, events = { "text", ... },
+--   plots  = { size, done = { {x, z}, ... }, active = { {x, z}, ... } },
+--   trails = { [label] = { {x, z}, ... } }, -- where each drone has just been
+--   clock, now, updated, events, huntRange,
 -- }
-function D.wall(mon, data)
+-- frame counts up four times a second and drives everything that moves:
+-- the radar sweep, pings, marching lines, the scrolling hazard strip.
+local landCache = {}
+
+function D.wall(mon, data, frame)
+  frame = frame or 0
   mon.setTextScale(0.5)
   local W, H = mon.getSize()
   local s = newScreen(W, H)
   local now = data.now
+  local list = D.chips(data.units)
 
-  -- header: the title in big letters, the fleet in a line, the clock
+  -- header
   local head = canvas(W * 2, 12, C.night)
   big(head, 4, 1, "SWARM CONTROL", C.text, 2)
-  local clockW = bigWidth(data.clock or "", 2)
-  big(head, W * 2 - clockW - 4, 1, data.clock or "", C.cyan, 2)
+  local clock = data.clock or ""
+  if frame % 4 >= 2 then clock = clock:gsub(":", " ") end
+  big(head, W * 2 - bigWidth(data.clock or "", 2) - 4, 1, clock, C.cyan, 2)
   put(s, head, 1, 1)
   local counts, order, total = {}, {}, 0
-  for _, u in pairs(data.units) do
+  for _, u in ipairs(list) do
     local k = u.state or "?"
     if not counts[k] then counts[k] = 0; order[#order + 1] = k end
     counts[k] = counts[k] + 1
@@ -322,138 +365,150 @@ function D.wall(mon, data)
   for _, k in ipairs(order) do
     local t = counts[k] .. " " .. k:upper()
     if x + #t + 2 > W - 24 then break end
-    text(s, x, 2, string.char(7), stateColour({ state = k }))
-    text(s, x + 2, 2, t, C.text)
-    x = x + #t + 5
+    text(s, x, 2, t, C.text)
+    x = x + #t + 3
   end
   text(s, x0, 3, total .. " drones " .. string.char(183) .. " " .. #(data.plots.done or {}) .. " plots dug "
        .. string.char(183) .. " " .. (data.updated or ""), C.dim)
-  hazard(s, 1, 5, W)
+  hazard(s, 1, 5, W, -frame)
 
   -- the map: one pixel per block, north up
   local MX, MY, MW, MH = 2, 7, 120, 41          -- in cells
-  local c = canvas(MW * 2, MH * 3, C.night)
   local ox = data.base.x - MW + 12              -- world x at pixel 0
   local oz = data.base.z - floor(MH * 3 / 2)    -- world z at pixel 0
   local function px(wx) return wx - ox end
   local function pz(wz) return wz - oz end
-  -- land from the scans: three greens by height, contour lines every 3
-  local function heightAt(wx, wz)
-    for _, m in ipairs(data.maps) do
-      local i, k = wx - m.origin.x, wz - m.origin.z
-      if i >= 0 and k >= 0 and i < m.size and k < m.size then
-        local h = m.heights[k * m.size + i + 1]
-        if h and h > -999 then
-          local name = m.palette[m.names[k * m.size + i + 1]] or ""
-          return h, name
-        end
-      end
-    end
-  end
   local floorY = data.base.y or 72
-  for gy = 0, c.h - 1 do
-    for gx = 0, c.w - 1 do
-      local wx, wz = gx + ox, gy + oz
-      local h, name = heightAt(wx, wz)
-      if not h then
-        -- not charted yet: plain ground with a light texture, so the map
-        -- reads as one piece; scans fill in the detail as they come
-        set(c, gx, gy, ((gx * 7 + gy * 13) % 11 == 0) and C.low or C.land)
-      else
-        local col = (h < floorY - 2 and C.low) or (h > floorY + 3 and C.high) or C.land
-        if name:find("leaves") then col = C.low end
-        if name:find("water") then col = C.line end
-        local he = heightAt(wx + 1, wz)
-        local hs = heightAt(wx, wz + 1)
-        if (he and floor(he / 3) ~= floor(h / 3)) or (hs and floor(hs / 3) ~= floor(h / 3)) then
-          col = (col == C.high) and C.land or C.high
-        end
-        set(c, gx, gy, col)
-      end
-    end
-  end
-  -- plots: they're dug underground, so the dug ones only shade the land
-  -- (every other pixel); the ones being dug now are outlined in teal
+  local f, hut = data.site, data.hut
   local P = data.plots.size or 8
-  for _, p in ipairs(data.plots.done or {}) do
-    for yy = pz(p[2]), pz(p[2]) + P - 1 do
-      for xx = px(p[1]), px(p[1]) + P - 1 do
-        if (xx + yy) % 2 == 0 then set(c, xx, yy, C.low) end
+
+  -- the land never moves, so it is drawn once and copied each frame
+  local key = #data.maps .. ":" .. #(data.plots.done or {}) .. ":" .. floor((f.progress or 0) * 100)
+  if landCache.key ~= key then
+    local c = canvas(MW * 2, MH * 3, C.land)
+    local function heightAt(wx, wz)
+      for _, m in ipairs(data.maps) do
+        local i, k = wx - m.origin.x, wz - m.origin.z
+        if i >= 0 and k >= 0 and i < m.size and k < m.size then
+          local h = m.heights[k * m.size + i + 1]
+          if h and h > -999 then return h, m.palette[m.names[k * m.size + i + 1]] or "" end
+        end
       end
     end
+    for gy = 0, c.h - 1 do
+      for gx = 0, c.w - 1 do
+        local wx, wz = gx + ox, gy + oz
+        local h, name = heightAt(wx, wz)
+        if not h then
+          set(c, gx, gy, ((gx * 7 + gy * 13) % 11 == 0) and C.low or C.land)
+        else
+          local col = (h < floorY - 2 and C.low) or (h > floorY + 3 and C.high) or C.land
+          if name:find("leaves") then col = C.low end
+          if name:find("water") then col = C.line end
+          local he, hs = heightAt(wx + 1, wz), heightAt(wx, wz + 1)
+          if (he and floor(he / 3) ~= floor(h / 3)) or (hs and floor(hs / 3) ~= floor(h / 3)) then
+            col = (col == C.high) and C.land or C.high
+          end
+          set(c, gx, gy, col)
+        end
+      end
+    end
+    for _, p in ipairs(data.plots.done or {}) do          -- dug plots shade the land
+      for yy = pz(p[2]), pz(p[2]) + P - 1 do
+        for xx = px(p[1]), px(p[1]) + P - 1 do
+          if (xx + yy) % 2 == 0 then set(c, xx, yy, C.low) end
+        end
+      end
+    end
+    box(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.line)
+    outline(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.dim)
+    box(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.raised)
+    local built = floor((pz(f[4]) - pz(f[2])) * (f.progress or 0))
+    box(c, px(f[1]), pz(f[4]) - built, px(f[3]), pz(f[4]), C.line)
+    outline(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.dim)
+    outline(c, px(f[3]) + 1, pz(f[4]) - 10, px(f[3]) + 11, pz(f[4]), C.dim)
+    landCache.key, landCache.px = key, c.px
   end
-  for _, p in ipairs(data.plots.active or {}) do
-    box(c, px(p[1]), pz(p[2]), px(p[1]) + P - 1, pz(p[2]) + P - 1, C.raised)
-    outline(c, px(p[1]), pz(p[2]), px(p[1]) + P - 1, pz(p[2]) + P - 1, C.teal)
-  end
-  -- the hut and the factory, with the drone lane along its back wall
-  local hut = data.hut
-  box(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.line)
-  outline(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.stone)
-  local f = data.site
-  box(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.raised)
-  local built = floor((pz(f[4]) - pz(f[2])) * (f.progress or 0))
-  box(c, px(f[1]), pz(f[4]) - built, px(f[3]), pz(f[4]), C.line)
-  outline(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.stone)
-  outline(c, px(f[3]) + 1, pz(f[4]) - 10, px(f[3]) + 11, pz(f[4]), C.stone)
-  for wx = f[1], f[3] do
-    set(c, px(wx), pz(f[2]) + 1, ((wx % 4) < 2) and C.copper or C.night)
-    set(c, px(wx), pz(f[2]) + 2, (((wx + 1) % 4) < 2) and C.copper or C.night)
-  end
-  -- the base: radar rings every 32 blocks, the hunter's range in copper
+  local c = canvas(MW * 2, MH * 3)
+  for i = 1, #landCache.px do c.px[i] = landCache.px[i] end
+
   local bx, bz = px(data.base.x), pz(data.base.z)
+  -- the drone lane's stripes run along the back of the factory
+  for wx = f[1], f[3] do
+    set(c, px(wx), pz(f[2]) + 1, (((wx + frame) % 4) < 2) and C.copper or C.night)
+    set(c, px(wx), pz(f[2]) + 2, (((wx + frame + 1) % 4) < 2) and C.copper or C.night)
+  end
+  -- plots being dug: the outline marches round
+  for _, p in ipairs(data.plots.active or {}) do
+    local x1, y1 = px(p[1]), pz(p[2])
+    local k = 0
+    local function dot(xx, yy)
+      k = k + 1
+      set(c, xx, yy, ((k - frame) % 4 < 2) and C.cyan or C.panel)
+    end
+    for xx = x1, x1 + P - 1 do dot(xx, y1) end
+    for yy = y1 + 1, y1 + P - 1 do dot(x1 + P - 1, yy) end
+    for xx = x1 + P - 2, x1, -1 do dot(xx, y1 + P - 1) end
+    for yy = y1 + P - 2, y1 + 1, -1 do dot(x1, yy) end
+  end
+  -- radar: rings every 32 blocks, the hunter's range, and the sweep
   for r = 32, 128, 32 do ring(c, bx, bz, r, C.line, 2) end
   if data.huntRange then ring(c, bx, bz, data.huntRange, C.copper, 1) end
+  local sweep = (frame * 9) % 360
+  for k = 0, 2 do
+    local a = math.rad(sweep - k * 4)
+    line(c, bx, bz, bx + math.cos(a) * 150, bz + math.sin(a) * 150, C.high, k > 0 and (k + 1) or nil)
+  end
   outline(c, bx - 2, bz - 2, bx + 2, bz + 2, C.cyan)
-  set(c, bx, bz, C.cyan)
-  -- drones: a blip each, a line home for anyone flying back
+  -- trails, lines home, and a ping from anyone the sweep has just passed
   local blips = {}
-  for id, u in pairs(data.units) do
+  for _, u in ipairs(list) do
     if u.pos and u.role ~= "factory" then
       local x, z = px(u.pos.x), pz(u.pos.z)
-      local col = stateColour(u, now)
-      if (u.state or ""):find("flying") then line(c, x, z, bx, bz, C.dim, 2) end
-      box(c, x - 1, z - 1, x + 1, z + 1, C.night)
-      box(c, x, z, x + 1, z + 1, col)
-      blips[#blips + 1] = { x = x, z = z, u = u, col = col }
+      for _, t in ipairs((data.trails or {})[u.label] or {}) do set(c, px(t[1]), pz(t[2]), C.text) end
+      if (u.state or ""):find("flying") then
+        local dx, dz = bx - x, bz - z
+        local len = max(1, floor(math.sqrt(dx * dx + dz * dz)))
+        for k = 0, len do
+          if (k - frame) % 4 < 2 then set(c, x + dx * k / len, z + dz * k / len, C.text) end
+        end
+      end
+      local ang = math.deg((math.atan2 or math.atan)(z - bz, x - bx)) % 360
+      local since = (sweep - ang) % 360
+      if since < 60 then
+        local r = 2 + floor(since / 15)
+        outline(c, x - r, z - r, x + r, z + r, since < 30 and C.text or C.dim)
+      end
+      blips[#blips + 1] = { x = x, z = z, u = u }
     end
   end
-  -- scale bar and north
-  line(c, 6, c.h - 5, 6 + 32, c.h - 5, C.dim)
-  set(c, 6, c.h - 6, C.dim); set(c, 38, c.h - 6, C.dim)
+  line(c, 6, c.h - 5, 38, c.h - 5, C.text)
+  set(c, 6, c.h - 6, C.text); set(c, 38, c.h - 6, C.text)
   put(s, c, MX, MY)
   text(s, MX + 21, MY + MH - 2, " 32 blocks ", C.dim, C.panel)
   text(s, MX + 1, MY + 1, " N " .. string.char(24) .. " ", C.dim, C.panel)
-  text(s, MX + MW - 19, MY + MH - 2, " 1 pixel = 1 block ", C.dim, C.panel)
-  -- labels: try right, left, above, below; skip if they would overlap
+  text(s, MX + floor((px(hut[1]) + px(hut[3])) / 4) - 1, MY + floor(pz(hut[2]) / 3) - 1, "HUT", C.text, C.panel)
+  text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 2, "FACTORY", C.text, C.raised)
+  text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 3,
+       floor((f.progress or 0) * 100) .. "% built", C.cyan, C.raised)
+  -- the chips: one cell each; two drones in the same spot sit side by side
   local taken = {}
-  local function free(x1, y, x2)
-    if y < MY or y > MY + MH - 1 or x1 < MX or x2 > MX + MW - 1 then return false end
-    for x = x1 - 1, x2 + 1 do if taken[y * 1000 + x] then return false end end
-    return true
-  end
-  table.sort(blips, function(a, b) return (a.u.label or "") < (b.u.label or "") end)
   for _, b in ipairs(blips) do
-    local name = b.u.label or "?"
-    local depth = b.u.pos.y and (" y" .. b.u.pos.y) or ""
-    local t = name .. depth
     local cxl, cyl = MX + floor(b.x / 2), MY + floor(b.z / 3)
-    for _, o in ipairs({ { 2, 0 }, { -#t - 1, 0 }, { -floor(#t / 2), -1 }, { -floor(#t / 2), 1 }, { 2, -1 }, { 2, 1 } }) do
-      local lx, ly = cxl + o[1], cyl + o[2]
-      if free(lx, ly, lx + #t - 1) then
-        text(s, lx, ly, name, b.col, C.panel)
-        text(s, lx + #name, ly, depth, C.dim, C.panel)
-        for k = lx, lx + #t - 1 do taken[ly * 1000 + k] = true end
+    for _, o in ipairs({ { 0, 0 }, { 3, 0 }, { -3, 0 }, { 0, -1 }, { 0, 1 }, { 3, -1 }, { -3, 1 }, { 3, 1 }, { -3, -1 }, { 6, 0 } }) do
+      local lx, ly = cxl + o[1] - 1, cyl + o[2]
+      local ok = lx >= MX and lx + 2 < MX + MW and ly >= MY and ly < MY + MH
+      for k = lx, lx + 2 do if taken[ly * 1000 + k] then ok = false end end
+      if ok then
+        for k = lx, lx + 2 do taken[ly * 1000 + k] = true end
+        chip(s, lx, ly, b.u)
+        b.u.cell = { lx + 1, ly }
         break
       end
     end
   end
-  text(s, MX + floor((px(hut[1]) + px(hut[3])) / 4) - 1, MY + floor(pz(hut[2]) / 3) - 1, "HUT", C.stone, C.night)
-  text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 2, "FACTORY", C.text, C.raised)
-  text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 3,
-       floor((f.progress or 0) * 100) .. "% built", C.cyan, C.raised)
 
-  -- right panel: the fleet
+  -- right panel: the fleet, each with its chip
   local RX = MX + MW + 3
   local RW = W - RX
   local function heading(y, label)
@@ -461,68 +516,93 @@ function D.wall(mon, data)
     for k = RX + #label + 1, W - 1 do text(s, k, y, string.char(140), C.line) end
   end
   heading(7, "FLEET")
-  local list = {}
-  for _, u in pairs(data.units) do list[#list + 1] = u end
-  local rank = { factory = 0, builder = 1, loader = 2, miner = 3 }
-  table.sort(list, function(a, b)
-    local ra, rb = rank[a.role] or 9, rank[b.role] or 9
-    if ra ~= rb then return ra < rb end
-    return (a.label or "") < (b.label or "")
-  end)
   local y = 8
-  for _, u in ipairs(list) do
+  for k, u in ipairs(list) do
     local col = stateColour(u, now)
-    text(s, RX, y, string.char(7), col)
-    text(s, RX + 2, y, pad(u.label or "?", 15), C.text)
-    text(s, RX + 17, y, pad(u.state or "", 14), col)
+    chip(s, RX, y, u)
+    text(s, RX + 4, y, pad(u.label or "?", 15), C.text)
+    local busy = (u.state or ""):find("mining") or (u.state or ""):find("building") or (u.state or ""):find("hunting")
+    text(s, RX + 20, y, busy and string.sub("|/-\\", (frame + k) % 4 + 1, (frame + k) % 4 + 1) or string.char(7), col)
+    text(s, RX + 22, y, pad(u.state or "", 14), col)
     if type(u.fuel) == "number" then
-      local share = u.fuel / 2500
-      bar(s, RX + 32, y, 12, share, (u.fuel < 400 and C.red) or (u.fuel < 1000 and C.amber) or C.green)
-      text(s, RX + 45, y, pad(u.fuel, 5, true), C.dim)
+      bar(s, RX + 37, y, 13, u.fuel / 2500, (u.fuel < 400 and C.red) or (u.fuel < 1000 and C.amber) or C.green)
+      text(s, RX + 51, y, pad(u.fuel, 5, true), (u.fuel < 400 and frame % 2 == 0) and C.red or C.dim)
     end
-    if u.pos and u.pos.y then text(s, RX + 52, y, pad("y" .. u.pos.y, 5, true), C.dim) end
+    s.zones[#s.zones + 1] = { RX, y, W, y, "unit:" .. (u.label or "") }
     y = y + 1
   end
 
-  -- the factory and the build
+  -- depth gauge: a slice through the ground, every drone at its own depth
   y = y + 1
+  heading(y, "DEPTH")
+  local GH = 8
+  local g = canvas(RW * 2 - 2, GH * 3, C.night)
+  local top, bottom = 96, -64
+  local function gy(wy) return floor((top - wy) / (top - bottom) * (GH * 3 - 1)) end
+  box(g, 0, gy(floorY), g.w - 1, gy(0), C.raised)          -- stone
+  box(g, 0, gy(0) + 1, g.w - 1, g.h - 1, C.panel)           -- deepslate
+  for xx = 0, g.w - 1 do
+    set(g, xx, gy(floorY), C.high)
+    if xx % 3 == 0 then set(g, xx, gy(50), C.line) end      -- the roads
+  end
+  local col0, step = 14, floor((g.w - 18) / max(1, #list - 1))
+  local marks = {}
+  for k, u in ipairs(list) do
+    if u.pos and u.role ~= "factory" then
+      local xx = col0 + (k - 1) * step
+      local d = gy(u.pos.y)
+      for yy = min(d, gy(floorY)), max(d, gy(floorY)) do
+        if (yy + frame) % 2 == 0 then set(g, xx, yy, C.dim) end
+      end
+      marks[#marks + 1] = { u, floor(xx / 2) - 1, floor(d / 3) }
+    end
+  end
+  put(s, g, RX, y + 1)
+  for _, m in ipairs(marks) do chip(s, RX + m[2], y + 1 + m[3], m[1]) end
+  text(s, RX, y + 1 + floor(gy(floorY) / 3), "surface", C.dim)
+  text(s, RX, y + 1 + floor(gy(0) / 3) + 1, "y 0", C.dim)
+  text(s, RX, y + GH, "y-64", C.dim)
+  y = y + GH + 2
+
+  -- the factory and the build
   heading(y, "FACTORY")
   local fs = data.factory or {}
   y = y + 1
-  text(s, RX, y, "Coal", C.dim); text(s, RX + 10, y, pad(fs.coal or "?", 6, true), C.text)
-  bar(s, RX + 18, y, 26, (fs.coal or 0) / 2048, C.copper)
+  text(s, RX, y, "Coal", C.dim); text(s, RX + 9, y, pad(fs.coal or "?", 5, true), C.text)
+  bar(s, RX + 16, y, 28, (fs.coal or 0) / 2048, C.copper)
   text(s, RX + 46, y, "256 kept", C.dim)
   y = y + 1
   if fs.slots then
     local share = fs.used / fs.slots
+    local warn = share > 0.9
     text(s, RX, y, "Storage", C.dim)
-    text(s, RX + 10, y, pad(floor(share * 100) .. "%", 6, true), share > 0.9 and C.amber or C.text)
-    bar(s, RX + 18, y, 26, share, share > 0.9 and C.amber or C.teal)
+    text(s, RX + 9, y, pad(floor(share * 100) .. "%", 5, true), (warn and frame % 4 < 2) and C.amber or C.text)
+    bar(s, RX + 16, y, 28, share, warn and C.amber or C.green)
     text(s, RX + 46, y, fs.free .. " free", C.dim)
   end
   y = y + 1
-  text(s, RX, y, "Plots", C.dim)
-  text(s, RX + 10, y, pad(#(data.plots.done or {}), 6, true), C.text)
-  text(s, RX + 18, y, "dug, " .. #(data.plots.active or {}) .. " being dug now", C.dim)
+  local pct = floor((f.progress or 0) * 100)
+  text(s, RX, y, "Shell", C.dim)
+  text(s, RX + 9, y, pad(pct .. "%", 5, true), C.cyan)
+  -- the build bar has a glint running along the built part
+  local pb = canvas(56, 3, C.line)
+  local fill = floor(56 * (f.progress or 0) + 0.5)
+  box(pb, 0, 1, fill - 1, 2, C.cyan)
+  box(pb, 0, 0, 55, 0, C.night)
+  if fill > 2 then local gl = (frame * 2) % fill; box(pb, gl, 1, min(fill - 1, gl + 1), 2, C.text) end
+  put(s, pb, RX + 16, y)
+  text(s, RX + 46, y, "layer " .. (f.layer or "?") .. "/" .. (f.layers or "?"), C.dim)
 
-  y = y + 2
-  heading(y, "FACTORY SHELL")
-  local pc = canvas(RW * 2, 12, C.night)
-  local pct = floor((f.progress or 0) * 100) .. "%"
-  big(pc, 0, 1, pct, C.cyan, 2)
-  put(s, pc, RX, y + 1)
-  text(s, RX + floor(bigWidth(pct, 2) / 2) + 3, y + 2, "layer " .. (f.layer or "?") .. " of " .. (f.layers or "?"), C.text)
-  text(s, RX + floor(bigWidth(pct, 2) / 2) + 3, y + 3, (f.done or 0) .. " / " .. (f.total or 0) .. " blocks", C.dim)
-  y = y + 5
-  bar(s, RX, y, RW - 2, f.progress or 0, C.cyan)
-
+  -- latest: the newest line slides in at the top
   y = y + 2
   heading(y, "LATEST")
   y = y + 1
   for _, e in ipairs(data.events or {}) do
-    if y > H - 5 then break end
-    text(s, RX, y, pad(e[1], 14), e[3] or C.dim)
-    text(s, RX + 15, y, pad(e[2], RW - 16), C.text)
+    if y > H - 4 then break end
+    local u
+    for _, v in ipairs(list) do if v.label == e[1] then u = v end end
+    if u then chip(s, RX, y, u) end
+    text(s, RX + 4, y, pad(e[2], RW - 6), C.text)
     y = y + 1
   end
 
@@ -532,9 +612,11 @@ function D.wall(mon, data)
   button(s, 21, by, 14, "RESUME", C.green, "resume")
   button(s, 36, by, 18, "PAUSE BUILD", C.amber, "pause")
   button(s, 55, by, 16, "FIND DRONE", C.cyan, "find")
-  button(s, 72, by, 14, "STORAGE", C.teal, "storage")
-  text(s, RX, by + 1, "Tap a drone's name to recall it or send it to work", C.dim)
-  for k, u in ipairs(list) do s.zones[#s.zones + 1] = { RX, 7 + k, W, 7 + k, "unit:" .. (u.label or "") } end
+  button(s, 72, by, 14, "STORAGE", C.violet, "storage")
+  text(s, RX, by + 1, "Tap a drone to recall it or send it to work", C.dim)
+  for _, b in ipairs(blips) do
+    if b.u.cell then s.zones[#s.zones + 1] = { b.u.cell[1] - 1, b.u.cell[2] - 1, b.u.cell[1] + 1, b.u.cell[2] + 1, "unit:" .. (b.u.label or "") } end
+  end
   return show(mon, s)
 end
 

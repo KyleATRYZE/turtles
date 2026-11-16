@@ -54,21 +54,20 @@ code { font-family: var(--mono); font-size: 0.92em; }
 <h2>The map wall</h2>
 <p class="where">Control tower, top floor · 9 × 4 advanced monitors · 185 × 52 characters, 370 × 156 pixels</p>
 <figure>
-  <a href="wall.png" title="Open full size"><img src="wall.png" alt="The 9 by 4 monitor wall: a radar-style map of the base on the left with terrain, dug plots, live drones and labels; the fleet list, factory stats, shell progress and latest events on the right; buttons along the bottom."></a>
-  <figcaption>Tap the picture to see it full size: every character is readable there.</figcaption>
+  <a href="wall.png" title="Open full size"><img src="wall.gif" alt="The 9 by 4 monitor wall: a radar-style map of the base on the left with terrain, dug plots, live drones and labels; the fleet list, factory stats, shell progress and latest events on the right; buttons along the bottom."></a>
+  <figcaption>Animated at the speed the wall will run (4 frames a second). Tap it for a full-size still. For the demo, drone 7 is walked home along its line; everything else is the live data.</figcaption>
 </figure>
 <div class="two">
   <ul class="points">
-    <li><b>The map</b> draws one pixel per block, north up. Land BrickJagger has scanned shows in three greens by height, with contour lines, trees and water. Land it hasn't scanned yet is plain textured green, and the detail fills in as scans come in.</li>
-    <li><b>Radar rings</b> sit every 32 blocks from the base. The copper ring is how far the coal hunter may roam.</li>
-    <li><b>Plots:</b> they're dug underground, so the dug ones just shade the land darker. The ones being dug now are outlined in teal.</li>
-    <li><b>The factory</b> fills in as it's built, with the drone lane striped along its back.</li>
-    <li><b>Drones</b> are coloured by what they're doing, with name and depth. Anyone flying home gets a dotted line back to the base.</li>
+    <li><b>Chips, not names.</b> Every drone has its own chip: its own colour plus a number (miners) or a letter (B builder, C coal hunter, L chunk loader, F factory). The same chip marks it on the map, in the fleet list, on the depth gauge and beside its latest message.</li>
+    <li><b>Depth gauge.</b> A slice through the ground from the surface to bedrock, with every drone at its own depth, so the map no longer needs depth labels.</li>
+    <li><b>The map</b> is one pixel per block, north up, with all the ground drawn. Scanned land gets contours, trees and water; dug plots shade the land darker.</li>
   </ul>
   <ul class="points">
-    <li><b>Right panel:</b> the fleet with fuel bars, then the factory (coal, storage, plots), the shell's progress, and the latest line from every drone.</li>
-    <li><b>Touch:</b> the buttons along the bottom and every name in the fleet list. Tap a name to recall that drone, send it to work, or find it on the map.</li>
-    <li>It redraws every few seconds from the same reports GroundControl already collects, so it needs no new messages.</li>
+    <li><b>What moves:</b> the radar sweep, and a ping from each drone as it passes; the outline round every plot being dug; the dotted line and trail of a drone flying home; the hazard strip and the lane stripes; a spinner beside every working drone; a glint along the build bar; the clock's colon.</li>
+    <li><b>What flashes:</b> a fuel figure under 400, and storage over 90% full.</li>
+    <li><b>Touch:</b> the buttons, any chip on the map, any row in the fleet list.</li>
+    <li>A frame takes about 20 ms to draw, so four a second is no strain on the server.</li>
   </ul>
 </div>
 
