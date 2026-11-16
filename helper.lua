@@ -236,7 +236,8 @@ end
 local function goHover()
   local x, y, z = hover()
   if pos.y < y then riseTo(y) end
-  if not across(x, z, highway() + 12) then return false end
+  -- (from up a mountain we may already be above the usual flying height)
+  if not across(x, z, math.max(highway() + 12, pos.y + 40)) then return false end
   while pos.y > y and step("d") do end
   return true
 end
@@ -245,7 +246,7 @@ end
 -- ever dug (it was open when this was written; it may have been patched).
 local function downToPad()
   local e, pad = base.exit2, base.pad
-  if not across(e.x, e.z, highway() + 12) then return false end
+  if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
   while pos.y > pad.y do
     local ok, why = step("d")
     if not ok then
@@ -933,7 +934,7 @@ local function deliver()
   riseTo(highway())
   for _ = 1, 20 do
     local done = false
-    if across(e2.x, e2.z, highway() + 100) then
+    if across(e2.x, e2.z, math.max(highway() + 100, pos.y + 40)) then
       local ok = true
       while ok and pos.y > e2.y do ok = step("d") end
       if ok then
