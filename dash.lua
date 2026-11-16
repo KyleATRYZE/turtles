@@ -263,8 +263,9 @@ local function hazard(s, x, y, n, shift, col)
   put(s, c, x, y)
 end
 
-local function button(s, x, y, w, label, col, id)
-  fillCells(s, x, y, x + w - 1, y + 2, C.raised)
+local function button(s, x, y, w, label, col, id, armed)
+  if armed == id then label = "TAP AGAIN" end
+  fillCells(s, x, y, x + w - 1, y + 2, armed == id and C.line or C.raised)
   for k = 0, 2 do text(s, x, y + k, " ", col, col) end
   text(s, x + 2 + floor((w - 2 - #label) / 2), y + 1, label, C.text, C.raised)
   s.zones[#s.zones + 1] = { x, y, x + w - 1, y + 2, id }
@@ -608,9 +609,9 @@ function D.wall(mon, data, frame)
 
   -- buttons along the bottom
   local by = H - 2
-  button(s, 2, by, 18, "RECALL ALL", C.red, "recall")
-  button(s, 21, by, 14, "RESUME", C.green, "resume")
-  button(s, 36, by, 18, "PAUSE BUILD", C.amber, "pause")
+  button(s, 2, by, 18, "RECALL ALL", C.red, "recall", data.armed)
+  button(s, 21, by, 14, "RESUME", C.green, "resume", data.armed)
+  button(s, 36, by, 18, "PAUSE BUILD", C.amber, "pause", data.armed)
   button(s, 55, by, 16, "FIND DRONE", C.cyan, "find")
   button(s, 72, by, 14, "STORAGE", C.violet, "storage")
   text(s, RX, by + 1, "Tap a drone to recall it or send it to work", C.dim)

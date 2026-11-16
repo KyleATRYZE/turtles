@@ -352,9 +352,11 @@ local function stateColour(state)
   return colors.red   -- anything else needs a look
 end
 
+local wallActive = false    -- the big map wall is drawing (dash.lua): leave the monitor to it
+
 drawMonitor = function()
   local mon = peripheral.find("monitor")
-  if not mon then return end
+  if not mon or wallActive then return end
   mon.setTextScale(0.5)
   local w, h = mon.getSize()
   local colour = mon.isColour()
@@ -606,6 +608,182 @@ local function mapListener()
       and msg.name:match("^[%w_%-]+$") and type(msg.data) == "table" then
       msg.from = id
       mapQueue[#mapQueue + 1] = msg
+      pcall(keepMap, msg.name, msg.data)
+    end
+  end
+end
+
+---------------------------------------------------------------- the map wall
+-- On a big wall of advanced monitors (the control tower's 9 x 4), dash.lua
+-- draws the live map: land from the builder's scans, plots, every drone,
+-- the fleet list, the factory, the build. Its buttons send orders; each
+-- needs a second tap within a few seconds, so a stray click does nothing.
+local okDash, dash = pcall(require, "dash")
+if not okDash then dash = nil end
+local WALL = {
+  site = { -4448, 1518, -4404, 1548, layers = 37 },   -- the factory building
+  hut = { -4464, 1518, -4458, 1532 },
+  maps = { "factory_site", "meadow", "ground" },
+  plot = 8, keepOut = 24, huntRange = 128,
+}
+local wallMaps, wallZones, armed, armedAt = {}, {}, nil, 0
+
+local function keepMap(name, data)
+  if type(data) == "table" and data.kind == "ground" and data.heights and data.names and data.palette then
+    for i, m in ipairs(wallMaps) do
+      if m.name == name then table.remove(wallMaps, i) break end
+    end
+    table.insert(wallMaps, 1, { name = name, origin = data.origin, size = data.size,
+      heights = data.heights, names = data.names, palette = data.palette })
+  end
+end
+
+-- the maps already uploaded, after a restart
+local function fetchMaps()
+  for _, name in ipairs(WALL.maps) do
+    local okGet, res = pcall(http.get, "https://raw.githubusercontent.com/" .. REPO .. "/status/maps/" .. name .. ".json")
+    if okGet and res then
+      local okJson, doc = pcall(textutils.unserializeJSON, res.readAll())
+      res.close()
+      if okJson and type(doc) == "table" then keepMap(name, doc.data) end
+    end
+  end
+end
+
+local function plotOrigin(f, index)
+  local n = 0
+  for r = 0, 80 do
+    for gx = -r, r do
+      for gz = -r, r do
+        if math.max(math.abs(gx), math.abs(gz)) == r then
+          local x0, z0 = f.x + gx * WALL.plot, f.z + gz * WALL.plot
+          if f.x < x0 - WALL.keepOut or f.x > x0 + WALL.plot - 1 + WALL.keepOut
+            or f.z < z0 - WALL.keepOut or f.z > z0 + WALL.plot - 1 + WALL.keepOut then
+            n = n + 1
+            if n == index then return x0, z0 end
+          end
+        end
+      end
+    end
+  end
+end
+
+local plotCache = {}
+local function wallData()
+  local forge, done, total, layer
+  local list = {}
+  for _, u in pairs(units) do
+    if u.role == "factory" then forge = u end
+    local p = type(u.progress) == "table" and u.progress
+    if p and p.kind == "building" and tonumber(p.done) then
+      done = (done or 0) + p.done
+      if u.role == "builder" then total = p.total end
+      if p.layer and (not layer or p.layer < layer) then layer = p.layer end
+    end
+    if type(u.log) == "table" and #u.log > 0 then list[#list + 1] = u end
+  end
+  if not (forge and type(forge.base) == "table" and forge.base.f) then return nil end
+  local f = forge.base.f
+  table.sort(list, function(a, b) return (a.seen or 0) > (b.seen or 0) end)
+  local events = {}
+  for i = 1, math.min(#list, 14) do events[i] = { list[i].label, list[i].log[#list[i].log] } end
+  local plots = { size = WALL.plot, done = {}, active = {} }
+  local fleet = type(forge.fleet) == "table" and forge.fleet or {}
+  local live = {}
+  for _, index in pairs(fleet.byId or {}) do live[index] = true end
+  for index = 1, (fleet.nextPlot or 1) - 1 do
+    local o = plotCache[index]
+    if not o then
+      local x, z = plotOrigin(f, index)
+      o = { x, z }
+      plotCache[index] = o
+    end
+    if live[index] then plots.active[#plots.active + 1] = o else plots.done[#plots.done + 1] = o end
+  end
+  local inv = type(forge.inv) == "table" and forge.inv or {}
+  local store = type(forge.storage) == "table" and forge.storage or {}
+  local s = WALL.site
+  return {
+    units = units, maps = wallMaps, base = { x = f.x, y = f.y, z = f.z },
+    site = { s[1], s[2], s[3], s[4], progress = (done and total and total > 0) and math.min(1, done / total) or 0,
+      layer = layer, layers = s.layers, done = done, total = total },
+    hut = WALL.hut, plots = plots,
+    factory = { coal = (inv["minecraft:coal"] or 0) + (inv["minecraft:charcoal"] or 0),
+      used = store.used, slots = store.slots, free = store.free },
+    clock = os.date("%H:%M"), now = os.epoch("utc"), updated = uploadNote,
+    events = events, huntRange = WALL.huntRange,
+    armed = (armed and os.clock() - armedAt < 6) and armed or nil,
+  }
+end
+
+local function wall()
+  if dash then pcall(fetchMaps) end
+  local frame = 0
+  while true do
+    local mon = dash and peripheral.find("monitor")
+    local big = false
+    if mon then
+      mon.setTextScale(0.5)
+      local w, h = mon.getSize()
+      big = w >= 150 and h >= 45
+    end
+    if big ~= wallActive then
+      wallActive = big
+      if mon and not big then for i = 0, 15 do mon.setPaletteColour(2 ^ i, term.nativePaletteColour(2 ^ i)) end end
+    end
+    if big then
+      local data = wallData()
+      if data then
+        local okDraw, z = pcall(dash.wall, mon, data, frame)
+        if okDraw then wallZones = z else monitorError = "wall: " .. tostring(z) end
+      end
+      frame = frame + 1
+      sleep(0.25)
+    else
+      sleep(5)
+    end
+  end
+end
+
+-- A tap on the wall. Orders need the same button tapped twice.
+local function wallTouch()
+  local function order(word, target)
+    rednet.broadcast({ id = math.floor(os.epoch("utc") / 1000), issued = os.epoch("utc"),
+      cmd = word, target = target }, swarm.CMD_PROTOCOL)
+    say("Order from the wall: " .. word .. " -> " .. tostring(target))
+  end
+  while true do
+    local _, _, x, y = os.pullEvent("monitor_touch")
+    local id
+    for i = #wallZones, 1, -1 do
+      local z = wallZones[i]
+      if x >= z[1] and x <= z[3] and y >= z[2] and y <= z[4] then id = z[5] break end
+    end
+    if id and wallActive then
+      local label = id:match("^unit:(.+)$")
+      if label then
+        for uid, u in pairs(units) do
+          if u.label == label then
+            local p = u.pos
+            say(("%s: %s%s, fuel %s"):format(label, tostring(u.state),
+              p and (" at %s, %s, %s"):format(p.x, p.y, p.z) or "", tostring(u.fuel)))
+          end
+        end
+      elseif id == "recall" or id == "resume" or id == "pause" then
+        if armed == id and os.clock() - armedAt < 6 then
+          armed = nil
+          if id == "recall" then order("home", "all")
+          elseif id == "resume" then order("resume", "all")
+          else
+            for _, u in pairs(units) do
+              if u.role == "builder" or (u.role == "helper" and type(u.progress) == "table"
+                and u.progress.kind == "building") then order("stop", u.label) end
+            end
+          end
+        else
+          armed, armedAt = id, os.clock()
+        end
+      end
     end
   end
 end
@@ -691,4 +869,15 @@ if not swarm.open() then
 end
 token = loadToken()
 draw()
-parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, maps, mapListener)
+-- the wall is a nicety: whatever goes wrong in it must never stop the rest
+local function safe(fn)
+  return function()
+    while true do
+      local ok, err = pcall(fn)
+      if not ok and err == "Terminated" then error(err, 0) end
+      monitorError = "wall: " .. tostring(err)
+      sleep(15)
+    end
+  end
+end
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, maps, mapListener, safe(wall), safe(wallTouch))
