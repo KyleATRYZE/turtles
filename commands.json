@@ -1,10 +1,18 @@
 {
   "commands": [
     {
-      "id": 1794845430,
-      "issued": 1794845430000,
-      "cmd": "reboot",
-      "target": "ForgeClooney"
+      "id": 1794845609,
+      "issued": 1794845609000,
+      "cmd": "chop",
+      "target": "TimberLake",
+      "area": "-4480:1470:-4420:1504"
+    },
+    {
+      "id": 1794845610,
+      "issued": 1794845609000,
+      "cmd": "escort",
+      "target": "ChunkNorris",
+      "who": "TimberLake"
     }
   ]
 }
