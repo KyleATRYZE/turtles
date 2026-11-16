@@ -1149,7 +1149,8 @@ local NATURAL_WORDS = {
   "dandelion", "orchid", "allium", "bluet", "cornflower", "lilac", "peony",
   "rose", "clover", "sprout", "cattail", "reed", "pumpkin", "melon",
   "sugar_cane", "bamboo", "pebble", "dead_bush", "propagule", "flax",
-  "lavender", "pointed_dripstone", "cobweb",
+  "lavender", "pointed_dripstone", "cobweb", "garden", "sage", "thistle",
+  "_bud", "fruit", "cactus", "azalea", "seagrass", "kelp", "coral",
 }
 local function isNatural(name)
   if isGround(name) then return true end
