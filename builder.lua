@@ -1528,11 +1528,17 @@ local function nextLoad(b)
       end
     end
   end
+  -- ask only for what we are not already carrying
   local items = {}
   for _, name in ipairs(order) do
-    if counts[name] > 0 then items[#items + 1] = { name, counts[name] } end
+    local have = 0
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name == name then have = have + d.count end
+    end
+    if counts[name] - have > 0 then items[#items + 1] = { name, counts[name] - have } end
   end
-  return items
+  return items, counts
 end
 
 -- On the launch pad: hand in what we dug up, then load up with blocks,
@@ -1540,8 +1546,18 @@ end
 local function restock(b)
   -- the keepers go into the drop-off chest by the factory
   local dock = base.dock
+  -- what we keep: while placing, only what the next stretch of the plan
+  -- needs (a full inventory of blocks for later left no room for the ones
+  -- needed now); otherwise anything the plan uses
   local using = {}
-  for _, p in ipairs(list.pal) do using[p.name] = true end
+  if b.stage == "place" then
+    local _, needed = nextLoad(b)
+    for name, n in pairs(needed) do
+      if n > 0 then using[name] = true end
+    end
+  else
+    for _, p in ipairs(list.pal) do using[p.name] = true end
+  end
   -- spare coal goes back too: one stack is plenty (it takes room from blocks)
   local coalSlots, spareCoal = 0, {}
   for s = 1, 16 do
