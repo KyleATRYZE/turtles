@@ -2047,6 +2047,13 @@ end
 local function work()
   locate()
   -- born on the launch pad (or restarted in the hole): straight up and out
+  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and st.lab then
+    -- stopped inside a building: a lab run (site, leave, home) walks out by
+    -- the door, so run it before giving up
+    findHeading()
+    runLab()
+    locate()
+  end
   if pos.y <= base.f.y + 6 then
     if pos.x ~= base.pad.x or pos.z ~= base.pad.z then
       report("lost")
