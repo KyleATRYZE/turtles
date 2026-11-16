@@ -37,8 +37,12 @@ crafts every part and drops finished mining turtles (pickaxe + ender modem) into
 
 The factory also runs the base. It places each new miner on the launch pad (the space above the
 disk drive), fuels it and switches it on; the floppy disk installs the software. Each miner asks
-the factory for a plot (8x8, Y 50 down, at least 24 blocks from the factory) and travels there
-underground, along its own tunnel level between Y 52 and Y 61, so nothing on the surface is
-touched. It comes back the same way to drop its haul into the chest beside the factory turtle.
-At the base, miners come up one shaft (beyond the drop-off chest) and go down another (beyond the
-launch pad), so they never meet head-on.
+the factory for a plot (8x8, Y 50 down, at least 24 blocks from the factory).
+
+Miners travel underground on two one-way roads just above the plots: the out road (Y 52) from the
+base to the plots and the in road (Y 56) back. Roads are two blocks high with gaps floored in
+cobblestone, so people can walk them. At the base, miners come up the in-shaft (beyond the
+drop-off chest), unload into the chest beside the factory turtle, and go down the out-shaft
+(beyond the launch pad). Nothing on the surface is touched.
+
+Miners keep only enough coal to stay fuelled (about 3000 fuel) and bring the rest back.

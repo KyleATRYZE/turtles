@@ -8,9 +8,14 @@
 
 local STATE_FILE  = "miner.state"
 local MIN_Y       = -58     -- lowest layer centre (digs one block below this)
-local FUEL_LOW    = 3000    -- start burning mined coal below this
-local FUEL_TARGET = 8000    -- burn coal until fuel reaches this
+local FUEL_LOW    = 1500    -- start burning mined coal below this
+local FUEL_TARGET = 3000    -- burn coal until fuel reaches this; the rest of
+                            -- the coal is carried back to the base
 local JOB_PROTOCOL = "swarm_job"   -- talking to the factory about plots
+
+-- Kept (one stack only) even though it is junk: the factory smelts it into
+-- stone for new turtles, and miners use it to floor gaps in the roads.
+local KEEP_ONE_STACK = "minecraft:cobblestone"
 
 -- Thrown away when the inventory fills up
 local JUNK = {
@@ -412,19 +417,22 @@ local function travelTo(lf, lr, y)
 end
 
 ---------------------------------------------------------------- swarm travel
--- Swarm miners have no chest of their own. Each travels between its plot
--- and the base UNDERGROUND, along its own tunnel level just above the plots
--- (so nothing on the surface is touched). At the base it comes up one shaft
--- to the drop-off chest and goes back down a different one, so turtles
--- never meet head-on.
+-- Swarm miners have no chest of their own. They travel between their plots
+-- and the base UNDERGROUND, on two one-way "roads" just above the plots, so
+-- nothing on the surface is touched and turtles never meet head-on:
 --
---   in-shaft:  one step beyond the drop-off chest, away from the factory
---   out-shaft: one step beyond the launch pad, away from the factory
+--   out road (2 above the plot tops): base -> plots
+--   in road  (6 above the plot tops): plots -> base
+--
+-- Roads are dug two blocks high, and gaps in the floor are filled with
+-- cobblestone, so people can walk along them too.
+--
+-- At the base a miner comes UP the in-shaft (one step beyond the drop-off
+-- chest), unloads, and goes DOWN the out-shaft (one step beyond the launch
+-- pad).
 
--- This miner's own tunnel level (unique per plot, so tunnels never clash).
-local function laneY()
-  return st.home.y + 2 + ((st.index - 1) % 10)
-end
+local function outY() return st.home.y + 2 end
+local function inY() return st.home.y + 6 end
 
 local function inShaft()
   return { x = 2 * st.dock.x - st.exit1.x, z = 2 * st.dock.z - st.exit1.z }
@@ -439,17 +447,43 @@ local function shaftXZ() return toWorld(1, 0) end
 local function at(p) return pos.x == p.x and pos.y == p.y and pos.z == p.z end
 local function over(p) return pos.x == p.x and pos.z == p.z end
 
--- Travel level to a column.
-local function flyTo(x, z)
-  axisMove("x", x, true)
-  axisMove("z", z, true)
+-- Travel level to a column: along x first, then z.
+local function flyTo(x, z, onStep)
+  axisMove("x", x, true, onStep)
+  axisMove("z", z, true, onStep)
+end
+
+-- Columns that must stay open: every plot's shaft (plots sit on a grid
+-- measured from the factory) and the two shafts at the base.
+local function overAShaft()
+  local a, b = inShaft(), outShaft()
+  if (pos.x == a.x and pos.z == a.z) or (pos.x == b.x and pos.z == b.z) then
+    return true
+  end
+  return (pos.x - st.exit1.x) % st.size == 0 and (pos.z - st.exit1.z) % st.size == 0
+end
+
+-- Called on every step along a road: keep it walkable for people.
+local function roadStep()
+  if turtle.detectUp() then safeDigUp() end           -- headroom
+  if not turtle.detectDown() and not overAShaft() then  -- a gap: lay a floor
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name == KEEP_ONE_STACK then
+        turtle.select(s)
+        turtle.placeDown()
+        turtle.select(1)
+        break
+      end
+    end
+  end
 end
 
 -- Moves from here to the drop-off chest.
 local function dockDistance(y)
   local lf, lr = toLocal()
   local sx, sz = shaftXZ()
-  local lane, shaft = laneY(), inShaft()
+  local lane, shaft = inY(), inShaft()
   return math.abs(lf - 1) + math.abs(lr) + math.abs(lane - y)
     + math.abs(sx - shaft.x) + math.abs(sz - shaft.z)
     + (st.dock.y - lane) + 1
@@ -487,7 +521,7 @@ local function toExitColumn()
   if at(st.exit1) then flyTo(st.exit2.x, st.exit2.z) end
 end
 
--- Leave the base: across to the out-shaft and down it to our tunnel level.
+-- Leave the base: across to the out-shaft and down it to the out road.
 local function leaveDock()
   toExitColumn()
   local out = outShaft()
@@ -495,7 +529,7 @@ local function leaveDock()
     axisMove("y", st.dock.y, true)   -- up off the launch pad if we were on it
     flyTo(out.x, out.z)
   end
-  axisMove("y", laneY(), true)
+  axisMove("y", outY(), true)
 end
 
 -- Short of fuel with no coal on board: wait on the launch pad next to the
@@ -530,14 +564,19 @@ end
 local function onExitSide()
   local out = outShaft()
   return at(st.exit1) or (over(st.exit2) and pos.y >= st.exit2.y - 1)
-    or (pos.x == out.x and pos.z == out.z and pos.y <= st.dock.y and pos.y >= laneY())
+    or (pos.x == out.x and pos.z == out.z and pos.y <= st.dock.y and pos.y >= outY())
 end
 
 -- In the shaft that comes up to the drop-off chest.
 local function onWayIn()
   local shaft = inShaft()
   return pos.x == shaft.x and pos.z == shaft.z
-    and pos.y <= st.dock.y and pos.y >= laneY()
+    and pos.y <= st.dock.y and pos.y >= inY()
+end
+
+local function overOwnShaft()
+  local sx, sz = shaftXZ()
+  return pos.x == sx and pos.z == sz
 end
 
 -- Up the in-shaft and onto the drop-off chest.
@@ -548,7 +587,7 @@ end
 
 -- After a restart a swarm miner may be anywhere on its route. These two get
 -- it from wherever it is to the drop-off chest, or to the top of its plot
--- shaft, always going the right way along the one-way shafts.
+-- shaft, always going the right way along the one-way roads and shafts.
 
 local function toDockFromAnywhere()
   if at(st.dock) then return end
@@ -557,29 +596,33 @@ local function toDockFromAnywhere()
     upToDock()
     return
   end
-  if onExitSide() then
-    leaveDock()   -- must go down and round again
-  else
-    axisMove("y", laneY(), true)
+  if onExitSide() then leaveDock() end   -- must go round: out, then back in
+  local sx, sz = shaftXZ()
+  if pos.y == outY() and not overOwnShaft() then
+    flyTo(sx, sz, roadStep)              -- on the out road: carry on to the plot
   end
+  axisMove("y", inY(), true)             -- up onto the in road
   local shaft = inShaft()
-  flyTo(shaft.x, shaft.z)
+  flyTo(shaft.x, shaft.z, roadStep)
   upToDock()
 end
 
 local function toShaftFromAnywhere()
   if inPlot() then return end
-  local sx, sz = shaftXZ()
-  if not (pos.x == sx and pos.z == sz) then
-    if onWayIn() then
-      upToDock()        -- finish coming in, then leave properly
+  if not overOwnShaft() then
+    if onWayIn() or pos.y == inY() then
+      -- heading in: finish coming in, then leave properly
+      local shaft = inShaft()
+      if not onWayIn() then flyTo(shaft.x, shaft.z, roadStep) end
+      upToDock()
       leaveDock()
     elseif at(st.dock) or onExitSide() then
       leaveDock()
     else
-      axisMove("y", laneY(), true)
+      axisMove("y", outY(), true)
     end
-    flyTo(sx, sz)
+    local sx, sz = shaftXZ()
+    flyTo(sx, sz, roadStep)
   end
   axisMove("y", st.home.y, true)
 end
@@ -593,10 +636,6 @@ local function emptySlots()
   end
   return n
 end
-
--- Kept (one stack only) even though it is junk: the factory smelts it into
--- stone for building new turtles.
-local KEEP_ONE_STACK = "minecraft:cobblestone"
 
 local function dropJunk()
   local kept = false
@@ -739,6 +778,35 @@ local function mineRow(lr, y)
   return axisMove(axis, target, false, mineStep)
 end
 
+-- Ask the factory for a plot to mine. With no time limit it waits until one
+-- is offered; with one (seconds) it gives up and returns nil.
+local function requestJob(limit)
+  swarm.open()
+  local me = os.getComputerID()
+  while true do
+    rednet.broadcast({ type = "need_job", id = me }, JOB_PROTOCOL)
+    local deadline = os.clock() + (limit or 5)
+    while os.clock() < deadline do
+      local _, msg = rednet.receive(JOB_PROTOCOL, 1)
+      if type(msg) == "table" and msg.type == "job" and msg.forId == me then
+        return msg
+      end
+    end
+    if limit then return nil end
+    report("waiting for a plot")
+    sleep(20)
+  end
+end
+
+local function stateForJob(j)
+  return {
+    swarm = true, index = j.index,
+    home = { x = j.x0 - 1, y = j.topY, z = j.z0 }, homeD = 0,
+    size = j.size, bottom = j.bottom, layer = 1,
+    cruise = j.cruise, dock = j.dock, exit1 = j.exit1, exit2 = j.exit2,
+  }
+end
+
 local function buildLayers()
   local layers = {}
   local c = st.home.y - 2
@@ -795,9 +863,17 @@ local function run()
     end
     if at(st.dock) or onExitSide() then
       fuelStop(600)
-      leaveDock()
-      -- step off the out-shaft so others can pass; wait here for the next plot
-      axisMove("x", pos.x + 3, true)
+      -- ask for the next plot while still at the base, so we can go
+      -- straight there along the out road
+      local j = requestJob(6)
+      if j then
+        st = stateForJob(j)
+        save()
+        print(("Next plot: #%d at %d, %d"):format(j.index, j.x0, j.z0))
+        return
+      end
+      -- none on offer: wait at the top of the old plot, clear of the roads
+      toShaftFromAnywhere()
     end
     fs.delete(STATE_FILE)
     print("Plot done.")
@@ -874,24 +950,6 @@ local function guarded(fn)
   end
 end
 
--- Ask the factory for a plot to mine. Waits until one is offered.
-local function requestJob()
-  swarm.open()
-  local me = os.getComputerID()
-  while true do
-    rednet.broadcast({ type = "need_job", id = me }, JOB_PROTOCOL)
-    local deadline = os.clock() + 5
-    while os.clock() < deadline do
-      local _, msg = rednet.receive(JOB_PROTOCOL, 1)
-      if type(msg) == "table" and msg.type == "job" and msg.forId == me then
-        return msg
-      end
-    end
-    report("waiting for a plot")
-    sleep(20)
-  end
-end
-
 -- Do the saved job; when there is none (or it finishes), get a plot from
 -- the factory and mine that, for ever.
 local function jobTask()
@@ -901,20 +959,16 @@ local function jobTask()
         if not swarm then return end
         print("Asking the base for a plot...")
         local j = requestJob()
-        st = {
-          swarm = true, index = j.index,
-          home = { x = j.x0 - 1, y = j.topY, z = j.z0 }, homeD = 0,
-          size = j.size, bottom = j.bottom, layer = 1,
-          cruise = j.cruise, dock = j.dock, exit1 = j.exit1, exit2 = j.exit2,
-        }
+        st = stateForJob(j)
         save()
         located = false
         print(("Plot #%d at %d, %d"):format(j.index, j.x0, j.z0))
       end
       if not located and not relocate() then return end
       located = false
+      local job = st
       run()
-      st = nil
+      if st == job then st = nil end   -- unless run() lined up the next plot
     end
   end)
 end
@@ -932,8 +986,7 @@ local function homeTask()
       refuelFromInventory(FUEL_TARGET)
       unloadDock()
       fuelStop(tripFuel(st.home.y))
-      leaveDock()
-      axisMove("x", pos.x + 3, true)   -- park clear of the out-shaft
+      toShaftFromAnywhere()            -- wait at the top of our plot, off the roads
     else
       if not relocate() then return end
       report("going home")
