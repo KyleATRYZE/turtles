@@ -125,4 +125,143 @@ L.execute('''LABEL = "miner-5" os.getComputerID = function() return 5 end placeA
 L.eval('{runMiner("resume")}')
 check("a new miner number 5 is Oresome (where OreLando stood in the list)", L.globals().LABEL == "Oresome")
 
+
+# ---------------------------------------------------------------- the factory
+FH = harness('fharness.lua')
+def factory(setup, statuses="", inbox="", idles=6, first=1):
+    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true"); L.execute(FH)
+    L.execute('''C="minecraft:chest_0"
+local function st(id, label, role, state, x, z, extra)
+  local m = { label = label, role = role, state = state, pos = { x = x, y = 80, z = z }, fuel = 900 }
+  for k, v in pairs(extra or {}) do m[k] = v end
+  return { id = id, msg = m }
+end
+ST = st
+OLD = function(a, b) return a .. b end        -- (old names, written in two halves)
+''' + setup + '''
+MAX_IDLES=%d''' % first)
+    L.eval('{runFactory()}')
+    L.execute('IDLES=0 MAX_IDLES=%d STATUSQ = { %s } INBOX = { %s }' % (idles, statuses, inbox))
+    L.eval('{runFactory()}')
+    return L, L.globals()
+
+BOOKS = '''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42},["byId"]={["9"]=1,["10"]=2,["12"]=4,["13"]=5,["5"]=6,["11"]=3,["6"]=7,["7"]=8}}'
+'''
+# a factory with the old label and its books: four helpers, two loaders, parts for one more loader
+L, g = factory('''LABEL_F = OLD("Forge", "Clooney")
+os.getComputerLabel = function() return LABEL_F end
+os.setComputerLabel = function(l) LABEL_F = l end
+put(C,"computercraft:turtle_normal",2) put(C,"computercraft:wireless_modem_advanced",2) put(C,"advancedperipherals:chunk_controller",1)
+put(C,"minecraft:coal",64) put(C,"minecraft:coal",64) put(C,"minecraft:bucket",2)
+NEXT_ID = 60                                   -- (the number the next turtle built will have, less one)
+''' + BOOKS,
+    statuses='ST(21, OLD("Mortar", "Kombat"), "helper", "idle", 104, 205), ST(21, "Pushy", "helper", "idle", 104, 205), '
+        + 'ST(41, OLD("Load", "Runner"), "loader", "parked", 104, 199), ST(41, "Phantastic", "loader", "parked", 104, 199)',
+    inbox='{ id = 41, msg = { type = "need_job", id = 41 } }, { id = 21, msg = { type = "need_job", id = 21 } }')
+roles = [(m.to, m.msg.role, m.msg.name) for m in g.OUTBOX.values() if m.msg.type == "role"]
+placed = list(g.PLACED.values())
+check("the factory took its new name", g.LABEL_F == "Crafty")
+check("its helpers and loaders are known by number: each is told its new name", (41, "loader", "Phantastic") in roles and (21, "helper", "Pushy") in roles)
+check("no duplicate helper: four on the books, none built", not any(r[1] == "helper" and r[0] not in (21, 22, 23, 24) for r in roles))
+new_loaders = [r for r in roles if r[1] == "loader" and r[0] not in (41, 42)]
+check("the next loader built is the third, with the third name (not a second Phantastic) %s %s" % (placed, new_loaders),
+      len(placed) == 1 and "chunky" in placed[0] and len(new_loaders) == 1 and new_loaders[0][2] == "Vexed")
+
+# no ender modem to be had (only a pearl and stone for a plain one): no loader is built
+L, g = factory('''put(C,"computercraft:turtle_normal",2) put(C,"minecraft:ender_pearl",2) put(C,"minecraft:stone",16) put(C,"advancedperipherals:chunk_controller",3)
+put(C,"minecraft:coal",64) put(C,"minecraft:coal",64)
+''' + BOOKS)
+check("without an ender modem no loader is built", not any("chunky" in p for p in g.PLACED.values()))
+
+# one machine, one entry: a far miner that reported under its old name and now reports under the new one
+# (with its own controller) is not taken for a second, silent turtle
+L, g = factory('put(C,"minecraft:coal",64)\n' + BOOKS,
+    statuses='ST(9, OLD("Ore", "Lando"), "miner", "mining", 1100, 1200), '
+        + '{ id = 9, at = 300, msg = { label = "Oresome", role = "miner", state = "mining", pos = { x = 1100, y = 30, z = 1200 }, chunky = "on" } }, '
+        + '{ id = 51, at = 300, msg = { label = "Ghastly", role = "loader", state = "parked", pos = { x = 104, y = 80, z = 199 } } }',
+    inbox='{ id = 52, at = 310, msg = { type = "escort_request", id = 52, label = "Phantastic" } }', idles=600)
+out = [dict(m.msg) for m in g.OUTBOX.values() if m.msg.direct]
+check("old name then new name from one turtle: no loader sent after a ghost", out == [])
+
+# a loader (still on its old state) says it is with the hunter by his old name; the hunter reports by his new name
+L, g = factory('put(C,"minecraft:coal",64)\n' + BOOKS,
+    statuses='ST(51, "Ghastly", "loader", "parked", 104, 199), ST(11, "Charcool", "miner", "hunting coal", 1100, 1200), '
+        + 'ST(53, OLD("Chunk", "Berry"), "loader", "escorting", 1100, 1200, { job = { mode = "escort", who = OLD("NatKing", "Coal") } })',
+    inbox='{ id = 52, wait = true, msg = { type = "escort_request", id = 52, label = "Phantastic" } }')
+out = [dict(m.msg) for m in g.OUTBOX.values() if m.msg.direct]
+check("an escort under the old names still counts: no second loader for the same hunter", out == [])
+# (and the same books without that escort: the hunter does get a loader, so the check above means something)
+L, g = factory('put(C,"minecraft:coal",64)\n' + BOOKS,
+    statuses='ST(51, "Ghastly", "loader", "parked", 104, 199), ST(11, "Charcool", "miner", "hunting coal", 1100, 1200)',
+    inbox='{ id = 52, wait = true, msg = { type = "escort_request", id = 52, label = "Phantastic" } }')
+out = [dict(m.msg) for m in g.OUTBOX.values() if m.msg.direct]
+check("(without it the hunter is offered one)", len(out) == 1 and out[0]["who"] == "Charcool")
+
+# ---------------------------------------------------------------- the controller's status file
+import json, base64
+L = lupa.LuaRuntime(unpack_returned_tuples=True)
+g = L.globals()
+def to_py(t):
+    if lupa.lua_type(t) == 'table':
+        d = {k: to_py(v) for k, v in t.items()}
+        if d and all(isinstance(k, int) for k in d): return [d[k] for k in sorted(d)]
+        return d
+    return t
+def from_py(o):
+    if isinstance(o, dict): return L.table_from({k: from_py(v) for k, v in o.items()})
+    if isinstance(o, list): return L.table_from([from_py(v) for v in o])
+    return o
+docs = []
+def post(req):
+    r = to_py(req)
+    try: docs.append(json.loads(base64.b64decode(json.loads(r['body'])['content'])))
+    except Exception: pass
+    return json.dumps({"content": {"sha": "sha"}})
+g.py_ser = lambda t: json.dumps(to_py(t)); g.py_unser = lambda s: from_py(json.loads(s)); g.py_post = post
+L.execute('package.path = "%s/?.lua;" .. package.path' % ROOT)
+L.execute(r"""
+CLABEL = "Ground" .. "Control"
+FS = { [".github_token"] = "github_pat_TEST\n" }
+fs = { exists = function(p) return FS[p] ~= nil end, delete = function(p) FS[p] = nil end,
+  open = function(p, m) if m == "w" then return { write = function(s) FS[p] = s end, close = function() end } end
+    return { readAll = function() return FS[p] end, close = function() end } end }
+textutils = { serialiseJSON = py_ser, unserialiseJSON = py_unser, serialize = py_ser, unserialize = function() return nil end }
+os.epoch = function() return 1700000000000 end
+os.getComputerID = function() return 3 end
+os.getComputerLabel = function() return CLABEL end
+os.setComputerLabel = function(l) CLABEL = l end
+local clock = 0
+os.clock = function() clock = clock + 50 return clock end
+term = { clear = function() end, setCursorPos = function() end, getSize = function() return 51, 19 end, write = function() end,
+  setTextColor = function() end, setBackgroundColor = function() end, isColor = function() return true end }
+print = function() end
+local modem = { isWireless = function() return true end }
+peripheral = { find = function(t) if t == "modem" then return modem end end, getName = function() return "top" end,
+  getType = function() return nil end, getNames = function() return {} end, wrap = function() return nil end }
+local old, new = "Ore" .. "Lando", "Oresome"
+local queue = {
+  { 7, { role = "miner", state = "mining", label = old, pos = { x = -4461, y = 12, z = 1530 }, fuel = 4200, log = { "Layer 3" } } },
+  { 7, { role = "miner", state = "going home", label = new, pos = { x = -4461, y = 12, z = 1531 }, fuel = 4100, log = { "Going home" } } },
+}
+rednet = { open = function() end, broadcast = function() end,
+  receive = function(proto)
+    if proto == "swarm" then local m = table.remove(queue, 1) if m then return m[1], m[2] end end
+    error("STOP", 0)
+  end }
+http = { get = function() return { readAll = function() return '{"sha":"x"}' end, close = function() end } end,
+  post = function(req) local out = py_post(req) return { readAll = function() return out end, close = function() end } end }
+local ticks = 0
+sleep = function() ticks = ticks + 1 if ticks >= 3 then error("STOP", 0) end end
+parallel = { waitForAny = function(...) for _, f in ipairs({ ... }) do pcall(f) end end }
+""")
+try:
+    L.execute(open(os.path.join(ROOT, 'controller.lua')).read())
+    err = None
+except Exception as e:
+    err = str(e)[:300]
+check("the controller took its new name%s" % (" (%s)" % err if err else ""), g.CLABEL == "CommandBlock")
+units = docs[-1].get("units", {}) if docs else {}
+labels = [u.get("label") for u in (units.values() if isinstance(units, dict) else units)]
+check("its status file shows the renamed turtle once, under the new name %s" % labels, labels == ["Oresome"])
+
 print("PASS" if not fails else "FAILED: %d" % len(fails))

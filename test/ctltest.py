@@ -10,10 +10,11 @@ def check(what, ok):
     print(("ok   " if ok else "FAIL ") + what)
     if not ok: fails.append(what)
 
-def run(controllers, loaders, asker, on_pad=14, given=""):
-    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true"); L.execute(HARNESS)
+def run(controllers, loaders, asker, on_pad=14, given="", modems=0):
+    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true MODEMS=%d" % modems); L.execute(HARNESS)
     L.execute('''C="minecraft:chest_0"
 put(C,"minecraft:coal",64) put(C,"minecraft:coal",64) put(C,"%s",%d)
+if MODEMS > 0 then put(C,"computercraft:wireless_modem_advanced",MODEMS) end
 FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={%s},%s["byId"]={["9"]=1}}'
 MAX_IDLES=1''' % (CTL, controllers, loaders, given))
     L.eval('{runFactory()}')
@@ -29,8 +30,14 @@ handed, none, log, plots = run(3, "41,42,43,44", 14)
 check("a spare goes to the turtle that asked, standing on the pad", len(handed) == 1 and "x1" in handed[0] and not none)
 check("and it is written down", '["ctlGiven"]' in plots and '["14"]=1' in plots)
 
+handed, none, log, plots = run(2, "41,42", 14, modems=2)
+check("none to spare while loaders are still to be built (two ender modems wait for them): told so", not handed and len(none) == 1)
+
 handed, none, log, plots = run(2, "41,42", 14)
-check("none to spare while loaders are still to be built: told so", not handed and len(none) == 1)
+check("with no ender modem to be had no loader can be built: the controllers are spare", len(handed) == 1 and not none)
+
+handed, none, log, plots = run(3, "41,42", 14, modems=1)
+check("one modem keeps one controller back, the rest are spare", len(handed) == 1 and not none)
 
 handed, none, log, plots = run(3, "41,42,43,44", 6)
 check("not handed to another turtle that happens to be on the pad", not handed)

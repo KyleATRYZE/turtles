@@ -32,7 +32,7 @@ parallel = { waitForAny = function(...)
     if coroutine.isyieldable() then coroutine.yield() end
   end
 end }
-LABEL = "LoadRunner"
+LABEL = "Phantastic"
 os.getComputerID = function() return 52 end
 FS[".base"] = textutils.serialize(BASE_T)
 REPORTS, JOBMSGS, FUEL_ASKS = {}, {}, 0
@@ -99,10 +99,10 @@ def asks(g, kind): return [m for m in g.JOBMSGS.values() if m.type == kind]
 
 # A) an escort written by hand: out to the turtle, follow it home, park
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4450, 20, 1530, 3000
-FS["loader.state"] = textutils.serialize({ mode = "escort", who = "CoalPorter", x = -4559, z = 1605 })
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "Coalition", x = -4559, z = 1605 })
 local path = { {-4559,1605}, {-4540,1590}, {-4515,1570}, {-4490,1550}, {-4470,1530} }
 STEP = 1
-OTHERS.CoalPorter = function()
+OTHERS.Coalition = function()
   local p = path[STEP]
   -- it wakes, and moves on, only while I am over its chunk
   if math.floor(T.x/16) ~= math.floor(p[1]/16) or math.floor(T.z/16) ~= math.floor(p[2]/16) or T.y < 150 then return nil end
@@ -114,7 +114,7 @@ check("A: followed it home and parked", g.STEP >= 4 and states(g)[-1] == "parked
 check("A: state file says park", 'mode="park"' in L.eval('FS["loader.state"]').replace(" ", ""))
 check("A: parked and free, it asks the factory who needs company", len(asks(g, "escort_request")) >= 1)
 
-# B) parked with 78 fuel (LoadRunner): a short hop to the pad, coal, back to the spot
+# B) parked with 78 fuel (Phantastic): a short hop to the pad, coal, back to the spot
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 78
 FS["loader.state"] = textutils.serialize({ mode = "park" })''', limit=1500)
 check("B: fetched fuel by a low hop", g.FUEL_ASKS >= 1 and g.T.fuel >= 600 and "fetching fuel" in states(g))
@@ -144,17 +144,17 @@ check("D: stranded far out: asks for a feed where it is", len(f) >= 1 and abs(f[
 # E) told to stay (park by hand): never asks for company
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 3000
 FS["loader.state"] = textutils.serialize({ mode = "park" })
-CMDQ2 = { { at = 10, cmd = { id = 5, target = "LoadRunner", cmd = "park" } } }''', limit=600)
+CMDQ2 = { { at = 10, cmd = { id = 5, target = "Phantastic", cmd = "park" } } }''', limit=600)
 check("E: park by hand holds it", len([m for m in asks(g, "escort_request") if m.at > 20]) == 0)
 check("E: and says so in its report", g.LAST.job.hold == True)
 
 # F) the factory sends it out (a direct order); the miner later stops work: home, parked, asking again
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 5000
 FS["loader.state"] = textutils.serialize({ mode = "park" })
-CMDQ2 = { { at = 70, cmd = { direct = true, forId = 52, nonce = "n1", cmd = "escort", who = "OreLando", x = -4800, z = 1700, auto = true } },
+CMDQ2 = { { at = 70, cmd = { direct = true, forId = 52, nonce = "n1", cmd = "escort", who = "Oresome", x = -4800, z = 1700, auto = true } },
           { at = 80, cmd = { direct = true, forId = 52, nonce = "n1", cmd = "escort", who = "Nobody", auto = true } },      -- a repeat: ignored
           { at = 90, cmd = { direct = true, forId = 99, nonce = "n2", cmd = "escort", who = "Nobody", auto = true } } }    -- for another loader
-OTHERS.OreLando = function(c)
+OTHERS.Oresome = function(c)
   if T.x == -4800 and T.z == 1700 then OVER = (OVER or 0) + 1 end
   return { role = "miner", state = c < 900 and "mining" or "done", pos = { x = -4800, y = 12, z = 1700 } }
 end''', limit=2200)
@@ -167,15 +167,15 @@ check("F: repeats and other loaders' orders were ignored", "Nobody" not in L.eva
 # G) sent to a turtle that never speaks: ten minutes over the spot, then home, and it says who it gave up on
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 5000
 FS["loader.state"] = textutils.serialize({ mode = "park" })
-CMDQ2 = { { at = 70, cmd = { direct = true, forId = 52, nonce = "n1", cmd = "escort", who = "CoalPorter", x = -4700, z = 1600, auto = true } } }''', limit=2500)
+CMDQ2 = { { at = 70, cmd = { direct = true, forId = 52, nonce = "n1", cmd = "escort", who = "Coalition", x = -4700, z = 1600, auto = true } } }''', limit=2500)
 st = states(g)
-check("G: looked for it, then came home", "looking for CoalPorter" in st and st[-1] == "parked")
-check("G: tells the factory who it gave up on", any(m.gaveUp == "CoalPorter" for m in asks(g, "escort_request")))
+check("G: looked for it, then came home", "looking for Coalition" in st and st[-1] == "parked")
+check("G: tells the factory who it gave up on", any(m.gaveUp == "Coalition" for m in asks(g, "escort_request")))
 
 # H) a long way out on little fuel: it fetches enough for there and back before going, and does not shuttle
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 700
-FS["loader.state"] = textutils.serialize({ mode = "escort", who = "NatKingCoal", stay = true, x = -6000, z = 1521 })
-OTHERS.NatKingCoal = function(c)
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "Charcool", stay = true, x = -6000, z = 1521 })
+OTHERS.Charcool = function(c)
   if T.x == -6000 and T.z == 1521 then OVER = (OVER or 0) + 1 end
   return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } }
 end
@@ -195,8 +195,8 @@ check("H: got there and stayed", (g.OVER or 0) > 5 and g.T.fuel > 1500 + 130)
 # I) the factory has no coal: it does not fly out on fuel that will not bring it home
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 700
 NO_COAL = true
-FS["loader.state"] = textutils.serialize({ mode = "escort", who = "NatKingCoal", stay = true, x = -6000, z = 1521 })
-OTHERS.NatKingCoal = function(c) return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } } end''', limit=2500)
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "Charcool", stay = true, x = -6000, z = 1521 })
+OTHERS.Charcool = function(c) return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } } end''', limit=2500)
 check("I: no coal to be had: stays near the base and says it needs fuel", abs(g.T.x + 4461) < 20 and "needs fuel" in states(g))
 # J) nearly dry, and another turtle is sitting on the pad: wait a minute, then out of its way, and ask for a feed
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 78
@@ -207,4 +207,36 @@ local oldPrint = print
 print = function(...) if tostring((...)):find("launch pad is taken") then TRIES = TRIES + 1 end return oldPrint(...) end''', limit=280)
 check("J: pad taken: one try, then a feed is asked for", g.TRIES == 1 and len(asks(g, "feed_request")) >= 1 and g.FUEL_ASKS == 0)
 check("J: not left hanging in the air over the pad", (g.T.x, g.T.z) != (-4462, 1521) and g.T.fuel > 0)
+# K) the renaming, mid-escort: a loader with its old label and old state (with the hunter, by his old name)
+#    starts up; the hunter reports under his old name, then (rebooted) under his new one, and moves on
+L, g, r = run('''T.x, T.y, T.z, T.fuel = -4700, 150, 1600, 5000
+LABEL = "Chunk" .. "Berry"
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "NatKing" .. "Coal", stay = true, x = -4700, z = 1600 })
+OTHERS.hunter = function(c)
+  local renamed = c > 300
+  local x = renamed and -4900 or -4700
+  if renamed and T.x == -4900 and T.z == 1600 then OVER_NEW = (OVER_NEW or 0) + 1 end
+  return { role = "miner", state = "hunting coal", pos = { x = x, y = 30, z = 1600 }, name = renamed and "Charcool" or ("NatKing" .. "Coal") }
+end
+-- (OTHERS reports under its key: give this one the name it carries)
+local receive = rednet.receive
+rednet.receive = function(proto, timeout)
+  local id, msg = receive(proto, timeout)
+  if type(msg) == "table" and msg.name then msg.label, msg.name = msg.name, nil end
+  return id, msg
+end''', limit=1500)
+check("K: the loader took its new name, and its state names the hunter's new name",
+      g.LABEL == "Ablaze" and 'who="Charcool"' in L.eval('FS["loader.state"]').replace(" ", ""))
+check("K: it followed the hunter after he was renamed", (g.OVER_NEW or 0) > 10 and "looking for Charcool" not in states(g))
+
+# L) orders by hand under the old names: to the loader's old name, naming the miner's old name
+L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 5000
+LABEL = "Ablaze"
+FS["loader.state"] = textutils.serialize({ mode = "park", hold = true })
+CMDQ2 = { { at = 20, cmd = { id = 9, target = "Chunk" .. "Berry", cmd = "escort", who = "Ore" .. "Lando", stay = 1 } } }
+OTHERS.Oresome = function(c)
+  if T.x == -4800 and T.z == 1700 then OVER = (OVER or 0) + 1 end
+  return { role = "miner", state = "mining", pos = { x = -4800, y = 12, z = 1700 } }
+end''', limit=1200)
+check("L: an order to the loader's old name, for a miner by his old name, is carried out", (g.OVER or 0) > 10)
 print("PASS" if not fails else "FAILED: %d" % len(fails))
