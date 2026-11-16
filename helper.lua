@@ -765,7 +765,18 @@ local function runFit()
   for i = 1, math.min(st.i - 1, #m.ops) do
     if not st.undone[i] then applyOp(m.ops[i]) end
   end
-  print(("Fitting out: %d jobs."):format(#m.ops))
+  -- two helpers can share the fit-out: each takes the jobs in its own strip
+  -- (x from xmin to xmax) and takes the other's as done
+  local function mine(op)
+    return (not job.xmin or op.x >= job.xmin) and (not job.xmax or op.x <= job.xmax)
+  end
+  if job.xmin or job.xmax then
+    local n = 0
+    for _, op in ipairs(m.ops) do if mine(op) then n = n + 1 end end
+    print(("Fitting out: %d of %d jobs are mine."):format(n, #m.ops))
+  else
+    print(("Fitting out: %d jobs."):format(#m.ops))
+  end
 
   local function needs(from)
     return function()
@@ -774,7 +785,7 @@ local function runFit()
       local n = list and #list or (#m.ops - from + 1)
       for k = 1, n do
         local op = m.ops[list and list[k] or (from + k - 1)]
-        if op.k ~= "D" then
+        if op.k ~= "D" and mine(op) then
           local name = m.pal[op.i].name
           if not (st.short and st.short[name]) then
             if not counts[name] then counts[name] = 0 order[#order + 1] = name end
@@ -812,6 +823,10 @@ local function runFit()
   -- try again (after fetching things).
   local function doOp(n, rest, lastGo)
     local op = m.ops[n]
+    if not mine(op) then
+      applyOp(op)
+      return true
+    end
     local want = op.k ~= "D" and m.pal[op.i] or nil
     local function putOff(why)
       if lastGo then
@@ -1344,8 +1359,14 @@ while true do
       if fs.exists(f) then fs.delete(f) end
     end
     st = { job = { fit = true, plan = plan, shell = shell, ox = math.floor(tonumber(cmd.ox)),
-      oy = math.floor(tonumber(cmd.oy)), oz = math.floor(tonumber(cmd.oz)) },
+      oy = math.floor(tonumber(cmd.oy)), oz = math.floor(tonumber(cmd.oz)),
+      xmin = tonumber(cmd.xmin), xmax = tonumber(cmd.xmax) },
       turn = st.turn, orderSeq = st.orderSeq }
+    save()
+    task = guarded(work)
+  elseif cmd.cmd == "strip" and st.job and (tonumber(cmd.xmin) or tonumber(cmd.xmax)) then
+    -- share the job in hand: keep to x from xmin to xmax from here on
+    st.job.xmin, st.job.xmax = tonumber(cmd.xmin), tonumber(cmd.xmax)
     save()
     task = guarded(work)
   elseif cmd.cmd == "chop" and type(cmd.area) == "string" then
