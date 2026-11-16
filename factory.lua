@@ -403,6 +403,25 @@ local RECIPES = {
   },
   ["computercraft:monitor_advanced"] = {
     yield = 4, grid = { "G", "G", "G", "G", "P", "G", "G", "G", "G" },
+  -- the rest of the screens' kit. A station is a plain computer (COMPUTER,
+  -- further down): it drives an advanced monitor in colour just the same.
+  ["computercraft:computer_advanced"] = {            -- (unverified: as the plain one, in gold)
+    grid = { "G", "G", "G", "G", "R", "G", "G", "P", "G" },
+    key = { G = "minecraft:gold_ingot", R = "minecraft:redstone", P = "minecraft:glass_pane" },
+  },
+  ["computercraft:disk_drive"] = {                   -- (unverified)
+    grid = { "S", "S", "S", "S", "R", "S", "S", "R", "S" },
+    key = { S = "minecraft:stone", R = "minecraft:redstone" },
+  },
+  ["computercraft:disk"] = {                         -- a floppy (unverified; needs paper, which nobody mines)
+    grid = { "R", "P", "", "", "", "", "", "", "" },
+    key = { R = "minecraft:redstone", P = "minecraft:paper" },
+  },
+  ["minecraft:paper"] = {
+    yield = 3,
+    grid = { "C", "C", "C", "", "", "", "", "", "" },
+    key = { C = "minecraft:sugar_cane" },
+  },
     key = { G = "minecraft:gold_ingot", P = "minecraft:glass_pane" },
   },
   -- unpacking storage blocks (packed by tidyStorage when the chests fill up)

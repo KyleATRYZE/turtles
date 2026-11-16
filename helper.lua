@@ -1013,8 +1013,15 @@ local function runFit()
       st.undone[n] = true
       return true
     end
-    if want and not findSlot(want.name) then
-      if st.short and st.short[want.name] then return putOff("none to be had") end
+    -- None on board and none to be had: most things are then left. A screen's
+    -- parts are looked at all the same: the one already there may be right,
+    -- or only lying wrong (taken down, it is the one to put back).
+    local lacking = want and not findSlot(want.name)
+    local lookAnyway = lacking and (want.name:find("monitor", 1, true) or want.name:find("computer", 1, true)
+      or want.name:find("wireless_modem", 1, true))
+    if lacking and st.short and st.short[want.name] and not lookAnyway then
+      return putOff("none to be had")
+    elseif lacking and not (st.short and st.short[want.name]) then
       outOfBuilding()
       supplyRun(needs(rest), "out of " .. want.name:gsub("^.*:", ""))
       intoBuilding()
@@ -1039,6 +1046,7 @@ local function runFit()
       applyOp(op)
       return true
     end
+    if lacking and not (there and there.name == want.name) then return putOff("none to be had") end
     local right = there and there.name == want.name
       and (not want.facing or facingOf(there) == want.facing) and upright(there)
     if not right then
