@@ -37,6 +37,8 @@ crafts every part and drops finished mining turtles (pickaxe + ender modem) into
 
 The factory also runs the base. It places each new miner on the launch pad (the space above the
 disk drive), fuels it and switches it on; the floppy disk installs the software. Each miner asks
-the factory for a plot (8x8, Y 50 down, at least 24 blocks from the factory), flies there at its
-own cruising height, and flies back to drop its haul into the chest beside the factory turtle.
-Miners come down one column and leave by another, so they never meet head-on.
+the factory for a plot (8x8, Y 50 down, at least 24 blocks from the factory) and travels there
+underground, along its own tunnel level between Y 52 and Y 61, so nothing on the surface is
+touched. It comes back the same way to drop its haul into the chest beside the factory turtle.
+At the base, miners come up one shaft (beyond the drop-off chest) and go down another (beyond the
+launch pad), so they never meet head-on.

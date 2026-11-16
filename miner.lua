@@ -226,6 +226,10 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient)
     end
     if stuck > 8 then
       if not patient then return false end
+      if stuck % 15 == 9 then
+        print("Something is in my way. Waiting...")
+        report("path blocked")
+      end
       sleep(2)
     end
   end
@@ -408,17 +412,34 @@ local function travelTo(lf, lr, y)
 end
 
 ---------------------------------------------------------------- swarm travel
--- Swarm miners have no chest of their own. Each flies between its plot and
--- the base at its own cruising height, comes down one column onto the
--- drop-off chest and leaves by a different column, so turtles never meet
--- head-on.
+-- Swarm miners have no chest of their own. Each travels between its plot
+-- and the base UNDERGROUND, along its own tunnel level just above the plots
+-- (so nothing on the surface is touched). At the base it comes up one shaft
+-- to the drop-off chest and goes back down a different one, so turtles
+-- never meet head-on.
+--
+--   in-shaft:  one step beyond the drop-off chest, away from the factory
+--   out-shaft: one step beyond the launch pad, away from the factory
+
+-- This miner's own tunnel level (unique per plot, so tunnels never clash).
+local function laneY()
+  return st.home.y + 2 + ((st.index - 1) % 10)
+end
+
+local function inShaft()
+  return { x = 2 * st.dock.x - st.exit1.x, z = 2 * st.dock.z - st.exit1.z }
+end
+
+local function outShaft()
+  return { x = 2 * st.exit2.x - st.exit1.x, z = 2 * st.exit2.z - st.exit1.z }
+end
 
 local function shaftXZ() return toWorld(1, 0) end
 
 local function at(p) return pos.x == p.x and pos.y == p.y and pos.z == p.z end
 local function over(p) return pos.x == p.x and pos.z == p.z end
 
--- Fly level to a column.
+-- Travel level to a column.
 local function flyTo(x, z)
   axisMove("x", x, true)
   axisMove("z", z, true)
@@ -428,9 +449,10 @@ end
 local function dockDistance(y)
   local lf, lr = toLocal()
   local sx, sz = shaftXZ()
-  return math.abs(lf - 1) + math.abs(lr) + (st.cruise - y)
-    + math.abs(sx - st.dock.x) + math.abs(sz - st.dock.z)
-    + (st.cruise - st.dock.y)
+  local lane, shaft = laneY(), inShaft()
+  return math.abs(lf - 1) + math.abs(lr) + math.abs(lane - y)
+    + math.abs(sx - shaft.x) + math.abs(sz - shaft.z)
+    + (st.dock.y - lane) + 1
 end
 
 local function distHome()
@@ -465,10 +487,15 @@ local function toExitColumn()
   if at(st.exit1) then flyTo(st.exit2.x, st.exit2.z) end
 end
 
--- Leave the base by the exit column.
+-- Leave the base: across to the out-shaft and down it to our tunnel level.
 local function leaveDock()
   toExitColumn()
-  axisMove("y", st.cruise, true)
+  local out = outShaft()
+  if over(st.exit2) then
+    axisMove("y", st.dock.y, true)   -- up off the launch pad if we were on it
+    flyTo(out.x, out.z)
+  end
+  axisMove("y", laneY(), true)
 end
 
 -- Short of fuel with no coal on board: wait on the launch pad next to the
@@ -498,40 +525,59 @@ local function inPlot()
     and pos.y <= st.home.y
 end
 
+-- On the way out of the base: beside the factory, on the launch pad, or
+-- in the out-shaft.
 local function onExitSide()
+  local out = outShaft()
   return at(st.exit1) or (over(st.exit2) and pos.y >= st.exit2.y - 1)
+    or (pos.x == out.x and pos.z == out.z and pos.y <= st.dock.y and pos.y >= laneY())
+end
+
+-- In the shaft that comes up to the drop-off chest.
+local function onWayIn()
+  local shaft = inShaft()
+  return pos.x == shaft.x and pos.z == shaft.z
+    and pos.y <= st.dock.y and pos.y >= laneY()
+end
+
+-- Up the in-shaft and onto the drop-off chest.
+local function upToDock()
+  axisMove("y", st.dock.y, true)
+  flyTo(st.dock.x, st.dock.z)
 end
 
 -- After a restart a swarm miner may be anywhere on its route. These two get
--- it from wherever it is to the drop-off chest, or to the top of its shaft,
--- always going the right way along the one-way columns.
+-- it from wherever it is to the drop-off chest, or to the top of its plot
+-- shaft, always going the right way along the one-way shafts.
 
 local function toDockFromAnywhere()
+  if at(st.dock) then return end
   if inPlot() then toShaftHead() end
-  if over(st.dock) and pos.y >= st.dock.y then
-    axisMove("y", st.dock.y, true)
+  if onWayIn() then
+    upToDock()
     return
   end
   if onExitSide() then
-    leaveDock()   -- must go up and round again
+    leaveDock()   -- must go down and round again
   else
-    axisMove("y", st.cruise, true)
+    axisMove("y", laneY(), true)
   end
-  flyTo(st.dock.x, st.dock.z)
-  axisMove("y", st.dock.y, true)
+  local shaft = inShaft()
+  flyTo(shaft.x, shaft.z)
+  upToDock()
 end
 
 local function toShaftFromAnywhere()
   if inPlot() then return end
   local sx, sz = shaftXZ()
   if not (pos.x == sx and pos.z == sz) then
-    if over(st.dock) and pos.y >= st.dock.y then
-      axisMove("y", st.dock.y, true)   -- finish coming down, leave properly
+    if onWayIn() then
+      upToDock()        -- finish coming in, then leave properly
       leaveDock()
-    elseif onExitSide() then
+    elseif at(st.dock) or onExitSide() then
       leaveDock()
     else
-      axisMove("y", st.cruise, true)
+      axisMove("y", laneY(), true)
     end
     flyTo(sx, sz)
   end
@@ -750,7 +796,7 @@ local function run()
     if at(st.dock) or onExitSide() then
       fuelStop(600)
       leaveDock()
-      -- step off the exit column so others can pass; wait here for the next plot
+      -- step off the out-shaft so others can pass; wait here for the next plot
       axisMove("x", pos.x + 3, true)
     end
     fs.delete(STATE_FILE)
@@ -887,7 +933,7 @@ local function homeTask()
       unloadDock()
       fuelStop(tripFuel(st.home.y))
       leaveDock()
-      axisMove("x", pos.x + 3, true)   -- park clear of the exit column
+      axisMove("x", pos.x + 3, true)   -- park clear of the out-shaft
     else
       if not relocate() then return end
       report("going home")

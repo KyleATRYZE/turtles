@@ -24,7 +24,7 @@ local PLOT_SIZE    = 8     -- each plot is this many blocks square
 local KEEP_OUT     = 24    -- no plot comes closer to the factory than this
 local TOP_Y_MAX    = 50    -- plots are dug from this height down
 local BOTTOM_Y     = -58
-local CRUISE_UP    = 45    -- miners fly this far above the factory (+ plot no.)
+local CRUISE_UP    = 45    -- (no longer used: miners now travel underground)
 
 local PAUSE_FILE   = ".factory_paused"
 local BASE_FILE    = ".base"
