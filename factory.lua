@@ -61,6 +61,15 @@ local RECIPES = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
   },
+  ["minecraft:blaze_powder"] = {
+    yield = 2,
+    grid = { "R", "", "", "", "", "", "", "", "" },
+    key = { R = "minecraft:blaze_rod" },
+  },
+  ["minecraft:ender_eye"] = {
+    grid = { "P", "B", "", "", "", "", "", "", "" },
+    key = { P = "minecraft:ender_pearl", B = "minecraft:blaze_powder" },
+  },
   [COMPUTER] = {
     grid = { "S", "S", "S", "S", "R", "S", "S", "P", "S" },
     key = { S = "minecraft:stone", R = "minecraft:redstone", P = "minecraft:glass_pane" },
