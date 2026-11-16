@@ -198,4 +198,13 @@ NO_COAL = true
 FS["loader.state"] = textutils.serialize({ mode = "escort", who = "NatKingCoal", stay = true, x = -6000, z = 1521 })
 OTHERS.NatKingCoal = function(c) return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } } end''', limit=2500)
 check("I: no coal to be had: stays near the base and says it needs fuel", abs(g.T.x + 4461) < 20 and "needs fuel" in states(g))
+# J) nearly dry, and another turtle is sitting on the pad: wait a minute, then out of its way, and ask for a feed
+L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 78
+setSpecial(BASE_T.pad.x, BASE_T.pad.y, BASE_T.pad.z, "computercraft:turtle_normal")
+FS["loader.state"] = textutils.serialize({ mode = "park" })
+TRIES = 0
+local oldPrint = print
+print = function(...) if tostring((...)):find("launch pad is taken") then TRIES = TRIES + 1 end return oldPrint(...) end''', limit=280)
+check("J: pad taken: one try, then a feed is asked for", g.TRIES == 1 and len(asks(g, "feed_request")) >= 1 and g.FUEL_ASKS == 0)
+check("J: not left hanging in the air over the pad", (g.T.x, g.T.z) != (-4462, 1521) and g.T.fuel > 0)
 print("PASS" if not fails else "FAILED: %d" % len(fails))

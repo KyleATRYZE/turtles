@@ -330,8 +330,10 @@ function M.runWithCommands(task, inline)
     while true do
       local c = M.waitCommand()
       if c.cmd == "chunky" then
-        -- wear the Chunk Controller on board (or stop): no need to stop work
-        C.setEnabled(c.on ~= false)
+        -- wear the Chunk Controller on board (or, with on=0, stop): no need
+        -- to stop work. (Orders written by hand carry numbers and words.)
+        local on = c.on
+        C.setEnabled(not (on == false or on == 0 or on == "0" or on == "false" or on == "off"))
       elseif not (inline and inline(c)) then
         cmd = c
         return

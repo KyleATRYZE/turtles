@@ -239,6 +239,7 @@ local function chunkOf(x, z) return math.floor(x / 16), math.floor(z / 16) end
 local LOW_FUEL, GOOD_FUEL = 600, 1500
 local HOP_UP = 14          -- a short hop to the pad flies this far above the factory, not at flying height
 local lastFeedAsk = -10000
+local lastPadFail = -10000  -- when the pad was last found taken (not tried again for five minutes)
 
 local function hasPad() return base and type(base.pad) == "table" end
 
@@ -293,6 +294,10 @@ local function fuelUp(want, force)
   elseif fuel() >= LOW_FUEL then
     return false
   end
+  if os.clock() - lastPadFail < 300 then
+    if fuel() < LOW_FUEL then askFeed() end
+    return false
+  end
   local low = false
   if fuel() < tripHigh() then
     -- (enough to get down onto the pad is enough: the coal is there)
@@ -307,20 +312,30 @@ local function fuelUp(want, force)
   print("Low on fuel. Down to the launch pad for coal.")
   report("fetching fuel")
   if not flyTo(base.pad.x, base.pad.z, low and hopHeight() or nil) then return false end
+  local blocked = 0
   while pos.y > base.pad.y do
-    if not move("d") then break end
+    if not move("d") then
+      -- somebody is on the pad: give them a minute
+      blocked = blocked + 1
+      if blocked > 6 then break end
+      sleep(10)
+    end
   end
-  if pos.y == base.pad.y then
+  if pos.y ~= base.pad.y then
+    print("The launch pad is taken.")
+    lastPadFail = os.clock()
+  else
     for try = 1, 72 do                 -- (the factory may be busy: wait longer while really low)
       if fuel() >= want or (try > 24 and fuel() >= LOW_FUEL) then break end
       rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
       sleep(5)
       refuel(want)
     end
+    if fuel() < LOW_FUEL then lastPadFail = os.clock() end   -- (nothing to be had: not straight back down)
   end
   print("Fuel: " .. tostring(fuel()) .. ".")
-  -- (off the pad whatever happened: others need it. Still nearly dry: a
-  -- short way up, and ask for some to be brought)
+  -- (off the pad, and out of the air above it, whatever happened: others
+  -- need it. Still nearly dry: a short way up, and ask for some to be brought)
   if fuel() >= LOW_FUEL then
     climb()
   else
@@ -386,7 +401,7 @@ local function parkedLoop(parked)
     if fuel() < LOW_FUEL then
       if fuelUp() then parked = false end   -- (went to the pad: back to the parking spot)
     end
-    if not parked and fuel() >= LOW_FUEL then parked = park() end
+    if not parked then parked = park() end  -- (nearly dry, park makes it a short hop, or stays put)
     if fuel() < LOW_FUEL then
       report("needs fuel")
     else
@@ -577,6 +592,10 @@ end
 if swarm and swarm.hello then pcall(swarm.hello, "loader") end   -- awake, and here
 
 local function task() parallel.waitForAny(guarded, listen) end
+-- (an order written by hand carries numbers and words: auto=0 is "no")
+local function yes(v)
+  return v ~= nil and v ~= false and v ~= 0 and v ~= "0" and v ~= "false" and v ~= "off"
+end
 if not swarm then
   task()
   return
@@ -600,7 +619,7 @@ while true do
       st.stay = cmd.stay and true or nil
       -- (auto: sent by the factory, to come home by itself. An order written
       -- by hand has no auto, and holds until the turtle is near the base.)
-      st.auto = cmd.auto and not st.stay and true or nil
+      st.auto = yes(cmd.auto) and not st.stay and true or nil
       st.hold = nil
     elseif cmd.cmd == "search" and type(cmd.who) == "string" and type(cmd.path) == "string" then
       st.mode, st.who, st.path = "search", cmd.who, cmd.path
@@ -610,7 +629,7 @@ while true do
     elseif cmd.cmd == "park" then
       -- stay at the base until told otherwise (auto=1: until wanted elsewhere)
       st.mode, st.who, st.stay, st.auto = "park", nil, nil, nil
-      st.hold = not cmd.auto and true or nil
+      st.hold = not yes(cmd.auto) and true or nil
       if tonumber(cmd.x) and tonumber(cmd.z) then
         st.park = { x = math.floor(tonumber(cmd.x)), z = math.floor(tonumber(cmd.z)) }
       end
