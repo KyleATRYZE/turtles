@@ -30,7 +30,10 @@ SHELL = {
 
 bp = json.load(open(os.path.join(ROOT, "blueprints", "factory.json")))
 pal, index, blocks = [], {}, []
+DOCKS = {tuple(d) for d in bp.get("docks", [])}     # fitted later, not shell
 for x, y, z, i in bp["blocks"]:
+    if (x, y, z) in DOCKS:
+        continue
     full = bp["palette"][i]
     m = re.match(r"([^\[]+)(?:\[(.*)\])?", full)
     name, props = m.group(1), dict(p.split("=") for p in (m.group(2) or "").split(",") if p)

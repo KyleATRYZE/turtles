@@ -283,16 +283,52 @@ for x in range(TX1 + 1, TX2):
 put(TX1 + 5, 17, TZ2 - 2, "computercraft:computer_advanced")   # GroundControl
 put(TX1 + 5, 18, TZ2 - 2, "advancedperipherals:chat_box")
 put(TX1 + 4, 17, TZ2 - 2, "advancedperipherals:player_detector")
-# lanterns
-for x in range(4, 44, 9):
-    for z in (8, 22):
-        y = 13 if x < 27 else 13
-        put(x, 6 if x < 27 else 12, z, "minecraft:lantern[hanging=true]")
-for (x, z) in ((48, 24), (52, 26)):
-    put(x, 22, z, "minecraft:lantern[hanging=true]")
+# drone docks: a copper pad for each drone along the east side of the launch
+# bay; a drone with nothing to do flies home and sits on its own pad
+DOCKS = [(26, 1, z) for z in (3, 5, 7, 9, 11, 13, 17, 19, 21, 23, 25, 27)]
+for (x, y, z) in DOCKS:
+    put(x, y, z, "minecraft:cut_copper_slab[type=bottom]")
+# touch panels (advanced monitors are touch screens): a 3 x 2 panel by
+# GroundControl in the tower, and a 2 x 2 one by the launch bay door
+PANELS = {
+    "tower": [(TX1 + 1, y, z) for y in (17, 18) for z in (23, 24, 25)],
+    "launch bay": [(19, y, z) for y in (2, 3) for z in (26, 27)],
+}
+for cells in PANELS.values():
+    for (x, y, z) in cells:
+        put(x, y, z, "computercraft:monitor_advanced")
 # copper pipes running along the front of the smelting hall
 for x in range(1, 9):
     put(x, 7, HZ + 1, "minecraft:lightning_rod[facing=east]")
+
+# ---------------------------------------------------------------- lanterns
+# hung wherever the lighting plan says (tools/lighting.py): every walkable
+# spot inside stays lit so nothing spawns; chains under the high ceilings
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lighting import plan_lanterns
+LANTERNS = plan_lanterns(dict(B), door_z=HZ - 1)
+for (lx, ly, lz), chain in LANTERNS:
+    put(lx, ly, lz, "minecraft:lantern[hanging=true]")
+    for (cx_, cy_, cz_) in chain:
+        put(cx_, cy_, cz_, "minecraft:chain")
+
+# ---------------------------------------------------------------- drone routes
+# (for the plan page) the base in the launch bay works like the hut today:
+# factory at (22, 2, 15), pad west of it, drop-off chest east; miners come up
+# the in-shaft (x 24), unload, refuel over the factory, go down the out-shaft
+# (x 20) to their roads 20 below; everyone else uses the arch door.
+ROAD_IN, ROAD_OUT = 2 - 16, 2 - 20
+ROUTES = [
+    {"name": "Miners coming home", "color": "#e0a030",
+     "points": [[60, ROAD_IN, 15], [24.5, ROAD_IN, 15.5], [24.5, 3.5, 15.5], [23.5, 3.5, 15.5], [22.5, 3.5, 15.5]]},
+    {"name": "Miners going out", "color": "#d0603a",
+     "points": [[22.5, 3.5, 15.5], [21.5, 3.5, 15.5], [20.5, 3.5, 15.5], [20.5, ROAD_OUT, 15.5], [-15, ROAD_OUT, 15.5]]},
+    {"name": "Builder, lumberjack, ChunkNorris", "color": "#2f8a74",
+     "points": [[26.5, 2.5, 7.5], [24.5, 2.5, 7.5], [22.5, 2.5, 24.5], [22.5, 2.5, 31.5], [22.5, 2.5, 38]]},
+    {"name": "Lumberjack to the tree farm", "color": "#7cb342",
+     "points": [[26.5, 2.5, 13.5], [24.5, 2.5, 15.5], [27.5, 2.5, 15.5], [29.5, 2.5, 15.5]]},
+]
 
 # ---------------------------------------------------------------- write out
 palette, index, blocks = [], {}, []
@@ -311,6 +347,9 @@ out = {
     "palette": palette,
     "blocks": blocks,
     "rooms": ROOMS,
+    "docks": DOCKS,
+    "panels": PANELS,
+    "routes": ROUTES,
     "materials": dict(materials.most_common()),
 }
 os.makedirs(os.path.join(os.path.dirname(__file__), "..", "blueprints"), exist_ok=True)

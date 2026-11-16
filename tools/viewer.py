@@ -45,7 +45,9 @@ for name, n in need.items():
     elif b == "furnace":
         raw["cobblestone"] += n * 8
     elif b == "lantern":
-        raw["iron_ingot"] += n
+        raw["iron_ingot"] += n            # 8 nuggets each, plus a torch
+    elif b == "chain":
+        raw["iron_ingot"] += math.ceil(n * 11 / 9)
     elif b == "birch_sapling":
         raw["birch_sapling"] += n
 raw["cobblestone"] += raw["stone"]; smelt["Cobblestone → stone"] += raw["stone"]
@@ -55,14 +57,14 @@ total_smelts = sum(smelt.values())
 raw["coal"] += math.ceil(total_smelts / 8)
 
 NICE = {
-    "cobbled_deepslate": ("Cobbled deepslate", "Miners haul it home (2 stacks per trip)"),
-    "cobblestone": ("Cobblestone", "Miners haul it home (2 stacks per trip)"),
-    "sand": ("Sand", "Not found underground: needs a supply from you, or a crusher"),
-    "dirt": ("Dirt", "Tree farm soil: the miners dig plenty (they dump it today)"),
+    "cobbled_deepslate": ("Cobbled deepslate", "In stock: the miners brought home more than enough"),
+    "cobblestone": ("Cobblestone", "In stock, plus the stone you added"),
+    "sand": ("Glass", "About 270 in stock (glass and sand): roughly 200 more sand to find"),
+    "dirt": ("Dirt", "Tree farm soil: in stock from clearing the site"),
     "logs": ("Logs", "Chests and ladders: from the tree farm, once it is growing"),
     "gold_ingot": ("Gold ingots", "Monitor wall: the factory has about 80 counting raw gold"),
     "copper_ingot": ("Copper ingots", "Chimney caps and pipes: the factory has 450 raw copper"),
-    "iron_ingot": ("Iron ingots", "Lanterns"),
+    "iron_ingot": ("Iron ingots", "Lanterns and their chains: the factory has 88"),
     "coal": ("Coal", "Fuel for all the smelting"),
     "birch_sapling": ("Birch saplings", "To start the tree farm: from you"),
 }
@@ -73,7 +75,7 @@ block_rows = [(LABEL(k), v) for k, v in need.most_common()]
 
 page_data = {
     "palette": bp["palette"], "blocks": bp["blocks"], "rooms": bp["rooms"],
-    "size": bp["size"],
+    "size": bp["size"], "routes": bp.get("routes", []), "docks": bp.get("docks", []),
 }
 
 html = open(os.path.join(os.path.dirname(__file__), "viewer_template.html")).read()

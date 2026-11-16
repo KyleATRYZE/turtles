@@ -70,6 +70,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--copper); ou
 .cut input { flex: 1; accent-color: var(--copper); }
 .cut output { font: 500 14px var(--mono); color: var(--ink); min-width: 5ch; text-align: right; }
 
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0; margin: 0; font-size: 14px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.legend i { width: 22px; height: 4px; border-radius: 2px; display: inline-block; }
 /* rooms */
 .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 .room { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; border-top: 4px solid var(--brick); }
@@ -128,8 +131,10 @@ section { display: grid; gap: 14px; }
       <button type="button" data-cut="13">Without the roof</button>
       <button type="button" data-cut="7">Ground floor</button>
       <button type="button" data-cut="0">Floor plan</button>
+      <button type="button" id="routes" aria-pressed="false">Drone routes</button>
       <button type="button" id="spin" aria-pressed="false">Turntable</button>
     </div>
+    <ul class="legend" id="legend" hidden></ul>
     <label class="cut" for="cutRange">Cut at height
       <input type="range" id="cutRange" min="0" max="31" value="31">
       <output id="cutOut" for="cutRange">31</output>
@@ -161,8 +166,8 @@ section { display: grid; gap: 14px; }
     <article class="room">
       <h3>Launch bay <span class="size">8 × 29</span></h3>
       <dl>
-        <dt>Inside</dt><dd>ForgeClooney, the launch pad, the drop-off chest and the miners' two shafts down to their roads, behind the big arched door.</dd>
-        <dt>How it works</dt><dd>Exactly as in the hut today: miners come up one shaft, unload, refuel above the factory and go down the other.</dd>
+        <dt>Inside</dt><dd>ForgeClooney, the launch pad, the drop-off chest and the miners' two shafts down to their roads, behind the big arched door. Along the east wall, 12 copper docking pads: every drone has its own and sits on it when it has nothing to do. By the door, a 2 × 2 touch panel.</dd>
+        <dt>How it works</dt><dd>Miners never use the door: they come up the in-shaft from their road, unload and refuel exactly as in the hut today, then drop down the out-shaft to the road 20 blocks below. The builder, the lumberjack and ChunkNorris go in and out through the arch. Turn on <b>Drone routes</b> above to see the lot.</dd>
         <dt>Needs</dt><dd>Moves over last, once the rest works, so mining never stops. The miners switch to the new base on their next trip.</dd>
       </dl>
       <button type="button" data-room="2">Show in the model</button>
@@ -188,9 +193,9 @@ section { display: grid; gap: 14px; }
     <article class="room">
       <h3>Control tower <span class="size">11 × 11, 24 tall</span></h3>
       <dl>
-        <dt>Inside</dt><dd>Top floor: a 9 × 4 wall of advanced monitors, GroundControl with the Chat Box and Player Detector, and a big window looking south over the site. Lower floors: the other computers, reached by ladder.</dd>
-        <dt>How it works</dt><dd>The monitor wall shows the live fleet map, storage levels and the factory's queue.</dd>
-        <dt>Needs</dt><dd>36 advanced monitors (63 gold), a dashboard program, and GroundControl moved in.</dd>
+        <dt>Inside</dt><dd>Top floor: a 9 × 4 wall of advanced monitors, GroundControl with the Chat Box and Player Detector, a 3 × 2 touch panel beside it, and a big window looking south over the site. Lower floors: the other computers, reached by ladder.</dd>
+        <dt>How it works</dt><dd>The monitor wall shows the live fleet map, storage levels and the factory's queue. The touch panel has the buttons: recall everyone, resume, pause the build, and a button per drone (recall, send to work, find on the map).</dd>
+        <dt>Needs</dt><dd>42 advanced monitors (about 75 gold), a dashboard program, and GroundControl moved in.</dd>
       </dl>
       <button type="button" data-room="5">Show in the model</button>
     </article>
@@ -226,7 +231,7 @@ section { display: grid; gap: 14px; }
   <p>Each phase leaves everything working, so the swarm keeps mining throughout. The tools come first, because a builder that can't fetch its own materials would need you at every step.</p>
   <ol class="phases">
     <li>
-      <div class="ph-head"><span class="ph-num">0</span><h3>Gather and map</h3><span class="state now">Running now</span></div>
+      <div class="ph-head"><span class="ph-num">0</span><h3>Gather and map</h3><span class="state">Done</span></div>
       <ul>
         <li>Miners haul two stacks each of cobblestone and cobbled deepslate home every trip.</li>
         <li>BrickJagger maps the meadow, so the building can be placed on flat ground.</li>
@@ -235,7 +240,7 @@ section { display: grid; gap: 14px; }
       <p class="who">You: if you can spare them, put a few extra furnaces on the network. Smelting is the slow part.</p>
     </li>
     <li>
-      <div class="ph-head"><span class="ph-num">1</span><h3>Teach the turtles to build</h3><span class="state">Next</span></div>
+      <div class="ph-head"><span class="ph-num">1</span><h3>Teach the turtles to build</h3><span class="state">Done</span></div>
       <ul>
         <li>ForgeClooney: smelt on every furnace at once; craft in bulk (deepslate to polished, bricks and tiles; stairs; panes; cut copper); take material orders.</li>
         <li>BrickJagger: gets a pickaxe (3 diamonds, in stock); learns build mode: clear and level the site, then place the plan layer by layer, collecting each load of materials from the factory and facing stairs the right way.</li>
@@ -243,9 +248,10 @@ section { display: grid; gap: 14px; }
       </ul>
     </li>
     <li>
-      <div class="ph-head"><span class="ph-num">2</span><h3>The shell</h3><span class="state">Planned</span></div>
+      <div class="ph-head"><span class="ph-num">2</span><h3>The shell</h3><span class="state now">Running now</span></div>
       <ul>
-        <li>Level the site and lay the floor.</li>
+        <li>Level the site and lay the floor. A dirt bank sloping down round the south and east sides hides the foundation.</li>
+        <li>Windows go in with the walls: glass panes set into the brickwork for depth.</li>
         <li>Walls and pillars to the first floor, the upper floor slab, walls to the eaves.</li>
         <li>Sawtooth roof, chimneys and the control tower.</li>
       </ul>
@@ -283,7 +289,7 @@ section { display: grid; gap: 14px; }
     </li>
     <li>
       <div class="ph-head"><span class="ph-num">8</span><h3>Finishing touches</h3><span class="state">Last</span></div>
-      <ul><li>Lanterns, copper pipe runs, a path back to the hut, landscaping around the walls.</li></ul>
+      <ul><li>22 lanterns, hung where a lighting check says they're needed so nothing can spawn inside: on chains under the tall roofs, about five blocks off the floor. Copper pipe runs, a path back to the hut.</li><li>An inspection pass: BrickJagger scans the finished building, compares it with this plan and fixes anything missing or out of place.</li></ul>
     </li>
   </ol>
 </section>
@@ -327,13 +333,13 @@ section { display: grid; gap: 14px; }
     ladder: 0x8a6a3a, birch_sapling: 0x8fc255, cable: 0xd8d2c0, wired_modem_full: 0xcfc8b8,
     furnace: 0x6e6e70, lantern: 0xf5c05a, lightning_rod: 0xc77d4f, computer_advanced: 0xe0c46a,
     turtle_advanced: 0xd6b45c, turtle_normal: 0xbdbdbd, disk_drive: 0x9a9a9a,
-    chat_box: 0x6aa6c8, player_detector: 0xb35050,
+    chat_box: 0x6aa6c8, player_detector: 0xb35050, chain: 0x5a5f66,
   };
   // shapes: [width, height, depth, y-offset]
   const SHAPE = {
     cut_copper_slab: [1, 0.5, 1, -0.25], lantern: [0.4, 0.45, 0.4, 0.1], birch_sapling: [0.5, 0.6, 0.5, -0.2],
     ladder: [0.9, 1, 0.12, 0], cable: [0.35, 0.35, 0.35, 0], lightning_rod: [0.9, 0.22, 0.22, 0],
-    glass_pane: [1, 1, 1, 0],
+    glass_pane: [1, 1, 1, 0], chain: [0.14, 1, 0.14, 0],
   };
   const GLASS = { glass_pane: 0.32, glass: 0.4 };
 
@@ -429,6 +435,51 @@ section { display: grid; gap: 14px; }
     controls.target.set((r[0] + r[3] + 1) / 2, (r[1] + r[4]) / 2, (r[2] + r[5] + 1) / 2);
     viewer.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
+
+  // drone routes: lines through the launch bay, shafts down to the roads
+  const routeGroup = new THREE.Group();
+  routeGroup.visible = false;
+  const legend = document.getElementById("legend");
+  for (const r of BP.routes || []) {
+    const pts = r.points.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: new THREE.Color(r.color), depthTest: false }));
+    line.renderOrder = 5;
+    routeGroup.add(line);
+    for (const p of pts) {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(r.color), depthTest: false }));
+      dot.position.copy(p); dot.renderOrder = 6;
+      routeGroup.add(dot);
+    }
+    const li = document.createElement("li");
+    li.innerHTML = `<i style="background:${r.color}"></i>${r.name}`;
+    legend.appendChild(li);
+  }
+  for (const d of BP.docks || []) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 6, 20),
+      new THREE.MeshBasicMaterial({ color: 0x2f8a74, depthTest: false }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(d[0] + 0.5, d[1] + 0.6, d[2] + 0.5); ring.renderOrder = 6;
+    routeGroup.add(ring);
+  }
+  { const li = document.createElement("li"); li.innerHTML = `<i style="background:#2f8a74;height:10px;width:10px;border-radius:50%"></i>Drone docks`; legend.appendChild(li); }
+  scene.add(routeGroup);
+  const routesBtn = document.getElementById("routes");
+  routesBtn.addEventListener("click", () => {
+    routeGroup.visible = !routeGroup.visible;
+    routesBtn.setAttribute("aria-pressed", String(routeGroup.visible));
+    legend.hidden = !routeGroup.visible;
+    // see through the ground to the shafts and roads below
+    ground.material.transparent = routeGroup.visible;
+    ground.material.opacity = routeGroup.visible ? 0.35 : 1;
+    ground.material.needsUpdate = true;
+    if (routeGroup.visible) {
+      setCut(7);
+      camera.position.set(-6, 22, 58);
+      controls.target.set(22, -4, 16);
+    }
+  });
 
   const spinBtn = document.getElementById("spin");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
