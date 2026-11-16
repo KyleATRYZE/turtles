@@ -138,14 +138,135 @@ local RECIPES = {
     key = { C = "minecraft:cut_copper" },
   },
   -- fittings for the factory building
-  -- Sophisticated Storage: a chest is planks around a redstone torch
   ["minecraft:redstone_torch"] = {
     grid = { "R", "", "", "S", "", "", "", "", "" },
     key = { R = "minecraft:redstone", S = "minecraft:stick" },
   },
-  ["sophisticatedstorage:chest"] = {
-    grid = { "P", "P", "P", "P", "T", "P", "P", "P", "P" },
-    key = { P = "#planks", T = "minecraft:redstone_torch" },
+  ["minecraft:lever"] = {
+    grid = { "S", "", "", "C", "", "", "", "", "" },
+    key = { S = "minecraft:stick", C = "minecraft:cobblestone" },
+  },
+  -- Sophisticated Storage (recipes from the mod's own recipe provider). A
+  -- chest or barrel takes the wood it is made of, and all of it must be the
+  -- same wood, so these are made of oak and nothing else.
+  ["minecraft:oak_planks"] = {
+    yield = 4,
+    grid = { "L", "", "", "", "", "", "", "", "" },
+    key = { L = "minecraft:oak_log" },
+  },
+  ["minecraft:oak_slab"] = {
+    yield = 6,
+    grid = { "P", "P", "P", "", "", "", "", "", "" },
+    key = { P = "minecraft:oak_planks" },
+  },
+  ["sophisticatedstorage:chest"] = {                 -- 27 slots
+    grid = { "P", "P", "P", "P", "L", "P", "P", "P", "P" },
+    key = { P = "minecraft:oak_planks", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:barrel"] = {                -- 27 slots
+    grid = { "P", "S", "P", "P", "L", "P", "P", "S", "P" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+  },
+  -- limited barrels show what is in them on the front: 1 to 4 kinds of
+  -- item, 32 / 16 / 10 / 8 stacks of each
+  ["sophisticatedstorage:limited_barrel_1"] = {
+    grid = { "P", "S", "P", "P", "L", "P", "P", "P", "P" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:limited_barrel_2"] = {
+    grid = { "P", "P", "P", "S", "L", "S", "P", "P", "P" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:limited_barrel_3"] = {
+    grid = { "P", "S", "P", "P", "L", "P", "S", "P", "S" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:limited_barrel_4"] = {
+    grid = { "S", "P", "S", "P", "L", "P", "S", "P", "S" },
+    key = { P = "minecraft:oak_planks", S = "minecraft:oak_slab", L = "minecraft:lever" },
+  },
+  -- bigger chests: metal around the chest one tier down (54 / 81 / 108 slots)
+  ["sophisticatedstorage:iron_chest"] = {
+    grid = { "I", "I", "I", "I", "C", "I", "I", "I", "I" },
+    key = { I = "minecraft:iron_ingot", C = "sophisticatedstorage:chest" },
+  },
+  ["sophisticatedstorage:gold_chest"] = {
+    grid = { "G", "G", "G", "G", "C", "G", "G", "G", "G" },
+    key = { G = "minecraft:gold_ingot", C = "sophisticatedstorage:iron_chest" },
+  },
+  ["sophisticatedstorage:diamond_chest"] = {
+    grid = { "D", "D", "D", "D", "C", "D", "D", "D", "D" },
+    key = { D = "minecraft:diamond", C = "sophisticatedstorage:gold_chest" },
+  },
+  -- the controller makes everything touching it one inventory; a link joins
+  -- a group that does not touch (set with the storage tool, by a player)
+  ["minecraft:comparator"] = {
+    grid = { "", "T", "", "T", "Q", "T", "S", "S", "S" },
+    key = { T = "minecraft:redstone_torch", Q = "minecraft:quartz", S = "minecraft:stone" },
+  },
+  ["minecraft:repeater"] = {
+    grid = { "T", "R", "T", "S", "S", "S", "", "", "" },
+    key = { T = "minecraft:redstone_torch", R = "minecraft:redstone", S = "minecraft:stone" },
+  },
+  ["sophisticatedstorage:controller"] = {
+    grid = { "S", "C", "S", "P", "B", "P", "S", "C", "S" },
+    key = { S = "minecraft:stone", C = "minecraft:comparator", P = "minecraft:oak_planks",
+      B = "sophisticatedstorage:barrel" },
+  },
+  ["sophisticatedstorage:storage_link"] = {
+    grid = { "E", "P", "", "R", "S", "", "", "", "" },
+    key = { E = "minecraft:ender_pearl", P = "minecraft:oak_planks", R = "minecraft:repeater",
+      S = "minecraft:stone" },
+  },
+  ["sophisticatedstorage:storage_tool"] = {
+    grid = { "", "E", "I", "", "S", "T", "S", "", "" },
+    key = { E = "minecraft:ender_pearl", I = "minecraft:iron_ingot", S = "minecraft:stick",
+      T = "minecraft:redstone_torch" },
+  },
+  -- upgrades. A tier upgrade is used on a storage block that is already
+  -- standing (right click); a stack upgrade goes in its upgrade slot and
+  -- multiplies how much each slot holds (tier 1 x2, tier 2 x4, tier 3 x8).
+  ["sophisticatedstorage:basic_tier_upgrade"] = {    -- turns a vanilla chest or barrel
+    grid = { "", "S", "", "S", "L", "S", "", "S", "" },
+    key = { S = "minecraft:stick", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:basic_to_iron_tier_upgrade"] = {
+    grid = { "I", "I", "I", "I", "L", "I", "I", "I", "I" },
+    key = { I = "minecraft:iron_ingot", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:iron_to_gold_tier_upgrade"] = {
+    grid = { "G", "G", "G", "G", "L", "G", "G", "G", "G" },
+    key = { G = "minecraft:gold_ingot", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:gold_to_diamond_tier_upgrade"] = {
+    grid = { "D", "D", "D", "D", "L", "D", "D", "D", "D" },
+    key = { D = "minecraft:diamond", L = "minecraft:lever" },
+  },
+  ["sophisticatedstorage:upgrade_base"] = {
+    grid = { "P", "I", "P", "I", "P", "I", "P", "I", "P" },
+    key = { P = "#planks", I = "minecraft:iron_ingot" },
+  },
+  ["sophisticatedstorage:stack_upgrade_tier_1"] = {
+    grid = { "L", "L", "L", "L", "B", "L", "L", "L", "L" },
+    key = { L = "#log", B = "sophisticatedstorage:upgrade_base" },
+  },
+  ["minecraft:iron_block"] = {
+    grid = { "I", "I", "I", "I", "I", "I", "I", "I", "I" },
+    key = { I = "minecraft:iron_ingot" },
+  },
+  ["minecraft:gold_block"] = {
+    grid = { "G", "G", "G", "G", "G", "G", "G", "G", "G" },
+    key = { G = "minecraft:gold_ingot" },
+  },
+  ["sophisticatedstorage:stack_upgrade_tier_2"] = {
+    grid = { "I", "I", "I", "I", "U", "I", "B", "I", "B" },
+    key = { I = "minecraft:iron_ingot", U = "sophisticatedstorage:stack_upgrade_tier_1",
+      B = "minecraft:iron_block" },
+  },
+  ["sophisticatedstorage:stack_upgrade_tier_3"] = {
+    grid = { "G", "G", "G", "G", "U", "G", "B", "G", "B" },
+    key = { G = "minecraft:gold_ingot", U = "sophisticatedstorage:stack_upgrade_tier_2",
+      B = "minecraft:gold_block" },
   },
   -- Mekanism parts. Steel dust, control circuits and infused alloy come out
   -- of the Metallurgic Infuser (a helper runs it and hands them in); the
@@ -1007,13 +1128,15 @@ local function giveTo(dir, item, amount, sure)
   if not slot then return false end
   pull(item, amount, slot)
   local before = turtle.getItemCount(slot)
-  if before == 0 then return false, 0 end
+  if before == 0 then return false, 0, "none" end
   turtle.select(slot)
   if dir == "up" then turtle.dropUp() else turtle.drop() end
   local moved = before - turtle.getItemCount(slot)
   stashSlot(slot)
   turtle.select(1)
-  return moved > 0, moved
+  -- had it in hand and the other turtle took none: its inventory is full
+  -- (not the same thing as having none, which is what it used to be told)
+  return moved > 0, moved, moved == 0 and "full" or nil
 end
 
 local function giveToFront(item, amount, sure)
@@ -1366,13 +1489,19 @@ local function serveOrders()
     end
     local id = here
     orders[id] = nil
-    local given, missing = {}, {}
+    local given, missing, full = {}, {}, {}
     for _, l in ipairs(order.lines) do
       local name, want = l[1], l[2]
       local got = 0
       while got < want do
-        local ok, moved = giveTo("front", name, math.min(64, want - got))
-        if not ok then break end
+        local ok, moved, why = giveTo("front", name, math.min(64, want - got))
+        if not ok then
+          if why == "full" then
+            full[#full + 1] = name
+            print("The builder has no room for " .. shortName(name) .. ".")
+          end
+          break
+        end
         got = got + moved
       end
       given[name] = got
@@ -1398,7 +1527,7 @@ local function serveOrders()
     end
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
-      given = given, missing = missing }, JOB_PROTOCOL)
+      given = given, missing = missing, full = full }, JOB_PROTOCOL)
     print("Load handed over.")
     report("load handed over")
     return true

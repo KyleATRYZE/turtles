@@ -479,8 +479,13 @@ local function supplyRun(indices, reason, once)
       -- what the factory could not give at all is left for a second go
       local gotAny = false
       for _, n in pairs(reply.given or {}) do if n > 0 then gotAny = true end end
+      local noRoom = {}
+      for _, name in ipairs(reply.full or {}) do
+        noRoom[name] = true
+        print("No room on board for " .. name:gsub("^.*:", "") .. ": the factory has it.")
+      end
       for name in pairs(reply.missing or {}) do
-        if not findSlot(name) then
+        if not findSlot(name) and not noRoom[name] then
           st.short = st.short or {}
           st.short[name] = true
           print("No " .. name:gsub("^.*:", "") .. " for now. Leaving those for later.")
@@ -1395,6 +1400,19 @@ local function runLab()
           -- hand everything else back to the factory while on the pad
           lab.keep = { ["minecraft:coal"] = true, ["minecraft:charcoal"] = true }
           for _, w in ipairs(want) do lab.keep[w[1]] = true end
+          -- ... on a trip of its own, before asking: the factory hands the
+          -- new parts over first, and a turtle with 16 full slots takes none
+          local spare = false
+          for s = 1, 16 do
+            local d = turtle.getItemDetail(s)
+            if d and not lab.keep[d.name] then spare = true end
+          end
+          if spare then
+            lab.handin = true
+            save()
+            supplyRun(function() return {} end, "handing in what the lab does not need", true)
+            lab.handin = nil
+          end
           save()
         end
         supplyRun(function()
