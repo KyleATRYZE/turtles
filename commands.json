@@ -1,16 +1,17 @@
 {
   "commands": [
     {
-      "id": 1794851597,
-      "issued": 1794851597000,
+      "id": 1794851972,
+      "issued": 1794851972000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "TimberLake"
     },
     {
-      "id": 1794851598,
-      "issued": 1794851597000,
-      "cmd": "reboot",
-      "target": "CoalPorter"
+      "id": 1794851973,
+      "issued": 1794851972000,
+      "cmd": "chop",
+      "target": "TimberLake",
+      "area": "-4500:1440:-4400:1504"
     }
   ]
 }
