@@ -971,7 +971,8 @@ local function runFit()
   st.undone = st.undone or {}
   st.empty = st.empty or {}
   for i = 1, math.min(st.i - 1, #m.ops) do
-    if not st.undone[i] then applyOp(m.ops[i]) end
+    local o = m.ops[i]
+    if not st.undone[i] and not (o.k == "D" and st.kept and st.kept[ck(o.x, o.y, o.z)]) then applyOp(o) end
   end
   -- two helpers can share the fit-out: each takes the jobs in its own strip
   -- (x from xmin to xmax) and takes the other's as done
@@ -1025,7 +1026,7 @@ local function runFit()
   -- what the plan leaves at each place it puts something
   local finalAt = {}
   for _, op in ipairs(m.ops) do
-    if op.k ~= "D" then finalAt[ck(op.x, op.y, op.z)] = m.pal[op.i] end
+    if op.k ~= "D" then finalAt[ck(op.x, op.y, op.z)] = op end
   end
 
   local function act(verb, s)
@@ -1041,6 +1042,16 @@ local function runFit()
   -- try again (after fetching things).
   local function doOp(n, rest, lastGo)
     local op = m.ops[n]
+    -- a take-out where a barrel, chest or monitor is to stand is done from
+    -- that one's front (from the side it could be a wall or an old fitting)
+    local forFront = false
+    if op.k == "D" then
+      local fop = finalAt[ck(op.x, op.y, op.z)]
+      if fop and fop.s and fop.s >= 2 and frontMatters(m.pal[fop.i].name) then
+        forFront = true
+        if fop.s ~= op.s then op = { k = op.k, x = op.x, y = op.y, z = op.z, i = op.i, s = fop.s } end
+      end
+    end
     if not mine(op) then
       applyOp(op)
       return true
@@ -1088,19 +1099,27 @@ local function runFit()
       return false
     end
     local d = STAND[op.s]
-    if not goTo(op.x + d[1], op.y + d[2], op.z + d[3]) then return putOff("cannot get to it") end
+    if not goTo(op.x + d[1], op.y + d[2], op.z + d[3]) then
+      if forFront and lastGo then
+        -- (the job that puts the barrel here looks at this place from the
+        -- same side: it finds out what is there and says so if it is wrong)
+        st.undone[n] = nil
+        return true
+      end
+      return putOff("cannot get to it")
+    end
     if op.s >= 2 then face(STAND_FACE[op.s]) end
     local there = see(op.s)
     if op.k == "D" then
-      -- a barrel, chest or monitor that is already what the plan puts here,
-      -- the right way round (a fit-out run again): leave it, its own job
-      -- will find it right. (Not glass: a window taken out to get in is
-      -- taken out again.)
-      local final = finalAt and finalAt[ck(op.x, op.y, op.z)]
-      if there and final and there.name == final.name and frontMatters(final.name)
-        and (not final.facing or facesSurely(there, final.facing)) and upright(there) then
+      -- the very thing the plan puts here (a barrel, chest or monitor) is
+      -- already standing: leave it. Its own job turns it round if it faces
+      -- wrong. (Not glass: a window taken out to get in is taken out again.)
+      local fop = finalAt[ck(op.x, op.y, op.z)]
+      local final = fop and m.pal[fop.i]
+      if there and final and there.name == final.name and frontMatters(final.name) then
+        st.kept = st.kept or {}
+        st.kept[ck(op.x, op.y, op.z)] = true
         st.undone[n] = nil
-        applyOp(op)
         return true
       end
       if there and holdsThings(op.s) then

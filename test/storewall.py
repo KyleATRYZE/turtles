@@ -79,7 +79,28 @@ end
 '''
 
 
-def run(face_up, empty, right, stock_extra=None):
+def hopto_state():
+    """The west wall as HopTo left it running the old plan with xmin=10
+    xmax=10: its take-outs done (all but the one at 10 1 4 it could not get
+    to), the barrels it put in from the front standing right, the ones it put
+    in from above dug out again by hand."""
+    L = open(os.path.join(HERE, "storeroom_old.txt")).read().split("\n")
+    n = int(L[1].split()[1])
+    opal = [l.split() for l in L[2:2 + n]]
+    dug, good, empty = [], [], []
+    for o in (l.split() for l in L[3 + n:] if l):
+        if int(o[1]) != 10:
+            continue
+        c = (int(o[1]), int(o[2]), int(o[3]))
+        if o[0] == "D":
+            if c != (10, 1, 4):
+                dug.append(c)
+        elif "limited_barrel" in opal[int(o[4])][0]:
+            (good if int(o[5]) >= 2 else empty).append(c)
+    return dug, good, empty
+
+
+def run(face_up, empty, right, stock_extra=None, cleared=None):
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
     L.execute("START_D=3; START_FUEL=20000")
     L.execute(open(os.path.join(HERE, "harness.lua")).read().replace("/home/claude/turtles", ROOT))
@@ -90,9 +111,9 @@ def run(face_up, empty, right, stock_extra=None):
     L.execute(harness)
     L.execute(BARRELS)
     # the west wall: HopTo's take-outs there were done; then what is left
-    for o in ops:
-        if o[0] == "D" and int(o[1]) == 10:
-            L.execute(f"setSpecial(OX+{o[1]}, OY+{o[2]}, OZ+{o[3]}, false)")
+    for c in (cleared if cleared is not None else
+              [(int(o[1]), int(o[2]), int(o[3])) for o in ops if o[0] == "D" and int(o[1]) == 10]):
+        L.execute(f"setSpecial(OX+{c[0]}, OY+{c[1]}, OZ+{c[2]}, false)")
     for c in west:
         if c in empty:
             L.execute(f"setSpecial(OX+{c[0]}, OY+{c[1]}, OZ+{c[2]}, false)")
@@ -127,6 +148,38 @@ def front(s):
     return s.get("facing") or s.get("horizontal_facing")
 
 
+def final_check(L, g, r, face_up, label):
+    check(f"{label}: the run ends waiting for the next job", r == [False, "IDLE"], str(r))
+    log = list(g.LOG.values())
+    left = [l for l in log if l.startswith("Left:")]
+    check(f"{label}: no job left undone", not left and "Fit-out finished." in log, str(left[:4]) + " " + str(log[-3:]))
+    wrong = []
+    for c, (n, f) in want.items():
+        if not n.startswith("sophisticatedstorage:") or n.endswith("controller"):
+            continue
+        b, s = at(L, c)
+        if b != n or (f and front(s) != f) or s.get("vertical_facing", "no") != "no":
+            wrong.append((c, b, s))
+    check(f"{label}: every barrel and chest stands with its front to the room", not wrong, str(wrong[:3]))
+    check(f"{label}: nothing dropped on the floor", not g.FLOOR, str(g.FLOOR))
+    return dict(g.DUG.items())
+
+
+# ---------------------------------------------------------------- the room as it is in the world
+dug, good, gone = hopto_state()
+print(f"     west wall: {len(good)} barrels standing right, {len(gone)} dug out by hand")
+L, g, r = run(set(), set(gone), set(good), cleared=dug)
+d = final_check(L, g, r, set(), "from the world as it is")
+check(f"the {len(good)} barrels already standing right were not dug",
+      d.get("sophisticatedstorage:limited_barrel_1", 0) == 0, str(d.get("sophisticatedstorage:limited_barrel_1")))
+L.execute('''FS["helper.state"] = textutils.serialize({ job = { fit = true, plan = "factory_storeroom",
+  shell = "factory_asfit3", ox = OX, oy = OY, oz = OZ } })
+DUG, PLACED = {}, {}''')
+r2 = list(L.eval('function(f) return {pcall(f)} end')(L.eval(f'loadfile("{ROOT}/helper.lua")')).values())
+d2 = {k: v for k, v in dict(g.DUG.items()).items() if "sophisticatedstorage" in k}
+check("from the world as it is: run again, no barrel or chest is touched", r2 == [False, "IDLE"] and not d2, f"{r2} {d2}")
+
+# ---------------------------------------------------------------- face-up barrels still standing
 face_up = set(west[::2])                 # every other one lies face up
 empty = set(west[1::4])                  # some dug out by hand
 right = set(west) - face_up - empty
