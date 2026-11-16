@@ -1923,6 +1923,37 @@ local function feedShaft()
   return gave > 0
 end
 
+-- Hand n coal to a turtle at x, y, z next to the hut (ChunkNorris on the
+-- roof, say): go to an open cell beside it and drop the coal into it.
+local function giveCoalTo(tx, ty, tz, n)
+  local room = roomSet()
+  for _, m in ipairs(ALL_MOVES) do
+    local nx, ny, nz = neighbour(tx, ty, tz, m)
+    local k = key(nx, ny, nz)
+    if room[k] and goToCell(k) then
+      local toward = OPPOSITE[m]
+      local drop = toward == "u" and turtle.dropUp or toward == "d" and turtle.dropDown or turtle.drop
+      if toward ~= "u" and toward ~= "d" then face(toward) end
+      local left = n
+      for s = 1, 16 do
+        local d = turtle.getItemDetail(s)
+        if left > 0 and d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then
+          turtle.select(s)
+          local before = turtle.getItemCount(s)
+          drop(math.min(left, before))
+          left = left - (before - turtle.getItemCount(s))
+        end
+      end
+      turtle.select(1)
+      print(("Gave %d coal to the turtle at %d %d %d."):format(n - left, tx, ty, tz))
+      goToCell(st.park)
+      return n - left
+    end
+  end
+  print("I could not get next to that turtle.")
+  return 0
+end
+
 ---------------------------------------------------------------- jobs
 
 local function work()
@@ -2045,6 +2076,16 @@ while true do
     task = guarded(function()
       relocate()
       sendScan(type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or "scan_here")
+      work()
+    end)
+  elseif cmd.cmd == "givecoal" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
+    task = guarded(function()
+      relocate()
+      local here = key(pos.x, pos.y, pos.z)
+      local inside = (roomSet()[here] or here == st.padKey) and pos.y <= base.f.y + 2
+      if not inside and not comeHome(st.park) then error("I could not get back in.", 0) end
+      giveCoalTo(math.floor(tonumber(cmd.x)), math.floor(tonumber(cmd.y)), math.floor(tonumber(cmd.z)),
+        tonumber(cmd.n) and math.floor(tonumber(cmd.n)) or 16)
       work()
     end)
   elseif cmd.cmd == "feed" then
