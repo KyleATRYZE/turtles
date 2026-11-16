@@ -53,7 +53,8 @@ local function report(state)
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     local level = turtle.getFuelLevel()
-    if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 15000 then
+    if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 15000
+      and not (st and st.feed) then
       turtle.select(s)
       turtle.refuel(1)
       turtle.select(1)
@@ -369,12 +370,16 @@ end
 local function supplyRun(indices, reason, once)
   print("Going for a load: " .. reason)
   report("fetching materials")
-  riseTo(highway())
-  goHover()
+  local hx, hy, hz = hover()
+  if not (pos.x == hx and pos.y == hy and pos.z == hz) then   -- (already waiting there: no detour)
+    riseTo(highway())
+    goHover()
+  end
   local me = os.getComputerID()
   while true do
     local items = nextLoad(indices)
     local coal = math.min(64, math.max(0, math.ceil((FULL_TANK - fuel()) / 80)))
+    if st.feed then coal = 26 end       -- fuel to carry out to a stranded turtle
     if #items == 0 and coal == 0 then return true end
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
@@ -424,8 +429,17 @@ local function supplyRun(indices, reason, once)
       end
       upFromPad()
     end
-    refuel(FULL_TANK)
-    goHover()
+    if st.feed then
+      goHover()
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it and isCoal(it.name) then return true end
+      end
+      if once then return false end
+    else
+      refuel(FULL_TANK)
+      goHover()
+    end
     if reply then
       -- what the factory could not give at all is left for a second go
       local gotAny = false
@@ -716,6 +730,10 @@ local function intoBuilding()
   local x, y, z = lx(), ly(), lz()
   if x >= m.x1 and x <= m.x2 and z >= m.z1 and z <= m.z2 and y >= 1 and y <= m.y2 and open(x, y, z) then
     return true
+  end
+  if fuel() < FUEL_SPARE then
+    -- (it once set off on 73 after a restart and ran dry in mid-air)
+    supplyRun(function() return {} end, "low on fuel")
   end
   riseTo(highway())
   across(job.ox + m.start[1], job.oz + m.start[3], highway() + 12)
@@ -1177,6 +1195,45 @@ end
 
 ---------------------------------------------------------------- jobs
 
+-- feed: a turtle has run dry in mid-air. Fetch fuel without burning it,
+-- fly to just above the turtle and drop the fuel into it.
+local function runFeed()
+  local t = st.feed
+  print(("Taking fuel to the turtle at %d %d %d."):format(t.x, t.y, t.z))
+  local function carried()                 -- a lava bucket, or a fair bit of coal
+    local coal = 0
+    for s = 1, 16 do
+      local it = turtle.getItemDetail(s)
+      if it and it.name == "minecraft:lava_bucket" then return true end
+      if it and isCoal(it.name) then coal = coal + it.count end
+    end
+    return coal >= 12
+  end
+  if not carried() then supplyRun(function() return {} end, "fuel for a stranded turtle") end
+  report("taking fuel out")
+  local top = math.max(highway(), t.y + 4)
+  riseTo(top)
+  local given = 0
+  if across(t.x, t.z, top + 12) then
+    while pos.y > t.y + 1 and step("d") do end
+    local ok, data = turtle.inspectDown()
+    if pos.y == t.y + 1 and ok and data.name:find("computercraft:turtle", 1, true) then
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it and isCoal(it.name) then
+          turtle.select(s)
+          if turtle.dropDown() then given = given + it.count end
+        end
+      end
+      turtle.select(1)
+    end
+  end
+  print(given > 0 and ("Fuel handed over (" .. given .. ").") or "Could not reach the stranded turtle.")
+  st.feed = nil
+  save()
+  riseTo(top)
+end
+
 local function work()
   locate()
   -- born on the launch pad (or restarted in the hole): straight up and out
@@ -1191,6 +1248,7 @@ local function work()
     riseTo(pos.y + 3)
     if not findHeading() then error("I am boxed in.", 0) end
   end
+  if st.feed then runFeed() end
   if st.job and not st.done and not st.paused then
     if st.job.area then runForage() elseif st.job.trees then runChop()
     elseif st.job.fit then
@@ -1251,6 +1309,10 @@ while true do
     task = guarded(work)
   elseif cmd.cmd == "resume" then
     st.paused = nil
+    save()
+    task = guarded(work)
+  elseif cmd.cmd == "feed" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
+    st.feed = { x = math.floor(tonumber(cmd.x)), y = math.floor(tonumber(cmd.y)), z = math.floor(tonumber(cmd.z)) }
     save()
     task = guarded(work)
   elseif cmd.cmd == "fit" and tonumber(cmd.ox) and tonumber(cmd.oy) and tonumber(cmd.oz) then
