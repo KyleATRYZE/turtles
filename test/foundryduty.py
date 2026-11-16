@@ -165,6 +165,39 @@ check("the operator's supplies are handed over on the pad",
       len(ready) == 1 and ready[0].given["minecraft:raw_iron"] == 48 and ready[0].given["minecraft:redstone"] == 95,
       str([dict(r.given) for r in ready]))
 
+# ---------------------------------------------------------------- power laid on
+POWERED = 'INBOX[#INBOX+1] = { id = 23, msg = { type = "foundry_ready", ready = false, machines = { chamber = true, smelter = true }, power = { ok = true, fuel = %d } } }'
+L, g = world(redstone=200)
+L.execute(POWERED % 60)
+L.eval("go(3)")
+job = first(g.jobs())
+check("on the cable: ore goes over with little redstone to spare",
+      job is not None and job.msg.job.kind == "ore", str(job))
+check("the status report shows the power", g.plots().foundry.power.ok is True)
+
+L, g = world(raw=10)
+L.execute(POWERED % 4)
+L.eval("go(3)")
+job = first(g.jobs())
+check("no ore to send, the generator low: a fuel job", job is not None and job.msg.job.kind == "fuel", str(job and dict(job.msg.job.items())))
+n = job.msg.n
+L.execute(f'INBOX[#INBOX+1] = {{ id = 23, msg = {{ type = "foundry_done", n = {n}, kind = "fuel", ok = true, made = {{}} }} }}')
+L.eval("go(2)")
+L.execute("NOW = NOW + 60000")
+L.eval("go(3)")
+check("not another fuel job straight after", first(g.jobs()) is None)
+
+L, g = world(raw=10)
+L.execute(POWERED % 40)
+L.eval("go(3)")
+check("plenty of fuel in the generator: no fuel job", first(g.jobs()) is None)
+
+L, g = world(raw=10)
+L.execute('for k, inv in pairs(INV) do for i, it in pairs(inv.items) do if it.name == "minecraft:coal" then inv.items[i] = nil end end end')
+L.execute(POWERED % 4)
+L.eval("go(3)")
+check("no coal to spare: the generator waits", first(g.jobs()) is None)
+
 print()
 print("FAILED: " + ", ".join(fails) if fails else "PASS")
 sys.exit(1 if fails else 0)

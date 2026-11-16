@@ -295,8 +295,8 @@ local RECIPES = {
     yield = 8, grid = { "S", "R", "S", "", "", "", "", "", "" },
     key = { S = "alltheores:steel_ingot", R = "minecraft:redstone" },
   },
-  ["mekanism:energy_tablet"] = {                         -- unverified
-    grid = { "R", "G", "R", "A", "G", "A", "R", "G", "R" },
+  ["mekanism:energy_tablet"] = {                         -- unverified (3 alloy, 2 gold, 4 redstone)
+    grid = { "R", "A", "R", "G", "A", "G", "R", "A", "R" },
     key = { R = "minecraft:redstone", G = "minecraft:gold_ingot", A = "mekanism:alloy_infused" },
   },
   ["mekanism:basic_energy_cube"] = {                     -- unverified
@@ -304,10 +304,17 @@ local RECIPES = {
     key = { R = "minecraft:redstone", T = "mekanism:energy_tablet", I = "minecraft:iron_ingot",
       K = "mekanism:steel_casing" },
   },
-  ["mekanismgenerators:wind_generator"] = {              -- unverified
-    grid = { "", "O", "", "O", "A", "O", "T", "C", "T" },
+  ["mekanismgenerators:wind_generator"] = {              -- unverified (the middle of the
+    grid = { "", "O", "", "O", "A", "O", "T", "C", "T" },  -- bottom row: an electrolytic core?)
     key = { O = "alltheores:osmium_ingot", A = "mekanism:alloy_infused", T = "mekanism:energy_tablet",
-      C = "mekanism:basic_control_circuit" },
+      C = "mekanism:electrolytic_core" },
+  },
+  -- the Crusher (ingots to dust; cobblestone to gravel, gravel to sand): two
+  -- lava buckets go into it (the buckets stay in the grid, empty)
+  ["mekanism:crusher"] = {                               -- unverified
+    grid = { "R", "C", "R", "L", "K", "L", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", L = "minecraft:lava_bucket",
+      K = "mekanism:steel_casing" },
   },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
@@ -524,8 +531,8 @@ local function report(state)
       builder = plots.builderId,
       plotsDone = plots.done, nextPlot = plots.next, byId = plots.byId },
     foundry = plots.foundry and { op = plots.foundry.op, machines = plots.foundry.machines,
-      job = plots.foundry.job and plots.foundry.job.item, fails = plots.foundry.fails,
-      last = plots.foundry.last } or nil,
+      job = plots.foundry.job and (plots.foundry.job.item or plots.foundry.job.kind), fails = plots.foundry.fails,
+      last = plots.foundry.last, power = plots.foundry.power } or nil,
     log = logLines,
   })
 end
@@ -1057,6 +1064,17 @@ local FOUNDRY_BATCH = 48    -- raw ore a job (64 ingots: one stack out of the sm
 local FOUNDRY_DUST  = 100   -- redstone dust a batch takes with it (80 jobs, and a little)
 local FOUNDRY_KEEP  = 128   -- redstone dust never sent to the foundry (crafting needs it)
 local foundryHello = nil    -- when the operator was last called for
+-- With power laid on (a heat generator and cable: job=power) the machines
+-- need no redstone. The operator says how much fuel the generator has left;
+-- below FOUNDRY_FUEL_LOW it is sent a fuel job, while the factory has coal
+-- to spare (FOUNDRY_FUEL_SPARE: coal and charcoal together).
+local FOUNDRY_FUEL_LOW   = 16
+local FOUNDRY_FUEL_SPARE = 160
+
+local function foundryPowered()
+  local p = plots.foundry and plots.foundry.power
+  return type(p) == "table" and p.ok == true
+end
 
 local function foundryUp()
   local fy = plots.foundry
@@ -1067,7 +1085,8 @@ end
 -- This raw ore is the foundry's just now (the furnaces leave it alone).
 local function foundryOre(stock, raw)
   if not foundryUp() then return nil end
-  if (stock[REDSTONE] or 0) < FOUNDRY_KEEP + FOUNDRY_DUST then return nil end
+  -- (on the cable a batch takes a little dust in case the power fails)
+  if (stock[REDSTONE] or 0) < FOUNDRY_KEEP + (foundryPowered() and 16 or FOUNDRY_DUST) then return nil end
   for _, o in ipairs(FOUNDRY_ORES) do
     if o.raw == raw then return o end
   end
@@ -1125,6 +1144,18 @@ local function foundryDuty(stock)
       return
     end
   end
+  -- the generator running low, and no ore going over to bring fuel with it
+  local p = fy.power
+  if foundryPowered() and (tonumber(p.fuel) or FOUNDRY_FUEL_LOW) < FOUNDRY_FUEL_LOW
+    and now - (fy.fuelAt or 0) > 600000
+    and (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) >= FOUNDRY_FUEL_SPARE then
+    fy.seq = (fy.seq or 0) % 1000 + 1
+    fy.fuelAt = now
+    fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = "fuel", count = 64, since = now, asked = now }
+    saveTable(PLOTS_FILE, plots)
+    print("Fuel to the foundry's generator.")
+    foundrySend(fy)
+  end
 end
 
 -- word from the operator (from the responder)
@@ -1137,6 +1168,7 @@ local function foundryHeard(id, msg)
   if msg.type == "foundry_ready" then
     fy.op = id
     fy.machines = type(msg.machines) == "table" and msg.machines or {}
+    fy.power = type(msg.power) == "table" and msg.power or nil
     saveTable(PLOTS_FILE, plots)
     return
   end

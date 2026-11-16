@@ -16,12 +16,12 @@ L.execute(open(os.path.join(HERE, "fharness.lua")).read().replace("/home/claude/
 L.execute('''
 local R, G, A, I, O = "minecraft:redstone", "minecraft:gold_ingot", "mekanism:alloy_infused", "minecraft:iron_ingot", "alltheores:osmium_ingot"
 local S, K, T, C = "alltheores:steel_ingot", "mekanism:steel_casing", "mekanism:energy_tablet", "mekanism:basic_control_circuit"
-local GL = "minecraft:glass"
+local GL, EC = "minecraft:glass", "mekanism:electrolytic_core"
 -- Mekanism's patterns, row by row ("" = empty)
 local REAL = {
-  { out = "mekanism:energy_tablet", n = 1, rows = { { R, G, R }, { A, G, A }, { R, G, R } } },
+  { out = "mekanism:energy_tablet", n = 1, rows = { { R, A, R }, { G, A, G }, { R, A, R } } },
   { out = "mekanism:basic_energy_cube", n = 1, rows = { { R, T, R }, { I, K, I }, { R, T, R } } },
-  { out = "mekanismgenerators:wind_generator", n = 1, rows = { { "", O, "" }, { O, A, O }, { T, C, T } } },
+  { out = "mekanismgenerators:wind_generator", n = 1, rows = { { "", O, "" }, { O, A, O }, { T, EC, T } } },
   { out = "mekanism:basic_universal_cable", n = 8, rows = { { S, R, S }, { "", "", "" }, { "", "", "" } } },
   { out = "mekanism:steel_casing", n = 1, rows = { { S, GL, S }, { GL, O, GL }, { S, GL, S } } },
 }
@@ -50,7 +50,7 @@ turtle.craft = function()
   return craft()
 end
 C1, D1 = "minecraft:chest_0", "minecraft:chest_1"
-put(C1, R, 64) put(C1, G, 16) put(C1, A, 16) put(C1, I, 16) put(C1, O, 16) put(C1, S, 16) put(C1, C, 4) put(C1, GL, 16)
+put(C1, R, 64) put(C1, G, 16) put(C1, A, 16) put(C1, I, 16) put(C1, O, 16) put(C1, S, 16) put(C1, C, 4) put(C1, GL, 16) put(C1, EC, 1)
 put(C1, "minecraft:coal", 64)
 FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["byId"]={["9"]=1,["10"]=2,["12"]=4,["13"]=5,["5"]=6,["11"]=3}}'
 MAX_IDLES=1
