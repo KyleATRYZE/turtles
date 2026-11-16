@@ -1,10 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794851343,
-      "issued": 1794851343000,
+      "id": 1794851597,
+      "issued": 1794851597000,
       "cmd": "reboot",
       "target": "ForgeClooney"
+    },
+    {
+      "id": 1794851598,
+      "issued": 1794851597000,
+      "cmd": "reboot",
+      "target": "CoalPorter"
     }
   ]
 }
