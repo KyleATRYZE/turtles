@@ -99,6 +99,41 @@ local RECIPES = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
   },
+  -- building blocks (2 x 2 recipes give 4)
+  ["minecraft:polished_deepslate"] = {
+    yield = 4, grid = { "D", "D", "", "D", "D", "", "", "", "" },
+    key = { D = "minecraft:cobbled_deepslate" },
+  },
+  ["minecraft:deepslate_bricks"] = {
+    yield = 4, grid = { "D", "D", "", "D", "D", "", "", "", "" },
+    key = { D = "minecraft:polished_deepslate" },
+  },
+  ["minecraft:deepslate_tiles"] = {
+    yield = 4, grid = { "D", "D", "", "D", "D", "", "", "", "" },
+    key = { D = "minecraft:deepslate_bricks" },
+  },
+  ["minecraft:deepslate_tile_stairs"] = {
+    yield = 4, grid = { "T", "", "", "T", "T", "", "T", "T", "T" },
+    key = { T = "minecraft:deepslate_tiles" },
+  },
+  ["minecraft:stone_bricks"] = {
+    yield = 4, grid = { "S", "S", "", "S", "S", "", "", "", "" },
+    key = { S = "minecraft:stone" },
+  },
+  ["minecraft:cracked_stone_bricks"] = { smelt = "minecraft:stone_bricks" },
+  ["minecraft:copper_ingot"] = { smelt = "minecraft:raw_copper" },
+  ["minecraft:copper_block"] = {
+    grid = { "C", "C", "C", "C", "C", "C", "C", "C", "C" },
+    key = { C = "minecraft:copper_ingot" },
+  },
+  ["minecraft:cut_copper"] = {
+    yield = 4, grid = { "C", "C", "", "C", "C", "", "", "", "" },
+    key = { C = "minecraft:copper_block" },
+  },
+  ["minecraft:cut_copper_slab"] = {
+    yield = 6, grid = { "C", "C", "C", "", "", "", "", "", "" },
+    key = { C = "minecraft:cut_copper" },
+  },
   [BUCKET] = {
     grid = { "I", "", "I", "", "I", "", "", "", "" },
     key = { I = "minecraft:iron_ingot" },
@@ -167,6 +202,7 @@ local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
+local orders = {}        -- builder material orders, by computer id
 
 local function activeCount()
   local n = 0
@@ -406,54 +442,72 @@ local function drainFurnace(f)
   end
 end
 
-local function smelt(name, n)
-  local f = furnaces[1]
-  if not f then error("No furnace on the network.", 0) end
-  local size = peripheral.call(f, "size")
-  if size ~= 3 then
-    error("The furnace shows " .. tostring(size) .. " slots, expected 3.", 0)
-  end
-  local input = RECIPES[name].smelt
+-- Load one furnace with fuel and up to `count` of the input. Returns how
+-- many went in.
+local function loadFurnace(f, input, count)
   drainFurnace(f)
-
-  -- fuel: one coal smelts 8 items
-  local fuelNeeded = math.ceil(n / 8)
+  local fuelNeeded = math.ceil(count / 8)
   local fuelSlot = furnaceList(f)[2]
   local fuelHave = fuelSlot and fuelSlot.count or 0
   if fuelHave < fuelNeeded then
     local want = fuelNeeded - fuelHave
-    for _, s in ipairs(listStorage()) do
+    for _, st in ipairs(listStorage()) do
       if want <= 0 then break end
-      if matches("#fuel", s.name) and (not fuelSlot or fuelSlot.name == s.name) then
-        want = want - (peripheral.call(s.inv, "pushItems", f, s.slot, want, 2) or 0)
+      if matches("#fuel", st.name) and (not fuelSlot or fuelSlot.name == st.name) then
+        want = want - (peripheral.call(st.inv, "pushItems", f, st.slot, want, 2) or 0)
       end
     end
-    if want > 0 then error("Not enough coal for the furnace.", 0) end
+    if want > 0 then error("Not enough coal for the furnaces.", 0) end
   end
-
-  -- input
-  local want = n
-  for _, s in ipairs(listStorage()) do
-    if want <= 0 then break end
-    if s.name == input then
-      want = want - (peripheral.call(s.inv, "pushItems", f, s.slot, want, 1) or 0)
+  local loaded = 0
+  for _, st in ipairs(listStorage()) do
+    if loaded >= count then break end
+    if st.name == input then
+      loaded = loaded + (peripheral.call(st.inv, "pushItems", f, st.slot, count - loaded, 1) or 0)
     end
   end
-  if want > 0 then
-    error("Ran out of " .. shortName(input) .. " for the furnace.", 0)
-  end
+  return loaded
+end
 
-  -- wait for it to cook (10 seconds an item, plus slack)
-  local deadline = os.clock() + n * 12 + 60
-  while true do
-    local out = furnaceList(f)[3]
-    if out and out.count >= n then break end
-    if os.clock() > deadline then
-      error("The furnace did not finish smelting " .. shortName(input) .. ".", 0)
-    end
-    sleep(2)
+-- Smelt n items, split across every furnace on the network.
+local function smelt(name, n)
+  local usable = {}
+  for _, f in ipairs(furnaces) do
+    if peripheral.call(f, "size") == 3 then usable[#usable + 1] = f end
   end
-  drainFurnace(f)
+  if #usable == 0 then error("No furnace on the network.", 0) end
+  local input = RECIPES[name].smelt
+  local remaining = n
+  while remaining > 0 do
+    local per = math.min(64, math.ceil(remaining / #usable))
+    local active = {}
+    for _, f in ipairs(usable) do
+      if remaining <= 0 then break end
+      local got = loadFurnace(f, input, math.min(per, remaining))
+      if got > 0 then
+        active[#active + 1] = { f = f, n = got }
+        remaining = remaining - got
+      end
+    end
+    if #active == 0 then
+      error("Ran out of " .. shortName(input) .. " for the furnace.", 0)
+    end
+    report("smelting")
+    local deadline = os.clock() + per * 12 + 60
+    while true do
+      local done = true
+      for _, a in ipairs(active) do
+        local out = furnaceList(a.f)[3]
+        if not out or out.count < a.n then done = false break end
+      end
+      if done then break end
+      if os.clock() > deadline then
+        error("The furnaces did not finish smelting " .. shortName(input) .. ".", 0)
+      end
+      sleep(2)
+    end
+    for _, a in ipairs(active) do drainFurnace(a.f) end
+  end
 end
 
 local function setStage(stage)
@@ -706,12 +760,14 @@ local function giveTo(dir, item, amount, sure)
   end
   if not slot then return false end
   pull(item, amount, slot)
-  if turtle.getItemCount(slot) == 0 then return false end
+  local before = turtle.getItemCount(slot)
+  if before == 0 then return false, 0 end
   turtle.select(slot)
   if dir == "up" then turtle.dropUp() else turtle.drop() end
+  local moved = before - turtle.getItemCount(slot)
   stashSlot(slot)
   turtle.select(1)
-  return true
+  return moved > 0, moved
 end
 
 local function giveToFront(item, amount, sure)
@@ -720,6 +776,37 @@ end
 
 local function fuelTurtleInFront(amount, sure)
   return giveToFront("#fuel", amount, sure)
+end
+
+-- Several crafts in one go: put k of each ingredient in its grid slot and
+-- craft them all at once (up to a stack of output). Only for recipes whose
+-- ingredients are exact items (a group like any planks could mix types).
+local function canBulk(recipe)
+  for _, item in pairs(recipe.key) do
+    if item:sub(1, 1) == "#" then return false end
+  end
+  return true
+end
+
+local function craftBatch(name, k)
+  local recipe = RECIPES[name]
+  stashAll()
+  for i, key in ipairs(recipe.grid) do
+    if key ~= "" then
+      if not pull(recipe.key[key], k, GRID_SLOT[i]) then
+        stashAll()
+        error("Ran out of " .. shortName(recipe.key[key]) .. " while making "
+          .. shortName(name) .. ".", 0)
+      end
+    end
+  end
+  turtle.select(16)
+  local ok, err = turtle.craft()
+  if not ok then
+    stashAll()
+    error("The recipe for " .. shortName(name) .. " did not work: " .. tostring(err), 0)
+  end
+  stashAll()
 end
 
 -- Run a list of planned smelting and crafting jobs.
@@ -731,9 +818,34 @@ local function runSteps(steps)
       smelt(step.name, step.batches)
     else
       print("Crafting " .. shortName(step.name))
-      for _ = 1, step.batches do craftOnce(step.name) end
+      local left = step.batches
+      local bulk = canBulk(recipe)
+      while left > 0 do
+        local k = bulk and math.max(1, math.min(left, math.floor(64 / (recipe.yield or 1)))) or 1
+        if bulk then craftBatch(step.name, k) else craftOnce(step.name) end
+        left = left - k
+      end
     end
   end
+end
+
+-- Make as many as possible of something, up to n. Returns how many are in
+-- stock afterwards (capped at n).
+local function makeUpTo(name, n)
+  local have = countIn(stockTotals(), name)
+  if have >= n then return n end
+  local want = n
+  while want > have do
+    local stock = stockTotals()
+    local steps, missing = {}, {}
+    plan(stock, name, want, steps, missing)
+    if not next(missing) then
+      runSteps(steps)
+      break
+    end
+    want = have + math.floor((want - have) / 2)   -- try for less
+  end
+  return math.min(n, countIn(stockTotals(), name))
 end
 
 -- Make sure storage holds at least n of something, making it if possible.
@@ -785,6 +897,86 @@ local function serveRequests(canCraft)
   end
   fuelQueue, bucketQueue = {}, {}
   turnTo(0)
+end
+
+-- Plan a whole load at once against one copy of the stock, so that making
+-- one line never eats what was set aside for another. Returns the steps,
+-- or nil and what is missing.
+local function planLoad(lines, stock)
+  local pretend = {}
+  for name, c in pairs(stock) do pretend[name] = c end
+  local steps, missing = {}, {}
+  for _, l in ipairs(lines) do
+    if l[2] > 0 then plan(pretend, l[1], l[2], steps, missing) end
+  end
+  if next(missing) then return nil, missing end
+  return steps
+end
+
+-- The biggest load we can make, line by line: each line gets as many as
+-- still fit after the lines before it.
+local function fitLoad(items)
+  local stock = stockTotals()
+  local lines = {}
+  for _, line in ipairs(items) do
+    local name, want = line[1], math.floor(tonumber(line[2]) or 0)
+    if want > 0 and RECIPES[name] or countIn(stock, name) > 0 then
+      local lo, hi = 0, want
+      while lo < hi do                       -- largest count that still plans
+        local mid = math.floor((lo + hi + 1) / 2)
+        lines[#lines + 1] = { name, mid }
+        local ok = planLoad(lines, stock)
+        lines[#lines] = nil
+        if ok then lo = mid else hi = mid - 1 end
+      end
+      if lo > 0 then lines[#lines + 1] = { name, lo } end
+    end
+  end
+  return lines, planLoad(lines, stock) or {}
+end
+
+-- A builder waiting on the launch pad with a list of what it needs: make
+-- what is missing, hand it all over, tell it what it got.
+local function serveOrders()
+  for id, order in pairs(orders) do
+    turnTo(base.padTurns)
+    if not peripheral.hasType("front", "turtle") then
+      turnTo(0)
+      return false                       -- not on the pad yet: keep the order
+    end
+    orders[id] = nil
+    print("Preparing a load for the builder.")
+    report("preparing materials")
+    turnTo(0)
+    stashAll()
+    local lines, steps = fitLoad(order.items)
+    local okRun, err = pcall(runSteps, steps)
+    if not okRun then print("Problem: " .. tostring(err)) end
+    turnTo(base.padTurns)
+    local given, missing = {}, {}
+    for _, l in ipairs(lines) do
+      local name, want = l[1], l[2]
+      local got = 0
+      while got < want do
+        local ok, moved = giveTo("front", name, math.min(64, want - got))
+        if not ok then break end
+        got = got + moved
+      end
+      given[name] = got
+    end
+    for _, line in ipairs(order.items) do
+      local name, want = line[1], math.floor(tonumber(line[2]) or 0)
+      if (given[name] or 0) < want then missing[name] = want - (given[name] or 0) end
+    end
+    if order.fuel > 0 then giveTo("front", "#fuel", math.min(64, order.fuel)) end
+    turnTo(0)
+    rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
+      given = given, missing = missing }, JOB_PROTOCOL)
+    print("Load handed over.")
+    report("load handed over")
+    return true
+  end
+  return false
 end
 
 -- Put the finished miner on the launch pad, fuel it and switch it on.
@@ -926,6 +1118,8 @@ local function responder()
         fuelQueue[id] = true
       elseif msg.type == "bucket_request" then
         bucketQueue[id] = true
+      elseif msg.type == "materials" and type(msg.items) == "table" then
+        orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
       elseif msg.type == "release" then
         -- a miner turned coal hunter: its plot goes to the next new miner
         if plots.byId[tostring(id)] == msg.index then
@@ -989,6 +1183,10 @@ local function tryBuild()
 
   if not held then collect() end
   serveRequests(not held)
+  if not held and serveOrders() then
+    lastStock = stockTotals()
+    return true
+  end
   lastStock = stockTotals()
 
   if held then
