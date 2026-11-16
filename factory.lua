@@ -273,6 +273,7 @@ local launchingHelper = false
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local bootstrapFuel      -- defined further down (fuel from nothing)
+local dumpJunk           -- defined further down (unwanted stone)
 local served = {}        -- the last order number served, by computer id
 
 -- Miners with a plot, plus miners between plots (they finished one and
@@ -1475,6 +1476,45 @@ local function responder()
   end
 end
 
+---------------------------------------------------------------- unwanted stone
+-- Stone nobody has a use for (Kyle's call) is thrown out to make room: a
+-- few stacks at a time onto the launch pad when it is empty, where they
+-- lie until the game clears them away. Only what is named here, ever.
+local DUMP = { "forbidden_arcanus:darkstone", "xycraft_world:kivi" }
+dumpJunk = function(stock)
+  if next(orders) then return end
+  local any = false
+  for _, name in ipairs(DUMP) do
+    if (stock[name] or 0) > 0 then any = true end
+  end
+  if not any then return end
+  stashAll()
+  turnTo(base.padTurns)
+  if turtle.detect() then                       -- someone is on the pad: not now
+    turnTo(0)
+    return
+  end
+  local thrown = 0
+  for _, name in ipairs(DUMP) do
+    for slot = 1, 8 do
+      if (stock[name] or 0) - thrown <= 0 then break end
+      pull(name, 64, slot)
+    end
+    for slot = 1, 16 do
+      local d = turtle.getItemDetail(slot)
+      if d and d.name == name and not turtle.detect() then
+        turtle.select(slot)
+        if turtle.drop() then thrown = thrown + d.count end
+      end
+    end
+    if thrown > 0 then break end
+  end
+  turtle.select(1)
+  turnTo(0)
+  stashAll()
+  if thrown > 0 then print("Threw out " .. thrown .. " unwanted stone.") end
+end
+
 ---------------------------------------------------------------- fuel from nothing
 -- No coal and no charcoal at all: nothing can smelt, so logs cannot become
 -- charcoal either. Planks burn in a furnace too (a plank cooks 1.5 items,
@@ -1562,6 +1602,7 @@ local function tryBuild()
   for _, f in ipairs(furnaces) do emptyOutput(f) end
   if not held then
     pcall(bootstrapFuel, stockTotals())
+    pcall(dumpJunk, stockTotals())
     pcall(keepFurnacesBusy, stockTotals())
   end
 

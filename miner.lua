@@ -33,6 +33,8 @@ local HUNT_REACH  = 40     -- how far from the factory to roam (further out the
                            -- chunks may not be loaded, and a turtle there freezes)
 local HUNT_NEAR   = 28     -- but no closer than this
 local HUNT_LOAD   = 128    -- coal to gather before taking it home
+local HUNT_NORTH  = 20     -- no hunting further north than this: a friend's base is inside
+                           -- the mountain there (until we know exactly where it is)
 local DEEP_REACH  = 23     -- under the base (inside the ring of plots) coal is taken at any depth
 local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (ChunkNorris escorts)
 local RESCUE_PROTOCOL = "swarm_rescue"
@@ -1086,7 +1088,7 @@ local function scanForCoal(deep)
         wanted = y <= st.home.y - 4 and math.abs(x - st.exit1.x) <= DEEP_REACH
           and math.abs(z - st.exit1.z) <= DEEP_REACH
       else
-        wanted = y > st.home.y and not nearBase
+        wanted = y > st.home.y and not nearBase and z >= st.exit1.z - HUNT_NORTH - 6
       end
       if wanted then
         ores[#ores + 1] = { x = x, y = y, z = z }
@@ -1108,7 +1110,7 @@ local function huntPoints(reach)
   for i = -n, n do
     for k = -n, n do
       local dx, dz = i * HUNT_STEP, k * HUNT_STEP
-      if math.max(math.abs(dx), math.abs(dz)) >= HUNT_NEAR then
+      if math.max(math.abs(dx), math.abs(dz)) >= HUNT_NEAR and dz >= -HUNT_NORTH then
         pts[#pts + 1] = { x = st.exit1.x + dx, z = st.exit1.z + dz }
       end
     end
