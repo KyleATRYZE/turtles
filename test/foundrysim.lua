@@ -13,8 +13,10 @@ local DZ = { [0] = 0, [1] = 1, [2] = 0, [3] = -1 }
 local CODE = { EAST = 0, SOUTH = 1, WEST = 2, NORTH = 3 }
 local NAME = { [0] = "EAST", [1] = "SOUTH", [2] = "WEST", [3] = "NORTH" }
 
+-- EMBED = true: only the machines (for a test that brings its own turtle
+-- and world: T with x, y, z, d, inv, sel, and machines in its coordinates).
 CLOCK = 0
-T = { x = 40, y = 1, z = 20, d = 0, inv = {}, sel = 1, outside = true }
+if not EMBED then T = { x = 40, y = 1, z = 20, d = 0, inv = {}, sel = 1, outside = true } end
 MACHINES = {}             -- key -> machine
 FLOOR = {}                -- anything dropped where there is nothing to take it
 STOCK = {}                -- the factory's stock: name -> count
@@ -64,7 +66,7 @@ local function rel(m, face)
 end
 
 -- an item offered at a face: how many go in
-local function offer(m, face, name, n)
+function mekOffer(m, face, name, n)
   local mode = m.modes[rel(m, face)]
   local slot
   if mode == "INPUT" then
@@ -87,7 +89,7 @@ local function offer(m, face, name, n)
   return went
 end
 
-local function giveTurtle(name, n)
+function giveTurtle(name, n)
   for i = 1, 16 do
     local s = T.inv[i]
     if n > 0 and s and s.name == name and s.count < 64 then
@@ -150,7 +152,7 @@ local function tickMachine(m, dt)
         local nx, nz = m.x + DX[face], m.z + DZ[face]
         local other = machineAt(nx, m.y, nz)
         if other then
-          o.count = o.count - offer(other, (face + 2) % 4, o.name, o.count)
+          o.count = o.count - mekOffer(other, (face + 2) % 4, o.name, o.count)
         elseif not T.outside and T.x == nx and T.y == m.y and T.z == nz then
           EJECTED_TO_TURTLE = (EJECTED_TO_TURTLE or 0) + o.count
           o.count = giveTurtle(o.name, o.count)
@@ -161,15 +163,71 @@ local function tickMachine(m, dt)
   end
 end
 
-function sleep(n)
-  n = n or 0
-  local step = 1
-  local left = n
+function mekTime(n)                     -- the clock moves on, and the machines with it
+  local left = n or 0
   while left > 0 do
-    local dt = math.min(step, left)
+    local dt = math.min(1, left)
     CLOCK, left = CLOCK + dt, left - dt
     for _, m in pairs(MACHINES) do tickMachine(m, dt) end
   end
+end
+
+-- what the turtle is looking at: the machine and the face it is seen by
+function mekTarget(dir)
+  if T.outside then return nil end
+  if dir == "Down" then return machineAt(T.x, T.y - 1, T.z), "top" end
+  if dir == "Up" then return machineAt(T.x, T.y + 1, T.z), "bottom" end
+  return machineAt(T.x + DX[T.d], T.y, T.z + DZ[T.d]), (T.d + 2) % 4
+end
+
+-- taking from a machine by the face looked at
+function mekSuck(dir, n)
+  local m, face = mekTarget(dir)
+  if not m then return false, "No items to take" end
+  local o = m.slots.output
+  if m.modes[rel(m, face)] ~= "OUTPUT" or not o then return false, "No items to take" end
+  local k = math.min(n or 64, o.count)
+  local left = giveTurtle(o.name, k)
+  o.count = o.count - (k - left)
+  if o.count == 0 then m.slots.output = nil end
+  return k - left > 0
+end
+
+-- a machine's methods as a peripheral
+function mekCall(m, method, ...)
+  local a = { ... }
+  if method == "getDirection" then return NAME[m.f] end
+  if method == "getMode" then return m.modes[a[2]] end
+  if method == "setMode" then
+    if a[1] ~= "ITEM" or m.modes[a[2]] == nil then error("bad side", 0) end
+    m.modes[a[2]] = a[3]
+    SETMODES = (SETMODES or 0) + 1
+    return
+  end
+  if method == "setEjecting" then m.eject = a[2] return end
+  if method == "getInput" then local s = m.slots.input return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
+  if method == "getOutput" then local s = m.slots.output return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
+  if method == "getEnergyItem" then local s = m.slots.power return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
+  if method == "getEnergy" then return m.energy end
+  if method == "getMaxEnergy" then return m.max end
+  if method == "getInfuseType" then return m.tank and { name = m.tank.name, amount = m.tank.amount } or { name = "mekanism:empty", amount = 0 } end
+  if method == "dumpInfuseType" then m.tank = nil DUMPS = (DUMPS or 0) + 1 return end
+  error("no such method " .. tostring(method), 0)
+end
+
+function inMachines()
+  local n = 0
+  for _, m in pairs(MACHINES) do
+    for slot, s in pairs(m.slots) do if slot ~= "power" then n = n + s.count end end
+  end
+  return n
+end
+
+if EMBED then return end
+
+function sleep(n)
+  n = n or 0
+  mekTime(n)
   SLEPT = (SLEPT or 0) + n
   if SLEPT > 200000 then error("TOO MUCH SLEEPING (stuck)", 0) end
 end
@@ -200,13 +258,7 @@ local function ser(v)
 end
 textutils = { serialize = ser, unserialize = function(s) local f = load("return " .. s) return f and f() end }
 
--- what the turtle is looking at: the machine and the face it is seen by
-local function target(dir)
-  if T.outside then return nil end
-  if dir == "Down" then return machineAt(T.x, T.y - 1, T.z), "top" end
-  if dir == "Up" then return machineAt(T.x, T.y + 1, T.z), "bottom" end
-  return machineAt(T.x + DX[T.d], T.y, T.z + DZ[T.d]), (T.d + 2) % 4
-end
+local target = mekTarget
 
 turtle = {
   select = function(i) T.sel = i return true end,
@@ -234,23 +286,13 @@ for _, dir in ipairs({ "", "Up", "Down" }) do
       if s.count == 0 then T.inv[T.sel] = nil end
       return true
     end
-    local went = offer(m, face, s.name, n)
+    local went = mekOffer(m, face, s.name, n)
     if went == 0 then return false, "No space for items" end
     s.count = s.count - went
     if s.count == 0 then T.inv[T.sel] = nil end
     return true
   end
-  turtle["suck" .. dir] = function(n)
-    local m, face = target(dir)
-    if not m then return false, "No items to take" end
-    local o = m.slots.output
-    if m.modes[rel(m, face)] ~= "OUTPUT" or not o then return false, "No items to take" end
-    local k = math.min(n or 64, o.count)
-    local left = giveTurtle(o.name, k)
-    o.count = o.count - (k - left)
-    if o.count == 0 then m.slots.output = nil end
-    return k - left > 0
-  end
+  turtle["suck" .. dir] = function(n) return mekSuck(dir, n) end
 end
 -- a machine a turtle places faces the turtle
 turtle.place = function()
@@ -280,24 +322,7 @@ peripheral = {
   call = function(side, method, ...)
     local m = target(side == "bottom" and "Down" or side == "top" and "Up" or "")
     if not m then error("No peripheral attached", 0) end
-    local a = { ... }
-    if method == "getDirection" then return NAME[m.f] end
-    if method == "getMode" then return m.modes[a[2]] end
-    if method == "setMode" then
-      if a[1] ~= "ITEM" or m.modes[a[2]] == nil then error("bad side", 0) end
-      m.modes[a[2]] = a[3]
-      SETMODES = (SETMODES or 0) + 1
-      return
-    end
-    if method == "setEjecting" then m.eject = a[2] return end
-    if method == "getInput" then local s = m.slots.input return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
-    if method == "getOutput" then local s = m.slots.output return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
-    if method == "getEnergyItem" then local s = m.slots.power return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
-    if method == "getEnergy" then return m.energy end
-    if method == "getMaxEnergy" then return m.max end
-    if method == "getInfuseType" then return m.tank and { name = m.tank.name, amount = m.tank.amount } or { name = "mekanism:empty", amount = 0 } end
-    if method == "dumpInfuseType" then m.tank = nil DUMPS = (DUMPS or 0) + 1 return end
-    error("no such method " .. tostring(method), 0)
+    return mekCall(m, method, ...)
   end,
 }
 
@@ -365,12 +390,5 @@ ENV = {
 function onBoard(name)
   local n = 0
   for i = 1, 16 do if T.inv[i] and T.inv[i].name == name then n = n + T.inv[i].count end end
-  return n
-end
-function inMachines()
-  local n = 0
-  for _, m in pairs(MACHINES) do
-    for slot, s in pairs(m.slots) do if slot ~= "power" then n = n + s.count end end
-  end
   return n
 end
