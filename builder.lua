@@ -1228,7 +1228,7 @@ end
 
 local LIST_URL    = "https://raw.githubusercontent.com/KyleATRYZE/turtles/%s/blueprints/%s.txt"
 local MARGIN      = 2      -- cleared ring around the building
-local LOAD_STACKS = 12     -- stacks of blocks to fetch per trip
+local LOAD_STACKS = 10     -- stacks of blocks to fetch per trip (leaves room for coal)
 local BUILD_FUEL  = 4000   -- fuel to leave the launch pad with
 local FUEL_SPARE  = 600    -- head home for more when down to this (plus the trip)
 local FACING      = { east = 0, south = 1, west = 2, north = 3 }
@@ -1541,6 +1541,24 @@ local function nextLoad(b)
   return items, counts
 end
 
+-- Part-stacks of the same thing into as few slots as they fit in.
+local function compact()
+  for a = 1, 15 do
+    local da = turtle.getItemDetail(a)
+    if da and da.count < 64 then
+      for s = 16, a + 1, -1 do
+        local ds = turtle.getItemDetail(s)
+        if ds and ds.name == da.name then
+          turtle.select(s)
+          turtle.transferTo(a)
+          if turtle.getItemCount(a) >= 64 then break end
+        end
+      end
+    end
+  end
+  turtle.select(1)
+end
+
 -- On the launch pad: hand in what we dug up, then load up with blocks,
 -- fuel and (the first time) a pickaxe.
 local function restock(b)
@@ -1600,6 +1618,7 @@ local function restock(b)
   dropJunk(b, false)
   local placing = b.stage == "place"
   while true do
+    compact()
     local items = placing and nextLoad(b) or {}
     local first = items[1] and items[1][1]
     -- already loaded and only short of fuel: ask for fuel alone
@@ -1611,6 +1630,10 @@ local function restock(b)
     print("Asking the factory for a load.")
     report("waiting for materials")
     local reply = ask(b, items, math.min(64, fuelWanted))
+    if fuel() < FUEL_SPARE + 400 and freeSlots() == 0 and key(pos.x, pos.y, pos.z) == st.padKey then
+      makeRoom()                         -- no room for the coal: give a stack back and ask again
+      reply = ask(b, {}, math.min(64, fuelWanted))
+    end
     burnInventory(BUILD_FUEL)
     if fuel() < FUEL_SPARE + 400 then
       -- never set off on a tank that will only bring us straight back
