@@ -762,7 +762,7 @@ local PASSABLE = {
 -- further than the scanner reaches, go to the highest open spot and look
 -- again.
 local function escape()
-  if not scannerSide() then return false end
+  if not useTool("scan") then return false end
   for _ = 1, 6 do
     local found, covered = scanHere()
     if not found then return false end
