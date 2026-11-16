@@ -28,6 +28,8 @@ relays it to the turtles. Write one with `tools/order.py <cmd> <target>`, then c
 - `ping` - report status now
 - `foundry` - (a helper) work the Mekanism line: `ore=minecraft:raw_iron n=48`, `make=steel n=16`,
   `job=setup`, `job=move_infuser`, `on=0`. See `docs/foundry.md`.
+- Screens: a station computer beside every screen (`screens.lua`), set up by a helper on the launch
+  pad's disk drive (`bootstrap`), placed by `blueprints/factory_screens.txt`. See `docs/screens.md`.
 
 ## Factory
 

@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794872328,
-      "issued": 1794872328000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794872824,
+      "issued": 1794872824000,
+      "cmd": "lab",
+      "target": "HopTo",
+      "clear": 1,
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;home"
     }
   ]
 }

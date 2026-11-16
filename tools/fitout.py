@@ -28,7 +28,8 @@ from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-# fitout.py [<final.json> <shell.txt> <out.txt> <start x,y,z> [glass] [swaps] [redo] [box=...] [skip=...]]
+# fitout.py [<final.json> <shell.txt> <out.txt> <start x,y,z> [glass] [swaps] [redo] [box=...] [skip=...]
+#             [only=name,...] [refit=name,...] [notbox=...]]
 ARGS = sys.argv[1:]
 F_FINAL = ARGS[0] if ARGS else os.path.join(ROOT, "blueprints", "factory.json")
 F_SHELL = ARGS[1] if ARGS else os.path.join(ROOT, "blueprints", "factory_shell.txt")
@@ -55,6 +56,27 @@ for line in open(F_SHELL):
         x, y, z, i = map(int, t)
         shell[(x, y, z)] = spal[i]
 
+def _opt(key):
+    for arg in ARGS[4:]:
+        if arg.startswith(key + "="):
+            return arg[len(key) + 1:]
+# refit=name,name : these fittings are checked and made good, each from the
+# side the plan says (a monitor put in from above lies on its back): they
+# are taken as not standing, so every one becomes a job; the turtle leaves
+# alone the ones it finds right
+REFIT = set((_opt("refit") or "").split(",")) - {""}
+for c in [c for c, v in shell.items() if v[0] in REFIT and c in final and final[c][0] == v[0]]:
+    del shell[c]
+# open=x,y,z : a sealed room (the tower's upper floors have no way in for a
+# turtle once fitted): that block is dug out first and put back last
+OPEN = [tuple(map(int, c.split(","))) for c in (_opt("open") or "").split(";") if c]
+OPENED = []
+for c in OPEN:
+    if c in shell and c in final:
+        OPENED.append((c, shell.pop(c)))
+# the side a fitting has to be worked from, where the plan says ("stands")
+MUST = {tuple(map(int, k.split(","))): v for k, v in bp.get("stands", {}).items()}
+
 # ---------------------------------------------------------------- what changes
 SKIP = {"computercraft:turtle_advanced", "computercraft:turtle_normal",      # drones place themselves
         "computercraft:computer_advanced", "advancedperipherals:chat_box",   # carried over by hand
@@ -62,6 +84,7 @@ SKIP = {"computercraft:turtle_advanced", "computercraft:turtle_normal",      # d
         "minecraft:glass_pane", "minecraft:glass"}                            # the builders' own second go
 if GLASS_TOO:
     SKIP -= {"minecraft:glass_pane", "minecraft:glass"}
+SKIP -= {v[0] for c, v in OPENED}                 # (the way in is put back, whatever it is made of)
 digs, puts, swaps = [], [], []
 BOX = None
 for c, (name, facing) in shell.items():
@@ -91,6 +114,23 @@ for arg in ARGS[4:]:
             return all(bx[k] <= c[k] <= bx[k + 3] for k in range(3))
         digs, puts, swaps = [c for c in digs if inside(c)], [c for c in puts if inside(c)], [c for c in swaps if inside(c)]
         BOX = inside
+# only=name,name : nothing but these fittings (and no digging out);
+# notbox=x0,y0,z0,x1,y1,z1 : leave that room to another plan
+if _opt("only"):
+    keep = set(_opt("only").split(","))
+    digs = []
+    puts = [c for c in puts if final[c][0] in keep]
+    swaps = [c for c in swaps if final[c][0] in keep]
+    BOX = BOX or (lambda c: True)
+    _in = BOX
+    BOX = lambda c, _in=_in: _in(c) and final.get(c, ("",))[0] in keep
+if _opt("notbox"):
+    nb = list(map(int, _opt("notbox").split(",")))
+    def outside(c):
+        return not all(nb[k] <= c[k] <= nb[k + 3] for k in range(3))
+    digs, puts, swaps = [c for c in digs if outside(c)], [c for c in puts if outside(c)], [c for c in swaps if outside(c)]
+    _in2 = BOX or (lambda c: True)
+    BOX = lambda c, _in2=_in2: _in2(c) and outside(c)
 if "redo" in ARGS[4:]:                              # a room refitted: what changes comes out first, then
     digs, puts, swaps = digs + swaps, puts + swaps, []      # goes in like any other fitting
 print(f"{len(digs)} to dig out, {len(swaps)} to swap, {len(puts)} to put in")
@@ -135,7 +175,7 @@ def prefs(name, facing):
 HANGS = {"minecraft:lantern": (0, 1, 0), "minecraft:chain": (0, 1, 0), "minecraft:birch_sapling": (0, -1, 0)}
 
 def stand_for(c, name, facing, reach):
-    for s in prefs(name, facing):
+    for s in ([MUST[c]] if name and c in MUST else prefs(name, facing)):
         d = STAND[s]
         i = idx((c[0] + d[0], c[1] + d[1], c[2] + d[2]))
         if 0 <= i[0] < SX and 0 <= i[1] < SY and 0 <= i[2] < SZ and reach[i]:
@@ -205,7 +245,7 @@ hidden = set()
 # swaps (the lane floor) go right after the digging: from above
 reach = reachable(space(after_digs))
 for c in sorted(swaps, key=lambda c: (c[2], c[0])):
-    s = stand_for(c, "", "-", reach)
+    s = stand_for(c, final[c][0] if c in MUST else "", "-", reach)
     if s is None:
         print("cannot reach to swap", c)
         if GLASS_TOO:                              # under a fitting by now: out of sight, leave it
@@ -222,8 +262,25 @@ for wave in reversed(waves):
     for c, s in sorted(wave, key=sweep):
         ops.append(("P", c, pal_i(final[c]), s))
 
+# the way in: dug out before anything else, from outside
+if OPENED:
+    full = dict(shell)
+    for c, v in OPENED:
+        full[c] = v
+    reach = reachable(space(full))
+    first = []
+    for c, v in OPENED:
+        st_ = stand_for(c, "", "-", reach)
+        if st_ is None:
+            print("cannot reach the way in at", c)
+            sys.exit(1)
+        first.append(("D", c, None, st_))
+    ops = first + ops
+
 # ---------------------------------------------------------------- replay it
 now = dict(shell)
+for c, v in OPENED:
+    now[c] = v
 bad = 0
 reach = reachable(space(now))
 dirty = False

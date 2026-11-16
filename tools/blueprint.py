@@ -347,7 +347,7 @@ B.pop((24, 0, 1), None)                                        # in-shaft
 # control tower: the monitor wall on the north wall of the top floor
 for x in range(TX1 + 1, TX2):
     for y in range(17, 21):
-        put(x, y, TZ1 + 1, "computercraft:monitor_advanced")
+        put(x, y, TZ1 + 1, "computercraft:monitor_advanced[facing=south]")   # (faces into the room)
 put(TX1 + 5, 17, TZ2 - 2, "computercraft:computer_advanced")   # CommandBlock
 put(TX1 + 5, 18, TZ2 - 2, "advancedperipherals:chat_box")
 put(TX1 + 4, 17, TZ2 - 2, "advancedperipherals:player_detector")
@@ -370,7 +370,44 @@ PANELS = {
 }
 for cells in PANELS.values():
     for (x, y, z) in cells:
-        put(x, y, z, "computercraft:monitor_advanced")
+        put(x, y, z, "computercraft:monitor_advanced[facing=east]")   # (both hang on a west wall)
+
+# ---------------------------------------------------------------- the stations
+# Every screen has a station: a plain computer touching the monitor (a
+# computer drives a monitor it touches with no cable and nobody to click a
+# modem), with an ender modem stuck on it to hear the swarm. Where a wall is
+# behind the screen the computer goes into the wall, out of sight. A helper
+# sets the computers up on the launch pad's disk drive and carries them here
+# (helper.lua, lab verb "bootstrap"); each then works out which screen it is
+# from where it stands (screens.lua). "stand" is the side the turtle works
+# from (as in fitout.py: 0 above, 2 east, 3 south, 4 west, 5 north): the
+# modem only sticks to the computer when the computer is straight beyond it.
+STATION = "computercraft:computer_normal"
+RADIO = "computercraft:wireless_modem_advanced"
+STATIONS = [
+    # name          kind     computer        stand  radio           stand  screens it touches
+    ("west gate",   "gate",  (0, 5, 1),       2,    (1, 5, 1),       2,   [(0, 4, 1)]),
+    ("east gate",   "gate",  (HX, 5, 1),      4,    (HX - 1, 5, 1),  4,   [(HX, 4, 1)]),
+    ("rack",        "rack",  (22, 4, 3),      0,    (22, 5, 3),      0,   [(22, 4, 4)]),
+    ("bay panel",   "panel", (19, 4, 26),     0,    (19, 5, 26),     0,   [(19, 3, 26)]),
+    ("wall",        "wall",  (TX1 + 1, 17, TZ1), 5, (TX1 + 1, 17, TZ1 - 1), 5, [(TX1 + 1, 17, TZ1 + 1)]),
+    ("tower panel", "panel", (TX1, 17, 23),   4,    (TX1 - 1, 17, 23), 4, [(TX1 + 1, 17, 23)]),
+]
+STANDS = {}                                      # "x,y,z" -> the side to work from
+for name, kind, comp, cs, radio, rs, touches in STATIONS:
+    for t in touches:
+        assert "monitor" in B[t] and sum(abs(a - b) for a, b in zip(comp, t)) == 1, name
+    assert radio not in B and sum(abs(a - b) for a, b in zip(comp, radio)) == 1, name
+    put(*comp, STATION)
+    put(*radio, RADIO)
+    STANDS["%d,%d,%d" % comp] = cs
+    STANDS["%d,%d,%d" % radio] = rs
+# a monitor is put up from in front, so it stands upright and faces the
+# turtle (put in from above it lies on its back, screen to the ceiling)
+FACE_STAND = {"east": 2, "south": 3, "west": 4, "north": 5}
+for (x, y, z), name in B.items():
+    if name.startswith("computercraft:monitor") and "facing=" in name:
+        STANDS["%d,%d,%d" % (x, y, z)] = FACE_STAND[name.split("facing=")[1].rstrip("]")]
 # copper pipes running along the front of the smelting hall
 for x in range(1, 9):
     put(x, 7, HZ + 1, "minecraft:lightning_rod[facing=east]")
@@ -425,6 +462,9 @@ out = {
     "panels": PANELS,
     "routes": ROUTES,
     "lights": LIGHTS,
+    "stations": [{"name": n, "kind": k, "computer": list(c), "radio": list(r), "touches": [list(t) for t in ts]}
+                 for n, k, c, cs, r, rs, ts in STATIONS],
+    "stands": STANDS,
     "store": STORE,
     "materials": dict(materials.most_common()),
 }
