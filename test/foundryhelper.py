@@ -22,7 +22,7 @@ def check(what, ok, detail=""):
         fails.append(what)
 
 
-def run(order, stock, label="DropIt", fuel=3000):
+def run(order, stock, label="DropIt", fuel=3000, extra=""):
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
     L.execute(f"START_D=3; START_FUEL={fuel}")
     src = open(os.path.join(HERE, "harness.lua")).read().replace("/home/claude/turtles", ROOT)
@@ -140,6 +140,8 @@ def run(order, stock, label="DropIt", fuel=3000):
     ''')
     for k, v in stock.items():
         L.execute(f'STOCK["{k}"] = {v}')
+    if extra:
+        L.execute(extra)
     f = L.eval(f'loadfile("{ROOT}/helper.lua")')
     r = L.eval('function(f) return {pcall(f)} end')(f)
     return L, g, list(r.values())
@@ -171,6 +173,58 @@ ready = [m for m in g.SENT.values() if m["type"] == "foundry_ready"]
 check("the factory was told which machines are ready", len(ready) >= 1 and d(ready[-1]["machines"]).get("chamber") is True)
 print("   fuel used:", 3000 - g.T.fuel, "| game time:", int(g.CLOCK), "s | ended at", g.T.x, g.T.y, g.T.z)
 
+# ---------------------------------------------------------------- laying power on, start to finish
+# (placing and taking up blocks goes through the machines' world too: a
+# placed block faces the turtle, one placed down faces the way it looks)
+PLACING = '''
+  local DXX, DZZ = { [0] = 1, [1] = 0, [2] = -1, [3] = 0 }, { [0] = 0, [1] = 1, [2] = 0, [3] = -1 }
+  local hplace, hplaceDown, hdigDown = turtle.place, turtle.placeDown, turtle.digDown
+  local function newBlock(x, y, z, f)
+    local s = T.inv[T.sel]
+    if not s or getBlock(x, y, z) then return false, "Cannot place block here" end
+    addMachine(s.name, x, y, z, f)
+    setSpecial(x, y, z, s.name)
+    s.count = s.count - 1
+    if s.count == 0 then T.inv[T.sel] = nil end
+    return true
+  end
+  turtle.place = function()
+    local s = T.inv[T.sel]
+    if s and s.name:find("mekanism") then return newBlock(T.x + DXX[T.d], T.y, T.z + DZZ[T.d], (T.d + 2) % 4) end
+    return hplace()
+  end
+  turtle.placeDown = function()
+    local s = T.inv[T.sel]
+    if s and s.name:find("mekanism") then return newBlock(T.x, T.y - 1, T.z, T.d) end
+    return hplaceDown()
+  end
+  turtle.digDown = function()
+    local m = machineAt(T.x, T.y - 1, T.z)
+    if m then
+      MACHINES[m.x .. "," .. m.y .. "," .. m.z] = nil
+      setSpecial(m.x, m.y, m.z, false)
+      giveTurtle(m.item, 1)
+      return true
+    end
+    return hdigDown()
+  end
+'''
+L, g, r = run('{ kind = "power" }', {"minecraft:coal": 200, "minecraft:redstone": 300,
+    "mekanismgenerators:heat_generator": 1, "mekanism:basic_energy_cube": 1, "mekanism:basic_universal_cable": 16},
+    extra=PLACING)
+check("power: the helper ends up waiting for the next job", r == [False, "IDLE"], str(r))
+at = lambda x, y, z: L.eval(f"(function() local m = machineAt(OX + {x}, OY + {y}, OZ + {z}) return m and m.item .. ' ' .. m.f end)()")
+check("power: generator at (42,1,18) facing north", at(42, 1, 18) == "mekanismgenerators:heat_generator 3", str(at(42, 1, 18)))
+check("power: cube at (42,1,17) facing north", at(42, 1, 17) == "mekanism:basic_energy_cube 3", str(at(42, 1, 17)))
+cab = [z for z in range(11, 17) if at(42, 1, z) == "mekanism:basic_universal_cable 1" or (at(42, 1, z) or "").startswith("mekanism:basic_universal_cable")]
+check("power: cable along the backs from z 16 to z 11", cab == list(range(11, 17)), str(cab))
+check("power: the chamber and smelter take power at the back",
+      L.eval("machineAt(OX + 41, OY + 1, OZ + 12).emodes.BACK") == "INPUT" and L.eval("machineAt(OX + 41, OY + 1, OZ + 11).emodes.BACK") == "INPUT")
+fd = d(d(g.LAST).get("foundry"))
+pw = d(fd.get("power"))
+check("power: reported on", pw.get("ok") is True, str(pw) + " " + str(d(fd).get("notes") and list(d(fd)["notes"].values())))
+check("power: nothing on the floor", not d(g.FLOOR), str(d(g.FLOOR)))
+print("   fuel used:", 3000 - g.T.fuel, "| game time:", int(g.CLOCK), "s")
 # ---------------------------------------------------------------- an ordinary helper is not affected
 L3 = lupa.LuaRuntime()
 L3.execute('fs = { exists = function() return false end }')

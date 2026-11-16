@@ -703,7 +703,10 @@ local function checkPower(env, s)
       end
     end
   end
-  sleep(20)
+  for _ = 1, 10 do
+    sleep(2)
+    env.tick("foundry: is the power on?")
+  end
   local any, rose = false, false
   for name, b in pairs(seen) do
     local okStand, _, side = pcall(stand, env, s, name)
