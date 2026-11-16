@@ -304,7 +304,7 @@ for z in STORE_Z:
 put(12, 1, HZ - 1, "minecraft:chest[facing=north]")            # In
 put(13, 1, HZ - 1, "computercraft:computer_advanced")          # Sortnado
 put(14, 1, HZ - 1, "minecraft:chest[facing=north]")            # Out
-fill(12, 2, HZ - 1, 14, 3, HZ - 1, "computercraft:monitor_advanced[facing=north]")
+fill(11, 2, HZ - 1, 15, 4, HZ - 1, "computercraft:monitor_advanced[facing=north]")   # 5 x 3 touch screen
 # launch bay: the pit stop on the back track, against the back wall. Miners
 # come up the in-shaft (x 24), drop their load in the chest, get serviced
 # over ForgeClooney, pass the pad and drop down the out-shaft (x 20).

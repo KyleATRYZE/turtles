@@ -172,7 +172,7 @@ def plan_svg():
         (Zp(20), "Doorways stay clear"),
         (Zp(20)+16, "4-block aisle down the middle"),
         (Zp(27)+2, "Front desk: In · Sortnado · Out"),
-        (Zp(27)+18, "3 × 2 touch screen above"),
+        (Zp(27)+18, "5 × 3 touch screen above"),
         (Zp(29)+12, "Ladder up (south-east corner)"),
     ]
     for y, t in notes:
@@ -263,7 +263,7 @@ page = page.replace("{{GROW}}", grow)
 page = (page.replace("{{PLAN}}", plan_svg())
             .replace("{{WEST}}", wall_svg("west", W_D, "West wall"))
             .replace("{{EAST}}", wall_svg("east", E_D, "East wall"))
-            .replace("{{TERMINAL}}", '<img class="screen" src="store-screen.png" alt="The storage touch screen as dash.lua draws it: capacity bar, search box, matching items with 16 / 64 / All buttons, sections with fill bars, keyboard and an Out chest note.">')
+            .replace("{{TERMINAL}}", '<img class="screen" src="store-screen.gif" alt="The storage touch screen as dash.lua draws it: capacity bar, search box, matching items with 16 / 64 / All buttons, sections with fill bars, keyboard and an Out chest note.">')
             .replace("{{ROWS}}", "\n".join(rows))
             .replace("{{N_DOUBLE}}", str(n_doubles))
             .replace("{{SLOTS}}", f"{slots_total:,}")

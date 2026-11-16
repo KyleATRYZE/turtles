@@ -253,11 +253,11 @@ local function bar(s, x, y, n, share, col, back)
 end
 
 -- orange and black stripes, like the lane floor
-local function hazard(s, x, y, n, shift)
+local function hazard(s, x, y, n, shift, col)
   local c = canvas(n * 2, 3)
   for px = 0, n * 2 - 1 do
     for py = 0, 2 do
-      set(c, px, py, ((px + py + (shift or 0)) % 6 < 3) and C.copper or C.night)
+      set(c, px, py, ((px + py + (shift or 0)) % 6 < 3) and (col or C.copper) or C.night)
     end
   end
   put(s, c, x, y)
@@ -710,63 +710,174 @@ D.STORE_PAL = {
 D.SECTION = { Magic = 6, Ores = 7, Redstone = 8, Fuel = 9, Stone = 10, Build = 11, Ingots = 12,
               Gems = 13, Wood = 14, Mobs = 15, Overflow = 4 }
 
--- view = { used, slots, query, results = { {name, count, section}, ... },
---          sections = { {name, share}, ... }, ready = "text" }
-function D.store(mon, view)
+-- view = {
+--   used, slots, kinds, query,
+--   results  = { {name, count, section}, ... },      -- first one is selected
+--   where    = "2 chests",                           -- where the selection is
+--   sections = { {name, used, slots}, ... },
+--   walls    = { west = { [col] = { [row] = {section, share, hit} } }, east = ... },
+--   feed     = { {"IN" or "OUT", count, name, section}, ... },
+--   inbox = "text", outbox = "text", ready = "text",
+-- }
+-- Laid out for a 5 x 3 monitor (100 x 38 characters).
+local function commas(n)
+  local t = tostring(n)
+  while true do
+    local k
+    t, k = t:gsub("^(%d+)(%d%d%d)", "%1,%2")
+    if k == 0 then return t end
+  end
+end
+
+function D.store(mon, view, frame)
+  frame = frame or 0
   mon.setTextScale(0.5)
   local W, H = mon.getSize()
   local s = newScreen(W, H, C.night)
-  local hc = canvas(W * 2, 6, C.night)
-  big(hc, 2, 0, "STORAGE", C.text, 1)
+  local SEC = D.SECTION
+  local function heading(x, y, w, label)
+    text(s, x, y, label, C.dim)
+    for k = x + #label + 1, x + w - 1 do text(s, k, y, string.char(140), C.line) end
+  end
+
+  -- header: title, and the whole store as one bar, a slice per section
+  local hc = canvas(W * 2, 12, C.night)
+  big(hc, 4, 1, "STORAGE", C.text, 2)
   put(s, hc, 1, 1)
+  local hx = floor((4 + bigWidth("STORAGE", 2)) / 2) + 5
   local share = view.used / view.slots
-  text(s, 18, 1, view.used .. " / " .. view.slots .. " slots", C.dim)
-  bar(s, 18, 2, W - 19, share, 13)
-  fillCells(s, 2, 4, W - 1, 4, C.raised)
-  text(s, 3, 4, "Search: ", C.dim, C.raised)
-  text(s, 11, 4, view.query .. "_", C.text, C.raised)
-  local y = 6
-  for i, r in ipairs(view.results) do
-    local sel = i == 1
-    local bg = sel and C.panel or C.night
-    local col = D.SECTION[r.section] or C.dim
-    fillCells(s, 2, y, W - 1, y, bg)
-    text(s, 2, y, " ", col, col)
-    text(s, 4, y, pad(r.name, 24), C.text, bg)
-    text(s, 28, y, pad(r.count, 6, true), C.dim, bg)
-    if sel then
-      for k, b in ipairs({ "16", "64", "All" }) do
-        local bx = 36 + (k - 1) * 7
-        text(s, bx, y, " " .. b .. " ", C.night, 13)
-        s.zones[#s.zones + 1] = { bx, y, bx + #b + 1, y, "take:" .. b }
+  text(s, hx, 2, commas(view.used) .. " of " .. commas(view.slots) .. " slots used", C.text)
+  text(s, hx + 34, 2, floor(share * 100) .. "% full " .. string.char(183) .. " " .. (view.kinds or "?") .. " kinds of item", C.dim)
+  local bw = (W - hx - 1) * 2
+  local sb = canvas(bw, 3, C.raised)
+  local at = 0
+  for _, sec in ipairs(view.sections) do
+    local w = max(1, floor(bw * sec.used / view.slots + 0.5))
+    if sec.used > 0 then box(sb, at, 0, at + w - 1, 2, SEC[sec.name] or C.dim); at = at + w end
+  end
+  put(s, sb, hx, 3)
+  hazard(s, 1, 5, W, -frame, 7)
+
+  -- left: the two chest walls, a tile per double chest, filled as it fills;
+  -- the chests holding the selected item blink
+  local LX = 2
+  heading(LX, 7, 32, "THE WALLS")
+  local function wall(y, label, cols)
+    text(s, LX, y, label, C.dim)
+    local c = canvas(64, 18, C.night)
+    for i = 0, 9 do
+      for r = 0, 2 do
+        local t = cols[i + 1] and cols[i + 1][3 - r]
+        local x0, y0 = i * 6 + (i >= 5 and 4 or 0), r * 6
+        if t then
+          local col = SEC[t.section] or C.dim
+          if t.hit and frame % 2 == 0 then
+            box(c, x0, y0, x0 + 4, y0 + 4, C.text)
+          else
+            -- an outline in the section's colour, filled from the left
+            outline(c, x0, y0, x0 + 4, y0 + 4, col)
+            local w = floor(5 * (t.share or 0) + 0.5)
+            if w > 0 then box(c, x0, y0, x0 + w - 1, y0 + 4, col) end
+          end
+        end
       end
     end
+    put(s, c, LX, y + 1)
+  end
+  wall(8, "West wall", view.walls.west)
+  wall(15, "East wall", view.walls.east)
+  local first = view.results[1]
+  if first then
+    text(s, LX, 22, " ", C.text, (frame % 2 == 0) and C.text or (SEC[first.section] or C.dim))
+    text(s, LX + 2, 22, "holds " .. first.name, C.dim)
+  end
+  heading(LX, 24, 32, "FRONT DESK")
+  local arrows = string.sub(">>>   >>>   ", frame % 6 + 1, frame % 6 + 3)
+  text(s, LX, 25, "IN ", 14); text(s, LX + 4, 25, pad(view.inbox or "", 28), C.text)
+  text(s, LX, 26, "OUT", 12); text(s, LX + 4, 26, arrows, 12); text(s, LX + 8, 26, pad(view.outbox or "", 24), C.text)
+
+  -- middle: search and results
+  local MX, MW = 36, 33
+  heading(MX, 7, MW, "FIND")
+  fillCells(s, MX, 8, MX + MW - 1, 10, C.raised)
+  text(s, MX, 8, " ", 13, 13); text(s, MX, 9, " ", 13, 13); text(s, MX, 10, " ", 13, 13)
+  text(s, MX + 2, 9, view.query:upper() .. ((frame % 4 < 2) and "_" or " "), C.text, C.raised)
+  text(s, MX + MW - 12, 9, #view.results .. " matches", C.dim, C.raised)
+  local top = 1
+  for _, r in ipairs(view.results) do top = max(top, r.count) end
+  local y = 12
+  for i, r in ipairs(view.results) do
+    if y > 19 then break end
+    local sel = i == 1
+    local bg = sel and C.panel or C.night
+    local col = SEC[r.section] or C.dim
+    fillCells(s, MX, y, MX + MW - 1, y, bg)
+    text(s, MX, y, "  ", col, col)
+    text(s, MX + 3, y, pad(r.name, 18), sel and C.text or C.dim, bg)
+    text(s, MX + 21, y, pad(commas(r.count), 6, true), C.text, bg)
+    local bc = canvas(8, 3, bg)
+    box(bc, 0, 1, floor(8 * r.count / top + 0.5) - 1, 1, col)
+    put(s, bc, MX + 28, y)
+    s.zones[#s.zones + 1] = { MX, y, MX + MW - 1, y, "pick:" .. r.name }
     y = y + 1
   end
-  -- the sections, six to a row, each with how full it is
-  for i, sec in ipairs(view.sections) do
-    local col = D.SECTION[sec.name] or C.dim
-    local sx = 2 + ((i - 1) % 6) * 9
-    local sy = 12 + floor((i - 1) / 6) * 2
-    text(s, sx, sy, pad(sec.name, 8), col)
-    bar(s, sx, sy + 1, 8, sec.share, col, C.raised)
-    s.zones[#s.zones + 1] = { sx, sy, sx + 7, sy + 1, "section:" .. sec.name }
+  if first then
+    text(s, MX, 21, first.name, C.text)
+    text(s, MX + #first.name + 1, 21, string.char(183) .. " " .. first.section .. " " .. string.char(183) .. " in " .. (view.where or ""), C.dim)
+    button(s, MX, 23, 10, "16", 13, "take:16")
+    button(s, MX + 11, 23, 10, "64", 13, "take:64")
+    button(s, MX + 22, 23, 11, "ALL", 12, "take:all")
   end
+
+  -- right: the sections, then what has just moved
+  local RX, RW = 71, W - 71
+  heading(RX, 7, RW, "SECTIONS")
+  for i, sec in ipairs(view.sections) do
+    local col = SEC[sec.name] or C.dim
+    local yy = 7 + i
+    local f = sec.used / max(1, sec.slots)
+    text(s, RX, yy, "  ", col, col)
+    text(s, RX + 3, yy, pad(sec.name, 9), C.text)
+    bar(s, RX + 13, yy, 10, f, col, C.raised)
+    text(s, RX + 24, yy, pad(floor(f * 100) .. "%", 4, true), (f > 0.9 and frame % 4 < 2) and 8 or C.dim)
+    s.zones[#s.zones + 1] = { RX, yy, W, yy, "section:" .. sec.name }
+  end
+  heading(RX, 20, RW, "JUST MOVED")
+  for i, e in ipairs(view.feed or {}) do
+    local yy = 20 + i
+    if yy > 26 then break end
+    local out = e[1] == "OUT"
+    text(s, RX, yy, out and "OUT" or "IN", out and 12 or 14)
+    text(s, RX + 4, yy, pad(e[2], 4, true), C.text)
+    text(s, RX + 9, yy, pad(e[3], RW - 12), i == 1 and C.text or C.dim)
+    text(s, W - 2, yy, " ", C.text, SEC[e[4]] or C.dim)
+  end
+
+  -- keyboard: proper keycaps
   local rows = { "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" }
+  local function key(x, yy, w, label, id, col)
+    fillCells(s, x, yy, x + w - 1, yy, col or C.raised)
+    text(s, x + floor((w - #label) / 2), yy, label, C.text, col or C.raised)
+    local kc = canvas(w * 2, 3, C.night)
+    box(kc, 0, 0, w * 2 - 1, 1, col or C.raised)
+    put(s, kc, x, yy + 1)
+    s.zones[#s.zones + 1] = { x, yy, x + w - 1, yy + 1, id }
+  end
   for r, keys in ipairs(rows) do
-    local ky = 17 + (r - 1) * 2
-    local kx = 3 + (r - 1) * 2
+    local ky = 28 + (r - 1) * 3
+    local kx = 6 + (r - 1) * 3
     for k = 1, #keys do
       local ch = keys:sub(k, k)
-      text(s, kx, ky, " " .. ch .. " ", C.text, C.raised)
-      s.zones[#s.zones + 1] = { kx, ky, kx + 2, ky, "key:" .. ch }
-      kx = kx + 4
+      key(kx, ky, 5, ch, "key:" .. ch, (view.query:upper():sub(-1) == ch) and C.line or nil)
+      kx = kx + 6
     end
   end
-  text(s, 41, 21, " DEL ", C.text, C.line)
-  text(s, 47, 21, " CLR ", C.text, C.line)
+  key(70, 28, 9, "DELETE", "key:del", C.line)
+  key(80, 28, 8, "CLEAR", "key:clr", C.line)
+  key(54, 34, 34, "SPACE", "key: ")
   fillCells(s, 1, H, W, H, C.panel)
   text(s, 2, H, view.ready or "", 12, C.panel)
+  text(s, W - 28, H, "Tap a section to browse it", C.dim, C.panel)
   return show(mon, s, D.STORE_PAL)
 end
 

@@ -201,18 +201,35 @@ m = lua.eval("makeMon")(8, 1)
 dash.rack(m, ltab({i + 1: ltab(s) for i, s in enumerate(slots)}), now)
 print("rack", render(m, os.path.join(OUT, "rack.png"), zoom=2))
 
+SECS = [("Magic", 93, 6), ("Ores", 118, 8), ("Redstone", 89, 6), ("Fuel", 14, 2), ("Stone", 294, 17), ("Build", 32, 3),
+        ("Ingots", 24, 3), ("Gems", 96, 7), ("Wood", 10, 2), ("Mobs", 4, 2), ("Overflow", 3, 4)]
+tiles = []
+for name, used, n in SECS:
+    left = used
+    for k in range(n):
+        got = min(54, left); left -= got
+        tiles.append({"section": name, "share": got / 54, "hit": name == "Gems" and k in (0, 1)})
+def wallof(ts, flip):
+    cols = [{r + 1: ts[c * 3 + r] for r in range(3)} for c in range(10)]
+    if flip: cols.reverse()
+    return {i + 1: c for i, c in enumerate(cols)}
+num = lambda l: {i + 1: (num(v) if isinstance(v, list) else v) for i, v in enumerate(l)}
 store = {
-    "used": 777, "slots": 3240, "query": "dia",
-    "results": [{"name": "Diamond", "count": 185, "section": "Gems"}, {"name": "Diamond block", "count": 0, "section": "Gems"},
-                {"name": "Diamond pickaxe", "count": 1, "section": "Overflow"}, {"name": "Diorite", "count": 41, "section": "Stone"},
-                {"name": "Dimensional shard", "count": 149, "section": "Gems"}],
-    "sections": [{"name": n, "share": s} for n, s in (
-        ("Magic", .25), ("Ores", .27), ("Redstone", .26), ("Fuel", .13), ("Stone", .32),
-        ("Build", .15), ("Ingots", .14), ("Gems", .25), ("Wood", .09), ("Mobs", .04), ("Overflow", .01))],
-    "ready": "Out chest: 64 Diamond ready",
+    "used": 777, "slots": 3240, "kinds": 117, "query": "dia", "where": "2 chests",
+    "results": num([{"name": "Diamond", "count": 185, "section": "Gems"}, {"name": "Dimensional shard", "count": 149, "section": "Gems"},
+                    {"name": "Diorite", "count": 41, "section": "Stone"}, {"name": "Diamond pickaxe", "count": 1, "section": "Overflow"}]),
+    "sections": num([{"name": n, "used": u, "slots": c * 54} for n, u, c in SECS]),
+    "walls": {"west": wallof(tiles[:30], True), "east": wallof(tiles[30:], False)},
+    "feed": num([["OUT", 64, "Diamond", "Gems"], ["IN", 128, "Cobbled deepslate", "Stone"], ["IN", 37, "Raw osmium", "Ores"],
+                 ["IN", 64, "Redstone", "Redstone"], ["OUT", 16, "Glass", "Build"], ["IN", 12, "Coal", "Fuel"]]),
+    "inbox": "empty: all sorted", "outbox": "64 Diamond", "ready": "64 Diamond ready in the Out chest",
 }
-store["results"] = {i + 1: r for i, r in enumerate(store["results"])}
-store["sections"] = {i + 1: r for i, r in enumerate(store["sections"])}
-m = lua.eval("makeMon")(3, 2)
-dash.store(m, ltab(store))
-print("store", render(m, os.path.join(OUT, "store.png"), zoom=3))
+frames = []
+for i in range(12):
+    m = lua.eval("makeMon")(5, 3)
+    dash.store(m, ltab(store), i)
+    render(m, os.path.join(OUT, "f.png"), zoom=2)
+    frames.append(Image.open(os.path.join(OUT, "f.png")).convert("P", palette=Image.ADAPTIVE, colors=32))
+    if i == 0:
+        print("store", lua.eval("function(m) return m.getSize() end")(m), render(m, os.path.join(OUT, "store.png"), zoom=2))
+frames[0].save(os.path.join(OUT, "store.gif"), save_all=True, append_images=frames[1:], duration=250, loop=0, optimize=True)
