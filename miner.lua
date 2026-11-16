@@ -8,8 +8,9 @@
 
 local STATE_FILE  = "miner.state"
 local MIN_Y       = -58     -- lowest layer centre (digs one block below this)
-local FUEL_LOW    = 1000    -- start burning mined coal below this
-local FUEL_TARGET = 5000    -- burn coal until fuel reaches this
+local FUEL_LOW    = 3000    -- start burning mined coal below this
+local FUEL_TARGET = 8000    -- burn coal until fuel reaches this
+local JOB_PROTOCOL = "swarm_job"   -- talking to the factory about plots
 
 -- Thrown away when the inventory fills up
 local JUNK = {
@@ -85,6 +86,7 @@ local function report(state)
     job = st and {
       home = st.home, size = st.size, bottom = st.bottom,
       layer = st.layer, layers = totalLayers, rowsDone = st.rowsDone,
+      plot = st.index,
     } or nil,
     log = logLines,
   })
@@ -342,15 +344,17 @@ local function atHome()
   return lf == 0 and lr == 0 and pos.y == st.home.y
 end
 
--- Normal route: across to the shaft in front of home, then straight up.
-local function tryHomeShaft()
+-- The "shaft head" is the cell in front of home at home height: the top of
+-- the vertical shaft this turtle uses to get in and out of its plot.
+
+-- Normal route: across to the shaft, then straight up it.
+local function tryShaftRoute()
   return goLocal(1, 0, pos.y, "rf", false)
     and axisMove("y", st.home.y, false)
-    and goLocal(0, 0, st.home.y, "f", false)
 end
 
 -- Backup route: straight up first, then across the top layer.
-local function tryHomeTop()
+local function tryTopRoute()
   local top = st.home.y - 1
   local lf, lr = toLocal()
   if lf == 1 and lr == 0 and st.size > 1 then
@@ -362,16 +366,21 @@ local function tryHomeTop()
   return axisMove("y", top, false)
     and goLocal(1, 0, top, "rf", false)
     and axisMove("y", st.home.y, false)
-    and goLocal(0, 0, st.home.y, "f", false)
 end
 
-local function goHome()
-  while not atHome() do
-    if tryHomeShaft() or tryHomeTop() then return end
-    print("Path home is blocked, retrying...")
+local function toShaftHead()
+  while true do
+    if tryShaftRoute() or tryTopRoute() then return end
+    print("Path out is blocked, retrying...")
     report("path blocked")
     sleep(5)
   end
+end
+
+local function goHome()
+  if atHome() then return end
+  toShaftHead()
+  goLocal(0, 0, st.home.y, "f", true)
 end
 
 local function travelTo(lf, lr, y)
@@ -394,13 +403,135 @@ local function travelTo(lf, lr, y)
   end
 end
 
+---------------------------------------------------------------- swarm travel
+-- Swarm miners have no chest of their own. Each flies between its plot and
+-- the base at its own cruising height, comes down one column onto the
+-- drop-off chest and leaves by a different column, so turtles never meet
+-- head-on.
+
+local function shaftXZ() return toWorld(1, 0) end
+
+local function at(p) return pos.x == p.x and pos.y == p.y and pos.z == p.z end
+local function over(p) return pos.x == p.x and pos.z == p.z end
+
+-- Fly level to a column.
+local function flyTo(x, z)
+  axisMove("x", x, true)
+  axisMove("z", z, true)
+end
+
+-- Moves from here to the drop-off chest.
+local function dockDistance(y)
+  local lf, lr = toLocal()
+  local sx, sz = shaftXZ()
+  return math.abs(lf - 1) + math.abs(lr) + (st.cruise - y)
+    + math.abs(sx - st.dock.x) + math.abs(sz - st.dock.z)
+    + (st.cruise - st.dock.y)
+end
+
 local function distHome()
+  if st.swarm then return dockDistance(pos.y) end
   return math.abs(pos.x - st.home.x) + math.abs(pos.y - st.home.y)
     + math.abs(pos.z - st.home.z)
 end
 
 local function tripFuel(y)
+  if st.swarm then return 2 * (dockDistance(y) + st.size * 2) + 300 end
   return 2 * (math.abs(st.home.y - y) + st.size * 2) + 300
+end
+
+-- Drop everything into the drop-off chest below.
+local function unloadDock()
+  for s = 1, 16 do
+    while turtle.getItemCount(s) > 0 do
+      turtle.select(s)
+      if not turtle.dropDown() then
+        print("The drop-off chest is full. Waiting...")
+        report("drop-off full")
+        sleep(5)
+      end
+    end
+  end
+  turtle.select(1)
+end
+
+-- Off the drop-off column, across to the exit column.
+local function toExitColumn()
+  if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
+  if at(st.exit1) then flyTo(st.exit2.x, st.exit2.z) end
+end
+
+-- Leave the base by the exit column.
+local function leaveDock()
+  toExitColumn()
+  axisMove("y", st.cruise, true)
+end
+
+-- Short of fuel with no coal on board: wait on the launch pad next to the
+-- factory and ask it for some.
+local function fuelStop(needed)
+  if fuel() >= needed then return end
+  toExitColumn()
+  axisMove("y", st.exit2.y - 1, true)
+  while fuel() < needed do
+    print("Asking the factory for fuel.")
+    report("needs fuel")
+    rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, JOB_PROTOCOL)
+    sleep(10)
+    for s = 1, 16 do
+      if turtle.getItemCount(s) > 0 then
+        turtle.select(s)
+        while fuel() < needed and turtle.refuel(1) do end
+      end
+    end
+    turtle.select(1)
+  end
+end
+
+local function inPlot()
+  local lf, lr = toLocal()
+  return lf >= 1 and lf <= st.size and lr >= 0 and lr < st.size
+    and pos.y <= st.home.y
+end
+
+local function onExitSide()
+  return at(st.exit1) or (over(st.exit2) and pos.y >= st.exit2.y - 1)
+end
+
+-- After a restart a swarm miner may be anywhere on its route. These two get
+-- it from wherever it is to the drop-off chest, or to the top of its shaft,
+-- always going the right way along the one-way columns.
+
+local function toDockFromAnywhere()
+  if inPlot() then toShaftHead() end
+  if over(st.dock) and pos.y >= st.dock.y then
+    axisMove("y", st.dock.y, true)
+    return
+  end
+  if onExitSide() then
+    leaveDock()   -- must go up and round again
+  else
+    axisMove("y", st.cruise, true)
+  end
+  flyTo(st.dock.x, st.dock.z)
+  axisMove("y", st.dock.y, true)
+end
+
+local function toShaftFromAnywhere()
+  if inPlot() then return end
+  local sx, sz = shaftXZ()
+  if not (pos.x == sx and pos.z == sz) then
+    if over(st.dock) and pos.y >= st.dock.y then
+      axisMove("y", st.dock.y, true)   -- finish coming down, leave properly
+      leaveDock()
+    elseif onExitSide() then
+      leaveDock()
+    else
+      axisMove("y", st.cruise, true)
+    end
+    flyTo(sx, sz)
+  end
+  axisMove("y", st.home.y, true)
 end
 
 ---------------------------------------------------------------- inventory
@@ -466,7 +597,44 @@ local function unload()
   turtle.select(1)
 end
 
+-- Swarm trips are saved as they go (st.phase), so a restart half-way
+-- carries on with the trip instead of starting again from the plot.
+--   "unload" = heading to the base with cargo; st.back = where to return to
+--   "return" = unloaded, heading back to st.back
+
+local function finishUnload()
+  toDockFromAnywhere()
+  refuelFromInventory(FUEL_TARGET)
+  unloadDock()
+  fuelStop(tripFuel(st.back.y))
+  st.phase = "return"
+  save()
+end
+
+local function finishReturn()
+  report("flying to plot")
+  toShaftFromAnywhere()
+  travelTo(st.back.lf, st.back.lr, st.back.y)
+  st.phase, st.back = nil, nil
+  save()
+  report("mining")
+end
+
+-- Swarm version of a trip home: fly to the base, unload, fly back.
+local function dockTrip(reason)
+  local lf, lr = toLocal()
+  st.back = { lf = lf, lr = lr, y = pos.y }
+  st.phase = "unload"
+  save()
+  print("Flying to base: " .. reason)
+  report("flying to base")
+  finishUnload()
+  print("Back to work.")
+  finishReturn()
+end
+
 local function homeTrip(reason)
+  if st.swarm then return dockTrip(reason) end
   local lf, lr = toLocal()
   local y = pos.y
   print("Going home: " .. reason)
@@ -561,6 +729,31 @@ local function run()
     st.rowDir = nil
     save()
   end
+  if st.swarm then
+    if st.phase ~= "finished" then
+      print("Plot finished. Flying to base.")
+      report("flying to base")
+      st.phase = "finish"
+      save()
+      toDockFromAnywhere()
+      refuelFromInventory(FUEL_TARGET)
+      unloadDock()
+      rednet.broadcast({ type = "job_done", id = os.getComputerID(), index = st.index },
+        JOB_PROTOCOL)
+      st.phase = "finished"
+      save()
+    end
+    if at(st.dock) or onExitSide() then
+      fuelStop(600)
+      leaveDock()
+      -- step off the exit column so others can pass; wait here for the next plot
+      axisMove("x", pos.x + 3, true)
+    end
+    fs.delete(STATE_FILE)
+    print("Plot done.")
+    report("done")
+    return
+  end
   print("Finished. Going home.")
   report("going home")
   goHome()
@@ -589,6 +782,19 @@ local function relocate()
   refuelAny(10)
   heading = detectHeading()
   pos.x, pos.y, pos.z = locate()
+  if st.swarm then
+    refuelFromInventory(FUEL_TARGET)
+    if st.phase == "finish" or st.phase == "finished" then
+      return true   -- run() finishes the job from wherever we are
+    end
+    if st.phase == "unload" then finishUnload() end
+    if st.phase == "return" then
+      finishReturn()
+    else
+      toShaftFromAnywhere()
+    end
+    return true
+  end
   local lf, lr = toLocal()
   local inPlot = lf >= 1 and lf <= st.size and lr >= 0 and lr < st.size
     and pos.y <= st.home.y
@@ -618,25 +824,74 @@ local function guarded(fn)
   end
 end
 
+-- Ask the factory for a plot to mine. Waits until one is offered.
+local function requestJob()
+  swarm.open()
+  local me = os.getComputerID()
+  while true do
+    rednet.broadcast({ type = "need_job", id = me }, JOB_PROTOCOL)
+    local deadline = os.clock() + 5
+    while os.clock() < deadline do
+      local _, msg = rednet.receive(JOB_PROTOCOL, 1)
+      if type(msg) == "table" and msg.type == "job" and msg.forId == me then
+        return msg
+      end
+    end
+    report("waiting for a plot")
+    sleep(20)
+  end
+end
+
+-- Do the saved job; when there is none (or it finishes), get a plot from
+-- the factory and mine that, for ever.
 local function jobTask()
   guarded(function()
-    if not located and not relocate() then return end
-    located = false
-    run()
-    st = nil
+    while true do
+      if not st then
+        if not swarm then return end
+        print("Asking the base for a plot...")
+        local j = requestJob()
+        st = {
+          swarm = true, index = j.index,
+          home = { x = j.x0 - 1, y = j.topY, z = j.z0 }, homeD = 0,
+          size = j.size, bottom = j.bottom, layer = 1,
+          cruise = j.cruise, dock = j.dock, exit1 = j.exit1, exit2 = j.exit2,
+        }
+        save()
+        located = false
+        print(("Plot #%d at %d, %d"):format(j.index, j.x0, j.z0))
+      end
+      if not located and not relocate() then return end
+      located = false
+      run()
+      st = nil
+    end
   end)
 end
 
 -- Go home, unload and wait there. The job is kept for a later "resume".
 local function homeTask()
   guarded(function()
-    if not relocate() then return end
     print("Ordered home.")
-    report("going home")
-    goHome()
-    unload()
-    face(st.homeD)
-    print("Parked at home.")
+    if st.swarm then
+      refuelAny(10)
+      heading = detectHeading()
+      pos.x, pos.y, pos.z = locate()
+      report("flying to base")
+      toDockFromAnywhere()
+      refuelFromInventory(FUEL_TARGET)
+      unloadDock()
+      fuelStop(tripFuel(st.home.y))
+      leaveDock()
+      axisMove("x", pos.x + 3, true)   -- park clear of the exit column
+    else
+      if not relocate() then return end
+      report("going home")
+      goHome()
+      unload()
+      face(st.homeD)
+    end
+    print("Parked.")
     report("parked")
   end)
 end
@@ -710,7 +965,7 @@ local function main(args)
         task = jobTask
       end
     elseif args[1] == "resume" and swarm then
-      task = idleTask
+      task = jobTask   -- no saved job: ask the base for a plot
     else
       if args[1] ~= "resume" then
         print("Usage: miner <size> [bottomY]")
@@ -775,8 +1030,8 @@ local function main(args)
         print("Resuming by remote order.")
         task = jobTask
       else
-        idleState = "idle"
-        task = idleTask
+        located = false
+        task = jobTask
       end
     end
   end
