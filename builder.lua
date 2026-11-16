@@ -73,9 +73,26 @@ end
 local lastState, lastReport = "starting", 0
 local progress
 
+-- A lava bucket in the inventory is fuel (1,000 moves): drink it whenever
+-- there is room in the tank. The empty bucket goes back with the leftovers.
+local function drinkLava()
+  local limit = turtle.getFuelLimit and turtle.getFuelLimit() or 20000
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    local level = turtle.getFuelLevel()
+    if d and d.name == "minecraft:lava_bucket" and type(level) == "number"
+      and (type(limit) ~= "number" or level + 1000 <= limit) then
+      turtle.select(s)
+      turtle.refuel(1)
+      turtle.select(1)
+    end
+  end
+end
+
 local function report(state)
   lastState = state or lastState
   lastReport = os.clock()
+  pcall(drinkLava)
   if not swarm then return end
   local inv, free = {}, 0
   for s = 1, 16 do
@@ -1587,6 +1604,7 @@ local function restock(b)
   end
   local function handBack(name, slot)
     if spareCoal[slot] then return true end
+    if name == "minecraft:bucket" then return true end       -- an emptied lava bucket
     return (isKeeper(name) or MATERIALS[name]) and not using[name]
   end
   local carrying = false
@@ -1640,7 +1658,11 @@ local function restock(b)
       print("No fuel to be had. Waiting here for coal.")
       report("waiting for fuel")
       goToCell(st.park)
-      sleep(180)
+      for _ = 1, 6 do
+        sleep(30)
+        report("waiting for fuel")       -- (a lava bucket put in by hand is drunk here)
+        if fuel() >= FUEL_SPARE + 400 then break end
+      end
     elseif fuelOnly then break
     elseif not placing or (first and findSlot(first)) then break
     elseif not first then break

@@ -49,6 +49,16 @@ local lastReport = 0
 local function report(state)
   lastState = state or lastState
   lastReport = os.clock()
+  -- a lava bucket on board is 1,000 moves of fuel: drink it when there is room
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    local level = turtle.getFuelLevel()
+    if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 15000 then
+      turtle.select(s)
+      turtle.refuel(1)
+      turtle.select(1)
+    end
+  end
   if not swarm then return end
   local f = turtle.getFuelLevel()
   pcall(swarm.report, {
@@ -83,7 +93,9 @@ local function fuel()
   return f
 end
 
-local function isCoal(name) return name == "minecraft:coal" or name == "minecraft:charcoal" end
+local function isCoal(name)
+  return name == "minecraft:coal" or name == "minecraft:charcoal" or name == "minecraft:lava_bucket"
+end
 
 local function refuel(target)
   for s = 1, 16 do
