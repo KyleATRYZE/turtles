@@ -1,10 +1,21 @@
 {
   "commands": [
     {
-      "id": 1794799670,
-      "issued": 1794799670000,
+      "id": 1794800508,
+      "issued": 1794800508000,
       "cmd": "reboot",
       "target": "BrickJagger"
+    },
+    {
+      "id": 1794800509,
+      "issued": 1794800508000,
+      "cmd": "build",
+      "target": "BrickJagger",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "limit": 40,
+      "clear": 0
     }
   ]
 }

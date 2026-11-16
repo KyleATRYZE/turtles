@@ -5,6 +5,10 @@ Pass 1 (the shell) is everything except glass, dirt and the fittings
 (chests, furnaces, computers, ladders, lanterns...). Pass 2 adds the glass
 from the inside later.
 
+With a ground map and a corner (ox oy oz), also adds a foundation: cobblestone
+under the floor wherever the ground there is lower than the floor.
+  buildlist.py [<map.json> <ox> <oy> <oz>]
+
 Writes blueprints/factory_shell.txt:
   P <n>                     then n lines: <item name> <facing or ->
   B <m>                     then m lines: <x> <y> <z> <palette index>
@@ -35,6 +39,27 @@ for x, y, z, i in bp["blocks"]:
         pal.append(entry)
     blocks.append((x, y, z, index[entry]))
 
+import sys
+FOUNDATION = "minecraft:cobblestone"
+if len(sys.argv) >= 5:
+    site = json.load(open(sys.argv[1]))["data"]
+    ox, oy, oz = map(int, sys.argv[2:5])
+    N, o, H = site["size"], site["origin"], site["heights"]
+    def ground(x, z):
+        x = max(o["x"], min(o["x"] + N - 1, x)); z = max(o["z"], min(o["z"] + N - 1, z))
+        v = H[(z - o["z"]) * N + (x - o["x"])]
+        return v if v > -1000 else oy - 1
+    floor = {(x, z) for x, y, z, _ in bp["blocks"] if y == 0}     # the whole floor, dirt included
+    entry = (FOUNDATION, "-")
+    index[entry] = len(pal)
+    pal.append(entry)
+    added = 0
+    for x, z in floor:
+        for wy in range(ground(ox + x, oz + z) + 1, oy):
+            blocks.append((x, wy - oy, z, index[entry]))
+            added += 1
+    print(f"foundation: {added} cobblestone under the floor")
+
 def order(b):
     x, y, z, _ = b
     row = z if y % 2 == 0 else -z               # alternate the row direction per layer
@@ -50,4 +75,4 @@ with open(out, "w") as f:
     f.write(f"B {len(blocks)}\n")
     for x, y, z, i in blocks:
         f.write(f"{x} {y} {z} {i}\n")
-print(f"{out}: {len(blocks)} blocks, {len(pal)} kinds, layers 0..{max(b[1] for b in blocks)}")
+print(f"{out}: {len(blocks)} blocks, {len(pal)} kinds, layers {min(b[1] for b in blocks)}..{max(b[1] for b in blocks)}")

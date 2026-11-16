@@ -1209,20 +1209,21 @@ local function loadList(b)
     error("The building plan is empty.", 0)
   end
   list = { pal = pal, blocks = blocks }
-  local sx, sy, sz = 0, 0, 0
+  local sx, sy, sz, miny = 0, 0, 0, 0
   for _, e in ipairs(blocks) do
     sx, sy, sz = math.max(sx, e[1] + 1), math.max(sy, e[2] + 1), math.max(sz, e[3] + 1)
+    miny = math.min(miny, e[2])
   end
-  list.sx, list.sy, list.sz = sx, sy, sz
+  list.sx, list.sy, list.sz, list.miny = sx, sy, sz, miny
   return list
 end
 
 -- the box we may dig in: the building plus a ring around it, from the
--- floor up
+-- bottom of the foundation up
 local function inSite(b, x, y, z)
   return x >= b.ox - MARGIN and x <= b.ox + list.sx - 1 + MARGIN
     and z >= b.oz - MARGIN and z <= b.oz + list.sz - 1 + MARGIN
-    and y >= b.oy and y <= b.oy + list.sy + 20
+    and y >= b.oy + list.miny and y <= b.oy + list.sy + 20
 end
 
 local function hasPickaxe()
@@ -1488,7 +1489,7 @@ local function clearSite(b)
           local f = scanHere()
           for k, name in pairs(f or {}) do
             local x, y, z = unkey(k)
-            if inSite(b, x, y, z) and not name:find("computercraft:turtle", 1, true) then
+            if y >= b.oy and inSite(b, x, y, z) and not name:find("computercraft:turtle", 1, true) then
               if isNatural(name) then
                 if not name:find("water", 1, true) and not name:find("lava", 1, true) then
                   found[k] = true
@@ -1786,6 +1787,10 @@ while true do
       st.build.paused = nil
       st.build.limit = tonumber(cmd.limit) and math.floor(tonumber(cmd.limit)) or nil
       if tostring(cmd.clear) == "0" and st.build.stage == "clear" then st.build.stage = "place" end
+      if cmd.stage == "clear" or cmd.stage == "place" then
+        st.build.stage = cmd.stage
+        if cmd.stage == "clear" then st.build.scanned = nil end
+      end
     end
     save()
     task = guarded(work)
