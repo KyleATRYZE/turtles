@@ -10,6 +10,11 @@
 --   escort who=.. stay=1 the same, but keep watching: go out with it again
 --                        every time it leaves
 --   goto x=.. z=..       hover over a spot until told otherwise
+--   search who=<name> path=x:z;x:z;...
+--                        a turtle has gone quiet, frozen in a chunk nobody is
+--                        keeping loaded: fly along the path a chunk at a time,
+--                        waiting at each, until it is heard from again; then
+--                        stay with it (escort, stay)
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
@@ -280,6 +285,44 @@ local function work()
       sleep(3)
     end
   end
+  if st.mode == "search" and st.who and st.path then
+    print("Searching for " .. st.who .. ".")
+    local t0 = os.clock()
+    local function heard()
+      local t = seen[st.who:lower()]
+      return t and t.at > t0
+    end
+    local function listenHere()
+      for _ = 1, 9 do
+        if heard() then return true end
+        sleep(3)
+      end
+      return heard()
+    end
+    local found = listenHere()
+    for px, pz in st.path:gmatch("(-?%d+):(-?%d+)") do
+      local x, z = tonumber(px), tonumber(pz)
+      while not found and (pos.x ~= x or pos.z ~= z) do
+        -- one chunk nearer, then wait for it to wake up and say something
+        local hx = pos.x + math.max(-16, math.min(16, x - pos.x))
+        local hz = pos.x ~= x and pos.z or (pos.z + math.max(-16, math.min(16, z - pos.z)))
+        report("searching for " .. st.who)
+        if not flyTo(hx, hz) then break end
+        found = listenHere()
+      end
+      if found then break end
+    end
+    if found then
+      print("Found " .. st.who .. ". Staying with it.")
+    else
+      print("No sign of " .. st.who .. " along the path.")
+    end
+    st.mode, st.stay, st.path = "escort", true, nil
+    local t = seen[st.who:lower()]
+    if t then st.x, st.z = t.x, t.z end
+    save()
+    return work()
+  end
   if st.mode == "goto" and st.x and st.z then
     print(("Hovering over %d, %d."):format(st.x, st.z))
     report("flying")
@@ -335,6 +378,8 @@ while true do
       st.mode, st.who = "escort", cmd.who
       st.x, st.z = tonumber(cmd.x), tonumber(cmd.z)
       st.stay = cmd.stay and true or nil
+    elseif cmd.cmd == "search" and type(cmd.who) == "string" and type(cmd.path) == "string" then
+      st.mode, st.who, st.path = "search", cmd.who, cmd.path
     elseif cmd.cmd == "goto" and tonumber(cmd.x) and tonumber(cmd.z) then
       st.mode, st.x, st.z = "goto", math.floor(tonumber(cmd.x)), math.floor(tonumber(cmd.z))
     elseif cmd.cmd == "park" then
