@@ -10,7 +10,7 @@ from the plan it was built to, leaving out the glass up to a given height
 works out the jobs: the missing windows, and anything the new plan changes
 (the drone lane's floor, to striped yellow concrete).
 
-    tools/touchup.py <the plan it was built to .json> [<glass missing up to y>]
+    tools/touchup.py <the plan it was built to .json> [<glass missing up to y> [<name>]]
 """
 import json, os, re, sys
 
@@ -23,13 +23,15 @@ for (x, y, z), full in sorted(blocks.items(), key=lambda t: (t[0][1], t[0][2], t
     name = full.split("[")[0]
     if name in ("minecraft:glass_pane", "minecraft:glass") and y <= top:
         continue
+    if name.endswith("sapling"):
+        continue                                   # never planted
     m = re.search(r"facing=(\w+)", full)
     entry = (name, m.group(1) if m else "-")
     if entry not in index:
         index[entry] = len(pal)
         pal.append(entry)
     rows.append(f"{x} {y} {z} {index[entry]}")
-out = os.path.join(ROOT, "blueprints", "factory_asfit.txt")
+out = os.path.join(ROOT, "blueprints", (sys.argv[3] if len(sys.argv) > 3 else "factory_asfit") + ".txt")
 with open(out, "w") as f:
     f.write(f"P {len(pal)}\n" + "\n".join(f"{n} {fc}" for n, fc in pal) + f"\nB {len(rows)}\n" + "\n".join(rows) + "\n")
 print(out, len(rows), "blocks")

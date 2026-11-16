@@ -74,6 +74,8 @@ for c, (name, facing) in shell.items():
 for c, (name, facing) in final.items():
     if c not in shell and name not in SKIP:
         puts.append(c)
+if "swaps" in ARGS[4:]:                             # a floor job: nothing but the swaps
+    digs, puts = [], []
 print(f"{len(digs)} to dig out, {len(swaps)} to swap, {len(puts)} to put in")
 
 # ---------------------------------------------------------------- the space

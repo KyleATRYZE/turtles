@@ -55,7 +55,7 @@ ROOMS = [
     {"name": "Smelting hall", "box": [1, 1, 1, 8, 7, 29], "floor": "ground"},
     {"name": "Storage room", "box": [10, 1, 1, 17, 7, 29], "floor": "ground"},
     {"name": "Launch bay", "box": [19, 1, 1, 26, 7, 29], "floor": "ground"},
-    {"name": "Tree farm", "box": [28, 1, 1, 43, 13, 29], "floor": "ground, double height"},
+    {"name": "Mekanism foundry", "box": [28, 1, 1, 43, 13, 29], "floor": "ground, double height"},
     {"name": "Builder workshop", "box": [1, 9, 1, 26, 13, 29], "floor": "upper"},
     {"name": "Control tower", "box": [46, 1, 21, 54, 22, 29], "floor": "three floors"},
     {"name": "Drone lane", "box": [0, 1, 1, 44, 4, 4], "floor": "ground, along the back wall"},
@@ -70,7 +70,12 @@ def roof_h(x):
 
 # ---------------------------------------------------------------- floor
 fill(0, 0, 0, HX, 0, HZ, "minecraft:polished_deepslate")
-fill(28, 0, 4, 43, 0, 29, "minecraft:dirt")                 # tree farm soil
+# the foundry (it was going to be a tree farm): a plain floor, a copper plinth
+# along the east wall for the machine line and one in the corner for power,
+# and a tiled lane in front of the machines for the turtle that runs them
+fill(41, 0, 6, 42, 0, 27, "minecraft:cut_copper")
+fill(39, 0, 6, 40, 0, 27, "minecraft:deepslate_tiles")
+fill(29, 0, 5, 33, 0, 7, "minecraft:cut_copper")
 fill(TX1, 0, TZ1, TX2, 0, TZ2, "minecraft:polished_deepslate")
 
 # ---------------------------------------------------------------- hall walls
@@ -315,10 +320,6 @@ put(23, 1, 1, "minecraft:furnace[facing=south]")
 put(23, 2, 1, "minecraft:chest[facing=south]")                 # drop-off
 B.pop((20, 0, 1), None)                                        # out-shaft
 B.pop((24, 0, 1), None)                                        # in-shaft
-# tree farm: 5 rows of birch saplings, clear of the lane; aisles between
-for x in (30, 34, 38, 42):
-    for z in range(8, 28, 4):
-        put(x, 1, z, "minecraft:birch_sapling")
 # control tower: the monitor wall on the north wall of the top floor
 for x in range(TX1 + 1, TX2):
     for y in range(17, 21):
