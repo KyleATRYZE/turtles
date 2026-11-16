@@ -312,6 +312,7 @@ local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
+local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
 local FUEL_RESERVE = 256 -- coal never handed out to miners
 local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
@@ -1201,7 +1202,8 @@ end
 -- goes to the first miner that asks, so it can hunt for coal.
 -- canCraft = false while I am holding a finished miner.
 local function serveRequests(canCraft)
-  if not next(fuelQueue) and not next(bucketQueue) and not next(emptiesQueue) then return end
+  if not next(fuelQueue) and not next(bucketQueue) and not next(emptiesQueue)
+    and not next(scannerQueue) then return end
   local wantEmpties = 0
   for _, n in pairs(emptiesQueue) do wantEmpties = math.max(wantEmpties, n) end
   if canCraft and wantEmpties > 0 then pcall(ensureStock, BUCKET, wantEmpties) end
@@ -1241,6 +1243,10 @@ local function serveRequests(canCraft)
       if next(bucketQueue) and giveTo(dir, BUCKET, 1) then
         print("Gave a bucket to a miner.")
       end
+      if next(scannerQueue) and giveTo(dir, SCANNER, 1) then
+        print("Gave a Geo Scanner to a new hunter.")
+        scannerQueue = {}
+      end
       if wantEmpties > 0 then
         local ok, moved = giveTo(dir, BUCKET, wantEmpties)
         if ok then
@@ -1250,7 +1256,7 @@ local function serveRequests(canCraft)
       end
     end
   end
-  fuelQueue, bucketQueue, emptiesQueue = {}, {}, {}
+  fuelQueue, bucketQueue, emptiesQueue, scannerQueue = {}, {}, {}, {}
   turnTo(0)
 end
 
@@ -1587,6 +1593,8 @@ local function responder()
         fuelQueue[id] = true
       elseif msg.type == "bucket_request" then
         bucketQueue[id] = true
+      elseif msg.type == "scanner_request" then
+        scannerQueue[id] = true
       elseif msg.type == "empties_request" then
         emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
       elseif msg.type == "materials" and type(msg.items) == "table"

@@ -1340,6 +1340,7 @@ end
 --   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
 --   expect|front/up/down|text   (stop unless the block that way has text in its name)
 --   until|side|method|n|seconds (wait for a machine's count to reach n)
+--   equip|left/right|item       (swap the tool on that side for an item on board)
 --   handin|keep,keep            (everything else on board back to the factory)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
@@ -1487,6 +1488,17 @@ local function runLab()
         else
           res = "left alone: " .. name
         end
+      elseif verb == "equip" then
+        -- equip|left/right|item : swap what is on that side for the item (a
+        -- Chunk Controller in place of the pickaxe, say)
+        local slot = findSlot(a[3])
+        if not slot then res = "none on board" else
+          turtle.select(slot)
+          local done, why = turtle[a[2] == "right" and "equipRight" or "equipLeft"]()
+          turtle.select(1)
+          local kinds = table.concat({ peripheral.getType(a[2]) }, ", ")
+          res = (done and "on" or ("no: " .. tostring(why))) .. " (" .. (kinds ~= "" and kinds or "no peripheral") .. ")"
+        end
       elseif verb == "until" then
         -- wait for a machine: until|side|method|n|seconds (a count, or a number)
         local want, limit = tonumber(a[4]) or 1, tonumber(a[5]) or 180
@@ -1582,7 +1594,8 @@ local function runLab()
       if err == "Terminated" then error(err, 0) end
       res, stop = "ERROR " .. tostring(err), true
     end
-    out(("%d %s: %s"):format(lab.i, steps[lab.i]:sub(1, 60), tostring(res)))
+    local okTime, clock = pcall(os.date, "!%H:%M:%S")
+    out(("%s %d %s: %s"):format(okTime and clock or "", lab.i, steps[lab.i]:sub(1, 60), tostring(res)))
     lab.i = lab.i + 1
     save()
     if stop then

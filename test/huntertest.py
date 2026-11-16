@@ -71,3 +71,14 @@ KILL_AT=900''')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"lava")
 g=L.globals()
 print("   lava buckets home:", dict(g.DOCKCHEST).get('minecraft:lava_bucket'), "| empties asked for:", g.EMPTIES, "times | on board:", [(i.name.split(':')[1], i.count) for i in g.T.inv.values() if i and 'bucket' in i.name], "| lava left:", sum(1 for i in range(6) for y in (2,3) if L.eval(f'getBlock(EXIT1.x+12+{i},{y},EXIT1.z+13)')))
+
+
+# F) a miner told to hunt by remote order: no scanner on board, own name; fetches a scanner from the factory, then hunts
+L=fresh(2500, -4442, 26, 1540, coal=8)
+L.execute('''T.inv[2]=nil
+local st = textutils.unserialize(FS["miner.state"]) st.huntName = "NatKingCoal" FS["miner.state"] = textutils.serialize(st)
+setSpecial(-4470, 20, 1560, "minecraft:coal") setSpecial(-4471, 20, 1560, "minecraft:coal")
+KILL_AT=900''')
+print(list(L.eval('{runMiner("resume")}').values())); show(L,"new hunter")
+g=L.globals()
+print("   scanner asked for:", g.SCANREQ, "times | label:", g.LABEL, "| scans:", g.SCANS, "| on board:", [i.name.split(':')[1] for i in g.T.inv.values() if i])

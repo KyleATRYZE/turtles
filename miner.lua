@@ -1208,6 +1208,19 @@ local function huntDeliver()
   -- (it once ran dry in the exit shaft and blocked every miner behind it)
   serviceStop(FUEL_LOW)
   collectEmpties()
+  if not findItem(SCANNER) then
+    -- a hunter made by remote order: the factory hands over a spare Geo Scanner
+    if at(st.dock) then flyTo(st.exit1.x, st.exit1.z) end
+    if at(st.exit1) then
+      print("Asking the factory for a Geo Scanner.")
+      report("needs a scanner")
+      for _ = 1, 30 do
+        rednet.broadcast({ type = "scanner_request", id = os.getComputerID() }, JOB_PROTOCOL)
+        sleep(4)
+        if findItem(SCANNER) then break end
+      end
+    end
+  end
   leaveToHunt()
   report("hunting coal")
 end
@@ -1395,7 +1408,9 @@ end
 -- coal ore the scanner finds, taking the coal home, and bringing coal to
 -- any miner that has run dry. It never goes back to a plot.
 local function hunt()
-  if os.getComputerLabel() ~= "CoalPorter" then os.setComputerLabel("CoalPorter") end
+  -- (a second hunter, made by remote order while the first is missing, has its own name)
+  local name = st.huntName or "CoalPorter"
+  if os.getComputerLabel() ~= name then os.setComputerLabel(name) end
   print("Hunting coal.")
   report("hunting coal")
   fixTool()
@@ -1428,6 +1443,14 @@ local function hunt()
   local scannedHere = false
   while true do
     if fuel() < FUEL_LOW then refuelFromInventory(FUEL_TARGET) end
+    if not findItem(SCANNER) then
+      huntDeliver()                    -- (to the base for a scanner first)
+      if not findItem(SCANNER) then
+        print("No Geo Scanner to be had. Waiting.")
+        report("needs a scanner")
+        sleep(120)
+      end
+    end
     if countItem("minecraft:coal") >= HUNT_LOAD or emptySlots() < 3 then
       dropJunk()
       compact()
@@ -1481,6 +1504,7 @@ local function hunt()
         end
       else
         print(("Scan point %d of %d"):format(best, #pts))
+        report("hunting coal")           -- (so it is heard from on the way, not only on arrival)
         local reached = axisMove("y", huntY(), false) and axisMove("x", p.x, false)
           and axisMove("z", p.z, false)
         if reached then
@@ -1905,6 +1929,17 @@ local function main(args)
         task = homeTask
       else
         task = idleTask
+      end
+    elseif cmd.cmd == "hunt" then
+      -- become a coal (and lava) hunter: give up the plot, fetch a scanner
+      if st or loadState() then
+        st.hunt, st.paused = true, nil
+        st.huntName = type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or st.huntName
+        st.phase, st.back = nil, nil
+        save()
+        located = false
+        print("Hunting by remote order.")
+        task = jobTask
       end
     elseif cmd.cmd == "resume" then
       if st or loadState() then
