@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794872328,
-      "issued": 1794872328000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794872430,
+      "issued": 1794872430000,
+      "cmd": "foundry",
+      "target": "Pushy",
+      "job": "move_infuser"
     }
   ]
 }
