@@ -59,6 +59,7 @@ ol.steps li, ul.points li { margin: 6px 0; }
 .ln.key { color: #99b2f2; }
 .ln.foot { background: #4c4c4c; color: #f2b233; }
 .q { font-weight: 600; }
+img.screen { width: 100%; height: auto; display: block; image-rendering: pixelated; border-radius: 6px; }
 pre.code { background: #1b1d22; color: #e8e4da; border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 13px/1.5 var(--mono); margin: 8px 0; }
 code { font-family: var(--mono); font-size: 0.92em; }
 </style>
@@ -380,8 +381,8 @@ code { font-family: var(--mono); font-size: 0.92em; }
   </div>
   <div>
     <h3>The touch screen</h3>
-    <div class="mon" role="img" aria-label="Mock-up of the storage touch screen"><div class="mon-in"><div class="ln hdr"> STORAGE      777 / 3,240 slots   24%        </div><div class="ln ">&nbsp;</div><div class="ln srch"> Search: dia_                            </div><div class="ln ">&nbsp;</div><div class="ln hit"> Diamond                 185   [16][64][All]</div><div class="ln row"> Diamond block             0                </div><div class="ln row"> Diamond pickaxe           1                </div><div class="ln ">&nbsp;</div><div class="ln tab"> Ores  Ingots  Gems  Stone  Build  Wood  Fuel </div><div class="ln ">&nbsp;</div><div class="ln key"> A  B  C  D  E  F  G  H  I  J  K  L  M  &lt;    </div><div class="ln key"> N  O  P  Q  R  S  T  U  V  W  X  Y  Z  CLR  </div><div class="ln foot"> Out chest: 64 diamond ready.   Tap to search </div></div></div>
-    <p class="ex">Mock-up in the CC colours. Tabs along the bottom jump to a section; the keyboard narrows the list as you type.</p>
+    <img class="screen" src="store-screen.png" alt="The storage touch screen as dash.lua draws it: capacity bar, search box, matching items with 16 / 64 / All buttons, sections with fill bars, keyboard and an Out chest note.">
+    <p class="ex">Drawn by the real screen program in CC's own font, with this monitor's own palette matching the section colours. Tap a section to browse it; the keyboard narrows the list as you type.</p>
   </div>
 </div>
 
