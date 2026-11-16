@@ -202,7 +202,7 @@ local function listen()
     end
     -- the factory's reports say where the base is
     if type(msg) == "table" and msg.role == "factory" and type(msg.base) == "table"
-      and type(msg.base.f) == "table" and not base then
+      and type(msg.base.f) == "table" and not (base and base.pad) then
       base = msg.base
       local h = fs.open(BASE_FILE, "w")
       h.write(textutils.serialize(base))
@@ -212,6 +212,32 @@ local function listen()
 end
 
 local function chunkOf(x, z) return math.floor(x / 16), math.floor(z / 16) end
+
+-- Fuel: down the hole onto the launch pad beside the factory, ask it for
+-- coal as the miners do, burn it, and back up. (A loader used to sit and
+-- wait for somebody to put coal in it.)
+local LOW_FUEL, GOOD_FUEL = 600, 1500
+local function fuelUp()
+  if fuel() >= LOW_FUEL or not (base and type(base.pad) == "table") then return false end
+  if fuel() < 260 then return false end                 -- too little even for the trip: stay put
+  print("Low on fuel. Down to the launch pad for coal.")
+  report("fetching fuel")
+  if not flyTo(base.pad.x, base.pad.z) then return false end
+  while pos.y > base.pad.y do
+    if not move("d") then break end
+  end
+  if pos.y == base.pad.y then
+    for _ = 1, 24 do
+      if fuel() >= GOOD_FUEL then break end
+      rednet.broadcast({ type = "fuel_request", id = os.getComputerID() }, "swarm_job")
+      sleep(5)
+      refuel(GOOD_FUEL)
+    end
+  end
+  print("Fuel: " .. tostring(fuel()) .. ".")
+  climb()
+  return true
+end
 
 local function park()
   for _ = 1, 20 do
@@ -225,6 +251,7 @@ local function park()
     report("parked")
     return
   end
+  fuelUp()
   print("Parking at the base.")
   report("flying home")
   if flyTo(p.x, p.z) then
@@ -265,8 +292,9 @@ local function work()
           report("escorting")
           flyTo(t.x, t.z)                       -- stay in its chunk
         end
-        if base and math.abs(t.x - base.f.x) <= NEAR_BASE and math.abs(t.z - base.f.z) <= NEAR_BASE
-          and not st.stay then
+        local nearBase = base and math.abs(t.x - base.f.x) <= NEAR_BASE and math.abs(t.z - base.f.z) <= NEAR_BASE
+        if nearBase and st.stay then fuelUp() end
+        if nearBase and not st.stay then
           print(st.who .. " is back near the base.")
           st.mode, st.who = "park", nil
           save()

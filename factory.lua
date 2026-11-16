@@ -137,6 +137,15 @@ local RECIPES = {
     key = { C = "minecraft:cut_copper" },
   },
   -- fittings for the factory building
+  -- Sophisticated Storage: a chest is planks around a redstone torch
+  ["minecraft:redstone_torch"] = {
+    grid = { "R", "", "", "S", "", "", "", "", "" },
+    key = { R = "minecraft:redstone", S = "minecraft:stick" },
+  },
+  ["sophisticatedstorage:chest"] = {
+    grid = { "P", "P", "P", "P", "T", "P", "P", "P", "P" },
+    key = { P = "#planks", T = "minecraft:redstone_torch" },
+  },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
   ["mekanism:metallurgic_infuser"] = {
@@ -281,9 +290,9 @@ local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local FUEL_RESERVE = 256 -- coal never handed out to miners
-local HELPERS      = 3   -- builder's mates to make (mining turtles running helper.lua);
+local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
-local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "HodStewart" }
+local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "SteelyDan" }   -- (the fourth runs the Mekanism machines)
 local launchingHelper = false
 -- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
 -- while there are controllers in stock, up to this many. One stays at the
