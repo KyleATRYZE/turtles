@@ -147,10 +147,39 @@ local function burnInventory(target)
   turtle.select(1)
 end
 
+-- A full inventory cannot take coal. On the launch pad the factory is right
+-- beside us: hand it a stack back (turning costs no fuel).
+local function makeRoom()
+  for s = 1, 16 do
+    if turtle.getItemCount(s) == 0 then return true end
+  end
+  for _ = 1, 4 do
+    local ok, d = turtle.inspect()
+    if ok and tostring(d.name):find("computercraft:turtle", 1, true) then
+      for s = 16, 1, -1 do
+        local it = turtle.getItemDetail(s)
+        if it and it.name ~= CORE and it.name ~= SCANNER and it.name ~= PICKAXE
+          and not it.name:find("coal", 1, true) then
+          turtle.select(s)
+          if turtle.drop() then
+            turtle.select(1)
+            print("Handed a stack back to make room for coal.")
+            return true
+          end
+        end
+      end
+    end
+    turtle.turnRight()
+  end
+  turtle.select(1)
+  return false
+end
+
 -- Out of fuel where we stand: burn what we carry, else call for help.
 local function emptyTank()
   burnInventory(200)
   while fuel() == 0 do
+    makeRoom()
     print("Out of fuel. Waiting for coal.")
     report("needs fuel")
     if swarm and swarm.open() then
