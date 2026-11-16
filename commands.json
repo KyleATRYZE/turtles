@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794867395,
-      "issued": 1794867395000,
-      "cmd": "lab",
-      "target": "SteelyDan",
-      "ops": "fetch|minecraft:redstone=64,minecraft:raw_iron=9;site|-4448|71|1518|factory_asfit2|factory_foundryfloor;walk|40|1|12;face|0;expect|front|enrichment_chamber;call|front|setMode|ITEM|FRONT|ENERGY;call|front|getMode|ITEM|FRONT;drop|minecraft:redstone|32;call|front|getEnergy;until|front|getOutput|12|240;call|front|getOutput;walk|41|1|13;face|3;expect|front|enrichment_chamber;suck|64;walk|40|1|12;face|0;expect|front|enrichment_chamber;call|front|setMode|ITEM|LEFT|OUTPUT;call|front|getMode|ITEM|LEFT;walk|40|1|11;face|0;expect|front|energized_smelter;call|front|setMode|ITEM|FRONT|ENERGY;call|front|setMode|ITEM|RIGHT|INPUT;call|front|setMode|ITEM|LEFT|OUTPUT;call|front|getMode|ITEM|RIGHT;call|front|getMode|ITEM|LEFT;drop|minecraft:redstone|24;call|front|getEnergy;walk|41|2|12;expect|down|enrichment_chamber;dropDown|minecraft:raw_iron|9;call|bottom|getInput;walk|41|1|10;face|1;expect|front|energized_smelter;until|front|getOutput|12|300;call|front|getOutput;suck|64;inv;leave;handin|",
-      "clear": 1
+      "id": 1794868199,
+      "issued": 1794868199000,
+      "cmd": "park",
+      "target": "LoadRunner"
     }
   ]
 }
