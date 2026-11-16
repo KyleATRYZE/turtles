@@ -28,6 +28,20 @@ for dirpath, dirs, files in os.walk(ROOT):
             if old_rx.search(open(os.path.join(dirpath, f), errors='ignore').read()): left.append(os.path.relpath(os.path.join(dirpath, f), ROOT))
 check("old names are nowhere but the table in swarm.lua %s" % (left or ""), not left)
 
+# the name lists in the programs
+fac = open(os.path.join(ROOT, 'factory.lua')).read()
+loaders = re.findall(r'"(\w+)"', fac[fac.index('local LOADER_NAMES'):fac.index('local LOADERS ')])
+helpers = re.findall(r'"(\w+)"', fac[fac.index('local HELPER_NAMES'):fac.index('local launchingHelper')])
+check("loader names, in Kyle's order", loaders == ["Phantastic", "Ablaze", "Vexed", "Beehave", "Batty", "Breezy", "AllayOop", "WitherOrNot", "Shulky", "Squawk"])
+check("the four helpers keep their places, with a dozen names after them", helpers[:4] == ["Pushy", "HopTo", "LeverAlone", "DropIt"] and len(helpers) >= 16 and len(set(helpers)) == len(helpers))
+hel = open(os.path.join(ROOT, 'helper.lua')).read()
+slots = dict(re.findall(r'(\w+) = (\d)', hel[hel.index('local SLOTS = {'):hel.index('local function slot()')]))
+check("hover slots are filed under the new names, the same slots as before", slots == {"Pushy": "0", "HopTo": "1", "LeverAlone": "2", "DropIt": "3"})
+mi = open(os.path.join(ROOT, 'miner.lua')).read()
+miners = re.findall(r'"(\w+)"', mi[mi.index('local NAMES = {'):mi.index('-- Thrown away when the inventory fills up')])
+check("28 miner names, none twice, none a helper's or a loader's", len(miners) == 28 and len(set(miners)) == 28
+      and not set(miners) & (set(helpers) | set(loaders) | {"Ghastly", "Crafty", "CommandBlock", "BlockParty", "Charcool"}))
+
 # ---------------------------------------------------------------- swarm.lua alone
 ENV = r'''
 CLOCK = 5
@@ -66,6 +80,11 @@ L, g = swarm('''LABEL = "NatKingCoal"
 FS["miner.state"] = textutils.serialize({ swarm = true, hunt = true, huntName = "NatKingCoal", huntDone = { 1, 2 }, size = 4, home = { x = 1, y = 2, z = 3 } })''')
 st = L.eval('textutils.unserialize(FS["miner.state"])')
 check("a hunter: label and huntName renamed, job intact", g.LABEL == "Charcool" and st.huntName == "Charcool" and st.hunt and st.size == 4 and st.home.z == 3 and st.huntDone[2] == 2)
+L, g = swarm('''LABEL = "TimberLake"
+FS["helper.state"] = textutils.serialize({ job = { plan = "factory_shell", ox = -4448, oy = 71, oz = 1518, xmin = 3, xmax = 5 }, turn = 2, orderSeq = 7, done = true })
+FS[".foundry"] = textutils.serialize({ on = true, queue = {}, notes = { "ok" } })''')
+st = L.eval('textutils.unserialize(FS["helper.state"])')
+check("a helper (lost, waking weeks later): renamed, its job as it was", g.LABEL == "LeverAlone" and st.job.plan == "factory_shell" and st.job.ox == -4448 and st.turn == 2 and st.done)
 L, g = swarm('''LABEL = "Sortnado" FS["helper.state"] = "{job={plan=\\"factory_shell\\"}}" BEFORE = FS["helper.state"]''')
 check("a machine with nothing to rename: nothing is touched", g.LABEL == "Sortnado" and g.FS["helper.state"] == g.BEFORE)
 L, g = swarm('LABEL = "SteelyDan"')
