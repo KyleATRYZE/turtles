@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794799364,
-      "issued": 1794799364000,
+      "id": 1794799457,
+      "issued": 1794799457000,
       "cmd": "reboot",
-      "target": "ForgeClooney"
+      "target": "BrickJagger"
     }
   ]
 }
