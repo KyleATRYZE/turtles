@@ -62,6 +62,8 @@ local urgent = false    -- something changed that is worth uploading soon
 local lastUpload = 0
 local uploadNote = "not uploaded yet"
 local orderNote = "no orders yet"
+local owner              -- player who gets chat messages (set from chat)
+local chatBox            -- defined in the chat section below
 local sha               -- GitHub's id for the current status file
 
 local function headers()
@@ -135,14 +137,13 @@ end
 -- (a leading $ hides the message from other players).
 
 local OWNER_FILE = ".owner"
-local owner
 if fs.exists(OWNER_FILE) then
   local h = fs.open(OWNER_FILE, "r")
   owner = h.readAll()
   h.close()
 end
 
-local function chatBox()
+chatBox = function()
   return peripheral.find("chat_box") or peripheral.find("chatBox")
 end
 
