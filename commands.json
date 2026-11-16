@@ -1,12 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794869376,
-      "issued": 1794869376000,
-      "cmd": "lab",
-      "target": "MortarKombat",
-      "ops": "fetch|sophisticatedstorage:chest=1,sophisticatedstorage:barrel=1;inv;handin|",
-      "clear": 1
+      "id": 1794869831,
+      "issued": 1794869831000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794869832,
+      "issued": 1794869831000,
+      "cmd": "reboot",
+      "target": "SteelyDan"
+    },
+    {
+      "id": 1794869833,
+      "issued": 1794869831000,
+      "cmd": "reboot",
+      "target": "LoadRunner"
     }
   ]
 }
