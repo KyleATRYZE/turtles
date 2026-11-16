@@ -502,12 +502,15 @@ local function setup(env, s, names, opts)
     end
   end
   if #need > 0 and (opts.fetch or opts.bench) then
-    local want = {}
+    local want, byItem = {}, {}
     for _, name in ipairs(need) do
       local item = M.MACHINES[name].item
       -- the infuser already made stands on the bench outside
       if name == "infuser" and (opts.bench or not s.bench) then fromBench(env, s) end
-      if opts.fetch and not findSlot(item) then want[#want + 1] = { item, 1 } end
+      byItem[item] = (byItem[item] or 0) + 1           -- (three bank smelters: three of them)
+    end
+    for item, n in pairs(byItem) do
+      if opts.fetch and count(item) < n then want[#want + 1] = { item, n } end
     end
     if #want > 0 then
       if env.inside() then env.leave() end
@@ -677,6 +680,7 @@ local function feed(env, s, tryLava)
     end
     turtle.select(1)
   end
+  sleep(2)                                 -- (a moment to light up)
   p.fuel = fuelIn("bottom") or have
   local rate = call("bottom", "getProductionRate")
   local e = call("bottom", "getEnergy")
@@ -700,12 +704,12 @@ local function checkPower(env, s)
     end
   end
   sleep(20)
-  local any = false
+  local any, rose = false, false
   for name, b in pairs(seen) do
     local okStand, _, side = pcall(stand, env, s, name)
     local e = okStand and call(side, "getEnergy")
     if type(e) == "number" and type(b.e) == "number" and e > b.e then
-      p.on[name] = "yes"
+      p.on[name], rose = "yes", true
     elseif type(e) == "number" and type(b.max) == "number" and b.max > 0 and e >= b.max * 0.9 then
       p.on[name] = p.on[name] == "yes" and "yes" or "full"    -- (full already: seen when it works)
     elseif type(e) == "number" and e <= 0 then
@@ -715,7 +719,7 @@ local function checkPower(env, s)
     end
     if p.on[name] ~= "no" then any = true end
   end
-  p.ok = any and p.making or false
+  p.ok = rose or (any and p.making) or false
   local parts = {}
   for name, v in pairs(p.on) do parts[#parts + 1] = name .. " " .. v end
   table.sort(parts)
