@@ -810,19 +810,20 @@ local function escape()
       if not moveBy(m) then break end
     end
     if exitK and key(pos.x, pos.y, pos.z) == exitK then
-      -- up the hole until nothing solid is beside us
-      local function clear()
-        for h = 0, 3 do
-          local x, y, z = neighbour(pos.x, pos.y, pos.z, h)
-          local name = found[key(x, y, z)]
-          if covered(x, y, z) and name and not PASSABLE[name] then return false end
+      -- up the hole until we are above everything solid around it
+      local top = pos.y
+      for k, name in pairs(found) do
+        local x, y, z = unkey(k)
+        if math.abs(x - pos.x) <= 1 and math.abs(z - pos.z) <= 1 and y > top
+          and not PASSABLE[name] then
+          top = y
         end
-        return true
       end
-      for _ = 1, 12 do
-        if clear() or not step("u") then break end
+      while pos.y <= top do
+        if not step("u") then break end
       end
-      print("Found a way out of the cave.")
+      if pos.y <= top then return false end
+      print("Found a way out to open sky.")
       return true
     end
   end
