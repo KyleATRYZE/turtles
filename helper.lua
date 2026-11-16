@@ -1788,6 +1788,7 @@ local function runFoundry()
       return goTo(x, y, z)
     end,
     block = function(x, y, z) fitMap.solid[ck(x, y, z)] = true end,   -- a machine stands here
+    unblock = function(x, y, z) fitMap.solid[ck(x, y, z)] = nil end,  -- (our own cable, taken up)
     leave = function() outOfBuilding() end,
     rise = function() riseTo(math.max(pos.y, highway())) end,
     flyTo = function(x, y, z)              -- over everything, then straight down

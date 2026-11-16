@@ -33,6 +33,8 @@ local RECIPES = {
     ["minecraft:redstone"] = { take = 1, give = 1, out = "mekanism:enriched_redstone" },
   },
   ["mekanism:energized_smelter"] = {
+    ["minecraft:sand"] = { take = 1, give = 1, out = "minecraft:glass" },
+    ["minecraft:cobblestone"] = { take = 1, give = 1, out = "minecraft:stone" },
     ["mekanism:dust_iron"] = { take = 1, give = 1, out = "minecraft:iron_ingot" },
     ["mekanism:dust_gold"] = { take = 1, give = 1, out = "minecraft:gold_ingot" },
   },
@@ -47,10 +49,17 @@ local GAS = {
   ["minecraft:redstone"] = { "mekanism:redstone", 10 }, ["mekanism:enriched_redstone"] = { "mekanism:redstone", 80 },
 }
 
+GEN_ITEM, CUBE_ITEM, CABLE_ITEM = "mekanismgenerators:heat_generator", "mekanism:basic_energy_cube",
+  "mekanism:basic_universal_cable"
+RECIPES_SMELT = RECIPES_SMELT or {}
 function addMachine(item, x, y, z, facing)
   local m = { item = item, x = x, y = y, z = z, f = facing, energy = 0, max = 20000, work = 0,
     modes = { FRONT = "NONE", LEFT = "NONE", RIGHT = "NONE", BACK = "NONE", TOP = "NONE", BOTTOM = "NONE" },
+    -- energy sides: the back takes none until it is set (to see that it is)
+    emodes = { FRONT = "INPUT", LEFT = "INPUT", RIGHT = "INPUT", BACK = "NONE", TOP = "INPUT", BOTTOM = "INPUT" },
     eject = false, slots = {} }
+  if item == GEN_ITEM then m.max = 160000 end
+  if item == CUBE_ITEM then m.max = 4000000 end
   -- (defaults as found on the infuser: front, left and top take the item)
   m.modes.FRONT, m.modes.LEFT, m.modes.TOP, m.modes.RIGHT, m.modes.BACK = "INPUT", "INPUT", "INPUT", "OUTPUT", "ENERGY"
   MACHINES[key(x, y, z)] = m
@@ -66,7 +75,22 @@ local function rel(m, face)
 end
 
 -- an item offered at a face: how many go in
+local FUELS = { ["minecraft:coal"] = 80, ["minecraft:charcoal"] = 80 }
 function mekOffer(m, face, name, n)
+  if m.item == GEN_ITEM then
+    local f = m.slots.fuel
+    if name == "minecraft:lava_bucket" then
+      if f or (m.lava or 0) + 1000 > 24000 then return 0 end
+      m.lava = (m.lava or 0) + 1000
+      m.slots.fuel = { name = "minecraft:bucket", count = 1 }
+      return 1
+    end
+    if not FUELS[name] or (f and f.name ~= name) then return 0 end
+    local went = math.min(n, 64 - (f and f.count or 0))
+    if went > 0 then m.slots.fuel = { name = name, count = (f and f.count or 0) + went } end
+    return went
+  end
+  if not RECIPES[m.item] then return 0 end
   local mode = m.modes[rel(m, face)]
   local slot
   if mode == "INPUT" then
@@ -163,12 +187,59 @@ local function tickMachine(m, dt)
   end
 end
 
+-- power: a generator burns fuel (a coal is 80 s at 4 kJ/s: 32 jobs) and
+-- pushes out of its front into a cube (which gives out of its own front) or
+-- straight into cable; every machine touching the cable by a side set to
+-- take energy is filled from it
+local function powerTick(dt)
+  for _, g in pairs(MACHINES) do
+    if g.item == GEN_ITEM then
+      g.burn = (g.burn or 0) - dt
+      if g.burn <= 0 and g.energy < g.max then
+        local f = g.slots.fuel
+        if f and FUELS[f.name] then
+          f.count, g.burn = f.count - 1, FUELS[f.name]
+          if f.count == 0 then g.slots.fuel = nil end
+        elseif (g.lava or 0) >= 100 then
+          g.lava, g.burn = g.lava - 100, 10
+        end
+      end
+      if g.burn > 0 then g.energy, g.rate = math.min(g.max, g.energy + 4000 * dt), 4000 else g.rate = 0 end
+      local src, at = g, machineAt(g.x + DX[g.f], g.y, g.z + DZ[g.f])
+      if at and at.item == CUBE_ITEM and rel(at, (g.f + 2) % 4) ~= "FRONT" then
+        local k = math.min(g.energy, at.max - at.energy)
+        at.energy, g.energy = at.energy + k, g.energy - k
+        src, at = at, machineAt(at.x + DX[at.f], at.y, at.z + DZ[at.f])
+      end
+      if at and at.item == CABLE_ITEM then
+        local seen, queue, users = {}, { at }, {}
+        while #queue > 0 do
+          local c = table.remove(queue)
+          if not seen[c] then
+            seen[c] = true
+            for face = 0, 3 do
+              local nb = machineAt(c.x + DX[face], c.y, c.z + DZ[face])
+              if nb and nb.item == CABLE_ITEM then queue[#queue + 1] = nb
+              elseif nb and RECIPES[nb.item] and nb.emodes[rel(nb, (face + 2) % 4)] == "INPUT" then users[nb] = true end
+            end
+          end
+        end
+        for u in pairs(users) do
+          local k = math.min(src.energy, u.max - u.energy)
+          u.energy, src.energy = u.energy + k, src.energy - k
+        end
+      end
+    end
+  end
+end
+
 function mekTime(n)                     -- the clock moves on, and the machines with it
   local left = n or 0
   while left > 0 do
     local dt = math.min(1, left)
     CLOCK, left = CLOCK + dt, left - dt
-    for _, m in pairs(MACHINES) do tickMachine(m, dt) end
+    for _, m in pairs(MACHINES) do if RECIPES[m.item] then tickMachine(m, dt) end end
+    powerTick(dt)
   end
 end
 
@@ -184,6 +255,13 @@ end
 function mekSuck(dir, n)
   local m, face = mekTarget(dir)
   if not m then return false, "No items to take" end
+  if m.item == GEN_ITEM then              -- (an empty bucket comes back out, unless the pack says no)
+    local f = m.slots.fuel
+    if LAVA_STUCK or not (f and f.name == "minecraft:bucket") then return false, "No items to take" end
+    giveTurtle(f.name, f.count)
+    m.slots.fuel = nil
+    return true
+  end
   local o = m.slots.output
   if m.modes[rel(m, face)] ~= "OUTPUT" or not o then return false, "No items to take" end
   local k = math.min(n or 64, o.count)
@@ -197,13 +275,16 @@ end
 function mekCall(m, method, ...)
   local a = { ... }
   if method == "getDirection" then return NAME[m.f] end
-  if method == "getMode" then return m.modes[a[2]] end
+  if method == "getMode" then return (a[1] == "ENERGY" and m.emodes or m.modes)[a[2]] end
   if method == "setMode" then
-    if a[1] ~= "ITEM" or m.modes[a[2]] == nil then error("bad side", 0) end
-    m.modes[a[2]] = a[3]
-    SETMODES = (SETMODES or 0) + 1
+    local t = a[1] == "ENERGY" and m.emodes or a[1] == "ITEM" and m.modes or nil
+    if not t or t[a[2]] == nil then error("bad side", 0) end
+    t[a[2]] = a[3]
+    if a[1] == "ITEM" then SETMODES = (SETMODES or 0) + 1 else ESETS = (ESETS or 0) + 1 end
     return
   end
+  if method == "getFuelItem" then local f = m.slots.fuel return f and { name = f.name, count = f.count } or { name = "minecraft:air", count = 0 } end
+  if method == "getProductionRate" then return m.rate or 0 end
   if method == "setEjecting" then m.eject = a[2] return end
   if method == "getInput" then local s = m.slots.input return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
   if method == "getOutput" then local s = m.slots.output return s and { name = s.name, count = s.count } or { name = "minecraft:air", count = 0 } end
@@ -218,7 +299,7 @@ end
 function inMachines()
   local n = 0
   for _, m in pairs(MACHINES) do
-    for slot, s in pairs(m.slots) do if slot ~= "power" then n = n + s.count end end
+    for slot, s in pairs(m.slots) do if slot ~= "power" and slot ~= "fuel" then n = n + s.count end end
   end
   return n
 end
@@ -307,6 +388,26 @@ turtle.place = function()
   if s.count == 0 then T.inv[T.sel] = nil end
   return true
 end
+turtle.placeDown = function()
+  local s = T.inv[T.sel]
+  if not s or T.outside then return false, "No items to place" end
+  if machineAt(T.x, T.y - 1, T.z) then return false, "Cannot place block here" end
+  addMachine(s.name, T.x, T.y - 1, T.z, T.d)
+  PLACED = PLACED or {}
+  PLACED[#PLACED + 1] = s.name
+  s.count = s.count - 1
+  if s.count == 0 then T.inv[T.sel] = nil end
+  return true
+end
+turtle.digDown = function()
+  local m = machineAt(T.x, T.y - 1, T.z)
+  if not m or T.outside then return false, "Nothing to dig here" end
+  MACHINES[key(m.x, m.y, m.z)] = nil
+  giveTurtle(m.item, 1)
+  DUG = DUG or {}
+  DUG[#DUG + 1] = m.item
+  return true
+end
 -- the infuser on the bench outside: digging it brings it on board
 turtle.dig = function()
   if BENCH and T.outside and T.x == BENCH.x and T.y == BENCH.y and T.z == BENCH.z and T.d == BENCH.face and BENCH.there then
@@ -356,6 +457,7 @@ ENV = {
     return true
   end,
   block = function(x, y, z) BLOCKED[key(x, y, z)] = true end,
+  unblock = function(x, y, z) BLOCKED[key(x, y, z)] = nil end,
   leave = function() T.outside = true LEFT = (LEFT or 0) + 1 end,
   rise = function() end,
   flyTo = function(x, y, z) T.outside = true T.x, T.y, T.z = x, y, z return true end,

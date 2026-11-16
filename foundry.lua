@@ -55,7 +55,33 @@ M.MACHINES = {
     also = { south = "INPUT" }, perOp = 1.1 },
   infuser = { item = "mekanism:metallurgic_infuser", x = 41, y = 1, z = 15, lane = "west",
     use = { energy = "west", input = "top", extra = "south", output = "north" }, perOp = 1.1 },
+  -- the smelter bank (job=bank): more Energized Smelters north of the first,
+  -- for big batches of anything a furnace cooks (job smelt=...). They run on
+  -- the cable only: in at the top, out at the front (the lane).
+  bank1 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 9, lane = "west", bank = true,
+    use = { input = "top", output = "west" }, perOp = 0 },
+  bank2 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 8, lane = "west", bank = true,
+    use = { input = "top", output = "west" }, perOp = 0 },
+  bank3 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 7, lane = "west", bank = true,
+    use = { input = "top", output = "west" }, perOp = 0 },
 }
+M.BANK = { "bank1", "bank2", "bank3" }
+
+-- Power (job=power): a Heat Generator burning coal (or lava, once a bucket
+-- has been seen to come back out), an energy cube if one can be had, and a
+-- line of universal cable on the plinth along the backs of the machines
+-- (x 42). Laid out from the south: the generator at z 18 facing north (its
+-- front, where the power comes out, against the cube), the cube at z 17
+-- facing north (its front against the cable), cable from z 16 north to the
+-- first machine. Without a cube there is cable at z 17 too.
+M.GEN   = "mekanismgenerators:heat_generator"
+M.CUBE  = "mekanism:basic_energy_cube"
+M.CABLE = "mekanism:basic_universal_cable"
+M.LAVA, M.BUCKET = "minecraft:lava_bucket", "minecraft:bucket"
+M.POWER = { x = 42, y = 1, gen = 18, cube = 17, last = 16,
+  fuel = { "minecraft:coal", "minecraft:charcoal" },
+  low = 16,                -- fuel in the generator's slot below this: more taken over
+  full = 64 }              -- (the slot holds a stack)
 
 -- What the infuser makes: each pass is one trip through it.
 M.INFUSE = {
@@ -120,6 +146,12 @@ end
 --   foundry make=steel n=16               the infuser (steel, circuit, alloy)
 --   foundry job=setup | job=move_infuser  find or place the machines; bring
 --                                         the infuser in from the bench
+--   foundry job=power [cube=0] [fuel=lava]  lay power on: generator, cube,
+--                                         cable; the machines then need no dust
+--   foundry job=fuel [fuel=lava]          more fuel for the generator
+--   foundry job=bank [n=3]                more smelters (on the cable)
+--   foundry smelt=minecraft:sand n=128    anything a furnace cooks, through
+--                                         every smelter there is
 --   foundry on=1 / on=0                   work the foundry / an ordinary helper
 --   foundry clear=1                       drop the jobs in hand
 --   foundry reset=1                       forget what is set up (look again)
@@ -139,14 +171,16 @@ function M.order(cmd)
     end
   end
   if cmd.clear then s.queue, s.cur = {}, nil end
-  if cmd.reset then s.m, s.bench, s.ready = {}, nil, nil end
+  if cmd.reset then s.m, s.bench, s.ready, s.power = {}, nil, nil, nil end
   local kind, item = cmd.job, cmd.item
   if cmd.ore then kind, item = "ore", cmd.ore end
   if cmd.enrich then kind, item = "enrich", cmd.enrich end
   if cmd.make then kind = cmd.make end
+  if cmd.smelt then kind, item = "smelt", cmd.smelt end
   if type(kind) == "string" then
     s.on = true
-    s.queue[#s.queue + 1] = { kind = kind, n = tonumber(cmd.n), item = fullName(item) }
+    s.queue[#s.queue + 1] = { kind = kind, n = tonumber(cmd.n), item = fullName(item),
+      cube = cmd.cube, fuel = cmd.fuel }
   end
   M.save(s)
   return s
@@ -164,6 +198,8 @@ function M.info()
     ready = s.ready or false, machines = table.concat(placed, " "),
     job = cur and ("%s x%s (%s)"):format(tostring(cur.kind), tostring(cur.n or 1), tostring(cur.stage or "starting")) or nil,
     queued = #s.queue, last = s.last, notes = s.notes,
+    power = s.power and { ok = s.power.ok, fuel = s.power.fuel, cube = s.power.cube, on = s.power.on,
+      lava = s.power.lava } or nil,
   }
 end
 
@@ -225,6 +261,15 @@ local function station(m, face)
 end
 M.station = station
 
+-- Redstone dust a machine needs per item worked: none once the cable powers
+-- it (unless it has been seen to go without power on the cable).
+local function cost(s, name)
+  local p = s.power
+  if p and p.ok and type(p.on) == "table" and p.on[name] and p.on[name] ~= "no" then return 0 end
+  return M.MACHINES[name].perOp
+end
+M.cost = cost
+
 ---------------------------------------------------------------- at the machines
 
 local function stand(env, s, name, role)
@@ -281,10 +326,10 @@ end
 -- waiting there already
 local function power(env, s, name, ops)
   local have = count(M.REDSTONE)
-  if have == 0 then return 0 end
+  if have == 0 or cost(s, name) == 0 then return 0 end
   local _, side = stand(env, s, name, "energy")
   local waiting = stack(call(side, "getEnergyItem"))
-  local n = math.min(have, math.max(0, math.ceil(ops * M.MACHINES[name].perOp) + 2 - waiting))
+  local n = math.min(have, math.max(0, math.ceil(ops * cost(s, name)) + 2 - waiting))
   if n == 0 then return 0 end
   return put(env, s, name, "energy", M.REDSTONE, n)
 end
@@ -310,11 +355,20 @@ local function drain(env, s, name, leave)
     local e, max = call(side, "getEnergy"), call(side, "getMaxEnergy")
     local low = type(e) ~= "number" or type(max) ~= "number" or e < max / 4
     local stalled = os.clock() - changed > M.STALL
+    if low and cost(s, name) == 0 and os.clock() - changed > 20 then
+      -- on the cable, and short of power: the generator has run dry, or the
+      -- cable does not reach this one (dust, if there is any, from here on)
+      s.starved = s.starved or {}
+      if not s.starved[name] then
+        s.starved[name] = true
+        note(s, "the " .. name .. " is short of power on the cable")
+      end
+    end
     if low and count(M.REDSTONE) > 0 and boosts < 16 and os.clock() - boosted > 9
-      and stack(call(side, "getEnergyItem")) == 0 then
+      and stack(call(side, "getEnergyItem")) == 0 and M.MACHINES[name].use.energy then
       -- the dust has run out (the slot holds one stack): more
       boosts, boosted = boosts + 1, os.clock()
-      put(env, s, name, "energy", M.REDSTONE, math.min(16, math.ceil(left * M.MACHINES[name].perOp) + 1))
+      put(env, s, name, "energy", M.REDSTONE, math.min(16, math.ceil(left * math.max(cost(s, name), M.MACHINES[name].perOp)) + 1))
       sfx, side = stand(env, s, name, where)
       changed = os.clock()
     elseif stalled then
@@ -430,7 +484,9 @@ end
 local function announce(env, s)
   local machines = {}
   for name, m in pairs(s.m) do machines[name] = m.ok or nil end
-  pcall(rednet.broadcast, { type = "foundry_ready", ready = s.ready or false, machines = machines }, env.PROTOCOL)
+  local p = s.power
+  pcall(rednet.broadcast, { type = "foundry_ready", ready = s.ready or false, machines = machines,
+    power = p and { ok = p.ok or false, fuel = p.fuel, lava = p.lava, cube = p.cube } or nil }, env.PROTOCOL)
 end
 
 -- names: the machines wanted. opts.fetch: one that is not there is asked of
@@ -475,6 +531,335 @@ local function setup(env, s, names, opts)
   M.save(s)
   announce(env, s)
   return { ok = not failed, why = failed }
+end
+
+---------------------------------------------------------------- power
+
+local function powerState(s)
+  s.power = s.power or {}
+  s.power.on = s.power.on or {}
+  return s.power
+end
+
+-- the cable runs from the cube's place north to the first machine on the
+-- plinth (the bank, once it stands)
+local function lineStart(s)
+  local P, z = M.POWER, M.POWER.last
+  for name, def in pairs(M.MACHINES) do
+    if def.x == P.x - 1 and (not def.bank or (s.m[name] and s.m[name].ok)) then z = math.min(z, def.z) end
+  end
+  return z
+end
+
+-- what stands on the power line at z (nil: nothing): looked at from above
+local function lineAt(env, z)
+  local P = M.POWER
+  if not env.walk(P.x, P.y + 1, z) then error("cannot get over the power line at z " .. z, 0) end
+  local seen, data = turtle.inspectDown()
+  return seen and type(data) == "table" and data.name or nil
+end
+
+-- take up a piece of our own cable (it comes back on board)
+local function liftCable(env, z)
+  if lineAt(env, z) ~= M.CABLE then return false end
+  turtle.select(1)
+  local ok = turtle.digDown()
+  if ok then env.unblock(M.POWER.x, M.POWER.y, z) end
+  return ok
+end
+
+local function placeDownHere(item)
+  local slot = findSlot(item)
+  if not slot then return false end
+  turtle.select(slot)
+  local ok = turtle.placeDown()
+  turtle.select(1)
+  return ok
+end
+
+-- a block standing at z on the line, facing north (a placed block faces the
+-- turtle): placed from the spot south of it, which must be clear
+local function placeFacingNorth(env, item, z)
+  local P = M.POWER
+  if not env.walk(P.x, P.y, z - 1) then return false, "cannot get to the power line at z " .. (z - 1) end
+  env.face(1)
+  local seen = turtle.inspect()
+  if seen then return false, "something stands at z " .. z end
+  local slot = findSlot(item)
+  if not slot then return false, "none on board" end
+  turtle.select(slot)
+  local ok, err = turtle.place()
+  turtle.select(1)
+  if not ok then return false, tostring(err) end
+  local _, data = turtle.inspect()
+  if not (type(data) == "table" and data.name == item) then return false, "it did not go down" end
+  env.block(P.x, P.y, z)
+  -- stand off the line again (the next block may go where the turtle is)
+  env.walk(P.x, P.y + 1, z - 1)
+  return true
+end
+
+-- every machine on the plinth takes power from the cable at its back
+local function energySides(env, s)
+  for name, def in pairs(M.MACHINES) do
+    local m = s.m[name]
+    if m and m.ok and def.x == M.POWER.x - 1 then
+      local okStand = pcall(stand, env, s, name)
+      if okStand then
+        local rel = relative("east", m.f)
+        local mode = call("front", "getMode", "ENERGY", rel)
+        if mode ~= nil and mode ~= "INPUT" then
+          local ok, err = pcall(peripheral.call, "front", "setMode", "ENERGY", rel, "INPUT")
+          if not ok then note(s, ("%s: the back would not take power (%s)"):format(name, tostring(err))) end
+        end
+      end
+    end
+  end
+end
+
+local function fuelIn(side)
+  local f = call(side, "getFuelItem")
+  if type(f) == "table" then return stack(f) end
+end
+
+-- Over the generator: top up its fuel from what is on board (lava first
+-- when lava is known to work, or when asked to try it). Notes how much fuel
+-- it has and whether it makes power.
+local function feed(env, s, tryLava)
+  local P, p = M.POWER, powerState(s)
+  if lineAt(env, P.gen) ~= M.GEN then
+    p.ok = false
+    note(s, "no generator on the power line")
+    return 0
+  end
+  local fed = 0
+  if (tryLava or p.lava == "works") and findSlot(M.LAVA) then
+    local buckets = count(M.BUCKET)
+    turtle.select(findSlot(M.LAVA))
+    if turtle.dropDown(1) then
+      sleep(1)
+      turtle.select(1)
+      turtle.suckDown()
+      if count(M.BUCKET) > buckets then
+        p.lava, fed = "works", fed + 1
+        -- (a bucket at a time while they keep coming back: the tank holds more)
+        while findSlot(M.LAVA) and fed < 8 do
+          turtle.select(findSlot(M.LAVA))
+          local before = count(M.BUCKET)
+          if not turtle.dropDown(1) then break end
+          sleep(1)
+          turtle.select(1)
+          turtle.suckDown()
+          if count(M.BUCKET) == before then p.lava = "stuck" break end
+          fed = fed + 1
+        end
+      else
+        p.lava = "stuck"
+        note(s, "an empty bucket stays in the generator: no more lava (take it out by hand)")
+      end
+    end
+    turtle.select(1)
+  end
+  local have = fuelIn("bottom")
+  for _, name in ipairs(P.fuel) do
+    local room = P.full - (have or 0)
+    if room <= 0 then break end
+    local slot = findSlot(name)
+    while slot and room > 0 do
+      turtle.select(slot)
+      local before = turtle.getItemCount(slot)
+      turtle.dropDown(math.min(room, before))
+      local went = before - turtle.getItemCount(slot)
+      if went == 0 then break end
+      fed, room = fed + went, room - went
+      have = (have or 0) + went
+      slot = findSlot(name)
+    end
+    turtle.select(1)
+  end
+  p.fuel = fuelIn("bottom") or have
+  local rate = call("bottom", "getProductionRate")
+  local e = call("bottom", "getEnergy")
+  p.making = (type(rate) == "number" and rate > 0) or (type(e) == "number" and e > 0)
+  M.save(s)
+  return fed
+end
+
+-- Is the power reaching the machines? Each one's energy is read before and
+-- after a wait: rising (or full and the generator making power) is yes,
+-- empty and staying empty is no (it keeps its redstone).
+local function checkPower(env, s)
+  local p = powerState(s)
+  local seen = {}
+  for name, def in pairs(M.MACHINES) do
+    if s.m[name] and s.m[name].ok and def.x == M.POWER.x - 1 then
+      local okStand, _, side = pcall(stand, env, s, name)
+      if okStand then
+        seen[name] = { e = call(side, "getEnergy"), max = call(side, "getMaxEnergy") }
+      end
+    end
+  end
+  sleep(20)
+  local any = false
+  for name, b in pairs(seen) do
+    local okStand, _, side = pcall(stand, env, s, name)
+    local e = okStand and call(side, "getEnergy")
+    if type(e) == "number" and type(b.e) == "number" and e > b.e then
+      p.on[name] = "yes"
+    elseif type(e) == "number" and type(b.max) == "number" and b.max > 0 and e >= b.max * 0.9 then
+      p.on[name] = p.on[name] == "yes" and "yes" or "full"    -- (full already: seen when it works)
+    elseif type(e) == "number" and e <= 0 then
+      p.on[name] = "no"
+    else
+      p.on[name] = p.on[name] or "full"
+    end
+    if p.on[name] ~= "no" then any = true end
+  end
+  p.ok = any and p.making or false
+  local parts = {}
+  for name, v in pairs(p.on) do parts[#parts + 1] = name .. " " .. v end
+  table.sort(parts)
+  note(s, ("power %s (fuel %s): %s"):format(p.ok and "on" or "NOT on", tostring(p.fuel), table.concat(parts, ", ")))
+  M.save(s)
+  return p.ok
+end
+
+-- Cable from the cube's place (when there is no cube) north to the first
+-- machine, wherever there is none yet. Returns what could not be laid.
+local function cableUp(env, s)
+  local P, short = M.POWER, 0
+  local top = (powerState(s).cube and P.last or P.cube)
+  for z = top, lineStart(s), -1 do
+    local there = lineAt(env, z)
+    if there == nil then
+      if placeDownHere(M.CABLE) then
+        env.block(P.x, P.y, z)
+      else
+        short = short + 1
+      end
+    elseif there ~= M.CABLE and there ~= M.CUBE then
+      note(s, ("something else on the power line at z %d: %s"):format(z, there))
+    end
+  end
+  return short
+end
+
+local function fetchFuel(env, s, want, lava)
+  local list = {}
+  if lava then list[#list + 1] = { M.LAVA, count(M.LAVA) + 4 } end
+  list[#list + 1] = { M.POWER.fuel[1], count(M.POWER.fuel[1]) + want }
+  env.fetch(list)
+  local have = count(M.POWER.fuel[1]) + count(M.POWER.fuel[2])
+  if have < want then env.fetch({ { M.POWER.fuel[2], count(M.POWER.fuel[2]) + want - have } }) end
+end
+
+-- job=power: everything from the generator to the last cable, then the
+-- machines' backs set to take power, the generator fed, the power checked.
+local function layPower(env, s, job)
+  local P, p = M.POWER, powerState(s)
+  setup(env, s, M.ORDER)                   -- (where the machines are, which way they face)
+  local wantCube = not (job.cube == 0 or job.cube == "0")
+  local z1 = lineStart(s)
+  local there = {}
+  for z = z1, P.gen do there[z] = lineAt(env, z) end
+  if there[P.gen] and there[P.gen] ~= M.GEN then
+    return { ok = false, why = "something else stands where the generator goes: " .. there[P.gen] }
+  end
+  -- what to fetch
+  local list, cables = {}, 0
+  if there[P.gen] ~= M.GEN and not findSlot(M.GEN) then list[#list + 1] = { M.GEN, 1 } end
+  if wantCube and there[P.cube] ~= M.CUBE and not findSlot(M.CUBE) then list[#list + 1] = { M.CUBE, 1 } end
+  for z = z1, P.cube do if there[z] == nil then cables = cables + 1 end end
+  if cables > count(M.CABLE) then list[#list + 1] = { M.CABLE, cables } end
+  local fuelWant = math.max(0, P.full - (count(P.fuel[1]) + count(P.fuel[2])))
+  if #list > 0 or fuelWant > 0 then
+    if env.inside() then env.leave() end
+    if #list > 0 then env.fetch(list) end
+    if fuelWant > 0 then fetchFuel(env, s, fuelWant, job.fuel == "lava") end
+  end
+  if there[P.gen] ~= M.GEN and not findSlot(M.GEN) then
+    return { ok = false, why = "no heat generator to be had" }
+  end
+  -- the generator, at z 18 facing north (from z 17: our own cable there is
+  -- taken up first)
+  if there[P.gen] ~= M.GEN then
+    if there[P.cube] == M.CABLE and liftCable(env, P.cube) then there[P.cube] = nil end
+    if there[P.cube] ~= nil then
+      return { ok = false, why = "no way in to place the generator: " .. tostring(there[P.cube]) .. " in front" }
+    end
+    local ok, why = placeFacingNorth(env, M.GEN, P.gen)
+    if not ok then return { ok = false, why = "the generator: " .. why } end
+    there[P.gen] = M.GEN
+    note(s, "heat generator placed")
+  end
+  -- the cube, at z 17 facing north (from z 16)
+  if wantCube and there[P.cube] ~= M.CUBE and findSlot(M.CUBE) then
+    if there[P.cube] == M.CABLE and liftCable(env, P.cube) then there[P.cube] = nil end
+    if there[P.last] == M.CABLE and liftCable(env, P.last) then there[P.last] = nil end
+    if there[P.cube] == nil and there[P.last] == nil then
+      local ok, why = placeFacingNorth(env, M.CUBE, P.cube)
+      if ok then
+        there[P.cube] = M.CUBE
+        note(s, "energy cube placed")
+      else
+        note(s, "the cube: " .. why)
+      end
+    end
+  end
+  p.cube = there[P.cube] == M.CUBE or nil
+  local short = cableUp(env, s)
+  energySides(env, s)
+  feed(env, s, job.fuel == "lava")
+  checkPower(env, s)
+  announce(env, s)
+  if env.inside() then env.leave() end
+  local _, total = aboard()
+  if total > 0 then env.handin() end
+  local why
+  if short > 0 then why = short .. " cable short" end
+  if not p.ok then why = (why and why .. "; " or "") .. "no power reaching the machines" end
+  return { ok = p.ok and short == 0, made = {}, why = why }
+end
+
+-- job=fuel: more fuel for the generator
+local function fuelJob(env, s, job)
+  local p = powerState(s)
+  local want = math.max(8, M.POWER.full - (p.fuel or 0))
+  if env.inside() then env.leave() end
+  fetchFuel(env, s, want, job.fuel == "lava" or p.lava == "works")
+  local fed = feed(env, s, job.fuel == "lava")
+  announce(env, s)
+  if env.inside() then env.leave() end
+  local inv = aboard()
+  inv["minecraft:coal"], inv["minecraft:charcoal"] = nil, nil
+  if next(inv) then env.handin() end
+  return { ok = fed > 0, made = {}, why = fed == 0 and "no fuel went in" or nil }
+end
+
+-- job=bank: more smelters north of the first, on the cable
+local function layBank(env, s, job)
+  local p = powerState(s)
+  if not p.ok then return { ok = false, why = "lay power on first (job=power): the bank runs on the cable" } end
+  local n = math.max(1, math.min(#M.BANK, math.floor(tonumber(job.n) or #M.BANK)))
+  local names = {}
+  for i = 1, n do names[i] = M.BANK[i] end
+  local r = setup(env, s, names, { fetch = true })
+  local short = cableUp(env, s)
+  if short > 0 then
+    if env.inside() then env.leave() end
+    env.fetch({ { M.CABLE, short } })
+    short = cableUp(env, s)
+  end
+  energySides(env, s)
+  for _, name in ipairs(names) do
+    if s.m[name] and s.m[name].ok then p.on[name] = p.on[name] or "full" end
+  end
+  checkPower(env, s)
+  announce(env, s)
+  if env.inside() then env.leave() end
+  local _, total = aboard()
+  if total > 0 then env.handin() end
+  return { ok = r.ok and short == 0, made = {}, why = r.why or (short > 0 and short .. " cable short" or nil) }
 end
 
 ---------------------------------------------------------------- the jobs
@@ -588,8 +973,8 @@ local function refine(env, s, job, smelt)
   end
   local lots = math.floor(n / lot)
   while lots > 0 do
-    local dust = math.max(0, math.ceil(lots * M.MACHINES.chamber.perOp) - inChamber)
-    if smelt then dust = dust + math.max(0, math.ceil(lots * lot * yield * M.MACHINES.smelter.perOp) - inSmelter) end
+    local dust = math.max(0, math.ceil(lots * cost(s, "chamber")) - inChamber)
+    if smelt then dust = dust + math.max(0, math.ceil(lots * lot * yield * cost(s, "smelter")) - inSmelter) end
     if dust <= free then break end
     lots = lots - 1
   end
@@ -607,8 +992,38 @@ local function refine(env, s, job, smelt)
   settle(env, s, job, smelt)
 end
 
+-- Anything a furnace cooks, through every smelter there is (the first one
+-- and the bank), shared out evenly: in at the top, taken from each output.
+local function smelters(s)
+  local list = {}
+  for _, name in ipairs({ "smelter", "bank1", "bank2", "bank3" }) do
+    if s.m[name] and s.m[name].ok then list[#list + 1] = name end
+  end
+  return list
+end
+
+local function smeltAll(env, s, job)
+  local names = smelters(s)
+  if #names == 0 then job.fail = "no smelter set up" return end
+  for _, name in ipairs(names) do drain(env, s, name) end       -- (whatever was left in them)
+  local n = count(job.item)
+  if n == 0 then job.fail = "no " .. job.item:gsub("^.*:", "") .. " on board" return end
+  local each = math.ceil(n / #names)
+  for _, name in ipairs(names) do
+    local k = math.min(each, count(job.item), 64)
+    if k > 0 then
+      power(env, s, name, k)
+      put(env, s, name, "input", job.item, k)
+    end
+  end
+  for _, name in ipairs(names) do
+    local _, left = drain(env, s, name)
+    if left > 0 then job.fail = "the " .. name .. " stopped part way" end
+  end
+end
+
 -- what a job needs from the factory: { { item, count }, ... }
-local function wants(job)
+local function wants(s, job)
   local n = job.n
   local list, dust = {}, 6
   local recipe = M.INFUSE[job.kind]
@@ -617,22 +1032,27 @@ local function wants(job)
     local gasMb = {}
     for _, pass in ipairs(recipe.passes) do
       gasMb[pass.gas] = (gasMb[pass.gas] or 0) + n * pass.mb
-      dust = dust + math.ceil(n * M.MACHINES.infuser.perOp)
+      dust = dust + math.ceil(n * cost(s, "infuser"))
     end
     if gasMb.redstone then dust = dust + math.ceil(gasMb.redstone / 10) end
     if gasMb.carbon then job.carbon = math.ceil(gasMb.carbon / 10) end
+  elseif job.kind == "smelt" then
+    list[1] = { job.item, n }
+    for _, name in ipairs(smelters(s)) do
+      dust = dust + math.ceil(n / #smelters(s) * cost(s, name))
+    end
   else
     local lot, yield = oreYield(job.item)
     list[1] = { job.item, n }
-    dust = dust + math.ceil(n / lot * M.MACHINES.chamber.perOp)
-    if job.kind == "ore" then dust = dust + math.ceil(n * yield * M.MACHINES.smelter.perOp) end
+    dust = dust + math.ceil(n / lot * cost(s, "chamber"))
+    if job.kind == "ore" then dust = dust + math.ceil(n * yield * cost(s, "smelter")) end
   end
   list[#list + 1] = { M.REDSTONE, dust }
   return list
 end
 
 local function fetchFor(env, s, job)
-  local list = wants(job)
+  local list = wants(s, job)
   local function short()
     for _, w in ipairs(list) do
       if count(w[1]) < w[2] then return true end
@@ -654,11 +1074,24 @@ local function fetchFor(env, s, job)
       asked = true
     end
   end
+  -- fuel for the generator rides along when it is running low
+  local p = s.power
+  if p and p.ok and (p.fuel or 0) < M.POWER.low then
+    local want = M.POWER.full - (p.fuel or 0)
+    local have = count(M.POWER.fuel[1]) + count(M.POWER.fuel[2]) - (job.carbon or 0)
+    if have < want then
+      list[#list + 1] = { M.POWER.fuel[1], count(M.POWER.fuel[1]) + want - have }
+      env.fetch(list)
+      list[#list] = nil
+      asked = true
+    end
+  end
   if not asked and short() then env.fetch(list) end
 end
 
 local function needed(kind)
   if M.INFUSE[kind] then return { "infuser" } end
+  if kind == "smelt" then return { "smelter" } end
   if kind == "ore" then return { "chamber", "smelter" } end
   if kind == "enrich" then return { "chamber" } end
 end
@@ -667,12 +1100,16 @@ local function doJob(env, s, job)
   -- setup: see what stands in the bay and set it up (nothing is fetched)
   if job.kind == "setup" then return setup(env, s, M.ORDER) end
   if job.kind == "move_infuser" then return setup(env, s, { "infuser" }, { bench = true, fetch = true }) end
+  if job.kind == "power" then return layPower(env, s, job) end
+  if job.kind == "fuel" then return fuelJob(env, s, job) end
+  if job.kind == "bank" then return layBank(env, s, job) end
   local machines = needed(job.kind)
   if not machines then return { ok = false, why = "no such job: " .. tostring(job.kind) } end
   if not M.INFUSE[job.kind] and type(job.item) ~= "string" then
     return { ok = false, why = "which item? (item=...)" }
   end
-  job.n = math.max(1, math.min(M.MAX_BATCH, math.floor(tonumber(job.n) or 8)))
+  local most = job.kind == "smelt" and 64 * #smelters(s) or M.MAX_BATCH
+  job.n = math.max(1, math.min(most, math.floor(tonumber(job.n) or 8)))
   if job.kind == "ore" then
     local lot, yield = oreYield(job.item)
     job.n = math.min(job.n, math.floor(64 / yield))
@@ -700,7 +1137,27 @@ local function doJob(env, s, job)
   end
   if job.stage == "work" then
     env.report("foundry: " .. job.kind)
-    if M.INFUSE[job.kind] then infuse(env, s, job) else refine(env, s, job, job.kind == "ore") end
+    s.starved = nil
+    local onCable = {}
+    for _, name in ipairs(machines) do onCable[name] = cost(s, name) == 0 end
+    if M.INFUSE[job.kind] then infuse(env, s, job)
+    elseif job.kind == "smelt" then smeltAll(env, s, job)
+    else refine(env, s, job, job.kind == "ore") end
+    -- on the cable and never short: the cable is seen to work. Short: the
+    -- generator is fed now; short with fuel in it: that one is off the cable
+    local p = s.power
+    if p and p.ok then
+      local hadFuel = (p.fuel or 0) >= M.POWER.low
+      for name, was in pairs(onCable) do
+        if was and not (s.starved or {})[name] and not job.fail then p.on[name] = "yes" end
+        if was and (s.starved or {})[name] and hadFuel then
+          p.on[name] = "no"
+          note(s, "the " .. name .. " goes back to redstone: the cable does not keep it going")
+        end
+      end
+      pcall(feed, env, s)
+      announce(env, s)
+    end
     local made = aboard()
     made[M.REDSTONE], made["minecraft:coal"], made["minecraft:charcoal"] = nil, nil, nil
     made[primary] = nil
