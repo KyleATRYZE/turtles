@@ -54,7 +54,7 @@ local function report(state)
     local d = turtle.getItemDetail(s)
     local level = turtle.getFuelLevel()
     if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 15000
-      and not (st and st.feed) then
+      and not (st and (st.feed or st.lab)) then
       turtle.select(s)
       turtle.refuel(1)
       turtle.select(1)
@@ -68,7 +68,7 @@ local function report(state)
     if d then inv[d.name] = (inv[d.name] or 0) + d.count end
   end
   pcall(swarm.report, {
-    role = "helper", state = lastState, inv = inv,
+    role = "helper", state = lastState, inv = inv, lab = st and st.labOut,
     pos = { x = pos.x, y = pos.y, z = pos.z },
     fuel = f == "unlimited" and -1 or f,
     progress = progress, log = logLines,
@@ -162,6 +162,11 @@ local function step(dir)
       end
       waited = waited + 1
       sleep(0.5)
+    elseif name and name:find("leaves", 1, true) and waited < 40 then
+      -- leaves are never worth being stuck behind (it once sat boxed in a
+      -- treetop, unable to fly home): through them
+      turtle["dig" .. SUFFIX[dir]]()
+      waited = waited + 1
     else
       return false, name
     end
@@ -385,6 +390,7 @@ local function supplyRun(indices, reason, once)
     local items = nextLoad(indices)
     local coal = math.min(64, math.max(0, math.ceil((FULL_TANK - fuel()) / 80)))
     if st.feed then coal = 26 end       -- fuel to carry out to a stranded turtle
+    if st.lab and fuel() > 600 then coal = 0 end   -- (lab parts only: coal on board is not for burning)
     if #items == 0 and coal == 0 then return true end
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
@@ -441,6 +447,9 @@ local function supplyRun(indices, reason, once)
         if it and isCoal(it.name) then return true end
       end
       if once then return false end
+    elseif st.lab then
+      if fuel() < 600 then refuel(FULL_TANK) end
+      goHover()
     else
       refuel(FULL_TANK)
       goHover()
@@ -1215,6 +1224,214 @@ end
 
 ---------------------------------------------------------------- jobs
 
+---------------------------------------------------------------- lab bench
+-- lab: try something out in the world, step by step, on remote orders, and
+-- report what happened. For finding out how a machine from another mod
+-- behaves before a whole routine is written around it. The order carries a
+-- list of steps, "verb|arg|arg;verb|arg;...":
+--   fetch|name=n,name=n     get these from the factory
+--   goto|x|y|z   ground   up|n   down|n   fwd|n   back|n   turn|left/right/around
+--   place|item   placeUp|item   placeDown|item      dig   digUp   digDown
+--   drop|item|n  dropUp|item|n  dropDown|item|n     suck|n  suckUp|n  suckDown|n
+--   types|side   methods|side   call|side|method|arg|...   inspect|front/up/down
+--   inv   fuel   wait|seconds   home   note|text
+-- Only machines, chests and computers are ever dug. Results are kept in
+-- st.labOut and sent with every status report.
+local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
+  "functionalstorage:", "ironfurnaces:", "minecraft:chest", "minecraft:furnace", "minecraft:barrel" }
+
+local function labValue(a)
+  if a == "true" then return true elseif a == "false" then return false end
+  if tonumber(a) then return tonumber(a) end
+  if a:sub(1, 1) == "{" then
+    local ok, t = pcall(textutils.unserialize, a)
+    if ok and t ~= nil then return t end
+  end
+  return a
+end
+
+local function labShow(v)
+  if type(v) ~= "table" then return tostring(v) end
+  local ok, s = pcall(textutils.serialize, v, { compact = true })
+  return ok and s or tostring(v)
+end
+
+local function runLab()
+  local lab = st.lab
+  st.labOut = st.labOut or {}
+  local function out(text)
+    text = tostring(text)
+    while #text > 0 do
+      st.labOut[#st.labOut + 1] = text:sub(1, 220)
+      text = text:sub(221)
+    end
+    while #st.labOut > 70 do table.remove(st.labOut, 1) end
+  end
+  local steps = {}
+  for s in lab.ops:gmatch("[^;]+") do steps[#steps + 1] = s end
+  lab.i = lab.i or 1
+  print(("Lab bench: %d steps."):format(#steps))
+  local SFX = { [""] = "", Up = "Up", Down = "Down" }
+  while lab.i <= #steps do
+    local a = {}
+    for w in (steps[lab.i] .. "|"):gmatch("(.-)|") do a[#a + 1] = w end
+    local verb = a[1]
+    local base, sfx = verb:match("^(%l+)(%u?%l*)$")
+    local res, stop
+    report("lab: " .. verb)
+    local ok, err = pcall(function()
+      if verb == "fetch" then
+        local want = {}
+        for name, n in a[2]:gmatch("([^,=]+)=(%d+)") do want[#want + 1] = { name, tonumber(n) } end
+        supplyRun(function()
+          local items = {}
+          for _, w in ipairs(want) do
+            local have = 0
+            for s = 1, 16 do
+              local d = turtle.getItemDetail(s)
+              if d and d.name == w[1] then have = have + d.count end
+            end
+            if have < w[2] then items[#items + 1] = { w[1], w[2] - have } end
+          end
+          return items
+        end, "lab parts", true)
+        local got = {}
+        for _, w in ipairs(want) do
+          local have = 0
+          for s = 1, 16 do
+            local d = turtle.getItemDetail(s)
+            if d and d.name == w[1] then have = have + d.count end
+          end
+          got[#got + 1] = w[1]:gsub("^.*:", "") .. "=" .. have
+        end
+        res = table.concat(got, " ")
+      elseif verb == "goto" then
+        local x, y, z = tonumber(a[2]), tonumber(a[3]), tonumber(a[4])
+        local top = math.max(highway(), y + 2, pos.y)
+        riseTo(top)
+        local there = across(x, z, top + 12)
+        while there and pos.y > y and step("d") do end
+        res = ("at %d %d %d"):format(pos.x, pos.y, pos.z)
+        stop = not (pos.x == x and pos.z == z)
+      elseif verb == "ground" then
+        while step("d") do end
+        res = ("at %d %d %d"):format(pos.x, pos.y, pos.z)
+      elseif verb == "up" or verb == "down" or verb == "fwd" then
+        local n, done = tonumber(a[2]) or 1, 0
+        for _ = 1, n do
+          if step(verb == "up" and "u" or verb == "down" and "d" or "f") then done = done + 1 else break end
+        end
+        res = done .. " of " .. n
+        stop = done < n
+      elseif verb == "back" then
+        local n, done = tonumber(a[2]) or 1, 0
+        for _ = 1, n do
+          if turtle.back() then
+            pos.x, pos.z = pos.x - DIRS[heading].x, pos.z - DIRS[heading].z
+            done = done + 1
+          else break end
+        end
+        res = done .. " of " .. n
+        stop = done < n
+      elseif verb == "turn" then
+        face((heading + (a[2] == "left" and 3 or a[2] == "around" and 2 or 1)) % 4)
+        res = "facing " .. heading
+      elseif base == "place" and SFX[sfx] then
+        local slot = findSlot(a[2])
+        if not slot then res, stop = "none on board", true else
+          turtle.select(slot)
+          local done, why = turtle["place" .. sfx]()
+          turtle.select(1)
+          res = done and "placed" or ("no: " .. tostring(why))
+          stop = not done
+        end
+      elseif base == "dig" and SFX[sfx] then
+        local seen, data = turtle["inspect" .. sfx]()
+        local name, allowed = seen and data.name or "nothing", false
+        for _, p in ipairs(LAB_DIG) do if name:find(p, 1, true) then allowed = true end end
+        if seen and isClutter(name) then allowed = true end      -- grass and flowers in the way
+        if allowed then
+          res = name .. (turtle["dig" .. sfx]() and " taken" or " would not come out")
+        else
+          res = "left alone: " .. name
+        end
+      elseif base == "drop" and SFX[sfx] then
+        local slot = findSlot(a[2])
+        if not slot then res = "none on board" else
+          turtle.select(slot)
+          local before = turtle.getItemCount(slot)
+          local done, why = turtle["drop" .. sfx](tonumber(a[3]) or 1)
+          res = (done and "went in: " or "refused: ") .. (before - turtle.getItemCount(slot)) .. " " .. tostring(why or "")
+          turtle.select(1)
+        end
+      elseif base == "suck" and SFX[sfx] then
+        local before = {}
+        for s = 1, 16 do before[s] = turtle.getItemCount(s) end
+        local done, why = turtle["suck" .. sfx](tonumber(a[2]) or 64)
+        local got = {}
+        for s = 1, 16 do
+          local d = turtle.getItemDetail(s)
+          if d and d.count > before[s] then got[#got + 1] = d.name .. " x" .. (d.count - before[s]) end
+        end
+        res = done and table.concat(got, ", ") or ("nothing: " .. tostring(why))
+      elseif verb == "types" then
+        res = table.concat({ peripheral.getType(a[2]) }, ", ")
+        if res == "" then res = "no peripheral" end
+      elseif verb == "methods" then
+        local m = peripheral.getMethods(a[2])
+        if m then table.sort(m) end
+        res = m and table.concat(m, " ") or "no peripheral"
+      elseif verb == "call" then
+        local args = {}
+        for i = 4, #a do args[#args + 1] = labValue(a[i]) end
+        local r = table.pack(pcall(peripheral.call, a[2], a[3], table.unpack(args)))
+        local parts = {}
+        for i = 2, r.n do parts[#parts + 1] = labShow(r[i]) end
+        res = (r[1] and "" or "ERROR ") .. table.concat(parts, " | ")
+      elseif verb == "inspect" then
+        local s = a[2] == "up" and "Up" or a[2] == "down" and "Down" or ""
+        local seen, data = turtle["inspect" .. s]()
+        res = seen and (data.name .. " " .. labShow(data.state)) or "nothing"
+      elseif verb == "inv" then
+        local parts = {}
+        for s = 1, 16 do
+          local d = turtle.getItemDetail(s)
+          if d then parts[#parts + 1] = d.name:gsub("^.*:", "") .. " x" .. d.count end
+        end
+        res = table.concat(parts, ", ")
+      elseif verb == "fuel" then
+        res = tostring(fuel())
+      elseif verb == "wait" then
+        sleep(tonumber(a[2]) or 1)
+        res = "waited"
+      elseif verb == "home" then
+        riseTo(math.max(pos.y, highway()))
+        goHover()
+        res = "home"
+      elseif verb == "note" then
+        res = a[2] or ""
+      else
+        res = "unknown step"
+      end
+    end)
+    if not ok then
+      if err == "Terminated" then error(err, 0) end
+      res, stop = "ERROR " .. tostring(err), true
+    end
+    out(("%d %s: %s"):format(lab.i, steps[lab.i]:sub(1, 60), tostring(res)))
+    lab.i = lab.i + 1
+    save()
+    if stop then
+      out("stopped here")
+      break
+    end
+  end
+  st.lab = nil
+  save()
+  print("Lab bench done.")
+  report("idle")
+end
+
 -- feed: a turtle has run dry in mid-air. Fetch fuel without burning it,
 -- fly to just above the turtle and drop the fuel into it.
 local function runFeed()
@@ -1285,6 +1502,7 @@ local function work()
     if not findHeading() then error("I am boxed in.", 0) end
   end
   if st.feed then runFeed() end
+  if st.lab then runLab() end
   if st.job and not st.done and not st.paused then
     if st.job.area then runForage() elseif st.job.trees then runChop()
     elseif st.job.fit then
@@ -1351,6 +1569,11 @@ while true do
     task = guarded(work)
   elseif cmd.cmd == "resume" then
     st.paused = nil
+    save()
+    task = guarded(work)
+  elseif cmd.cmd == "lab" and type(cmd.ops) == "string" then
+    st.lab = { ops = cmd.ops }
+    if cmd.clear then st.labOut = nil end
     save()
     task = guarded(work)
   elseif cmd.cmd == "feed" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then

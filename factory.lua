@@ -137,6 +137,18 @@ local RECIPES = {
     key = { C = "minecraft:cut_copper" },
   },
   -- fittings for the factory building
+  -- Mekanism, to start with: an infuser and something to power it
+  ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
+  ["mekanism:metallurgic_infuser"] = {
+    grid = { "I", "F", "I", "R", "O", "R", "I", "F", "I" },
+    key = { I = "minecraft:iron_ingot", F = "minecraft:furnace", R = "minecraft:redstone",
+      O = "alltheores:osmium_ingot" },
+  },
+  ["mekanismgenerators:heat_generator"] = {
+    grid = { "I", "I", "I", "P", "O", "P", "C", "F", "C" },
+    key = { I = "minecraft:iron_ingot", P = "#planks", O = "alltheores:osmium_ingot",
+      C = "minecraft:copper_ingot", F = "minecraft:furnace" },
+  },
   ["minecraft:furnace"] = {
     grid = { "C", "C", "C", "C", "", "C", "C", "C", "C" },
     key = { C = "minecraft:cobblestone" },
