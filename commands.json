@@ -1,10 +1,66 @@
 {
   "commands": [
     {
-      "id": 1794853819,
-      "issued": 1794853819000,
+      "id": 1794854294,
+      "issued": 1794854294000,
       "cmd": "reboot",
-      "target": "BrickJagger"
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794854295,
+      "issued": 1794854294000,
+      "cmd": "reboot",
+      "target": "CoalPorter"
+    },
+    {
+      "id": 1794854296,
+      "issued": 1794854294000,
+      "cmd": "reboot",
+      "target": "WallStreet"
+    },
+    {
+      "id": 1794854297,
+      "issued": 1794854294000,
+      "cmd": "reboot",
+      "target": "MortarKombat"
+    },
+    {
+      "id": 1794854298,
+      "issued": 1794854294000,
+      "cmd": "reboot",
+      "target": "TimberLake"
+    },
+    {
+      "id": 1794854299,
+      "issued": 1794854294000,
+      "cmd": "build",
+      "target": "BrickJagger",
+      "xmax": 3
+    },
+    {
+      "id": 1794854300,
+      "issued": 1794854294000,
+      "cmd": "build",
+      "target": "MortarKombat",
+      "plan": "factory_shell",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "xmin": 4,
+      "xmax": 6,
+      "layer": 16
+    },
+    {
+      "id": 1794854301,
+      "issued": 1794854294000,
+      "cmd": "resume",
+      "target": "OreLando"
+    },
+    {
+      "id": 1794854302,
+      "issued": 1794854294000,
+      "cmd": "resume",
+      "target": "BoulderDash"
     }
   ]
 }
