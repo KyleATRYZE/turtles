@@ -804,13 +804,16 @@ local function escape()
     -- breadth-first through open cells
     local startK = key(pos.x, pos.y, pos.z)
     local seen, queue, head = { [startK] = true }, { startK }, 1
-    local exitK, bestK, bestY = nil, startK, pos.y
+    -- if no way up is in sight, go to the open spot furthest away (the
+    -- next scan from there sees new ground), never into a dead end above
+    local exitK, bestK, bestD = nil, startK, 0
     while head <= #queue and #queue < 6000 do
       local k = queue[head]
       head = head + 1
       local x, y, z = unkey(k)
       if sky(x, y, z) then exitK = k break end
-      if y > bestY then bestK, bestY = k, y end
+      local dist = (x - pos.x) ^ 2 + (z - pos.z) ^ 2 + (y - pos.y) ^ 2
+      if dist > bestD then bestK, bestD = k, dist end
       for _, m in ipairs(ALL_MOVES) do
         local nx, ny, nz = neighbour(x, y, z, m)
         local nk = key(nx, ny, nz)
@@ -955,6 +958,11 @@ end
 -- let the scanner find the way into the room, then on to a room cell (the
 -- parking spot unless told otherwise).
 local function comeHome(target)
+  -- already in (or right by) the hut? the scanner may see a way straight in
+  if math.abs(pos.x - base.f.x) <= ROOM_REACH and math.abs(pos.z - base.f.z) <= ROOM_REACH
+    and pos.y <= base.f.y + ROOM_ABOVE + 2 and wayIn() then
+    return goToCell(target or st.park)
+  end
   local e = base.exit2
   local _, d = doorKey()
   local spots = {
