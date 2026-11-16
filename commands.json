@@ -1,12 +1,19 @@
 {
   "commands": [
     {
-      "id": 1794867234,
-      "issued": 1794867234000,
-      "cmd": "lab",
-      "target": "MortarKombat",
-      "ops": "goto|-4456|90|1517;inspect|down;down|5;face|0;inspect|front;types|front;call|front|getLabel;call|front|reboot;inspect|up;inspect|down",
-      "clear": 1
+      "id": 1794868954,
+      "issued": 1794868954000,
+      "cmd": "reboot",
+      "target": "ForgeClooney"
+    },
+    {
+      "id": 1794868955,
+      "issued": 1794868954000,
+      "cmd": "feed",
+      "target": "SteelyDan",
+      "x": -4457,
+      "y": 72,
+      "z": 1520
     }
   ]
 }
