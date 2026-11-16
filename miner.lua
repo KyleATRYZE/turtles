@@ -254,8 +254,26 @@ local function face(d)
 end
 
 -- patient = true: keep trying forever. false: give up if truly blocked.
-local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn)
+-- Hand our coal to the turtle in the way (it may be out of fuel: a queue
+-- passes coal down to whoever is stuck at the front).
+local function passCoal(dropFn)
+  local gave = 0
+  for s = 1, 16 do
+    local d = turtle.getItemDetail(s)
+    if d and FUEL_ITEMS[d.name] then
+      turtle.select(s)
+      local before = turtle.getItemCount(s)
+      dropFn()
+      gave = gave + before - turtle.getItemCount(s)
+    end
+  end
+  turtle.select(1)
+  return gave
+end
+
+local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn, dropFn)
   local stuck = 0
+  local passed = false
   while not moveFn() do
     if fuel() == 0 then
       print("Out of fuel!")
@@ -283,6 +301,11 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn)
         end
         print("Blocked by " .. what .. ". Waiting...")
         report("path blocked")
+        if not passed and dropFn and stuck >= 24 and what:find("turtle", 1, true) then
+          passed = true
+          local n = passCoal(dropFn)
+          if n > 0 then print("Passed " .. n .. " coal to the turtle in the way.") end
+        end
       end
       sleep(2)
     end
@@ -291,7 +314,8 @@ local function tryMove(moveFn, detectFn, digFn, attackFn, patient, inspectFn)
 end
 
 local function forward(patient)
-  if tryMove(turtle.forward, turtle.detect, safeDig, turtle.attack, patient, turtle.inspect) then
+  if tryMove(turtle.forward, turtle.detect, safeDig, turtle.attack, patient, turtle.inspect,
+    turtle.drop) then
     pos.x = pos.x + DIRS[heading].x
     pos.z = pos.z + DIRS[heading].z
     return true
@@ -300,7 +324,8 @@ local function forward(patient)
 end
 
 local function up(patient)
-  if tryMove(turtle.up, turtle.detectUp, safeDigUp, turtle.attackUp, patient, turtle.inspectUp) then
+  if tryMove(turtle.up, turtle.detectUp, safeDigUp, turtle.attackUp, patient, turtle.inspectUp,
+    turtle.dropUp) then
     pos.y = pos.y + 1
     return true
   end
@@ -308,7 +333,8 @@ local function up(patient)
 end
 
 local function down(patient)
-  if tryMove(turtle.down, turtle.detectDown, safeDigDown, turtle.attackDown, patient, turtle.inspectDown) then
+  if tryMove(turtle.down, turtle.detectDown, safeDigDown, turtle.attackDown, patient, turtle.inspectDown,
+    turtle.dropDown) then
     pos.y = pos.y - 1
     return true
   end
@@ -551,8 +577,9 @@ end
 
 -- Drop the haul into the drop-off chest below. The bucket and one stack of
 -- cobblestone (for flooring the roads) stay on board.
+local COAL_BUFFER = 32       -- coal kept on board as a spare tank
 local function unloadDock()
-  local keptCobble = false
+  local keptCobble, keptCoal = false, false
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     local keep = false
@@ -562,6 +589,18 @@ local function unloadDock()
         keep = true
       elseif d.name == KEEP_ONE_STACK and not keptCobble then
         keptCobble = true
+        keep = true
+      elseif FUEL_ITEMS[d.name] and not keptCoal then
+        -- keep one slot of coal (up to COAL_BUFFER), drop the rest
+        keptCoal = true
+        turtle.select(s)
+        while turtle.getItemCount(s) > COAL_BUFFER do
+          if not turtle.dropDown(turtle.getItemCount(s) - COAL_BUFFER) then
+            print("The drop-off chest is full. Waiting...")
+            report("drop-off full")
+            sleep(5)
+          end
+        end
         keep = true
       end
     end

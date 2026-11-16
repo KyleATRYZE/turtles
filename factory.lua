@@ -216,6 +216,7 @@ local base = loadTable(BASE_FILE)                 -- where everything is
 local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
+local FUEL_RESERVE = 256 -- coal never handed out to miners
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
 local served = {}        -- the last order number served, by computer id
@@ -1054,8 +1055,13 @@ local function serveRequests(canCraft)
     end
     if peripheral.hasType(side, "turtle") then
       if next(fuelQueue) then
-        if giveTo(dir, "#fuel", 16) then
-          print("Gave fuel to a miner.")
+        -- a share of what there is, keeping a reserve for the builder, new
+        -- turtles and the furnaces: 5% of the coal above the reserve, at
+        -- least 8 (nobody is left stranded) and at most a stack
+        local coal = countIn(stockTotals(), "#fuel")
+        local share = math.max(8, math.min(64, math.floor((coal - FUEL_RESERVE) * 0.05)))
+        if giveTo(dir, "#fuel", share) then
+          print("Gave " .. share .. " coal to a miner.")
         else
           print("A miner needs fuel but I have no coal.")
           report("out of coal")

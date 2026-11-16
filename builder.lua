@@ -1321,6 +1321,13 @@ local function digStep(b, dir)
     return false
   end
   if not ok or not isNatural(data.name) then return false end
+  -- working round the building (the dirt bank, say): never tunnel under or
+  -- into it; go over the top instead
+  local k = b.keepOut
+  if k and x >= k.x1 and x <= k.x2 and z >= k.z1 and z <= k.z2 and y <= k.y2 then
+    lastBlocker = "the building"
+    return false
+  end
   -- never dig out a block the plan put there (dirt of the bank, say)
   if list and list.at and list.at[key(x, y, z)] and sameBlock(data.name, list.at[key(x, y, z)]) then
     lastBlocker = data.name .. " (part of the plan)"
@@ -1401,7 +1408,10 @@ end
 -- go onto the launch pad when it says the load is ready, and get it there.
 local function ask(b, items, fuelWanted)
   if not (swarm and swarm.open()) then return nil end
-  b.orderN = (b.orderN or 0) + 1
+  -- order numbers are unique across all jobs (the factory ignores a number
+  -- it has just served)
+  st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
+  b.orderN = st.orderSeq
   save()
   local me = os.getComputerID()
   local msg = { type = "materials", id = me, n = b.orderN, items = items, fuel = fuelWanted }
@@ -1767,9 +1777,14 @@ local function placeShell(b)
 end
 
 -- Build what st.build describes, from wherever we are.
+local FACTORY_SIZE = { x = 57, y = 33, z = 32 }   -- the shell's box
 local function runBuild()
   local b = st.build
   loadList(b)
+  if b.plan ~= "factory_shell" then
+    b.keepOut = { x1 = b.ox, z1 = b.oz, x2 = b.ox + FACTORY_SIZE.x - 1,
+      z2 = b.oz + FACTORY_SIZE.z - 1, y2 = b.oy + FACTORY_SIZE.y }
+  end
   if not list.at then
     list.at = {}
     for _, e in ipairs(list.blocks) do
@@ -1799,6 +1814,63 @@ local function runBuild()
   end
   if b.stage == "place" then placeShell(b) end
   leaveSite(b)
+end
+
+---------------------------------------------------------------- feeding a stuck queue
+-- If a turtle runs dry in the miners' exit shaft, everything behind it
+-- waits. Fetch coal from the factory, go to the top of the shaft and drop it
+-- on the turtle there; the miners pass coal down the queue to the front.
+
+local function feedShaft()
+  local e1, e2 = base.exit1, base.exit2
+  local out = { x = 2 * e2.x - e1.x, z = 2 * e2.z - e1.z }
+  local function coal()
+    local n = 0
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then n = n + d.count end
+    end
+    return n
+  end
+  st.feed = st.feed or {}
+  if coal() < 48 then
+    print("Fetching coal for the stuck queue.")
+    report("fetching coal")
+    ask(st.feed, { { "minecraft:coal", 64 } }, 0)
+  end
+  if coal() == 0 then
+    print("The factory gave me no coal.")
+    return false
+  end
+  print("Taking coal to the exit shaft.")
+  report("feeding the queue")
+  if not goToCell(key(e2.x, e2.y, e2.z)) then return false end
+  face(out.x < e2.x and 2 or out.x > e2.x and 0 or (out.z > e2.z and 1 or 3))
+  if not step("f") then return false end
+  local down = 0
+  while not turtle.detectDown() and down < 30 and step("d") do down = down + 1 end
+  local ok, data = turtle.inspectDown()
+  local gave = 0
+  if ok and tostring(data.name):find("turtle", 1, true) then
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and (d.name == "minecraft:coal" or d.name == "minecraft:charcoal") then
+        turtle.select(s)
+        local before = turtle.getItemCount(s)
+        turtle.dropDown()
+        gave = gave + before - turtle.getItemCount(s)
+      end
+    end
+    turtle.select(1)
+    print("Dropped " .. gave .. " coal on the queue.")
+  else
+    print("Nobody stuck in the shaft.")
+  end
+  while pos.y < e2.y and step("u") do end
+  face(out.x < e2.x and 0 or out.x > e2.x and 2 or (out.z > e2.z and 3 or 1))
+  step("f")
+  goToCell(st.park)
+  return gave > 0
 end
 
 ---------------------------------------------------------------- jobs
@@ -1919,6 +1991,12 @@ while true do
     st.paused = nil
     save()
     task = guarded(work)
+  elseif cmd.cmd == "feed" then
+    task = guarded(function()
+      relocate()
+      feedShaft()
+      work()
+    end)
   elseif cmd.cmd == "build" then
     -- build a plan (default: the shell) with its corner (the plan's 0,0,0)
     -- at ox, oy, oz (default: where the current build is). A different plan
