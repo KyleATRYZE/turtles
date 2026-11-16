@@ -13,6 +13,10 @@
 --   stop / resume / reboot / ping
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
+-- the Mekanism line in the foundry bay (foundry.lua): worked by a helper
+-- that has been told to (the order: foundry)
+local okFoundry, foundry = pcall(require, "foundry")
+if not okFoundry or type(foundry) ~= "table" then foundry = nil end
 
 local STATE_FILE   = "helper.state"
 local BASE_FILE    = ".base"
@@ -69,6 +73,7 @@ local function report(state)
   end
   pcall(swarm.report, {
     role = "helper", state = lastState, inv = inv, lab = st and st.labOut,
+    foundry = foundry and select(2, pcall(foundry.info)) or nil,
     pos = { x = pos.x, y = pos.y, z = pos.z },
     fuel = f == "unlimited" and -1 or f,
     progress = progress, log = logLines,
@@ -399,8 +404,9 @@ local function supplyRun(indices, reason, once)
     local items = nextLoad(indices)
     local coal = math.min(64, math.max(0, math.ceil((FULL_TANK - fuel()) / 80)))
     if st.feed then coal = 26 end       -- fuel to carry out to a stranded turtle
-    if st.lab and fuel() > 600 then coal = 0 end   -- (lab parts only: coal on board is not for burning)
-    if st.lab and st.lab.handin then coal = math.max(coal, 1) end   -- (a reason to be called onto the pad)
+    local bench = st.lab or st.fdy      -- the lab bench, or the foundry: fetching parts, not building
+    if bench and fuel() > 600 then coal = 0 end   -- (parts only: coal on board is not for burning)
+    if bench and bench.handin then coal = math.max(coal, 1) end   -- (a reason to be called onto the pad)
     if #items == 0 and coal == 0 then return true end
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
@@ -440,7 +446,8 @@ local function supplyRun(indices, reason, once)
           for s = 1, 16 do
             local it = turtle.getItemDetail(s)
             -- (and, for the lab bench, everything it was not sent for)
-            local spare = st.lab and st.lab.keep and not st.lab.keep[it and it.name or ""]
+            local bench = st.lab or st.fdy
+            local spare = bench and bench.keep and not bench.keep[it and it.name or ""]
             if it and (it.name == "minecraft:bucket" or spare) then
               face(d)
               turtle.select(s)
@@ -459,7 +466,7 @@ local function supplyRun(indices, reason, once)
         if it and isCoal(it.name) then return true end
       end
       if once then return false end
-    elseif st.lab then
+    elseif st.lab or st.fdy then
       -- lava first: coal and charcoal on board may be what the lab was sent for
       for s = 1, 16 do
         local it = turtle.getItemDetail(s)
@@ -1705,6 +1712,86 @@ local function runFeed()
   riseTo(top)
 end
 
+-- The foundry: this helper works the Mekanism machines (foundry.lua) for as
+-- long as it is told to, between its other jobs. It is handed the helper's
+-- own ways of getting about and of fetching and handing in.
+local function runFoundry()
+  local function inside()
+    local m = fitMap
+    if not (m and st.job and st.job.fit) then return false end
+    local x, y, z = lx(), ly(), lz()
+    return x >= m.x1 and x <= m.x2 and z >= m.z1 and z <= m.z2 and y >= 1 and y <= m.y2 and open(x, y, z)
+  end
+  local function onBoard(name)
+    local n = 0
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and d.name == name then n = n + d.count end
+    end
+    return n
+  end
+  local env = {
+    PROTOCOL = JOB_PROTOCOL,
+    face = face, tick = tick, report = report, inside = inside,
+    -- the building: its plans, and the door to go in and out by
+    site = function(site)
+      st.job = { fit = true, ox = site.ox, oy = site.oy, oz = site.oz, shell = site.shell, plan = site.plan }
+      st.done = true                       -- (a place to work in, not a job to do)
+      st.fdy = nil
+      save()
+      fitMap = loadFit(st.job)
+      return true
+    end,
+    walk = function(x, y, z)               -- in the building's own coordinates
+      intoBuilding()
+      return goTo(x, y, z)
+    end,
+    block = function(x, y, z) fitMap.solid[ck(x, y, z)] = true end,   -- a machine stands here
+    leave = function() outOfBuilding() end,
+    rise = function() riseTo(math.max(pos.y, highway())) end,
+    flyTo = function(x, y, z)              -- over everything, then straight down
+      local top = math.max(highway(), y + 2, pos.y)
+      riseTo(top)
+      local there = across(x, z, top + 12)
+      while there and pos.y > y and step("d") do end
+      return pos.x == x and pos.y == y and pos.z == z
+    end,
+    home = function()
+      local hx, hy, hz = hover()
+      if pos.x == hx and pos.y == hy and pos.z == hz then return true end
+      riseTo(math.max(pos.y, highway()))
+      return goHover()
+    end,
+    -- up to these amounts on board: { { item, count }, ... } (one trip)
+    fetch = function(list)
+      st.fdy = {}
+      save()
+      supplyRun(function()
+        local items = {}
+        for _, w in ipairs(list) do
+          local have = onBoard(w[1])
+          if have < w[2] then items[#items + 1] = { w[1], w[2] - have } end
+        end
+        return items
+      end, "foundry supplies", true)
+      st.fdy = nil
+      save()
+    end,
+    -- everything on board (but fuel) back to the factory
+    handin = function()
+      st.fdy = { handin = true, keep = { ["minecraft:coal"] = true, ["minecraft:charcoal"] = true } }
+      save()
+      supplyRun(function() return {} end, "handing in what the foundry made", true)
+      st.fdy = nil
+      save()
+    end,
+  }
+  foundry.print = print
+  print("Working the foundry.")
+  foundry.run(env)
+  print("Foundry work over.")
+end
+
 local function work()
   locate()
   -- born on the launch pad (or restarted in the hole): straight up and out
@@ -1738,6 +1825,14 @@ local function work()
     st = { job = st.next, turn = st.turn, orderSeq = st.orderSeq }
     save()
     return work()
+  end
+  -- no building job in hand: the foundry, if this helper has been put on it
+  if foundry and not st.paused and (not st.job or st.done) then
+    local okLoad, fst = pcall(foundry.load)
+    if okLoad and fst.on then
+      riseTo(math.max(pos.y, base.f.y + 12))
+      runFoundry()
+    end
   end
   riseTo(math.max(pos.y, base.f.y + 12))
   goHover()
@@ -1820,6 +1915,11 @@ while true do
     st.lab = { ops = cmd.ops }
     if cmd.clear then st.labOut = nil end
     save()
+    task = guarded(work)
+  elseif cmd.cmd == "foundry" and foundry then
+    -- foundry ore=minecraft:raw_iron n=48 | make=steel n=16 | job=setup |
+    -- job=move_infuser | on=0 (see foundry.lua)
+    foundry.order(cmd)
     task = guarded(work)
   elseif cmd.cmd == "feed" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
     st.feed = { x = math.floor(tonumber(cmd.x)), y = math.floor(tonumber(cmd.y)), z = math.floor(tonumber(cmd.z)) }

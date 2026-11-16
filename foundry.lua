@@ -39,17 +39,21 @@ M.BENCH = { x = -4453, y = 74, z = 1533, face = 0, item = "mekanism:metallurgic_
 -- sets them up from. use = which face does what for the operator ("top", or
 -- a compass side); also = sides set for the machines' own sake (the chamber
 -- pushes its dust north into the smelter). perOp = redstone dust of power
--- per item worked.
+-- per item worked: a job is 10 kJ and a dust is 10 kJ, and a little is lost.
+--
+-- The chamber and smelter stand as they were first run by hand (9 raw iron
+-- gave 12 ingots): both facing west, redstone in by the front (the lane),
+-- ore in by the chamber's top, ingots out by the smelter's north side.
 M.ORDER = { "chamber", "smelter", "infuser" }
 M.MACHINES = {
   chamber = { item = "mekanism:enrichment_chamber", x = 41, y = 1, z = 12, lane = "west",
     use = { energy = "west", input = "top", output = "south" },
-    also = { north = "OUTPUT" }, eject = true, perOp = 1.5 },
+    also = { north = "OUTPUT" }, eject = true, perOp = 1.1 },
   smelter = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 11, lane = "west",
     use = { energy = "west", input = "top", output = "north" },
-    also = { south = "INPUT" }, perOp = 1.5 },
+    also = { south = "INPUT" }, perOp = 1.1 },
   infuser = { item = "mekanism:metallurgic_infuser", x = 41, y = 1, z = 15, lane = "west",
-    use = { energy = "west", input = "top", extra = "south", output = "north" }, perOp = 1.5 },
+    use = { energy = "west", input = "top", extra = "south", output = "north" }, perOp = 1.1 },
 }
 
 -- What the infuser makes: each pass is one trip through it.
@@ -109,17 +113,33 @@ local function note(s, text)
   M.print(text)
 end
 
--- A remote order: foundry job=steel n=16 | job=ore item=minecraft:raw_iron
--- n=24 | job=setup | job=move_infuser | on=0 (back to an ordinary helper) |
--- clear=1 (drop the jobs in hand) | reset=1 (forget what is set up).
+-- A remote order:
+--   foundry ore=minecraft:raw_iron n=48   ore through the chamber and smelter
+--   foundry enrich=minecraft:redstone n=16   the chamber only
+--   foundry make=steel n=16               the infuser (steel, circuit, alloy)
+--   foundry job=setup | job=move_infuser  find or place the machines; bring
+--                                         the infuser in from the bench
+--   foundry on=1 / on=0                   work the foundry / an ordinary helper
+--   foundry clear=1                       drop the jobs in hand
+--   foundry reset=1                       forget what is set up (look again)
+-- (job=ore item=... and job=steel are the same things spelt out.)
+local function fullName(item)
+  if type(item) ~= "string" or item == "" then return nil end
+  return item:find(":", 1, true) and item or ("minecraft:" .. item)
+end
+
 function M.order(cmd)
   local s = M.load()
   if cmd.on ~= nil then s.on = not (cmd.on == 0 or cmd.on == "0" or cmd.on == false) end
   if cmd.clear then s.queue, s.cur = {}, nil end
   if cmd.reset then s.m, s.bench, s.ready = {}, nil, nil end
-  if type(cmd.job) == "string" then
+  local kind, item = cmd.job, cmd.item
+  if cmd.ore then kind, item = "ore", cmd.ore end
+  if cmd.enrich then kind, item = "enrich", cmd.enrich end
+  if cmd.make then kind = cmd.make end
+  if type(kind) == "string" then
     s.on = true
-    s.queue[#s.queue + 1] = { kind = cmd.job, n = tonumber(cmd.n), item = type(cmd.item) == "string" and cmd.item or nil }
+    s.queue[#s.queue + 1] = { kind = kind, n = tonumber(cmd.n), item = fullName(item) }
   end
   M.save(s)
   return s
@@ -255,32 +275,37 @@ local function power(env, s, name, ops)
   return put(env, s, name, "energy", M.REDSTONE, n)
 end
 
--- Wait at the result side until the machine has worked through what is in
--- it (results taken as they pile up, unless they are left for the next
--- machine). A machine that stops for want of power gets more. Returns what
--- was taken and what is still in the input.
+-- Wait by the machine until it has worked through what is in it (results
+-- taken as they pile up; or, when they are left for the next machine, wait
+-- at the input side: a machine that pushes its results out would push them
+-- into a turtle standing at a result side). The energy slot is kept topped
+-- up while there is dust on board. Returns what was taken and what is still
+-- in the input.
+M.STALL = 60              -- seconds without a change before giving up on a machine
 local function drain(env, s, name, leave)
-  local sfx, side = stand(env, s, name, "output")
+  local where = leave and "input" or "output"
+  local sfx, side = stand(env, s, name, where)
   local got, last, changed, boosts, started = 0, nil, os.clock(), 0, os.clock()
-  local left = 0
+  local left, boosted = 0, -100
   while true do
     left = stack(call(side, "getInput"))
     local out = stack(call(side, "getOutput"))
     if not leave and out >= 32 then got = got + suckAll(sfx) end
     if left == 0 then break end
     if left ~= last then last, changed = left, os.clock() end
-    if os.clock() - changed > 45 then
-      local e, max = call(side, "getEnergy"), call(side, "getMaxEnergy")
-      local low = type(e) ~= "number" or type(max) ~= "number" or e < max / 4
-      if low and boosts < 3 and count(M.REDSTONE) > 0 then
-        boosts = boosts + 1
-        put(env, s, name, "energy", M.REDSTONE, 4)
-        sfx, side = stand(env, s, name, "output")
-        changed = os.clock()
-      else
-        note(s, ("the %s has stopped with %d still in it"):format(name, left))
-        break
-      end
+    local e, max = call(side, "getEnergy"), call(side, "getMaxEnergy")
+    local low = type(e) ~= "number" or type(max) ~= "number" or e < max / 4
+    local stalled = os.clock() - changed > M.STALL
+    if low and count(M.REDSTONE) > 0 and boosts < 16 and os.clock() - boosted > 9
+      and stack(call(side, "getEnergyItem")) == 0 then
+      -- the dust has run out (the slot holds one stack): more
+      boosts, boosted = boosts + 1, os.clock()
+      put(env, s, name, "energy", M.REDSTONE, math.min(16, math.ceil(left * M.MACHINES[name].perOp) + 1))
+      sfx, side = stand(env, s, name, where)
+      changed = os.clock()
+    elseif stalled then
+      note(s, ("the %s has stopped with %d still in it"):format(name, left))
+      break
     end
     if os.clock() - started > 1800 then break end
     sleep(3)
@@ -394,7 +419,11 @@ local function announce(env, s)
   pcall(rednet.broadcast, { type = "foundry_ready", ready = s.ready or false, machines = machines }, env.PROTOCOL)
 end
 
-local function setup(env, s, names, bench)
+-- names: the machines wanted. opts.fetch: one that is not there is asked of
+-- the factory (which makes one if it can). opts.bench: the infuser is taken
+-- down from the bench outside first (always, the first time a job needs it).
+local function setup(env, s, names, opts)
+  opts = opts or {}
   local need, failed = {}, nil
   for _, name in ipairs(names) do
     local ok, why = ensure(env, s, name)
@@ -402,13 +431,13 @@ local function setup(env, s, names, bench)
       if why == "need" then need[#need + 1] = name else failed = why note(s, why) end
     end
   end
-  if #need > 0 then
+  if #need > 0 and (opts.fetch or opts.bench) then
     local want = {}
     for _, name in ipairs(need) do
       local item = M.MACHINES[name].item
       -- the infuser already made stands on the bench outside
-      if name == "infuser" and (bench or not s.bench) then fromBench(env, s) end
-      if not findSlot(item) then want[#want + 1] = { item, 1 } end
+      if name == "infuser" and (opts.bench or not s.bench) then fromBench(env, s) end
+      if opts.fetch and not findSlot(item) then want[#want + 1] = { item, 1 } end
     end
     if #want > 0 then
       if env.inside() then env.leave() end
@@ -421,6 +450,8 @@ local function setup(env, s, names, bench)
         note(s, failed)
       end
     end
+  elseif #need > 0 then
+    note(s, "not in the bay yet: " .. table.concat(need, ", "))
   end
   local all = true
   for _, name in ipairs(M.ORDER) do
@@ -483,30 +514,12 @@ local function oreYield(item)
   return 1, 2
 end
 
--- Ore through the Enrichment Chamber and on through the Energized Smelter
--- (smelt = false: the chamber only, for enriched redstone or carbon).
-local function refine(env, s, job, smelt)
-  local item = job.item
-  -- whatever was left in the machines is worked off first (an input slot
-  -- holding something else takes nothing new)
-  local _, side = stand(env, s, "chamber", "output")
-  local old = stack(call(side, "getInput"))
-  if old > 0 then
-    power(env, s, "chamber", old)
-    drain(env, s, "chamber")
-  end
-  if smelt then drain(env, s, "smelter") end
-  local n = count(item)
-  local lot, yield = oreYield(item)
-  n = n - n % lot
-  if n == 0 then job.fail = "no " .. item:gsub("^.*:", "") .. " on board" return end
-  power(env, s, "chamber", n / lot)
-  if smelt then power(env, s, "smelter", math.ceil(n * yield)) end
-  if put(env, s, "chamber", "input", item, n) == 0 then
-    job.fail = "the chamber would not take " .. item:gsub("^.*:", "")
-    return
-  end
-  local _, left = drain(env, s, "chamber", true)
+-- What is in the chamber, worked and (smelt) taken on through the smelter.
+-- While the chamber works the operator waits at its input side: it pushes
+-- its dust north into the smelter, and would push it into a turtle standing
+-- at its other result side.
+local function settle(env, s, job, smelt)
+  local _, left = drain(env, s, "chamber", smelt)
   if left > 0 then job.fail = "the chamber stopped part way" end
   sleep(3)                                 -- (the last of it moving on to the smelter)
   if not smelt then
@@ -522,6 +535,62 @@ local function refine(env, s, job, smelt)
   end
   _, left = drain(env, s, "smelter")
   if left > 0 then job.fail = "the smelter stopped part way" end
+end
+
+-- Ore through the Enrichment Chamber and on through the Energized Smelter
+-- (smelt = false: the chamber only, for enriched redstone or carbon).
+local function refine(env, s, job, smelt)
+  local item = job.item
+  -- whatever was left in the machines is worked off first, the same way (an
+  -- input slot holding something else takes nothing new)
+  local _, side = stand(env, s, "chamber", "input")
+  local was = call(side, "getInput")
+  local old, oldDust = stack(was), 0
+  if smelt then
+    _, side = stand(env, s, "smelter", "output")
+    oldDust = stack(call(side, "getInput"))
+  end
+  if old > 0 or oldDust > 0 then
+    local oldLot, oldYield = oreYield(type(was.name) == "string" and was.name or item)
+    if old > 0 then power(env, s, "chamber", old / oldLot) end
+    if smelt then power(env, s, "smelter", oldDust + math.ceil(old * oldYield)) end
+    settle(env, s, job, smelt)
+    job.fail = nil                         -- (if it is still stuck the new ore will not go in: said then)
+  elseif smelt then
+    drain(env, s, "smelter")               -- (results left waiting in it)
+  end
+  local n = count(item)
+  local lot, yield = oreYield(item)
+  n = n - n % lot
+  if n == 0 then job.fail = "no " .. item:gsub("^.*:", "") .. " on board" return end
+  -- no more ore goes in than there is redstone to see through both machines
+  -- (ore left in a machine without power blocks the next job)
+  local inChamber, inSmelter, free = 0, 0, count(M.REDSTONE)
+  _, side = stand(env, s, "chamber", "input")
+  inChamber = stack(call(side, "getEnergyItem"))
+  if smelt then
+    _, side = stand(env, s, "smelter", "output")
+    inSmelter = stack(call(side, "getEnergyItem"))
+  end
+  local lots = math.floor(n / lot)
+  while lots > 0 do
+    local dust = math.max(0, math.ceil(lots * M.MACHINES.chamber.perOp) - inChamber)
+    if smelt then dust = dust + math.max(0, math.ceil(lots * lot * yield * M.MACHINES.smelter.perOp) - inSmelter) end
+    if dust <= free then break end
+    lots = lots - 1
+  end
+  if lots == 0 then job.fail = "not enough redstone to power the machines" return end
+  if lots * lot < n then
+    note(s, ("redstone for %d of the %d %s only"):format(lots * lot, n, item:gsub("^.*:", "")))
+    n = lots * lot
+  end
+  power(env, s, "chamber", n / lot)
+  if smelt then power(env, s, "smelter", math.ceil(n * yield)) end
+  if put(env, s, "chamber", "input", item, n) == 0 then
+    job.fail = "the chamber would not take " .. item:gsub("^.*:", "")
+    return
+  end
+  settle(env, s, job, smelt)
 end
 
 -- what a job needs from the factory: { { item, count }, ... }
@@ -581,8 +650,9 @@ local function needed(kind)
 end
 
 local function doJob(env, s, job)
+  -- setup: see what stands in the bay and set it up (nothing is fetched)
   if job.kind == "setup" then return setup(env, s, M.ORDER) end
-  if job.kind == "move_infuser" then return setup(env, s, { "infuser" }, true) end
+  if job.kind == "move_infuser" then return setup(env, s, { "infuser" }, { bench = true, fetch = true }) end
   local machines = needed(job.kind)
   if not machines then return { ok = false, why = "no such job: " .. tostring(job.kind) } end
   if not M.INFUSE[job.kind] and type(job.item) ~= "string" then
@@ -596,7 +666,7 @@ local function doJob(env, s, job)
   end
   for _, name in ipairs(machines) do
     if not (s.m[name] and s.m[name].ok) then
-      local r = setup(env, s, machines)
+      local r = setup(env, s, machines, { fetch = true })
       if not r.ok then return r end
       break
     end
