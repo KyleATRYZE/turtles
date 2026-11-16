@@ -1,19 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794865900,
-      "issued": 1794865900000,
-      "cmd": "reboot",
-      "target": "LoadRunner"
-    },
-    {
-      "id": 1794865901,
-      "issued": 1794865900000,
-      "cmd": "search",
-      "target": "LoadRunner",
-      "who": "CoalPorter",
-      "path": "-4409:1575;-4345:1575;-4345:1591;-4409:1591;-4409:1559;-4345:1559;-4345:1543;-4409:1543;-4409:1607;-4345:1607",
-      "dwell": 75
+      "id": 1794866151,
+      "issued": 1794866151000,
+      "cmd": "lab",
+      "target": "SteelyDan",
+      "ops": "fetch|mekanism:enrichment_chamber=1,mekanism:energized_smelter=1;inv",
+      "clear": 1
     }
   ]
 }
