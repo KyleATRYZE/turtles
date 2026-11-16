@@ -1,45 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794860513,
-      "issued": 1794860513000,
-      "cmd": "reboot",
-      "target": "TimberLake"
-    },
-    {
-      "id": 1794860514,
-      "issued": 1794860513000,
-      "cmd": "lab",
-      "target": "TimberLake",
-      "ops": "escape|1500;home",
-      "clear": 1
-    },
-    {
-      "id": 1794860515,
-      "issued": 1794860513000,
-      "cmd": "reboot",
-      "target": "WallStreet"
-    },
-    {
-      "id": 1794860516,
-      "issued": 1794860513000,
+      "id": 1794860823,
+      "issued": 1794860823000,
       "cmd": "lab",
       "target": "WallStreet",
-      "ops": "goto|-4452|80|1532;ground;turn|right;call|front|importItem|@east|{name='minecraft:redstone',count=1};call|front|importItem|east|{name='minecraft:redstone',count=1};inv;goto|-4376|61|1577;digdown|60;face|2;inspect|front;call|front|isOn;call|front|getLabel;call|front|turnOn;wait|10;call|front|isOn;inspect|up;inspect|down",
+      "ops": "goto|-4376|61|1577;down|1;face|2;inspect|front;call|front|isOn;call|front|getLabel;call|front|turnOn;wait|12;call|front|isOn;inspect|up;inspect|down;face|0;inspect|front;face|1;inspect|front;face|3;inspect|front",
       "clear": 1
     },
     {
-      "id": 1794860517,
-      "issued": 1794860513000,
-      "cmd": "reboot",
-      "target": "MortarKombat"
-    },
-    {
-      "id": 1794860518,
-      "issued": 1794860513000,
-      "cmd": "chop",
-      "target": "MortarKombat",
-      "area": "-4400:1440:-4340:1500"
+      "id": 1794860824,
+      "issued": 1794860823000,
+      "cmd": "escort",
+      "target": "LoadRunner",
+      "who": "CoalPorter",
+      "stay": 1,
+      "x": -4377,
+      "z": 1577
     }
   ]
 }
