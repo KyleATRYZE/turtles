@@ -26,3 +26,9 @@ relays it to the turtles. Write one with `tools/order.py <cmd> <target>`, then c
 - `home` - go home, unload and wait
 - `resume` - carry on with the saved job
 - `ping` - report status now
+
+## Factory
+
+`factory.lua` runs on a Crafty Turtle labelled `factory` that sits against a wired modem, with a
+chest and a furnace on the same wired network and an output chest in front of it. It smelts and
+crafts every part and drops finished mining turtles (pickaxe + ender modem) into the output chest.
