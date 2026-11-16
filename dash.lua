@@ -823,7 +823,8 @@ function D.store(mon, view, frame)
   end
   if first then
     text(s, MX, 21, first.name, C.text)
-    text(s, MX + #first.name + 1, 21, string.char(183) .. " " .. first.section .. " " .. string.char(183) .. " in " .. (view.where or ""), C.dim)
+    local more = string.char(183) .. " " .. first.section .. " " .. string.char(183) .. " in " .. (view.where or "")
+    text(s, MX + #first.name + 1, 21, more:sub(1, math.max(0, MW - #first.name - 1)), C.dim)
     button(s, MX, 23, 10, "16", 13, "take:16")
     button(s, MX + 11, 23, 10, "64", 13, "take:64")
     button(s, MX + 22, 23, 11, "ALL", 12, "take:all")
