@@ -214,6 +214,23 @@ local function activeCount()
   return n
 end
 
+local stores = {}    -- names of storage inventories
+
+-- How full the storage chests are (checked at most every 30 seconds).
+local space, spaceAt
+local function storageSpace()
+  if spaceAt and os.clock() - spaceAt < 30 then return space end
+  local total, used = 0, 0
+  for _, inv in ipairs(stores) do
+    local okSize, size = pcall(peripheral.call, inv, "size")
+    local okList, list = pcall(peripheral.call, inv, "list")
+    if okSize and size then total = total + size end
+    if okList and list then for _ in pairs(list) do used = used + 1 end end
+  end
+  space, spaceAt = { slots = total, used = used, free = total - used }, os.clock()
+  return space
+end
+
 local function report(state)
   lastState = state
   if not swarm then return end
@@ -221,6 +238,7 @@ local function report(state)
     role = "factory",
     state = state,
     built = built,
+    storage = storageSpace(),
     inv = lastStock,
     missing = lastMissing,
     network = lastNetwork,
@@ -236,7 +254,6 @@ end
 
 local modem      -- the wired modem behind the turtle
 local selfName   -- this turtle's name on the wired network
-local stores = {}    -- names of storage inventories
 local furnaces = {}  -- names of furnaces
 
 local function matches(wanted, name)

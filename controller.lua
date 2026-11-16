@@ -196,10 +196,20 @@ local ALERTS = {
 local lastAlert = {}   -- "id:state" -> time of the last chat message
 
 local function alertFor(id, msg)
+  local now = os.epoch("utc")
+  local sp = type(msg.storage) == "table" and msg.storage
+  if sp and tonumber(sp.slots) and tonumber(sp.free) and sp.slots > 0
+    and sp.free < math.max(10, sp.slots * 0.05) then
+    local k = tostring(id) .. ":storage"
+    if not lastAlert[k] or now - lastAlert[k] > 30 * 60000 then
+      lastAlert[k] = now
+      say((msg.label or "The factory") .. "'s storage is nearly full (" .. sp.free
+        .. " free slots): please add chests.")
+    end
+  end
   local text = ALERTS[msg.state]
   if not text then return end
   local key = tostring(id) .. ":" .. msg.state
-  local now = os.epoch("utc")
   if lastAlert[key] and now - lastAlert[key] < 10 * 60000 then return end
   lastAlert[key] = now
   local name = msg.label or ("#" .. tostring(id))

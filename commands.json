@@ -1,20 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794800898,
-      "issued": 1794800898000,
+      "id": 1794803292,
+      "issued": 1794803292000,
       "cmd": "reboot",
-      "target": "BrickJagger"
+      "target": "ForgeClooney"
     },
     {
-      "id": 1794800899,
-      "issued": 1794800898000,
-      "cmd": "build",
-      "target": "BrickJagger",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "stage": "clear"
+      "id": 1794803293,
+      "issued": 1794803292000,
+      "cmd": "reboot",
+      "target": "GroundControl"
     }
   ]
 }
