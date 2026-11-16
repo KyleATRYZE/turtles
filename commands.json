@@ -1,16 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794857746,
-      "issued": 1794857746000,
-      "cmd": "ping",
+      "id": 1794858871,
+      "issued": 1794858871000,
+      "cmd": "park",
       "target": "ChunkNorris"
-    },
-    {
-      "id": 1794857747,
-      "issued": 1794857746000,
-      "cmd": "ping",
-      "target": "CoalPorter"
     }
   ]
 }
