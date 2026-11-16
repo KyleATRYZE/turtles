@@ -558,7 +558,7 @@ local function refine(env, s, job, smelt)
     oldDust = stack(call(side, "getInput"))
   end
   if old > 0 or oldDust > 0 then
-    local oldLot, oldYield = oreYield(type(was.name) == "string" and was.name or item)
+    local oldLot, oldYield = oreYield(type(was) == "table" and type(was.name) == "string" and was.name or item)
     if old > 0 then power(env, s, "chamber", old / oldLot) end
     if smelt then power(env, s, "smelter", oldDust + math.ceil(old * oldYield)) end
     settle(env, s, job, smelt)
