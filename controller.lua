@@ -921,7 +921,7 @@ do
   h.write("controller")
   h.close()
   local label = os.getComputerLabel()
-  if not label or label == "controller" then os.setComputerLabel("GroundControl") end
+  if not label or label == "controller" then os.setComputerLabel("CommandBlock") end
 end
 
 if not http then

@@ -321,7 +321,7 @@ for x in range(11, 17):                                        # north wall, in 
 # has to be on the network). From the west: the controller (touching the
 # west wall), the Inventory Manager (it hands items to the player: the
 # controller on one side of it, the Out barrel on the other), the Out
-# barrel, Sortnado with an ender modem on its side (to hear GroundControl),
+# barrel, Sortnado with an ender modem on its side (to hear CommandBlock),
 # and the In barrel. Barrels, not chests: a chest will not open under the
 # screen. The 5 x 3 touch screen stands on the desk.
 DESK_Z = HZ - 1
@@ -336,10 +336,10 @@ put(15, 2, DESK_Z, "minecraft:barrel[facing=north]")           # In
 fill(11, 3, DESK_Z, 15, 5, DESK_Z, "computercraft:monitor_advanced[facing=north]")   # 5 x 3 touch screen
 # launch bay: the pit stop on the back track, against the back wall. Miners
 # come up the in-shaft (x 24), drop their load in the chest, get serviced
-# over ForgeClooney, pass the pad and drop down the out-shaft (x 20).
+# over Crafty, pass the pad and drop down the out-shaft (x 20).
 put(21, 1, 1, "computercraft:disk_drive")                      # under the launch pad
 put(22, 1, 1, "computercraft:wired_modem_full")
-put(22, 2, 1, "computercraft:turtle_advanced")                 # ForgeClooney
+put(22, 2, 1, "computercraft:turtle_advanced")                 # Crafty
 put(23, 1, 1, "minecraft:furnace[facing=south]")
 put(23, 2, 1, "minecraft:chest[facing=south]")                 # drop-off
 B.pop((20, 0, 1), None)                                        # out-shaft
@@ -348,7 +348,7 @@ B.pop((24, 0, 1), None)                                        # in-shaft
 for x in range(TX1 + 1, TX2):
     for y in range(17, 21):
         put(x, y, TZ1 + 1, "computercraft:monitor_advanced")
-put(TX1 + 5, 17, TZ2 - 2, "computercraft:computer_advanced")   # GroundControl
+put(TX1 + 5, 17, TZ2 - 2, "computercraft:computer_advanced")   # CommandBlock
 put(TX1 + 5, 18, TZ2 - 2, "advancedperipherals:chat_box")
 put(TX1 + 4, 17, TZ2 - 2, "advancedperipherals:player_detector")
 # the drone rack: 16 homes in two rows off the front track in the launch bay.
@@ -363,7 +363,7 @@ for x in range(19, 27):
     put(x, 4, 4, "computercraft:monitor_advanced[facing=south]")
     LIGHTS.append({"pos": [x, 4, 4], "face": "south", "label": "", "color": "#2bb3c8"})
 # touch panels (advanced monitors are touch screens): a 3 x 2 panel by
-# GroundControl in the tower, and a 2 x 2 one by the launch bay door
+# CommandBlock in the tower, and a 2 x 2 one by the launch bay door
 PANELS = {
     "tower": [(TX1 + 1, y, z) for y in (17, 18) for z in (23, 24, 25)],
     "launch bay": [(19, y, z) for y in (2, 3) for z in (26, 27)],

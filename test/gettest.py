@@ -1,4 +1,4 @@
-"""'$get 64 iron ingot' in chat: what GroundControl makes of the words, what
+"""'$get 64 iron ingot' in chat: what CommandBlock makes of the words, what
 it asks Sortnado, and what it says back. Runs the piece of controller.lua
 between its two markers on its own, and then the whole exchange against the
 real sortnado.lua.

@@ -292,6 +292,14 @@ D.stateColour = stateColour
 -- never have to sit on the map.
 local HUES = { C.amber, C.cyan, C.green, C.pink, C.violet, C.red, C.text, C.copper }
 local SPECIAL = { builder = { "B", C.cyan }, loader = { "L", C.violet }, factory = { "F", C.green } }
+-- the coal hunters (by name too, when they are not hunting just now; a
+-- report under a hunter's old name counts: see the names in swarm.lua)
+local HUNTER_NAMES = { Coalition = true, Charcool = true }
+local okNames, names = pcall(require, "swarm")
+local HUNTERS = setmetatable({}, { __index = function(_, label)
+  if okNames and type(names) == "table" and names.newName then label = names.newName(label) end
+  return HUNTER_NAMES[label]
+end })
 function D.chips(units)
   local list = {}
   for _, u in pairs(units) do list[#list + 1] = u end
@@ -304,7 +312,7 @@ function D.chips(units)
   local n = 0
   for _, u in ipairs(list) do
     local sp = SPECIAL[u.role]
-    if (u.state or ""):find("hunting") or u.label == "CoalPorter" then
+    if (u.state or ""):find("hunting") or HUNTERS[u.label or ""] then
       u.chip, u.hue = "C", C.copper
     elseif sp then
       u.chip, u.hue = sp[1], sp[2]
@@ -322,9 +330,9 @@ end
 
 ---------------------------------------------------------------- the map wall
 -- data = {
---   units  = { [id] = unit status, ... },   -- as GroundControl keeps them
---   maps   = { map, ... },                  -- BrickJagger's ground scans
---   base   = { x, y, z },                   -- ForgeClooney (the pit stop)
+--   units  = { [id] = unit status, ... },   -- as CommandBlock keeps them
+--   maps   = { map, ... },                  -- BlockParty's ground scans
+--   base   = { x, y, z },                   -- Crafty (the pit stop)
 --   site   = { x1, z1, x2, z2, progress, layer, layers, done, total },
 --   hut    = { x1, z1, x2, z2 },
 --   plots  = { size, done = { {x, z}, ... }, active = { {x, z}, ... } },

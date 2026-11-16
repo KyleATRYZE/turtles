@@ -465,14 +465,21 @@ local CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 local FUEL_RESERVE = 256 -- coal never handed out to miners
 local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
-local HELPER_NAMES = { "MortarKombat", "WallStreet", "TimberLake", "SteelyDan" }   -- (the fourth runs the Mekanism machines)
+-- (the fourth runs the Mekanism machines; the rest are names for mates made later)
+local HELPER_NAMES = { "Pushy", "HopTo", "LeverAlone", "DropIt",
+  "Sticky", "Dusty", "OnRepeat", "Comparable", "Observant", "Dispensable",
+  "ButtonUp", "PlateUp", "Tripwired", "LampLit", "NoteWorthy", "TargetLock" }
 local launchingHelper = false
--- Chunk loaders (turtles with a Chunk Controller, running loader.lua): built
--- while there are controllers in stock, up to this many. One stays at the
--- base; the others go out with whoever is working far away.
-local LOADERS      = 4
-local LOADER_NAMES = { "LoadRunner", "ChunkBerry", "ChunkyMonkey", "LoadZeppelin",
-  "ChunkSinatra", "LoadOfTheRings", "ChunkDaddy", "HeavyLoad" }
+-- Chunk loaders (turtles with a Chunk Controller, running loader.lua): one
+-- is built whenever there is a controller in stock and an ender modem to be
+-- had for it (in stock, or made from gold and an ender eye), for as long as
+-- there are names. One always stays parked at the base (see "pairing chunk
+-- loaders"); the others go out with whoever is working far away.
+-- (The first loader, Ghastly, was made by hand and is not in this list.)
+local LOADER_NAMES = { "Phantastic", "Ablaze", "Vexed", "Beehave", "Batty", "Breezy",
+  "AllayOop", "WitherOrNot", "Shulky", "Squawk" }
+local LOADERS      = #LOADER_NAMES
+local PLAIN_LOADERS = false   -- true: with no ender modem to be had, a plain wireless modem will do
 local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
@@ -1478,10 +1485,19 @@ local function ensureStock(name, n)
 end
 
 -- Chunk Controllers in stock beyond those the chunk loaders still to be
--- built will need: these can go to turtles that carry their own.
+-- built will need: these can go to turtles that carry their own. A loader
+-- needs an ender modem, so no more are kept back than there are modems to
+-- be had (in stock, or as an ender eye, or a pearl and blaze, with 8 gold).
 local function spareControllers(stock)
-  local forLoaders = plots.noLoaders and 0 or math.max(0, LOADERS - #(plots.loaders or {}))
-  return math.max(0, ((stock or lastStock or {})[CHUNKY] or 0) - forLoaders)
+  stock = stock or lastStock or {}
+  local n = function(name) return stock[name] or 0 end
+  local eyes = n("minecraft:ender_eye")
+    + math.min(n("minecraft:ender_pearl"), n("minecraft:blaze_powder") + 2 * n("minecraft:blaze_rod"))
+  local gold = n("minecraft:gold_ingot") + n("minecraft:raw_gold")
+  local modems = n(MODEM) + math.min(eyes, math.floor(gold / 8))
+  local forLoaders = plots.noLoaders and 0
+    or math.max(0, math.min(LOADERS - #(plots.loaders or {}), modems))
+  return math.max(0, n(CHUNKY) - forLoaders)
 end
 
 -- One controller to the turtle that asked for it (and to no other), standing
@@ -1898,8 +1914,8 @@ end
 -- at the base. And a turtle too low on fuel to fetch its own (feed_request)
 -- has a builder's mate with nothing to do sent to it with coal.
 -- Both go out as direct orders (see swarm.accept).
-local fleet = {}          -- label (lower case) -> what it last said
-local escortGiven = {}    -- turtle (label, lower case) -> { loader = id, at = clock }
+local fleet = {}          -- name (see nameKey) -> what it last said
+local escortGiven = {}    -- turtle (nameKey) -> { loader = id, at = clock }
 local escortRest = {}     -- turtle -> not offered again before this (a loader found nothing there)
 local feedSent = {}       -- who asked (id) -> when a mate was last sent
 local ESCORT_FAR = 48     -- blocks from the factory (either way) beyond which a turtle is "far"
@@ -1907,10 +1923,24 @@ local SILENT = 240        -- seconds without a word: far away, that is a turtle 
 local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
   ["waiting for a plot"] = true, ["stopped by player"] = true }
 
+-- What a name is filed under: the same for a turtle's old name and its new
+-- one (the swarm was renamed; see swarm.lua), in any case.
+local function nameKey(name)
+  if swarm and swarm.nameKey then return swarm.nameKey(name) end
+  return tostring(name):lower()
+end
+
 local function noteStatus(id, msg)
   if type(msg) ~= "table" or type(msg.label) ~= "string" or msg.role == "factory" then return end
-  local key = msg.label:lower()
+  local key = nameKey(msg.label)
   local old = fleet[key] or {}
+  -- (one machine, one entry: whatever name it reported under before)
+  for k, u in pairs(fleet) do
+    if u.id == id and k ~= key then
+      if not fleet[key] then old = u end
+      fleet[k] = nil
+    end
+  end
   local p = type(msg.pos) == "table" and msg.pos or {}
   local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
   if not x or not z or (x == 0 and z == 0) then x, y, z = old.x, old.y, old.z end   -- (0, 0 = not known)
@@ -1919,7 +1949,7 @@ local function noteStatus(id, msg)
   fleet[key] = { id = id, label = msg.label, role = msg.role, state = tostring(msg.state),
     x = x, y = y, z = z, at = os.clock(), fuel = tonumber(msg.fuel), chunky = msg.chunky,
     mode = loader and job.mode or nil,
-    who = loader and type(job.who) == "string" and job.who:lower() or nil }
+    who = loader and type(job.who) == "string" and nameKey(job.who) or nil }
 end
 
 local function isFar(u)
@@ -1939,8 +1969,8 @@ end
 local function escortFor(id, msg)
   if not base or not swarm then return end
   local now = os.clock()
-  if type(msg.gaveUp) == "string" and not escortRest[msg.gaveUp:lower()] then
-    escortRest[msg.gaveUp:lower()] = now + 3600
+  if type(msg.gaveUp) == "string" and not escortRest[nameKey(msg.gaveUp)] then
+    escortRest[nameKey(msg.gaveUp)] = now + 3600
   end
   -- another loader must be staying: at the base, heard from in the last
   -- few minutes, and not itself just sent out
@@ -1976,7 +2006,7 @@ local function escortFor(id, msg)
     end
   end
   if not best then return end
-  escortGiven[best.label:lower()] = { loader = id, at = now }
+  escortGiven[nameKey(best.label)] = { loader = id, at = now }
   print("Chunk loader " .. tostring(msg.label or id) .. " goes out with " .. best.label .. ".")
   direct(id, { cmd = "escort", who = best.label, x = best.x, z = best.z, auto = true })
 end
@@ -2248,11 +2278,11 @@ local function tryBuild()
 
   -- a chunk loader, while there is a Chunk Controller to put on one
   if #(plots.loaders or {}) < LOADERS and (lastStock[CHUNKY] or 0) > 0 and not plots.noLoaders then
-    -- with an ender modem if one can be had; otherwise a plain wireless modem
-    -- (stone and an ender pearl) will do: a loader flies high, where even
-    -- that reaches far, and the others' ender modems hear it anywhere
+    -- with an ender modem. (PLAIN_LOADERS: failing that a plain wireless
+    -- modem, stone and an ender pearl: a loader flies high, where even that
+    -- reaches far, and the others' ender modems hear it anywhere.)
     local steps, missing, modem
-    for _, m in ipairs({ MODEM, PLAIN_MODEM }) do
+    for _, m in ipairs(PLAIN_LOADERS and { MODEM, PLAIN_MODEM } or { MODEM }) do
       local pretend = {}
       for name, c in pairs(lastStock) do pretend[name] = c end
       local st2, miss2 = {}, {}
@@ -2369,7 +2399,7 @@ do
   h.write("factory")
   h.close()
   local label = os.getComputerLabel()
-  if not label or label == "factory" then os.setComputerLabel("ForgeClooney") end
+  if not label or label == "factory" then os.setComputerLabel("Crafty") end
 end
 
 local task = fs.exists(PAUSE_FILE) and paused or work

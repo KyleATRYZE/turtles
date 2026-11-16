@@ -1,4 +1,4 @@
--- loader.lua : ChunkNorris, a turtle with a Chunk Controller (Advanced
+-- loader.lua : Ghastly, a turtle with a Chunk Controller (Advanced
 -- Peripherals). The controller keeps the chunk the turtle is in loaded, so
 -- wherever it hovers, turtles there keep running even with nobody nearby.
 --
@@ -25,12 +25,23 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local NAME       = "ChunkNorris"
+local NAME       = "Ghastly"
 local STATE_FILE = "loader.state"
 local BASE_FILE  = ".base"
 local CRUISE     = 150    -- flying height: above every hill and tree
 local NEAR_BASE  = 32     -- an escorted turtle closer than this is safe
 local JOB_PROTOCOL = "swarm_job"
+-- What a name is filed under: the same for a turtle's old name and its new
+-- one (the swarm was renamed; see swarm.lua), in any case. A turtle I am
+-- with keeps my company when it takes its new name.
+local function nameKey(name)
+  if swarm and swarm.nameKey then return swarm.nameKey(name) end
+  return tostring(name):lower()
+end
+local function newName(name)
+  if swarm and swarm.newName then return swarm.newName(name) end
+  return name
+end
 local GIVE_UP    = 600    -- seconds over a silent turtle before going home (sent out by the factory)
 -- states in which a turtle is not working: it needs no company
 local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
@@ -213,11 +224,11 @@ local function listen()
     if type(msg) == "table" and type(msg.label) == "string" and type(msg.pos) == "table"
       and tonumber(msg.pos.x) and tonumber(msg.pos.z) then
       -- (0, 0 = it does not know where it is: keep what we had)
-      local old = seen[msg.label:lower()]
+      local old = seen[nameKey(msg.label)]
       local x, y, z = msg.pos.x, msg.pos.y, msg.pos.z
       if x == 0 and z == 0 and old then x, y, z = old.x, old.y, old.z end
       if not (x == 0 and z == 0) then
-        seen[msg.label:lower()] = { x = x, z = z, y = y, at = os.clock(), state = tostring(msg.state) }
+        seen[nameKey(msg.label)] = { x = x, z = z, y = y, at = os.clock(), state = tostring(msg.state) }
       end
     end
     -- the factory's reports say where the base is
@@ -463,7 +474,7 @@ local function work()
       return flyTo(x, z)
     end
     while true do
-      local t = seen[st.who:lower()]
+      local t = seen[nameKey(st.who)]
       -- sent out by the factory: home again when the turtle stops work, or
       -- has said nothing for ten minutes with me over the spot (it is off,
       -- or not where it was: the factory will not offer it again for a while)
@@ -518,7 +529,7 @@ local function work()
     print("Searching for " .. st.who .. ".")
     local t0 = os.clock()
     local function heard()
-      local t = seen[st.who:lower()]
+      local t = seen[nameKey(st.who)]
       return t and t.at > t0
     end
     -- (a turtle that wakes has to start up, and maybe fetch new programs,
@@ -549,7 +560,7 @@ local function work()
       print("No sign of " .. st.who .. " along the path.")
     end
     st.mode, st.stay, st.path = "escort", true, nil
-    local t = seen[st.who:lower()]
+    local t = seen[nameKey(st.who)]
     if t then st.x, st.z = t.x, t.z end
     save()
     return work()
@@ -614,7 +625,7 @@ while true do
       report("rebooting")
       os.reboot()
     elseif cmd.cmd == "escort" and type(cmd.who) == "string" then
-      st.mode, st.who = "escort", cmd.who
+      st.mode, st.who = "escort", newName(cmd.who)
       st.x, st.z = tonumber(cmd.x), tonumber(cmd.z)
       st.stay = cmd.stay and true or nil
       -- (auto: sent by the factory, to come home by itself. An order written
@@ -622,7 +633,7 @@ while true do
       st.auto = yes(cmd.auto) and not st.stay and true or nil
       st.hold = nil
     elseif cmd.cmd == "search" and type(cmd.who) == "string" and type(cmd.path) == "string" then
-      st.mode, st.who, st.path = "search", cmd.who, cmd.path
+      st.mode, st.who, st.path = "search", newName(cmd.who), cmd.path
       st.dwell = tonumber(cmd.dwell)
     elseif cmd.cmd == "goto" and tonumber(cmd.x) and tonumber(cmd.z) then
       st.mode, st.x, st.z = "goto", math.floor(tonumber(cmd.x)), math.floor(tonumber(cmd.z))
