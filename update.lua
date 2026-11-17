@@ -146,6 +146,10 @@ if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "b
   and role ~= "works" then
   if not turtle and (os.getComputerLabel() or ""):lower():match("^sortnado") then
     role = "storage"
+  elseif not turtle and (os.getComputerLabel() or ""):lower():match("^rack") then
+    role = "rack"                         -- the rack's panels (docs/rack-build.html)
+  elseif not turtle and (os.getComputerLabel() or ""):lower():match("^works") then
+    role = "works"                        -- the foundry on the cable (docs/foundry-build.html)
   elseif not turtle then
     role = "controller"
   elseif (os.getComputerLabel() or ""):match("^factory") or (os.getComputerLabel() or ""):lower():match("^counter") then

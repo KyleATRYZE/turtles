@@ -68,43 +68,32 @@ def ctx_code(it):
 
 
 RACK1_STEPS = [
-    ("Take down the old board computer",
-     "The computer behind the name board and the ender modem on top of it come out. Keep the computer: it is "
-     "labelled RackBoard and keeps its files. It goes back into the wall in step 5. The ender modem goes back in "
-     "stock.",
-     [("cut", R.OLD_BOARD_PC)]),
-    ("Lay the cable under the lane floor",
-     "In the lane, lift the striped floor tiles along the front track from the hall end to the launch bay wall "
-     "(x 1-18, z 2). Dig out the block under each tile and put a cable in its place. Do the same under the hall "
-     "corner (lift the hall tile under the hall cable's end), then under the wall end at x 18. Put every striped "
-     "tile back.",
-     [("cable", R.TRENCH1)]),
-    ("Floor plug under the hall cable",
-     "Put a full-block wired modem where you lifted the hall tile (the hall cable's end sits on it). "
-     "Do not right-click it: it only joins the cables.",
-     [("conn", [R.HALL_PLUG])]),
-    ("The wall end, lane side",
-     "From the lane, take out the two bricks at the foot of the x 18 wall (y 1-2, z 3) and the floor block under "
-     "them. Cable in the floor block, then two wired modems in the brick holes. Don't click them.",
-     [("cable", [R.RACK_UNDER]), ("conn", [(18, 1, 3), (18, 2, 3)])]),
-    ("The wall end, behind the board",
-     "From the storage room side (the top of the barrel wall), take out the three bricks in the x 18 wall just "
-     "west of the board's end (y 2-4, z 4). Wired modems in the lower two, then the RackBoard computer in the top "
-     "one, touching the board. Don't click the modems.",
-     [("conn", [(18, 2, 4), (18, 3, 4)]), ("pc", [R.RACK_PC])]),
-    ("The bay shelf",
-     "Swap the eight copper blocks of the middle shelf (y 2, the high homes' floor) for full-block wired modems. "
+    ("The bay shelf (done)",
+     "The eight copper blocks of the middle shelf (y 2, the high homes' floor) swapped for full-block wired modems. "
      "Each touches the home under it and the home on it. They join each other without cable.",
      [("bay", R.BAYS1)]),
     ("The low shelf's panel",
      "Swap the eight iron bars right behind the shelf (y 2, z 4) for advanced monitors, put up from the bay side so "
-     "they face you. They make one 8 × 1 strip: the low homes' panels. The bars above and below stay, so the strip "
-     "does not join the name board.",
+     "they face you. They make one 8 × 1 strip: the low homes' panels, and the peripheral that keeps every shelf "
+     "modem switched on when no drone is docked. The bars above and below stay, so the strip does not join the name "
+     "board.",
      [("mon", R.STRIP1)]),
+    ("The link into the storage room",
+     "From the lane, swap the brick at the foot of the x 18 wall that touches the west end of the shelf for a "
+     "full-block wired modem (don't click it). From it, run cable through the wall to the nearest cable or modem of "
+     "the storage room's network (the controller's modem at world -4438 76 1534, or its cable along the top of the "
+     "west wall). The bays are then on Sortnado's store.",
+     [("conn", [R.RACK_LINK])]),
+    ("The rack's computer",
+     "Behind the board's west end, take out the three bricks of the x 18 wall at y 2-4, z 4 (from the storage room "
+     "side, over the barrels). Wired modems in the lower two (not clicked), a new computer in the top one, touching "
+     "the board.",
+     [("conn", [(18, 2, 4), (18, 3, 4)]), ("pc", [R.RACK_PC])]),
     ("Switch on",
-     "Right-click each of the eight shelf modems once (from the lane, on its front edge). Each time chat should say "
-     "a monitor was connected (and a turtle, if one is docked). They stay on from then on, with or without drones. "
-     "Then right-click the computer to start it.",
+     "Right-click each of the eight shelf modems once (from the lane, on its front edge), after the strip is up. Each "
+     "time chat should say a monitor was connected (and a turtle, if one is docked). They stay on from then on. Then "
+     "open the computer and type <code>label set RackBoard</code>, then <code>wget run "
+     "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua</code>: it becomes the rack's panels.",
      []),
 ]
 
@@ -464,23 +453,27 @@ def write(G):
 
 RACK1 = {
     "out": "rack-build.html", "title": "Rack 1 loading bays: build guide", "h1": "Rack 1: loading bays",
-    "lede": "What you build by hand so loads reach a docked drone over the cable instead of on a launch pad. Crafty "
-            "pushes each load and its fuel straight into the drone in its home, and takes hand-ins back the same way. "
+    "lede": "What you build by hand so loads reach a docked drone over the cable instead of on a launch pad. The store "
+            "(and Crafty, once it is on the same cable) pushes each load and its fuel straight into the drone in its "
+            "home, and takes hand-ins back the same way. "
             "Nothing sticks out: every modem is a full block that is part of the shelf or the wall, and every cable is "
             "under the floor or inside the wall.",
-    "region": (0, 28, -1, 5, 1, 5), "near": (14, 28), "steps": RACK1_STEPS,
-    "chips": lambda n: [f"{n['bay']} bay modems serve 16 homes", f"{n['conn']} connector modems", f"{n['cable']} cables",
-                        f"{n['mon']} advanced monitors", "1 computer (moved)", "8 right-clicks", "Corner -4448, 71, 1518 · north up"],
+    "region": (10, 28, -1, 5, 1, 5), "near": (14, 28), "steps": RACK1_STEPS,
+    "chips": lambda n: [f"{n['bay']} bay modems serve 16 homes", f"{n['conn']} connector modems",
+                        "cable: your own run into the storage room", f"{n['mon']} advanced monitors", "1 new computer",
+                        "8 right-clicks", "Corner -4448, 71, 1518 · north up"],
     "isocap": "Seen from the launch bay by default: the lane is behind the rack, the storage room to the left.",
-    "layercap": "Only x 0-28, z 1-5 is shown: the hall's corner on the left, the launch bay on the right.",
+    "layercap": "Only x 10-28, z 1-5 is shown: the storage room on the left, the launch bay on the right.",
     "clicktop": "<p>Only the eight shelf modems are clicked, once each, after the strip is up (the strip is what keeps each "
                 "of them switched on when no drone is docked). One modem serves two homes, the one below it and the one "
                 "on it, so eight is all there is: it can't be fewer, as each home touches only its own shelf block. The "
-                "connector modems and the floor plug are never clicked.</p>",
+                "connector modems are never clicked.</p>",
     "clickbottom": "<p class=\"cap\">If the server ever adds the <code>computercraft:turtle_can_use</code> tag for modems, a "
                    "drone holding a stick can do these clicks too (docs/cc-lessons.md, 3). It is optional: by hand is the "
-                   "plan.</p><p>Then right-click the computer in the wall (world " + " ".join(map(str, R.W(*R.RACK_PC)))
-                   + ") to start it.</p>",
+                   "plan.</p><p>Then the computer in the wall (world " + " ".join(map(str, R.W(*R.RACK_PC)))
+                   + "): <code>label set RackBoard</code> and the installer. Until Crafty moves in, the store (Sortnado) "
+                   "fills a docked helper's bay with what it has and tells the rack's panels who is home; the rest of a "
+                   "load still comes from Crafty's pad.</p>",
     "serveshead": "Serves homes", "clicks": [(c, serves_homes(c)) for c in R.BAYS1],
 }
 

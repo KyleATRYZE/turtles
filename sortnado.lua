@@ -986,6 +986,82 @@ function S.request(msg)
     to = msg.to, why = why, left = it and S.items[it.name] and S.items[it.name].total or 0, n = msg.n }
 end
 
+---------------------------------------------------------------- the loading bays
+-- A helper docked in its rack home is on the store's cable (turtle_<id>):
+-- before Crafty moves in, the store serves its load from what it has, and
+-- the helper fetches the rest from Crafty's pad. Once Crafty is on the same
+-- cable it takes the order (bay_taken) and the store leaves it alone.
+S.BAY_WAIT = 10                      -- seconds for Crafty to say it takes a bay order
+S.bayQueue = {}                      -- helper id -> { msg, at }
+S.RACK_CHANNEL = 4711                -- the rack's panels hear the drones through us (factory.lua K.RACK_CHANNEL)
+
+function S.bayHeard(id, msg, now)
+  if type(msg) ~= "table" then return end
+  if msg.type == "bay_taken" then
+    local q = S.bayQueue[tonumber(msg.forId)]
+    if q and q.msg.n == msg.n then S.bayQueue[tonumber(msg.forId)] = nil end
+  elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
+      and msg.bay:match("^turtle_%d+$") and peripheral.isPresent(msg.bay) then
+    local q = S.bayQueue[id]
+    if not (q and q.msg.n == msg.n) and S.bayDone ~= tostring(id) .. ":" .. tostring(msg.n) then
+      S.bayQueue[id] = { msg = msg, at = (now or os.clock()) + S.BAY_WAIT }
+    end
+  end
+end
+
+-- one bay order: hand-ins into the In chest (sorted away as usual), what
+-- the store has into the bay, and the fuel; the answer says what is missing
+function S.serveBay(id, msg)
+  local bay = msg.bay
+  for _, slot in ipairs(type(msg.back) == "table" and msg.back or {}) do
+    if tonumber(slot) and cfg.inbox then pcall(peripheral.call, cfg.inbox, "pullItems", bay, math.floor(tonumber(slot))) end
+  end
+  local given, missing = {}, {}
+  for _, l in ipairs(msg.items) do
+    local name, want = l[1], math.floor(tonumber(l[2]) or 0)
+    if type(name) == "string" and want > 0 then
+      local got = (S.items[name] and S.take(name, want, bay)) or 0
+      given[name] = got
+      if got < want then missing[name] = want - got end
+    end
+  end
+  local fuel = math.floor(tonumber(msg.fuel) or 0)
+  if fuel > 0 then
+    local buckets = math.min(4, math.floor(fuel * 80 / 1000 + 0.5))
+    local lava = buckets > 0 and S.items["minecraft:lava_bucket"] and S.take("minecraft:lava_bucket", buckets, bay) or 0
+    local coal = math.ceil(math.max(0, fuel * 80 - lava * 1000) / 80)
+    for _, c in ipairs({ "minecraft:coal", "minecraft:charcoal" }) do
+      if coal > 0 and S.items[c] then coal = coal - S.take(c, coal, bay) end
+    end
+  end
+  S.bayDone = tostring(id) .. ":" .. tostring(msg.n)
+  rednet.send(id, { type = "materials_ready", forId = id, n = msg.n, given = given, missing = missing, full = {},
+    bay = true, by = "Sortnado" }, "swarm_job")
+  S.bayNote = "loaded " .. bay
+  return given, missing
+end
+
+function S.bayStep(now)
+  now = now or os.clock()
+  for id, q in pairs(S.bayQueue) do
+    if now >= q.at then
+      S.bayQueue[id] = nil
+      if peripheral.isPresent(q.msg.bay) then pcall(S.serveBay, id, q.msg) end
+    end
+  end
+end
+
+-- the drones' statuses and reboot orders, on to the rack's panels over the cable
+function S.relay(msg)
+  if type(msg) ~= "table" then return end
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "modem" and not peripheral.call(name, "isWireless") then
+      pcall(peripheral.call, name, "transmit", S.RACK_CHANNEL, S.RACK_CHANNEL, msg)
+      return
+    end
+  end
+end
+
 if SORTNADO_TEST then
   S.cfg = function(c) cfg = c end
   S.saveConfig = function() S.saved = (S.saved or 0) + 1 end
@@ -1105,6 +1181,7 @@ parallel.waitForAny(
     while true do
       local c = swarm.waitCommand()
       if c.cmd == "reboot" or c.cmd == "update" then
+        pcall(S.relay, { type = "cmd", cmd = c })
         os.reboot()
       elseif c.cmd == "survey" then
         pcall(S.makeSurvey)
@@ -1131,6 +1208,20 @@ parallel.waitForAny(
       elseif c.cmd == "ping" then
         report()
       end
+    end
+  end,
+  function()                                    -- the loading bays, and the drones' news for the rack
+    S.bayTimer = os.startTimer(2)
+    while true do
+      local ev, id, msg, proto = os.pullEvent()
+      if ev == "rednet_message" and proto == "swarm_job" then
+        pcall(S.bayHeard, id, msg)
+      elseif ev == "rednet_message" and proto == "swarm" and type(msg) == "table"
+          and (msg.role == "helper" or msg.role == "miner" or msg.role == "loader") then
+        S.relay(msg)
+      end
+      pcall(S.bayStep)
+      if ev == "timer" and id == S.bayTimer then S.bayTimer = os.startTimer(2) end
     end
   end,
   function()                                    -- requests from CommandBlock and the turtles

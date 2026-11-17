@@ -201,7 +201,7 @@ L.execute("base = {}")
 a = L.eval("hopUp()"); L.execute("base.hopUp = 22"); b2 = L.eval("hopUp()")
 check("loaders hop 14 up as before, 22 after a rebase with hop=22", a == 14 and b2 == 22)
 check("on the drone lane loaders do not hop onto the pad indoors for fuel: they ask for a feed",
-      "if base.lane then" in LOA[LOA.index("local function fuelUp"):LOA.index("local function fuelUp") + 600])
+      "base.pad.z >= L.back and base.pad.z <= L.front" in LOA[LOA.index("local function fuelUp"):LOA.index("local function fuelUp") + 600])
 check("loaders use it for both short hops", LOA.count("hopUp()") >= 3 and "+ HOP_UP" not in LOA.replace("local HOP_UP", ""))
 check("miners take the origin from the job and use it for the plot grid", "origin = j.origin" in MIN
       and "local o = st.origin or st.exit1" in MIN)

@@ -530,27 +530,37 @@ Player Detector) is carried into the tower by Kyle.
 
 ## 6b. Rack loading bays (Kyle, by hand; docs/rack-build.html)
 
-Loads go over the cable, not across a pad: Crafty pushes a drone's load and
-fuel straight into it while it sits in its rack home (`turtle_<id>` on the
-network) and pulls hand-ins back. `python3 tools/retrofit.py check` checks
-the cells (stage 11 in the tool) and that every bay is wired to the store.
+Loads go over the cable, not across a pad: a docked helper is
+`turtle_<id>` on the network; its load and fuel are pushed straight in and
+its hand-ins pulled back. `python3 tools/retrofit.py check` checks the cells
+(stage 11 in the tool) and that every bay, rack and foundry modem is wired
+to rack 1's link.
 
 | what | building x y z | world | count |
 |---|---|---|---|
-| bay modems (full block), the middle shelf: each touches the low home under it and the high home on it | 19..26 2 3 | -4429..-4422 73 1521 | 8, **right-clicked** |
-| low shelf's panel: advanced monitors facing the bay, in place of the y 2 bars (the permanent neighbour that keeps each bay modem switched on) | 19..26 2 4 | -4429..-4422 73 1522 | 8 |
+| bay modems (full block), the middle shelf: each touches the low home under it and the high home on it | 19..26 2 3 | -4429..-4422 73 1521 | 8 (in), **right-clicked** |
+| low shelf's panel: advanced monitors facing the bay, in place of the y 2 bars (the permanent neighbour that keeps each bay modem on) | 19..26 2 4 | -4429..-4422 73 1522 | 8 |
 | high shelf's panel: the existing name board | 19..26 4 4 | | (built) |
-| the board's computer, moved into the wall touching the board's west end | 18 4 4 | -4430 75 1522 | 1 (was at 22 4 3; its ender modem at 22 5 3 comes off) |
-| connector modems in the x 18 wall (not clicked) | 18 1 3, 18 2 3, 18 2 4, 18 3 4 | -4430 72/73 1521, -4430 73/74 1522 | 4 |
-| cable in the closed floor cell under them | 18 0 3 | -4430 71 1521 | 1 |
-| cable under the lane floor (front track), to the hall corner | 18 -1 3; 18..1 -1 2; 1 -1 3; 1 -1 4 | y 70 | 21 |
-| floor plug under the hall cable's end (not clicked) | 1 0 4 | -4447 71 1522 | 1 |
+| the link: a wired modem in the x 18 wall touching the shelf's west end, then Kyle's cable through the wall to the storage room's network | 18 2 3 | -4430 73 1521 | 1 + his cable |
+| a new computer in the wall touching the board's west end (`label set RackBoard`, then the installer) | 18 4 4 | -4430 75 1522 | 1 |
+| connector modems under it (not clicked) | 18 2 4, 18 3 4 | -4430 73/74 1522 | 2 |
 
-Visible afterwards: the shelf (modem texture instead of copper on the
-high shelf, edge-on from the lane), the strip, and the lane-side faces of
-two connector bricks at the x 18 wall end. Nothing sticks out. Rack 2
-(stage 6) gets the same: modems for its y 2 shelf, a strip at y 2, z 4,
-connectors at 34 1-2 3 and a cable under the lane floor from x 34 to x 19.
+So the bays are on **Sortnado's** network until Crafty moves in. Before
+the move: `rebase all lane=1` (the base itself does not change) sends the
+helpers home to the rack between jobs. A helper that needs a load and is
+docked asks with its bay's name; Crafty, whose cable does not reach the
+bay, leaves it; after 10 s Sortnado puts in what the store has (and fuel)
+and takes the hand-ins into its In chest; what the store lacked the helper
+fetches from Crafty's pad at once, the old way (out of the lane first).
+Nobody answering in 90 s: the pad. After the move Crafty is on the same
+cable, says `bay_taken`, and serves the bay itself (crafting what is
+missing). Sortnado also passes the drones' statuses and reboot orders to
+the rack's panels (channel 4711), as Crafty does after the move.
+
+Racks 2 and 3 and the foundry come in under the lane floor (stage 6/7),
+up through a connector at 18 1 3 to the link. Visible afterwards: the
+shelf (modem texture instead of copper on the high shelf), the strip, the
+link's lane-side face. Nothing sticks out.
 
 **The bays and the watchdog (code; test/baytest.py):**
 

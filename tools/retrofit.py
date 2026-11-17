@@ -115,21 +115,24 @@ RACK2_BARS = [(x, y, 4) for x in RACK2_X for y in (1, 3)]         # (y 2 is the 
 # without a drone docked (a full-block modem switches itself off when its
 # last peripheral goes; docs/cc-lessons.md, 1 and 3). The strip is the low
 # shelf's panel; the old name board (y 4) becomes the high shelf's. One
-# computer in the wall at the west end (the board's computer, moved) drives
-# both. The modems chain into each other; connector modems (never clicked)
-# in the x 18 wall and a cable under the lane floor tie them to the hall's
-# cable. Everything is flush: no cable or modem sticks out anywhere.
+# new computer in the wall at the west end drives both. The modems chain
+# into each other; a connector modem in the x 18 wall (never clicked)
+# touches the west end of the shelf, and Kyle runs cable from it through the
+# wall to the storage room's network (Sortnado's store: it serves the bays
+# until Crafty moves onto the same cable). Everything is flush.
 WIRED = "computercraft:wired_modem_full"
 MONITOR = "computercraft:monitor_advanced"
 PC = "computercraft:computer_normal"
 BAYS1 = [(x, 2, 3) for x in RACK1_X]                      # replace the y 2 copper shelf; clicked
 STRIP1 = [(x, 2, 4) for x in RACK1_X]                     # replace the y 2 bars; facing south
-RACK_PC = (18, 4, 4)                                      # in the wall, touching the board's west end
-RACK_CONN = [(18, 1, 3), (18, 2, 3), (18, 2, 4), (18, 3, 4)]    # bricks -> modems (not clicked)
-RACK_UNDER = (18, 0, 3)                                   # floor cell, closed on all sides: cable
-TRENCH1 = [(18, -1, 3)] + [(x, -1, 2) for x in range(18, 0, -1)] + [(1, -1, 3), (1, -1, 4)]
-HALL_PLUG = (1, 0, 4)                                     # floor under the hall cable's end: modem (not clicked)
-OLD_BOARD_PC = [(22, 4, 3), (22, 5, 3)]                   # the board's computer and ender modem: moved out
+RACK_PC = (18, 4, 4)                                      # in the wall, touching the board's west end (a new computer)
+RACK_LINK = (18, 2, 3)                                    # the wall modem touching the shelf's west end: the link
+RACK_CONN = [RACK_LINK, (18, 2, 4), (18, 3, 4)]           # bricks -> modems (not clicked)
+# (from RACK_LINK Kyle runs cable through the wall to the storage room's
+# network; racks 2 and 3 and the foundry come in under the lane floor:)
+RACK1_DOWN = [(18, 1, 3)]                                 # stage 6: a connector below the link
+RACK_UNDER = (18, 0, 3)                                   # stage 6: floor cell, closed on all sides: cable
+TRENCH1 = [(18, -1, 3), (18, -1, 2)]                      # stage 6: down to the lane-floor cable
 # rack 2 (stage 6, loaders): the same, tied in at x 34
 BAYS2 = [(x, 2, 3) for x in RACK2_X]
 STRIP2 = [(x, 2, 4) for x in RACK2_X]
@@ -367,6 +370,11 @@ def stage_cells(stage):
         for c in WALL_E:
             put(c, LB4)
     elif stage == 6:
+        for c in RACK1_DOWN:
+            put(c, WIRED, "R")
+        put(RACK_UNDER, CABLE, "R")
+        for c in TRENCH1:
+            put(c, CABLE)
         for c in RACK2_CUT:
             put(c, None, "cut")
         for c in RACK2_PADS:
@@ -405,12 +413,6 @@ def stage_cells(stage):
         put(RACK_PC, PC, "R")
         for c in RACK_CONN:
             put(c, WIRED, "R")
-        put(RACK_UNDER, CABLE, "R")
-        for c in TRENCH1:
-            put(c, CABLE)
-        put(HALL_PLUG, WIRED, "R")
-        for c in OLD_BOARD_PC:
-            put(c, None, "cut")
     elif stage == 7:                      # the foundry on the cable (replaces the old north line)
         for c in F_MACHINES.values():
             put(c, WIRED, "R")
@@ -455,12 +457,10 @@ for _c in BAYS1:
     REPLACES[_c] = "cut_copper"
 for _c in STRIP1:
     REPLACES[_c] = "iron_bars"
-for _c in [RACK_PC] + RACK_CONN:
+for _c in [RACK_PC] + RACK_CONN + RACK1_DOWN:
     REPLACES[_c] = "stone_bricks"
-for _c in [RACK_UNDER, HALL_PLUG, RACK2_UNDER] + RACK2_CONN:
+for _c in [RACK_UNDER, RACK2_UNDER] + RACK2_CONN:
     REPLACES[_c] = "polished_deepslate"
-REPLACES[OLD_BOARD_PC[0]] = "computer_normal"
-REPLACES[OLD_BOARD_PC[1]] = "wireless_modem"
 for _c in [(x, 0, 3) for x in RACK2_X]:
     REPLACES[_c] = "polished_deepslate"
 
@@ -595,7 +595,7 @@ def check_bays(B):
     # the wire: cables and full-block modems, from the hall cable's end
     wire = {c for c, it in world.items() if it and (it.startswith(CABLE) or it.startswith(WIRED)
                                                     or it.startswith(MODEM))}
-    seen, todo = {(1, 1, 4)}, [(1, 1, 4)]
+    seen, todo = {RACK_LINK}, [RACK_LINK]
     while todo:
         c = todo.pop()
         for n in nb(c):
@@ -619,14 +619,12 @@ def check_bays(B):
     for c in BAYS1 + BAYS2 + BAYS3 + [RACK_PC]:
         near = [n for n in nb(c) if n in seen] if c == RACK_PC else [c]
         if not any(n in seen for n in near):
-            bad.append(f"{c} is not wired to the hall's cable")
+            bad.append(f"{c} is not wired to rack 1's link into the storage room")
     if F_PC_MODEM not in [n for n in nb(F_PC)]:
         bad.append("the works computer has no modem")
-    if (10, 1, 29) not in seen:
-        bad.append("the hall's cable does not reach the store (desk link)")
     # nothing of the wire shows but full blocks: a cable must be closed in on every side
     for c, it in S.items():
-        if it.startswith(CABLE) and c[1] >= 0 and c in (set(TRENCH1) | set(TRENCH2) | {RACK_UNDER, RACK2_UNDER}):
+        if it.startswith(CABLE) and c[1] >= 0 and c in (set(TRENCH1) | set(TRENCH2) | {RACK_UNDER, RACK2_UNDER, RACK3_UNDER}):
             for n in nb(c):
                 if not world.get(n) and n[1] >= 0:
                     bad.append(f"cable {c} shows through the open cell {n}")

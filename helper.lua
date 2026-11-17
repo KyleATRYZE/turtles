@@ -324,6 +324,13 @@ function LN.onTrack()
   return LN.inside() or (pos.y == L.y and (pos.z == L.front or pos.z == L.back)
     and pos.x >= L.west - 4 and pos.x <= L.east + 3)
 end
+-- is a pad on the lane? (before the move it is still at the old base: the
+-- lane is only the way home to the rack, and the pad is reached as before)
+function LN.padOnLane(p)
+  local L = base.lane
+  return type(p) == "table" and p.y >= L.y - 1 and p.y <= L.y + 1 and p.z >= L.back and p.z <= L.front
+    and p.x >= L.west and p.x <= L.east
+end
 function LN.home()
   local L = base.lane
   local label, i = os.getComputerLabel() or "", nil
@@ -458,7 +465,8 @@ end
 -- ever dug (it was open when this was written; it may have been patched).
 local padAt                          -- the pad (and dispenser) of the load being fetched
 local function downToPad()
-  if LN.on() then return LN.toPad(padAt and padAt.pad or base.pad) end
+  if LN.on() and LN.padOnLane(padAt and padAt.pad or base.pad) then return LN.toPad(padAt and padAt.pad or base.pad) end
+  if LN.on() and LN.inside() then riseTo(highway()) end    -- (out of the lane first: the pad is elsewhere)
   local e, pad = base.exit2, base.pad
   if padAt then e, pad = { x = padAt.pad.x, z = padAt.pad.z }, padAt.pad end
   if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
@@ -478,8 +486,8 @@ local function downToPad()
 end
 
 local function upFromPad()
-  if LN.on() then return LN.toFront() end              -- (off the pad onto the front track)
-  local _, y = hover()
+  if LN.on() and LN.padOnLane(base.pad) and LN.inside() then return LN.toFront() end   -- (off the pad onto the front track)
+  local _, y = hoverAir()
   while pos.y < y do
     local ok, why = step("u")
     if not ok then
@@ -495,7 +503,8 @@ end
 
 -- Down the hole to just above the launch pad (to set something on it).
 local function overPad()
-  if LN.on() then return LN.over(base.pad) end         -- (the row over the pads)
+  if LN.on() and LN.padOnLane(base.pad) then return LN.over(base.pad) end   -- (the row over the pads)
+  if LN.on() and LN.inside() then riseTo(highway()) end
   local e, pad = base.exit2, base.pad
   if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
   while pos.y > pad.y + 1 do
@@ -676,7 +685,9 @@ local function supplyRun(indices, reason, once)
     goHover()
   end
   local me = os.getComputerID()
+  local noBay = false                -- (the bay gave what it could: the rest from the pad)
   while true do
+    local retryNow = false
     local items = nextLoad(indices)
     local coal = math.min(64, math.max(0, math.ceil((FULL_TANK - fuel()) / 80)))
     if st.feed then coal = 26 end       -- fuel to carry out to a stranded turtle
@@ -689,7 +700,7 @@ local function supplyRun(indices, reason, once)
     local msg = { type = "materials", id = me, n = st.orderSeq, items = items, fuel = coal }
     -- docked in a loading bay: the load comes in over the cable, and what
     -- goes back (emptied buckets, a bench's spare parts) is taken from us
-    local bay = LN.on() and LN.bay() or nil
+    local bay = LN.on() and not noBay and LN.bay() or nil
     if bay then
       msg.bay, msg.back = bay, {}
       for s = 1, 16 do
@@ -725,6 +736,13 @@ local function supplyRun(indices, reason, once)
         end
       elseif type(m) == "table" and m.type == "controller_none" and m.forId == me then
         ctlNone = os.clock()
+      end
+      if msg.bay and not onPad and os.clock() - started > 90 then
+        -- nobody on the bay's cable can serve it (Crafty not moved in, no
+        -- Sortnado): the same load from the pad
+        print("Nobody served my bay: fetching from the pad.")
+        noBay, retryNow = true, true
+        break
       end
       if onPad and os.clock() - padSince > 240 then      -- do not hog the pad
         upFromPad()
@@ -778,6 +796,12 @@ local function supplyRun(indices, reason, once)
       refuel(FULL_TANK)
       goHover()
     end
+    if reply and reply.by == "Sortnado" and next(reply.missing or {}) then
+      -- the store gave what it had into the bay: the rest (things Crafty
+      -- makes) from the pad, straight away
+      print("The store gave what it had. The rest from the factory's pad.")
+      noBay, retryNow, reply = true, true, nil
+    end
     if reply then
       -- what the factory could not give at all is left for a second go
       local gotAny = false
@@ -798,10 +822,12 @@ local function supplyRun(indices, reason, once)
       lastState = "building"
       if gotAny or fuel() > FUEL_SPARE * 2 then return true end
     end
-    if once then return false end
-    print("Nothing to be had yet. Waiting for the miners.")
-    report("waiting for materials")
-    sleep(240)
+    if not retryNow then
+      if once then return false end
+      print("Nothing to be had yet. Waiting for the miners.")
+      report("waiting for materials")
+      sleep(240)
+    end
   end
 end
 

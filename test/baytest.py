@@ -55,9 +55,11 @@ check("materials_ready says so (bay=true); no load_ready, no pad",
       [m.msg.type for m in sent])
 L, g = factory(ORDER.replace("turtle_40", "turtle_41"))
 sent = [m for m in g.OUTBOX.values() if m.to == 40]
-check("not on the cable: nothing handed over, nothing sent to the pad",
+check("a bay not on Crafty's cable (Sortnado's, before the move): nothing handed over, nothing sent to the pad",
       not any(m.msg.type in ("materials_ready", "load_ready") for m in sent), [m.msg.type for m in sent])
-check("  and it says why", any("its bay: not on the cable" in l for l in g.LOG.values()), list(g.LOG.values())[-3:])
+check("  and Crafty makes nothing for it (the store serves it; the rest comes back as a pad order)",
+      not any("Preparing a load" in l for l in g.LOG.values()), list(g.LOG.values())[-3:])
+check("(on its cable but not docked when the load is made: tried again every 15 s)", "o.tried or 0) > 15" in FAC)
 check("a name that is not turtle_<n> is not taken as a bay", 'b:match("^turtle_%d+$")' in FAC)
 
 # ---------------------------------------------------------------- 2-3. watchdog and Counter fallback
@@ -149,7 +151,7 @@ L.execute('st.fdy = { keep = { ["mekanism:steel_ingot"] = true } }')
 check("  on a foundry run, whatever it was not sent for goes back",
       L.eval('handsBack({ name = "minecraft:cobblestone" })') is True and L.eval('handsBack({ name = "mekanism:steel_ingot" })') is False)
 check("the order carries the bay and the hand-in slots", "msg.bay, msg.back = bay, {}" in HEL
-      and "local bay = LN.on() and LN.bay() or nil" in HEL)
+      and "local bay = LN.on() and not noBay and LN.bay() or nil" in HEL)
 
 # ---------------------------------------------------------------- 5. rack.lua
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
@@ -190,5 +192,62 @@ UPD = open(os.path.join(ROOT, "update.lua")).read()
 check("rack.lua is in the manifest, the rack role runs it, turtles skip it",
       "rack.lua" in open(os.path.join(ROOT, "manifest.txt")).read() and 'job = \'shell.run("rack")\'' in UPD
       and UPD.count('["rack.lua"] = true') == 5)
+
+# ---------------------------------------------------------------- 6. before the move: Sortnado serves the bays
+import re
+SW = re.search(r"WORLD = \'\'\'(.*?)\'\'\'", open(os.path.join(HERE, "sortctl.py")).read(), re.S).group(1)
+L = lupa.LuaRuntime(unpack_returned_tuples=True)
+L.execute("ROOT = %r" % ROOT)
+L.execute(SW)
+L.execute('''
+fresh({ slots = 600, sides = {} })
+addTo(CTL, "minecraft:cobblestone", 300) addTo(CTL, "minecraft:coal", 64)
+S.scan()
+INV.turtle_40 = { size = 16, cap = 64, slots = { [1] = { name = "minecraft:bucket", count = 1 } } }
+SENTJ = {}
+rednet = { send = function(id, m, p) SENTJ[#SENTJ + 1] = { id = id, m = m, p = p } end }
+peripheral.isPresent = function(n) return INV[n] ~= nil end
+local call = peripheral.call
+peripheral.call = function(n, m, a, b, c)
+  if m == "pullItems" then local st = INV[a].slots[b] if not st then return 0 end
+    local left = addTo(n, st.name, st.count) local k = st.count - left st.count = left if left == 0 then INV[a].slots[b] = nil end return k end
+  return call(n, m, a, b, c)
+end
+MSG = { type = "materials", id = 40, n = 3, fuel = 8, bay = "turtle_40", back = { 1 },
+  items = { { "minecraft:cobblestone", 100 }, { "mekanism:basic_control_circuit", 4 } } }
+S.bayHeard(40, MSG, 0)
+S.bayStep(5)
+''')
+check("before the move: a bay on the store's cable is not served at once (Crafty may take it)",
+      L.eval("#SENTJ") == 0 and L.eval("S.bayQueue[40] ~= nil") is True)
+L.execute("S.bayStep(11)")
+t40 = {}
+for st in L.eval("INV.turtle_40.slots").values():
+    t40[st.name] = t40.get(st.name, 0) + st.count
+r = L.eval("SENTJ[1] and SENTJ[1].m")
+check("10 s on and nobody took it: the store puts in what it has (100 cobblestone) and fuel",
+      t40.get("minecraft:cobblestone") == 100 and t40.get("minecraft:coal", 0) == 8, t40)
+check("  the empty bucket goes into the In chest (sorted away as usual)", t40.get("minecraft:bucket") is None
+      and L.eval('total(IN, "minecraft:bucket")') == 1)
+check("  and the answer says what it lacks, from Sortnado (the helper fetches that from the pad)",
+      r is not None and r.by == "Sortnado" and r.bay is True and r.missing["mekanism:basic_control_circuit"] == 4
+      and r.given["minecraft:cobblestone"] == 100 and L.eval("SENTJ[1].p") == "swarm_job")
+L.execute('''SENTJ = {} MSG.n = 4 S.bayHeard(40, MSG, 20) S.bayHeard(12, { type = "bay_taken", forId = 40, n = 4 }, 21) S.bayStep(40)''')
+check("Crafty on the same cable says bay_taken: the store leaves it alone", L.eval("#SENTJ") == 0
+      and L.eval("S.bayQueue[40]") is None)
+L.execute('''MSG2 = { type = "materials", id = 41, n = 1, bay = "turtle_41", items = {} } S.bayHeard(41, MSG2, 50)''')
+check("a bay that is not on the store's cable is not the store's", L.eval("S.bayQueue[41]") is None)
+check("Crafty records a bay order only when the bay is on its own cable, and says bay_taken",
+      "if bay and not (modem and peripheral.isPresent(bay)) then" in FAC and 'type = "bay_taken"' in FAC)
+check("the helper: what the store lacked comes from the pad straight away; nobody serving the bay in 90 s: the pad",
+      'reply.by == "Sortnado" and next(reply.missing or {})' in HEL and "os.clock() - started > 90" in HEL
+      and "local bay = LN.on() and not noBay and LN.bay() or nil" in HEL)
+check("before the move the pad is not on the lane: the helper reaches it the old way (out of the lane first)",
+      "function LN.padOnLane(p)" in HEL and "LN.on() and LN.padOnLane(padAt and padAt.pad or base.pad)" in HEL)
+SN = open(os.path.join(ROOT, "sortnado.lua")).read()
+check("Sortnado passes the drones' statuses and reboots on to the rack's panels",
+      "S.relay(msg)" in SN and 'pcall(S.relay, { type = "cmd", cmd = c })' in SN)
+check("a new computer labelled RackBoard (or Works) installs as the rack's panels (the works)",
+      'match("^rack") then\n    role = "rack"' in UPD and 'match("^works") then\n    role = "works"' in UPD)
 
 print("PASS" if not fails else "FAILED: %d" % len(fails))

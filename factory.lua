@@ -3198,9 +3198,14 @@ local function responder()
       elseif msg.type == "materials" and type(msg.items) == "table"
         and (msg.n == nil or served[id] ~= msg.n) then
         local o = orders[id]
-        if not (o and o.ready and o.n == msg.n) then    -- (a repeat of a load already made: keep it)
+        local bay = K.bayName(msg.bay)
+        if bay and not (modem and peripheral.isPresent(bay)) then
+          -- a bay on another cable (Sortnado's, before the move): the store
+          -- there serves it; what it lacks comes back here, for the pad
+        elseif not (o and o.ready and o.n == msg.n) then    -- (a repeat of a load already made: keep it)
           orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n,
-            bay = K.bayName(msg.bay), back = type(msg.back) == "table" and msg.back or nil }
+            bay = bay, back = type(msg.back) == "table" and msg.back or nil }
+          if bay then rednet.broadcast({ type = "bay_taken", forId = id, n = msg.n }, K.JOB_PROTOCOL) end
         end
       elseif msg.type == "foundry_ready" or msg.type == "foundry_ack" or msg.type == "foundry_done" then
         pcall(foundryHeard, id, msg)
