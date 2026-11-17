@@ -18,7 +18,7 @@ local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
 local K = {}   -- constants (a table: the CC compiler counts every top-level local)
-K.MAX_MINERS   = 7     -- size of the fleet this base will run
+K.MAX_MINERS   = 0     -- size of the fleet this base will run (0 while storage is full: no new miners)
 K.CHECK_EVERY  = 10    -- seconds between checks when idle
 K.NEWBORN_COAL = 24    -- coal given to each new miner
 K.PLOT_SIZE    = 8     -- each plot is this many blocks square
