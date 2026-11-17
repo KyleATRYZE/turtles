@@ -1,20 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794925556,
-      "issued": 1794925556000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "fetch|minecraft:diamond_axe=1,create:andesite_alloy=1,minecraft:diamond_pickaxe=1,advancedperipherals:weak_automata_core=1|dump;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|35|1|27;face|3;inspect|front;equip|right|advancedperipherals:weak_automata_core;use|minecraft:diamond_axe;expect|front|stripped_jungle_log;use|create:andesite_alloy;expect|front|andesite_casing;equip|right|minecraft:diamond_pickaxe;dig;inv;leave;home;handin|"
+      "id": 1794926231,
+      "issued": 1794926231000,
+      "cmd": "reboot",
+      "target": "HopTo"
     },
     {
-      "id": 1794925557,
-      "issued": 1794925556000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=1;inv;home"
+      "id": 1794926232,
+      "issued": 1794926231000,
+      "cmd": "reboot",
+      "target": "Pushy"
     }
   ]
 }
