@@ -95,7 +95,10 @@ local CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps 
 local GROUPS = {
   ["#planks"] = { "_planks" },
   ["#log"]    = { "_log", "_stem" },
-  ["#fuel"]   = { "minecraft:coal", "minecraft:charcoal" },
+  ["#fuel"]   = { "minecraft:coal", "minecraft:charcoal",
+                  -- with no coal or charcoal left, wood keeps the furnaces (and so the
+                  -- charcoal) going: the woods kept least for storage first
+                  "regions_unexplored:bamboo_log", "regions_unexplored:redwood_log" },
 }
 
 -- How to make things. grid = 3x3 crafting layout, read left to right, top to
@@ -632,7 +635,7 @@ local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
 local ctlQueue = {}      -- turtles asking for a Chunk Controller of their own to carry: id -> when
 local CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 local FUEL_RESERVE = 256 -- coal never handed out to miners
-local LOGS_KEPT = 320    -- logs of each wood the furnaces leave alone: chests, barrels and the
+local LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
 local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
@@ -1173,10 +1176,20 @@ local function loadFurnace(f, input, count)
   end
   if fuelHave < fuelNeeded then
     local want = fuelNeeded - fuelHave
-    for _, st in ipairs(listStorage()) do
+    local all = listStorage()
+    local coalLeft = false                -- (wood only when there is no coal or charcoal)
+    for _, st in ipairs(all) do
+      if st.name == "minecraft:coal" or st.name == "minecraft:charcoal" then coalLeft = true end
+    end
+    for _, st in ipairs(all) do
       if want <= 0 then break end
-      if matches("#fuel", st.name) and (not fuelSlot or fuelSlot.name == st.name) then
-        want = want - (peripheral.call(st.inv, "pushItems", f, st.slot, want, 2) or 0)
+      local wood = st.name:find("_log", 1, true) ~= nil
+      if matches("#fuel", st.name) and not (wood and coalLeft) and input ~= st.name
+        and (not fuelSlot or fuelSlot.name == st.name) then
+        local per = wood and 5 or 1         -- a log cooks 1.5 items, a coal 8
+        local n = peripheral.call(st.inv, "pushItems", f, st.slot, math.min(64, want * per), 2) or 0
+        want = want - math.floor(n / per)
+        if wood and n > 0 then want = 0 end
       end
     end
     if want > 0 then error("Not enough coal for the furnaces.", 0) end
@@ -1205,6 +1218,8 @@ local BACKGROUND = {
   { fuel = true, leave = LOGS_KEPT, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, leave = LOGS_KEPT, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, leave = LOGS_KEPT, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:redwood_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = 0, input = "regions_unexplored:bamboo_log", output = "minecraft:charcoal", keep = 4000 },
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
   { input = "minecraft:stone_bricks", output = "minecraft:cracked_stone_bricks", keep = 180 },
