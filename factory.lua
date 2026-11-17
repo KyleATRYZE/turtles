@@ -441,6 +441,31 @@ local RECIPES = {
     grid = { "I", "P", "I", "I", "C", "I", "I", "I", "I" },
     key = { I = "minecraft:iron_ingot", P = "minecraft:piston", C = "mekanism:basic_control_circuit" },
   },
+  -- Applied Energistics 2, to start with (patterns from AE2's own generated
+  -- recipe data): the charger turns a compass into a Meteorite Compass, the
+  -- crank powers it by hand, the inscriber prints processors once the presses
+  -- are found. The Meteorite Compass itself is not crafted: a compass sits in
+  -- a powered charger.
+  ["minecraft:compass"] = {
+    grid = { "", "I", "", "I", "R", "I", "", "I", "" },
+    key = { I = "minecraft:iron_ingot", R = "minecraft:redstone" },
+  },
+  ["ae2:charger"] = {
+    grid = { "I", "C", "I", "I", "", "", "I", "C", "I" },
+    key = { I = "minecraft:iron_ingot", C = "minecraft:copper_ingot" },
+  },
+  ["ae2:crank"] = {
+    grid = { "S", "S", "S", "", "", "S", "", "", "C" },
+    key = { S = "minecraft:stick", C = "minecraft:copper_ingot" },
+  },
+  ["ae2:inscriber"] = {
+    grid = { "I", "P", "I", "C", "", "I", "I", "P", "I" },
+    key = { I = "minecraft:iron_ingot", P = "minecraft:piston", C = "minecraft:copper_ingot" },
+  },
+  ["ae2:energy_acceptor"] = {                            -- needs quartz glass (certus): later
+    grid = { "I", "Q", "I", "Q", "C", "Q", "I", "Q", "I" },
+    key = { I = "minecraft:iron_ingot", Q = "ae2:quartz_glass", C = "minecraft:copper_ingot" },
+  },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
   ["mekanism:metallurgic_infuser"] = {
