@@ -2118,6 +2118,18 @@ end
 local function work()
   locate()
   -- born on the launch pad (or restarted in the hole): straight up and out
+  -- woken dry with fuel on board (set out by another turtle, fed by hand):
+  -- drink before anything tries to move
+  if fuel() < 200 then
+    for sl = 1, 16 do
+      local d = turtle.getItemDetail(sl)
+      if d and (d.name == "minecraft:lava_bucket" or isCoal(d.name)) then
+        turtle.select(sl)
+        turtle.refuel(d.name == "minecraft:lava_bucket" and 1 or math.min(d.count, 16))
+      end
+    end
+    turtle.select(1)
+  end
   if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and st.lab then
     -- stopped inside a building: a lab run (site, leave, home) walks out by
     -- the door, so run it before giving up
