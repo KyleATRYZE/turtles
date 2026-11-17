@@ -3,7 +3,10 @@
 -- through CommandBlock, or by another turtle) is sent to the Out chest, or
 -- straight into the owner's inventory through an Inventory Manager.
 --
--- The store is one of two things, whichever is on the wired network:
+-- The store is one of three things, whichever is on the wired network:
+--   an ME Bridge (Advanced Peripherals) on an AE2 network: the whole ME
+--     system is the store; items go in and out over the cable by name
+--     (importItem / exportItem with a container's network name);
 --   a Sophisticated Storage controller: every barrel and chest joined to
 --     it is one big inventory, and the controller decides which of them
 --     an item goes into (the sections are then only how items are grouped
@@ -81,11 +84,13 @@ local function num(name) return tonumber(name:match("_(%d+)$")) or 0 end
 -- Which chests there are, and which section each belongs to: handed out in
 -- the order the chests joined the network, by the plan's shares.
 function S.discover()
-  local names, controller = {}, nil
+  local names, controller, bridge = {}, nil, nil
   S.manager = nil
   for _, n in ipairs(peripheral.getNames()) do
     if peripheral.hasType(n, "inventory_manager") or peripheral.hasType(n, "inventoryManager") then
       S.manager = n                     -- (holds the owner's memory card)
+    elseif peripheral.hasType(n, "me_bridge") or peripheral.hasType(n, "meBridge") then
+      bridge = bridge or n
     elseif n ~= cfg.inbox and n ~= cfg.outbox and peripheral.hasType(n, "inventory")
       and not n:find("furnace") and not n:find("turtle") then
       names[#names + 1] = n
@@ -93,6 +98,12 @@ function S.discover()
         controller = controller or n
       end
     end
+  end
+  if bridge then
+    -- the ME system is the store: chests on the cable are only In and Out
+    S.backend, S.order = "me", { bridge }
+    S.chests = { [bridge] = { section = "All", size = 0, used = 0, slots = {} } }
+    return 1
   end
   if controller then
     -- one inventory holds everything; other chests on the cable are not
@@ -123,8 +134,51 @@ function S.discover()
   return #names
 end
 
+-- The ME system's books: one "slot" per kind of item (the ME system does
+-- not have slots). size is how many kinds it could still take, roughly.
+local function readME(bridge)
+  local c = S.chests[bridge]
+  local ok, list = pcall(peripheral.call, bridge, "getItems", {})
+  if not ok or type(list) ~= "table" then return end
+  S.items, c.slots, c.used = {}, {}, 0
+  for _, e in pairs(list) do
+    local name, count = e.name, tonumber(e.count or e.amount) or 0
+    if type(name) == "string" and count > 0 then
+      c.used = c.used + 1
+      c.slots[c.used] = { name = name, count = count }
+      local it = S.items[name]
+      if not it then
+        local label = type(e.displayName) == "string" and e.displayName:gsub("^%[", ""):gsub("%]$", "") or pretty(name)
+        it = { name = name, label = label, section = S.sectionOf(name), total = 0, at = {} }
+        S.items[name] = it
+      end
+      it.total = it.total + count
+      it.at[bridge] = true
+    end
+  end
+  -- (the ME system counts bytes, not slots: the screen's "slots" are the
+  -- kinds held, scaled by how full the drives are)
+  local okT, total = pcall(peripheral.call, bridge, "getTotalItemStorage")
+  local okU, usedB = pcall(peripheral.call, bridge, "getUsedItemStorage")
+  total, usedB = okT and tonumber(total) or 0, okU and tonumber(usedB) or 0
+  local frac = total > 0 and usedB / total or 0
+  c.size = (frac > 0.01 and c.used > 0) and math.floor(c.used / frac) or math.max(63, c.used * 2)
+end
+
+-- Put count of an item lying in a container on the network into the store
+-- (the ME system, or any inventory by pushItems from the container's slot).
+local function store(container, slot, name, count, dest)
+  if S.backend == "me" then
+    local ok, n = pcall(peripheral.call, S.order[1], "importItem", { name = name, count = count }, container)
+    return ok and tonumber(n) or 0
+  end
+  local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count)
+  return ok and tonumber(n) or 0
+end
+
 -- Read one chest again and put its contents in the books.
 function S.read(chest)
+  if S.backend == "me" then return readME(chest) end
   local c = S.chests[chest]
   if not c then return end
   for _, st in pairs(c.slots) do
@@ -170,7 +224,7 @@ end
 -- and has room, then any chest of the section with a free slot, then
 -- Overflow.
 local function homeFor(name)
-  if S.backend == "controller" then return S.order[1] end
+  if S.backend == "controller" or S.backend == "me" then return S.order[1] end
   local sec = S.sectionOf(name)
   local it = S.items[name]
   local spare
@@ -208,8 +262,8 @@ function S.sortInbox()
       if left <= 0 then break end
       local dest = homeFor(st.name)
       if not dest then break end
-      local n = peripheral.call(cfg.inbox, "pushItems", dest, slot, left) or 0
-      if S.backend == "controller" then
+      local n = store(cfg.inbox, slot, st.name, left, dest)
+      if S.backend == "controller" or S.backend == "me" then
         if n == 0 then break end             -- nowhere in the store takes it
         touched = dest                       -- (read the books once, at the end)
       else
@@ -258,6 +312,20 @@ function S.take(name, count, to)
   if not (it and to) then return 0 end
   local left = math.min(count, it.total)
   local sent = 0
+  if S.backend == "me" then
+    while left > 0 do
+      local ok, n = pcall(peripheral.call, S.order[1], "exportItem", { name = name, count = left }, to)
+      n = ok and tonumber(n) or 0
+      if n <= 0 then break end
+      left, sent = left - n, sent + n
+    end
+    S.read(S.order[1])
+    if sent > 0 then
+      note("OUT", sent, name)
+      if to == cfg.outbox then S.ready = sent .. " " .. pretty(name) .. " ready in the Out chest" end
+    end
+    return sent
+  end
   local from = {}
   for chest in pairs(it.at) do from[#from + 1] = chest end
   table.sort(from)
@@ -334,8 +402,7 @@ local function unstage(name, count)
   for slot, st in pairs(list) do
     local dest = count > 0 and st.name == name and homeFor(name)
     if dest then
-      local okPush, n = pcall(peripheral.call, cfg.outbox, "pushItems", dest, slot, count)
-      count = count - (okPush and tonumber(n) or 0)
+      count = count - store(cfg.outbox, slot, name, math.min(count, st.count), dest)
       touched[dest] = true
     end
   end
@@ -350,7 +417,9 @@ function S.give(name, count)
   local one = S.backend == "controller"       -- one inventory holds it all
   local waiting = inOut(name)                 -- (left in the Out chest from an earlier go)
   local got = 0
-  if cfg.giveVia ~= "out" then
+  -- (the ME system is not a container the manager can pull from: always by
+  -- way of the Out chest)
+  if cfg.giveVia ~= "out" and S.backend ~= "me" then
     -- straight from where it lies
     local sources = {}
     if one and cfg.giveFrom then
@@ -463,7 +532,7 @@ function S.view()
   local first = results[1]
   local walls = { west = {}, east = {} }
   local where, wallNames
-  if S.backend == "controller" then
+  if S.backend == "controller" or S.backend == "me" then
     -- one inventory: a section is the slots its kinds of item take up
     local bySec = {}
     for _, st in pairs(S.chests[S.order[1]].slots) do
@@ -632,7 +701,9 @@ local args = { ... }
 loadConfig()
 if args[1] == "setup" or not (cfg.inbox and cfg.outbox) then setup() end
 local found = S.discover()
-if S.backend == "controller" then
+if S.backend == "me" then
+  print("Sortnado: the ME system (" .. S.order[1] .. ") is the store.")
+elseif S.backend == "controller" then
   print("Sortnado: one controller, " .. S.chests[S.order[1]].size .. " slots behind it.")
 else
   print(("Sortnado: %d chests on the network."):format(found))
