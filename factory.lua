@@ -1743,7 +1743,9 @@ end
 
 -- Make sure the floppy disk will set up new turtles.
 local function prepareDisk()
-  local drive = peripheral.find("drive")
+  -- (the drive with a disk in it: the second pad's drive is empty)
+  local drive = peripheral.find("drive", function(_, d) return d.isDiskPresent() end)
+    or peripheral.find("drive")
   if not drive then return false, "the disk drive is not on the network" end
   if not drive.isDiskPresent() or not drive.hasData() then
     return false, "put a floppy disk in the disk drive"
