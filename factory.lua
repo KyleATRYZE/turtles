@@ -2198,7 +2198,18 @@ local function serveOrders(onlyReady)
     if not (here and orders[here] and orders[here].ready) then waiting = false end
     turnTo(0)
   end
-  for id, order in pairs(orders) do
+  -- small loads first: a mate after one axe should not wait behind a
+  -- whole machine line being crafted
+  local queue = {}
+  for id, order in pairs(orders) do queue[#queue + 1] = { id = id, order = order } end
+  local function size(o)
+    local n = 0
+    for _, l in ipairs(o.items or {}) do n = n + (tonumber(l[2]) or 0) end
+    return n
+  end
+  table.sort(queue, function(p, q) return size(p.order) < size(q.order) end)
+  for _, entry in ipairs(queue) do
+    local id, order = entry.id, entry.order
     if not waiting and not order.ready and not onlyReady then
       served[id] = order.n
       print("Preparing a load for the builder.")
