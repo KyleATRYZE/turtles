@@ -1,14 +1,17 @@
 {
   "commands": [
     {
-      "id": 1794943807,
-      "issued": 1794943807000,
-      "cmd": "lavafarm",
+      "id": 1794943826,
+      "issued": 1794943826000,
+      "cmd": "resort",
+      "target": "Sortnado"
+    },
+    {
+      "id": 1794943827,
+      "issued": 1794943826000,
+      "cmd": "haul",
       "target": "Crafty",
-      "n": 7,
-      "how": "hut",
-      "row": "-4453,76,1538,11,2",
-      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Comparable"
+      "on": 1
     }
   ]
 }
