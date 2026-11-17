@@ -489,7 +489,7 @@ local RECIPES = {
     key = { I = "minecraft:iron_ingot", P = "#planks", O = "alltheores:osmium_ingot",
       C = "minecraft:copper_ingot", F = "minecraft:furnace" },
   },
-  -- Nether quartz with no Nether (tools/quartz.py, docs/quartz.md): sand
+  -- Nether quartz with no Nether (tools/quartzline.py): sand
   -- becomes soul sand in front of an Atomic Reconstructor (Actually
   -- Additions; its casing takes the black quartz the miners bring up), and
   -- soul sand washed by a Create fan gives quartz one time in eight, four

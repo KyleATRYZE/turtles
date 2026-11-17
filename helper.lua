@@ -1601,7 +1601,7 @@ end
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
   "functionalstorage:", "ironfurnaces:", "minecraft:chest", "minecraft:furnace", "minecraft:barrel",
-  -- the quartz line (tools/quartz.py): its machines, and the soul sand made there
+  -- the quartz line (tools/quartzline.py): its machines, and the soul sand made there
   "create:", "actuallyadditions:", "minecraft:soul_sand" }
 
 local function labValue(a)
