@@ -607,7 +607,28 @@ computer 50 17 28, chat box 50 18 28, detector 49 17 28.
 
 ---
 
-## 6. Code to write (not part of this document's change)
+## 6. Code for the move
+
+**Status, 17 Nov:** written and pushed (commits ce6908e to 1cb5f0a, tested
+in `test/movetest.py`). Each piece is inert until the move:
+
+- **Done:** H1, L1, C1, C3, C5, C7 and C8.
+- **B1:** only the door part is done (`base.door`).
+- **C2:** done in a different form. Crafty puts away straight into the
+  controllers, never into the In barrel, because it often puts something
+  away and takes it straight back.
+- **Left:** C6, and BlockParty's base-room map at the new base (untested;
+  keep BlockParty idle or on helper-style jobs).
+
+The orders as written:
+
+- `rebase all hover=20 hop=22 door=-4426,72,1549`
+- `drain Sortnado from=minecraft:chest_*` (or `stop=1`)
+- `stores Crafty skip=name,name*`
+- Labels `Counter`, `Counter2`, ... for the dispensers. Loads go to
+  id % (N + 1), and Crafty serves any share whose counter has been quiet
+  for 150 s.
+
 
 | id | where | what | needed before |
 |---|---|---|---|
@@ -751,7 +772,7 @@ Crafty keeps 160 logs of each wood back. **Q1:** enough logs?
 
 **Needs C5.**
 
-`tools/order.py drain Sortnado from=minecraft:chest_0,…` (the 28 names from
+`tools/order.py drain Sortnado from=minecraft:chest_*` (or the 28 names from
 Crafty's `network`)
 
 **Kyle:** nothing.
@@ -791,7 +812,8 @@ Crafty sees its GPS spot no longer matches `.base`, so it re-surveys, finds
 its chest south and its pad north, rewrites the floppy and reports the new
 `base`.
 
-**Drones:** `tools/order.py rebase all`, then `resume`.
+**Drones:** `tools/order.py rebase all hover=20 hop=22 door=-4426,72,1549`,
+then `resume`.
 
 **Check:**
 - Crafty's `base`: f -4428 72 1525, pad -4428 72 1524, dock
