@@ -731,6 +731,12 @@ end
 
 local base = loadTable(K.BASE_FILE)                 -- where everything is
 local plots = loadTable(K.PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
+-- The plot grid stays where it was first laid out (round Crafty's spot at
+-- the time), so moving Crafty does not move anybody's plots.
+if base and base.f and not plots.origin and not K.COUNTER then
+  plots.origin = { x = base.f.x, y = base.f.y, z = base.f.z }
+  saveTable(K.PLOTS_FILE, plots)
+end
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
@@ -740,12 +746,36 @@ K.CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 K.FUEL_RESERVE = 256 -- coal never handed out to miners
 K.LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
--- A second dispensing turtle ("Counter", by its label) on a second launch
--- pad: it only serves helpers' loads (odd ids), so two can be served at once.
--- Crafty leaves the odd ids to it while it hears it (counter_alive).
-K.COUNTER = (os.getComputerLabel() or ""):lower():match("^counter") ~= nil
-K.counterSeen = -1000
+-- More dispensing turtles ("Counter", "Counter2", ... by label), each on a
+-- launch pad of its own: they only serve helpers' loads, so several can be
+-- served at once. Each says it is alive (counter_alive, with its number)
+-- every 30 s; with the highest number heard in the last 150 s being N,
+-- a load from turtle id goes to dispenser id % (N + 1): 0 is Crafty, k is
+-- Counter k. Crafty serves any share whose counter has gone quiet. (With
+-- one Counter that is the odd ids, as before.)
+do
+  local digits = (os.getComputerLabel() or ""):lower():match("^counter(%d*)")
+  K.COUNTER = digits ~= nil
+  K.SLOT = K.COUNTER and (tonumber(digits) or 1) or 0
+end
+K.counters = {}          -- counter number -> when last heard (os.clock)
 K.counterBeat = -1000
+function K.alive(slot)
+  return slot == K.SLOT or (K.counters[slot] and os.clock() - K.counters[slot] < 150) or false
+end
+function K.shareOf(id)
+  local top = K.SLOT
+  for slot in pairs(K.counters) do
+    if slot > top and K.alive(slot) then top = slot end
+  end
+  return top == 0 and 0 or id % (top + 1)
+end
+-- Is turtle id's load mine to serve?
+function K.mine(id)
+  local share = K.shareOf(id)
+  if K.COUNTER then return share == K.SLOT end
+  return share == 0 or not K.alive(share)
+end
 K.HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
 -- (the fourth runs the Mekanism machines; the rest are names for mates made later)
@@ -801,7 +831,7 @@ local function report(state)
   lastState = state
   if not swarm then return end
   pcall(swarm.report, {
-    role = "factory",
+    role = K.COUNTER and "counter" or "factory",
     state = state,
     built = built,
     storage = storageSpace(),
@@ -852,6 +882,21 @@ local function shortName(name)
 end
 
 -- Find the wired modem and everything attached to the network.
+-- Not storage, though it is an inventory on the cable: Sortnado's In and
+-- Out barrels (the store's door: Sortnado empties one and the player takes
+-- from the other), an Inventory Manager, and names (or name* prefixes) the
+-- order "stores Crafty skip=a,b" gives (the Mekanism line's chests, say).
+function K.notStore(name)
+  if name:find("^minecraft:barrel") then return true end
+  for _, t in ipairs({ "inventory_manager", "inventoryManager", "me_bridge", "meBridge" }) do
+    if peripheral.hasType(name, t) then return true end
+  end
+  for _, p in ipairs((plots.stores and plots.stores.skip) or {}) do
+    if name == p or (p:sub(-1) == "*" and name:sub(1, #p - 1) == p:sub(1, -2)) then return true end
+  end
+  return false
+end
+
 local function discover()
   modem = peripheral.find("modem", function(_, m) return not m.isWireless() end)
   if not modem then
@@ -871,12 +916,21 @@ local function discover()
       elseif name:find("furnace", 1, true) or name:find("smoker", 1, true)
         or name:find("turtle", 1, true) or name:find("computer", 1, true) then
         -- other machines and computers are not storage
+      elseif K.notStore(name) then
+        -- the store's In and Out barrels (Sortnado's, and the player's), a
+        -- manager, and whatever the order "stores Crafty skip=..." names
       else
         stores[#stores + 1] = name
       end
     end
   end
-  table.sort(stores)
+  -- with the storage room on the cable, things are put away in its
+  -- controllers first (anything else is only taken from)
+  table.sort(stores, function(a, b)
+    local ca, cb = a:find("controller", 1, true) ~= nil, b:find("controller", 1, true) ~= nil
+    if ca ~= cb then return ca end
+    return a < b
+  end)
   table.sort(furnaces)
   if #stores == 0 then
     return false, "no chest on the network (right-click its modem)"
@@ -2454,16 +2508,17 @@ end
 -- inside outwards, skipping any that come within KEEP_OUT of the factory.
 local function plotOrigin(index)
   local n = 0
+  local o = plots.origin or base.f            -- (where the grid was first laid out)
   for r = 0, 80 do
     for gx = -r, r do
       for gz = -r, r do
         if math.max(math.abs(gx), math.abs(gz)) == r then
-          local x0 = base.f.x + gx * K.PLOT_SIZE
-          local z0 = base.f.z + gz * K.PLOT_SIZE
-          local clear = base.f.x < x0 - K.KEEP_OUT
-            or base.f.x > x0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
-            or base.f.z < z0 - K.KEEP_OUT
-            or base.f.z > z0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
+          local x0 = o.x + gx * K.PLOT_SIZE
+          local z0 = o.z + gz * K.PLOT_SIZE
+          local clear = o.x < x0 - K.KEEP_OUT
+            or o.x > x0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
+            or o.z < z0 - K.KEEP_OUT
+            or o.z > z0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
           if clear then
             n = n + 1
             if n == index then return x0, z0 end
@@ -2530,6 +2585,7 @@ local function jobFor(id)
     topY = math.min(K.TOP_Y_MAX, base.f.y - 10), bottom = K.BOTTOM_Y,
     cruise = base.f.y + K.CRUISE_UP + ((index - 1) % 40),
     dock = base.dock, exit1 = base.exit1, exit2 = base.exit2,
+    origin = plots.origin,
   }
 end
 
@@ -2815,16 +2871,18 @@ local function responder()
   while true do
     local id, msg = rednet.receive(K.JOB_PROTOCOL)
     if type(msg) == "table" and id and msg.type == "counter_alive" then
-      K.counterSeen = os.clock()
-    elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and id % 2 == 1
-        and os.clock() - K.counterSeen < 150)) then
-      -- the counter's share (odd ids), or not a counter's business at all
-      if K.COUNTER and id % 2 == 1 and msg.type == "materials" and type(msg.items) == "table"
+      K.counters[math.floor(tonumber(msg.slot) or 1)] = os.clock()
+    elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and not K.mine(id))) then
+      -- a counter's share, or not a counter's business at all
+      if K.COUNTER and K.mine(id) and msg.type == "materials" and type(msg.items) == "table"
           and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
       end
     elseif type(msg) == "table" and id then
-      if msg.type == "need_job" then
+      if msg.type == "base_request" then
+        -- a drone told to rebase (swarm.lua) asks where the base is now
+        if base then rednet.send(id, { type = "base", base = base, forId = id }, K.JOB_PROTOCOL) end
+      elseif msg.type == "need_job" then
         if base then
           local job = jobFor(id)
           if job then rednet.send(id, job, K.JOB_PROTOCOL) end
@@ -2987,7 +3045,7 @@ local function tryBuild()
     if facing == nil then facing = 0 end
     if os.clock() - K.counterBeat > 30 then
       K.counterBeat = os.clock()
-      rednet.broadcast({ type = "counter_alive" }, K.JOB_PROTOCOL)
+      rednet.broadcast({ type = "counter_alive", slot = K.SLOT }, K.JOB_PROTOCOL)
     end
     local b
     b, why = survey()
@@ -3278,6 +3336,14 @@ while true do
       return true
     elseif c.cmd == "make" and c.item then     -- make Crafty item=<id> n=<count>: craft into stock
       pendingMake = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
+      return true
+    elseif c.cmd == "rebase" then          -- (for the drones: the factory knows where it is)
+      return true
+    elseif c.cmd == "stores" then          -- stores Crafty skip=a,b*: inventories on the cable that are not storage
+      plots.stores = { skip = {} }
+      for name in tostring(c.skip or ""):gmatch("[^,]+") do table.insert(plots.stores.skip, name) end
+      saveTable(K.PLOTS_FILE, plots)
+      print("Not storage: " .. (#plots.stores.skip > 0 and table.concat(plots.stores.skip, ", ") or "nothing named"))
       return true
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
