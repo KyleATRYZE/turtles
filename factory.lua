@@ -2112,6 +2112,14 @@ local function fitLoad(items)
         if ok then lo = mid else hi = mid - 1 end
       end
       if lo > 0 then lines[#lines + 1] = { name, lo } end
+      if lo == 0 then
+        lines[#lines + 1] = { name, 1 }
+        local _, why = planLoad(lines, stock)
+        lines[#lines] = nil
+        local parts = {}
+        for k, v in pairs(why or {}) do parts[#parts + 1] = tostring(v) .. " " .. shortName(k) end
+        print("Cannot make " .. shortName(name) .. ": short of " .. table.concat(parts, ", "))
+      end
     end
   end
   return lines, planLoad(lines, stock) or {}

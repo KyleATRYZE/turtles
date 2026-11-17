@@ -152,6 +152,8 @@ turtle = {
       if NO_PLANKS[w] then out,n=NO_PLANKS[w],4 else out,n=w.."_planks",4 end
     elseif eq(S,{{"minecraft:glass","minecraft:glass","minecraft:glass"},{"minecraft:glass","minecraft:glass","minecraft:glass"}}) then out,n=GP,16
     elseif eq(S,{{II,"",II},{"",II,""}}) then out,n="minecraft:bucket",1
+    elseif eq(S,{{II,"",II},{II,"",II},{II,II,II}}) then out,n="minecraft:cauldron",1
+    elseif eq(S,{{DI,DI},{DI,SK},{"",SK}}) then out,n="minecraft:diamond_axe",1
     elseif eq(S,{{"minecraft:cobbled_deepslate","minecraft:cobbled_deepslate"},{"minecraft:cobbled_deepslate","minecraft:cobbled_deepslate"}}) then out,n="minecraft:polished_deepslate",4
     elseif eq(S,{{"minecraft:polished_deepslate","minecraft:polished_deepslate"},{"minecraft:polished_deepslate","minecraft:polished_deepslate"}}) then out,n="minecraft:deepslate_bricks",4
     elseif eq(S,{{"minecraft:deepslate_bricks","minecraft:deepslate_bricks"},{"minecraft:deepslate_bricks","minecraft:deepslate_bricks"}}) then out,n="minecraft:deepslate_tiles",4
