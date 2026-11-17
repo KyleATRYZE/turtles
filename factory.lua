@@ -2604,7 +2604,10 @@ local function lavaFarmDuty(stock)
   if buckets == 0 then return end
   local best
   for _, u in pairs(fleet) do
-    if u.role == "helper" and u.state == "idle" and now - u.at < 200
+    -- (a foundry operator between jobs will do; one given a job by hand
+    -- in the last few minutes is left to it)
+    if u.role == "helper" and (u.state == "idle" or u.state == "foundry: idle") and now - u.at < 200
+      and not (farm.skip and farm.skip[u.label])
       and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
   end
   if not best then return end
@@ -3106,6 +3109,10 @@ while true do
     elseif c.cmd == "lavafarm" then        -- lavafarm Crafty n=<units built> how=place|use
       plots.lavafarm = { n = tonumber(c.n) or 0,
         how = (c.how == "use" or c.how == "hut") and c.how or "place" }
+      if type(c.skip) == "string" then
+        plots.lavafarm.skip = {}
+        for name in c.skip:gmatch("[^,]+") do plots.lavafarm.skip[name] = true end
+      end
       saveTable(K.PLOTS_FILE, plots)
       print("Lava farm: " .. plots.lavafarm.n .. " cauldrons (" .. plots.lavafarm.how .. ").")
       return true
