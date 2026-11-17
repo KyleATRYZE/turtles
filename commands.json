@@ -1,22 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794922082,
-      "issued": 1794922082000,
-      "cmd": "reboot",
-      "target": "Crafty"
-    },
-    {
-      "id": 1794922083,
-      "issued": 1794922082000,
-      "cmd": "reboot",
-      "target": "DropIt"
-    },
-    {
-      "id": 1794922084,
-      "issued": 1794922082000,
-      "cmd": "reboot",
-      "target": "HopTo"
+      "id": 1794922183,
+      "issued": 1794922183000,
+      "cmd": "lab",
+      "target": "DropIt",
+      "clear": 1,
+      "ops": "fetch|alltheores:iron_plate=4,create:andesite_alloy=2,actuallyadditions:iron_casing=2,minecraft:diamond_shovel=1|dump;inv;handin|"
     }
   ]
 }
