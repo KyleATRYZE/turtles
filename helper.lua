@@ -1991,6 +1991,30 @@ local function runLab()
         turtle.select(1)
         res = "tossed " .. tossed
         stop = tossed == 0
+      elseif verb == "scan" then
+        -- scan|text|radius : the Geo Scanner (worn on the tool side for the
+        -- moment, the pickaxe put back after) lists the blocks named like
+        -- text within radius, in world coordinates
+        local want, r = a[2] or "", math.min(16, tonumber(a[3]) or 8)
+        local slot = findSlot("advancedperipherals:geo_scanner")
+        if not slot then res, stop = "no geo scanner on board", true else
+          turtle.select(slot)
+          turtle.equipRight()
+          local geo = peripheral.wrap("right")
+          local ok, blocks = pcall(function() return geo.scan(r) end)
+          turtle.select(slot)
+          turtle.equipRight()
+          turtle.select(1)
+          if not ok or type(blocks) ~= "table" then res = "scan failed: " .. tostring(blocks) else
+            local hits = {}
+            for _, b in ipairs(blocks) do
+              if b.name:find(want, 1, true) then
+                hits[#hits + 1] = ("%s@%d,%d,%d"):format(b.name:gsub("^.*:", ""), pos.x + b.x, pos.y + b.y, pos.z + b.z)
+              end
+            end
+            res = #hits .. " found: " .. table.concat(hits, " "):sub(1, 400)
+          end
+        end
       elseif verb == "seek" then
         -- seek|text|max : straight down until the block below is named like
         -- text (water, to fill a bucket from); stops on anything else
