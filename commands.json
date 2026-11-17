@@ -1,10 +1,26 @@
 {
   "commands": [
     {
-      "id": 1794946491,
-      "issued": 1794946491000,
-      "cmd": "reboot",
-      "target": "Counter"
+      "id": 1794946909,
+      "issued": 1794946909000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "mekanism:crusher",
+      "n": 1
+    },
+    {
+      "id": 1794946910,
+      "issued": 1794946909000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "mekanism:electrolytic_separator",
+      "n": 1
+    },
+    {
+      "id": 1794946911,
+      "issued": 1794946909000,
+      "cmd": "ping",
+      "target": "Sortnado"
     }
   ]
 }
