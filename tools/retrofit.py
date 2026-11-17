@@ -496,10 +496,70 @@ def check():
     for c in TEP:
         if c in B:
             bad.append(f"TEP {c} clashes with {B[c]}")
+    bad += check_bays(B)
     assert B.get((10, 1, 29)) == MODEM and B.get((10, 5, 16)) == MODEM
     assert B.get((36, 1, 9)) == "minecraft:chest" and B.get((36, 1, 19)) == "minecraft:chest"
     print("\n".join(bad) if bad else f"ok: {len(seen)} retrofit cells, none on anything built or planned; the lane, both racks and the approaches open")
     return not bad
+
+
+def check_bays(B):
+    """The loading bays: every shelf modem touches its two homes and a block
+    of the strip (its permanent peripheral) and nothing else that is a
+    peripheral; the strips do not merge with the board; the computer touches
+    the board; and the wire runs unbroken from every bay to the hall's cable
+    (which the desk link ties to the store)."""
+    bad = []
+    A = _all()
+    S = {c: it for c, (it, how) in A.items() if it}
+    world = dict(B)
+    for c, (it, how) in A.items():
+        if how in ("cut", "dig"):
+            world.pop(c, None)
+    world.update(S)
+    nb = lambda c: [(c[0] + d[0], c[1] + d[1], c[2] + d[2]) for d in
+                    ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))]
+    PERI = ("monitor", "computer_", "chest", "barrel", "furnace", "disk_drive", "turtle", "controller", "mekanism")
+    for bays, strip, xs in ((BAYS1, STRIP1, RACK1_X), (BAYS2, STRIP2, RACK2_X)):
+        for c, m in zip(bays, strip):
+            x = c[0]
+            if world.get(c) != WIRED or not (world.get(m) or "").startswith(MONITOR):
+                bad.append(f"bay {c}: no modem or no strip block behind it")
+            for n in nb(c):
+                it = world.get(n) or ""
+                if n in ((x, 1, 3), (x, 3, 3)):
+                    if it:
+                        bad.append(f"bay {c}: its home {n} is not open ({it})")
+                elif n != m and any(p in it for p in PERI):
+                    bad.append(f"bay {c}: a clicked modem would also take in {it} at {n}")
+            above = world.get((m[0], 3, 4)) or ""
+            if "monitor" in above or "monitor" in (world.get((m[0], 1, 4)) or ""):
+                bad.append(f"strip {m}: a monitor next to it would merge with it")
+    if "monitor" not in (world.get((RACK_PC[0] + 1, RACK_PC[1], RACK_PC[2])) or ""):
+        bad.append("the rack computer does not touch the board")
+    # the wire: cables and full-block modems, from the hall cable's end
+    wire = {c for c, it in world.items() if it and (it.startswith(CABLE) or it.startswith(WIRED)
+                                                    or it.startswith(MODEM))}
+    seen, todo = {(1, 1, 4)}, [(1, 1, 4)]
+    while todo:
+        c = todo.pop()
+        for n in nb(c):
+            if n in wire and n not in seen:
+                seen.add(n)
+                todo.append(n)
+    for c in BAYS1 + BAYS2 + [RACK_PC]:
+        near = [n for n in nb(c) if n in seen] if c == RACK_PC else [c]
+        if not any(n in seen for n in near):
+            bad.append(f"{c} is not wired to the hall's cable")
+    if (10, 1, 29) not in seen:
+        bad.append("the hall's cable does not reach the store (desk link)")
+    # nothing of the wire shows but full blocks: a cable must be closed in on every side
+    for c, it in S.items():
+        if it.startswith(CABLE) and c[1] >= 0 and c in (set(TRENCH1) | set(TRENCH2) | {RACK_UNDER, RACK2_UNDER}):
+            for n in nb(c):
+                if not world.get(n) and n[1] >= 0:
+                    bad.append(f"cable {c} shows through the open cell {n}")
+    return bad
 
 
 # ================================================================= maps

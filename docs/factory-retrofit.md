@@ -528,6 +528,30 @@ Player Detector) is carried into the tower by Kyle.
 
 ---
 
+## 6b. Rack loading bays (Kyle, by hand; docs/rack-build.html)
+
+Loads go over the cable, not across a pad: Crafty pushes a drone's load and
+fuel straight into it while it sits in its rack home (`turtle_<id>` on the
+network) and pulls hand-ins back. `python3 tools/retrofit.py check` checks
+the cells (stage 11 in the tool) and that every bay is wired to the store.
+
+| what | building x y z | world | count |
+|---|---|---|---|
+| bay modems (full block), the middle shelf: each touches the low home under it and the high home on it | 19..26 2 3 | -4429..-4422 73 1521 | 8, **right-clicked** |
+| low shelf's panel: advanced monitors facing the bay, in place of the y 2 bars (the permanent neighbour that keeps each bay modem switched on) | 19..26 2 4 | -4429..-4422 73 1522 | 8 |
+| high shelf's panel: the existing name board | 19..26 4 4 | | (built) |
+| the board's computer, moved into the wall touching the board's west end | 18 4 4 | -4430 75 1522 | 1 (was at 22 4 3; its ender modem at 22 5 3 comes off) |
+| connector modems in the x 18 wall (not clicked) | 18 1 3, 18 2 3, 18 2 4, 18 3 4 | -4430 72/73 1521, -4430 73/74 1522 | 4 |
+| cable in the closed floor cell under them | 18 0 3 | -4430 71 1521 | 1 |
+| cable under the lane floor (front track), to the hall corner | 18 -1 3; 18..1 -1 2; 1 -1 3; 1 -1 4 | y 70 | 21 |
+| floor plug under the hall cable's end (not clicked) | 1 0 4 | -4447 71 1522 | 1 |
+
+Visible afterwards: the shelf (modem texture instead of copper on the
+high shelf, edge-on from the lane), the strip, and the lane-side faces of
+two connector bricks at the x 18 wall end. Nothing sticks out. Rack 2
+(stage 6) gets the same: modems for its y 2 shelf, a strip at y 2, z 4,
+connectors at 34 1-2 3 and a cable under the lane floor from x 34 to x 19.
+
 ## 7. The stages
 
 **Storage stays usable at every step.** `$get` and the storage screen run
