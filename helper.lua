@@ -1939,14 +1939,20 @@ local function runLab()
       elseif base == "toss" and SFX[sfx] then
         -- toss[Up/Down]|item|n : drop items into the open on purpose (into a
         -- stream that works on them: a fan's wash water). "drop" refuses to.
-        local slot = findSlot(a[2])
-        if not slot then res, stop = "none on board", true else
-          turtle.select(slot)
-          local before = turtle.getItemCount(slot)
-          turtle["drop" .. sfx](tonumber(a[3]) or 64)
-          res = "tossed " .. (before - turtle.getItemCount(slot))
-          turtle.select(1)
+        local left, tossed = tonumber(a[3]) or 64, 0
+        for sl = 1, 16 do                      -- (every slot that holds some)
+          local d = turtle.getItemDetail(sl)
+          if d and d.name == a[2] and left > 0 then
+            turtle.select(sl)
+            local before = turtle.getItemCount(sl)
+            turtle["drop" .. sfx](left)
+            local went = before - turtle.getItemCount(sl)
+            tossed, left = tossed + went, left - went
+          end
         end
+        turtle.select(1)
+        res = "tossed " .. tossed
+        stop = tossed == 0
       elseif verb == "seek" then
         -- seek|text|max : straight down until the block below is named like
         -- text (water, to fill a bucket from); stops on anything else
