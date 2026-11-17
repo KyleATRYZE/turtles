@@ -110,7 +110,7 @@ OTHERS.Coalition = function()
   p = path[STEP]
   return { role = "miner", state = "flying to base", pos = { x = p[1], y = 60, z = p[2] } }
 end''', limit=3000)
-check("A: followed it home and parked", g.STEP >= 4 and states(g)[-1] == "parked" and (g.T.x, g.T.z) == (-4457, 1520) and g.T.y == 20)
+check("A: followed it home and parked", g.STEP >= 4 and states(g)[-1] == "parked" and (g.T.x, g.T.z) == (-4457, 1518) and g.T.y == 20)
 check("A: state file says park", 'mode="park"' in L.eval('FS["loader.state"]').replace(" ", ""))
 check("A: parked and free, it asks the factory who needs company", len(asks(g, "escort_request")) >= 1)
 
@@ -119,7 +119,7 @@ L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 78
 FS["loader.state"] = textutils.serialize({ mode = "park" })''', limit=1500)
 check("B: fetched fuel by a low hop", g.FUEL_ASKS >= 1 and g.T.fuel >= 600 and "fetching fuel" in states(g))
 check("B: never went up to flying height on 78 fuel", "needs fuel" not in states(g) and len(asks(g, "feed_request")) == 0)
-check("B: back on the parking spot", (g.T.x, g.T.y, g.T.z) == (-4457, 20, 1520) and states(g)[-1] == "parked")
+check("B: back on the parking spot", (g.T.x, g.T.y, g.T.z) == (-4457, 20, 1518) and states(g)[-1] == "parked")
 
 # C) parked with 12 fuel: cannot even hop: asks for a feed, says so, stays put; fed, it carries on
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 12
@@ -160,7 +160,7 @@ OTHERS.Oresome = function(c)
 end''', limit=2200)
 st = states(g)
 check("F: went out and stood over the miner", (g.OVER or 0) > 10 and "escorting" in st)
-check("F: the miner finished: home and parked", st[-1] == "parked" and (g.T.x, g.T.z) == (-4457, 1520))
+check("F: the miner finished: home and parked", st[-1] == "parked" and (g.T.x, g.T.z) == (-4457, 1518))
 check("F: free again, it asks", any(m.at > 1000 for m in asks(g, "escort_request")))
 check("F: repeats and other loaders' orders were ignored", "Nobody" not in L.eval('FS["loader.state"]'))
 

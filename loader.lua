@@ -360,7 +360,11 @@ end
 -- holes in the roof that the builder uses and of its paths to the building
 -- site.
 local function parkSpot()
-  return st.park or (base and { x = base.f.x + 4, z = base.f.z - 1 })
+  -- each loader its own spot (12 spots, two apart): all parking on one
+  -- column stacked them up over the pad's approach and jammed the base
+  if st.park or not base then return st.park end
+  local i = os.getComputerID() % 12
+  return { x = base.f.x + 4 + (i % 4) * 2, z = base.f.z - 1 - math.floor(i / 4) * 2 }
 end
 
 -- True once landed on the parking spot (or with nowhere known to park).
