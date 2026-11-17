@@ -560,7 +560,9 @@ local function supplyRun(indices, reason, once)
             -- (and, for the lab bench, everything it was not sent for)
             local bench = st.lab or st.fdy
             local spare = bench and bench.keep and not bench.keep[it and it.name or ""]
-            if it and (it.name == "minecraft:bucket" or spare) and not isKit(it.name) then
+            -- (not on a lab run: one that fetched buckets wants them; it was
+            -- handing them straight back, so lava rounds went out empty)
+            if it and ((it.name == "minecraft:bucket" and not st.lab) or spare) and not isKit(it.name) then
               face(d)
               turtle.select(s)
               turtle.drop()
