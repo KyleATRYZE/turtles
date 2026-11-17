@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794940675,
-      "issued": 1794940675000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794940787,
+      "issued": 1794940787000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "sophisticatedstorage:controller",
+      "n": 1
     }
   ]
 }
