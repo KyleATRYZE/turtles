@@ -1,22 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794926608,
-      "issued": 1794926608000,
-      "cmd": "newjob",
-      "target": "Cobbler"
-    },
-    {
-      "id": 1794926609,
-      "issued": 1794926608000,
-      "cmd": "newjob",
-      "target": "Pickle"
-    },
-    {
-      "id": 1794926610,
-      "issued": 1794926608000,
-      "cmd": "newjob",
-      "target": "Bedrocker"
+      "id": 1794926811,
+      "issued": 1794926811000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
