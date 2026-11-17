@@ -17,20 +17,21 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local MAX_MINERS   = 7     -- size of the fleet this base will run
-local CHECK_EVERY  = 10    -- seconds between checks when idle
-local NEWBORN_COAL = 24    -- coal given to each new miner
-local PLOT_SIZE    = 8     -- each plot is this many blocks square
-local KEEP_OUT     = 24    -- no plot comes closer to the factory than this
-local TOP_Y_MAX    = 50    -- plots are dug from this height down
-local BOTTOM_Y     = -58
-local CRUISE_UP    = 45    -- (no longer used: miners now travel underground)
+local K = {}   -- constants (a table: the CC compiler counts every top-level local)
+K.MAX_MINERS   = 7     -- size of the fleet this base will run
+K.CHECK_EVERY  = 10    -- seconds between checks when idle
+K.NEWBORN_COAL = 24    -- coal given to each new miner
+K.PLOT_SIZE    = 8     -- each plot is this many blocks square
+K.KEEP_OUT     = 24    -- no plot comes closer to the factory than this
+K.TOP_Y_MAX    = 50    -- plots are dug from this height down
+K.BOTTOM_Y     = -58
+K.CRUISE_UP    = 45    -- (no longer used: miners now travel underground)
 
-local PAUSE_FILE   = ".factory_paused"
-local BASE_FILE    = ".base"
-local PLOTS_FILE   = ".plots"
-local STAGE_FILE   = ".assembling"
-local JOB_PROTOCOL = "swarm_job"
+K.PAUSE_FILE   = ".factory_paused"
+K.BASE_FILE    = ".base"
+K.PLOTS_FILE   = ".plots"
+K.STAGE_FILE   = ".assembling"
+K.JOB_PROTOCOL = "swarm_job"
 
 local DIRS = {
   [0] = { x = 1, z = 0 }, [1] = { x = 0, z = 1 },
@@ -79,17 +80,17 @@ os.setComputerLabel("miner-" .. os.getComputerID())
 shell.run("wget", "run", "https://raw.githubusercontent.com/KyleATRYZE/turtles/main/install.lua")
 ]]
 
-local BUCKET   = "minecraft:bucket"
-local LAVA     = "minecraft:lava_bucket"   -- fuel for turtles (1,000 moves each) and, for big batches, the furnaces
-local LAVA_KEEP = 8                        -- lava buckets kept back for the turtles
-local SCANNER  = "advancedperipherals:geo_scanner"
-local CORE     = "advancedperipherals:weak_automata_core"
-local TURTLE   = "computercraft:turtle_normal"
-local COMPUTER = "computercraft:computer_normal"
-local MODEM    = "computercraft:wireless_modem_advanced"
-local PLAIN_MODEM = "computercraft:wireless_modem_normal"   -- (short range: for a chunk loader when ender modems run out)
-local PICKAXE  = "minecraft:diamond_pickaxe"
-local CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its chunk loaded
+K.BUCKET   = "minecraft:bucket"
+K.LAVA     = "minecraft:lava_bucket"   -- fuel for turtles (1,000 moves each) and, for big batches, the furnaces
+K.LAVA_KEEP = 8                        -- lava buckets kept back for the turtles
+K.SCANNER  = "advancedperipherals:geo_scanner"
+K.CORE     = "advancedperipherals:weak_automata_core"
+K.TURTLE   = "computercraft:turtle_normal"
+K.COMPUTER = "computercraft:computer_normal"
+K.MODEM    = "computercraft:wireless_modem_advanced"
+K.PLAIN_MODEM = "computercraft:wireless_modem_normal"   -- (short range: for a chunk loader when ender modems run out)
+K.PICKAXE  = "minecraft:diamond_pickaxe"
+K.CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its chunk loaded
 
 -- Names starting with "#" are groups, matched by the end of the item name.
 local GROUPS = {
@@ -128,15 +129,15 @@ local RECIPES = {
     grid = { "P", "P", "P", "P", "", "P", "P", "P", "P" },
     key = { P = "#planks" },
   },
-  [PICKAXE] = {
+  [K.PICKAXE] = {
     grid = { "D", "D", "D", "", "S", "", "", "S", "" },
     key = { D = "minecraft:diamond", S = "minecraft:stick" },
   },
-  [MODEM] = {
+  [K.MODEM] = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
   },
-  [PLAIN_MODEM] = {
+  [K.PLAIN_MODEM] = {
     grid = { "S", "S", "S", "S", "E", "S", "S", "S", "S" },
     key = { S = "minecraft:stone", E = "minecraft:ender_pearl" },
   },
@@ -578,7 +579,7 @@ local RECIPES = {
     key = { B = "allthecompressed:cobbled_deepslate_1x" } },
   ["minecraft:dirt"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "allthecompressed:dirt_1x" } },
-  [BUCKET] = {
+  [K.BUCKET] = {
     grid = { "I", "", "I", "", "I", "", "", "", "" },
     key = { I = "minecraft:iron_ingot" },
   },
@@ -591,18 +592,18 @@ local RECIPES = {
     grid = { "P", "B", "", "", "", "", "", "", "" },
     key = { P = "minecraft:ender_pearl", B = "minecraft:blaze_powder" },
   },
-  [COMPUTER] = {
+  [K.COMPUTER] = {
     grid = { "S", "S", "S", "S", "R", "S", "S", "P", "S" },
     key = { S = "minecraft:stone", R = "minecraft:redstone", P = "minecraft:glass_pane" },
   },
-  [TURTLE] = {
+  [K.TURTLE] = {
     grid = { "I", "I", "I", "I", "C", "I", "I", "K", "I" },
-    key = { I = "minecraft:iron_ingot", C = COMPUTER, K = "minecraft:chest" },
+    key = { I = "minecraft:iron_ingot", C = K.COMPUTER, K = "minecraft:chest" },
   },
 }
 
 -- What one finished miner is assembled from.
-local MINER_PARTS = { [TURTLE] = 1, [PICKAXE] = 1, [MODEM] = 1 }
+local MINER_PARTS = { [K.TURTLE] = 1, [K.PICKAXE] = 1, [K.MODEM] = 1 }
 
 -- crafting grid position (1-9) -> turtle inventory slot
 local GRID_SLOT = { 1, 2, 3, 5, 6, 7, 9, 10, 11 }
@@ -641,18 +642,18 @@ local function saveTable(file, t)
   h.close()
 end
 
-local base = loadTable(BASE_FILE)                 -- where everything is
-local plots = loadTable(PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
+local base = loadTable(K.BASE_FILE)                 -- where everything is
+local plots = loadTable(K.PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
 local pending = 0        -- miners launched that have not asked for a plot yet
 local fuelQueue = {}     -- miners waiting on the launch pad for fuel
 local emptiesQueue = {}  -- the lava runner asking for empty buckets: id -> how many
 local scannerQueue = {}  -- a miner told to hunt, asking for a spare Geo Scanner
 local ctlQueue = {}      -- turtles asking for a Chunk Controller of their own to carry: id -> when
-local CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
-local FUEL_RESERVE = 256 -- coal never handed out to miners
-local LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
+K.CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
+K.FUEL_RESERVE = 256 -- coal never handed out to miners
+K.LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
-local HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
+K.HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
 -- (the fourth runs the Mekanism machines; the rest are names for mates made later)
 local HELPER_NAMES = { "Pushy", "HopTo", "LeverAlone", "DropIt",
@@ -668,7 +669,7 @@ local launchingHelper = false
 local LOADER_NAMES = { "Phantastic", "Ablaze", "Vexed", "Beehave", "Batty", "Breezy",
   "AllayOop", "WitherOrNot", "Shulky", "Squawk" }
 local LOADERS      = #LOADER_NAMES
-local PLAIN_LOADERS = false   -- true: with no ender modem to be had, a plain wireless modem will do
+K.PLAIN_LOADERS = false   -- true: with no ender modem to be had, a plain wireless modem will do
 local lastLoaderWait
 local bucketQueue = {}   -- miners waiting on the launch pad for a bucket
 local orders = {}        -- builder material orders, by computer id
@@ -688,7 +689,7 @@ end
 local stores = {}    -- names of storage inventories
 
 -- How full the storage chests are (checked at most every 30 seconds).
-local MINE_ROOM = 0.10     -- share of storage slots that must be free before a miner is given a new plot
+K.MINE_ROOM = 0.10     -- share of storage slots that must be free before a miner is given a new plot
 local space, spaceAt
 local function storageSpace()
   if spaceAt and os.clock() - spaceAt < 30 then return space end
@@ -715,7 +716,7 @@ local function report(state)
     missing = lastMissing,
     network = lastNetwork,
     base = base,
-    fleet = { active = activeCount(), launching = pending, max = MAX_MINERS,
+    fleet = { active = activeCount(), launching = pending, max = K.MAX_MINERS,
       builder = plots.builderId,
       plotsDone = plots.done, nextPlot = plots.next, byId = plots.byId },
     foundry = plots.foundry and { op = plots.foundry.op, machines = plots.foundry.machines,
@@ -902,7 +903,7 @@ local badWood = plots.badWood                    -- (remembered over restarts)
 local function markBadWood(wood)
   badWood[wood] = true
   plots.badWood = badWood
-  saveTable(PLOTS_FILE, plots)
+  saveTable(K.PLOTS_FILE, plots)
 end
 local knownWood = { ["minecraft:oak"] = true }   -- woods seen in stock
 
@@ -1016,7 +1017,7 @@ local function setFirstWood(name)
     name = found or ("minecraft:" .. name)
   end
   plots.wood = name ~= "minecraft:oak" and name or nil
-  saveTable(PLOTS_FILE, plots)
+  saveTable(K.PLOTS_FILE, plots)
   print("First-choice wood: " .. shortName(name) .. ".")
 end
 
@@ -1165,7 +1166,7 @@ local function loadFurnace(f, input, count)
   drainFurnace(f)
   local fuelNeeded = math.ceil(count / 8)
   local fuelSlot = furnaceList(f)[2]
-  if fuelSlot and fuelSlot.name == BUCKET then
+  if fuelSlot and fuelSlot.name == K.BUCKET then
     -- a lava bucket has been burned: the empty one goes back to storage
     for _, inv in ipairs(stores) do
       if (peripheral.call(f, "pushItems", inv, 2) or 0) > 0 then break end
@@ -1173,17 +1174,17 @@ local function loadFurnace(f, input, count)
     fuelSlot = furnaceList(f)[2]
   end
   local fuelHave = fuelSlot and fuelSlot.count or 0
-  if fuelSlot and fuelSlot.name == LAVA then fuelHave = 13 end       -- a bucket cooks 100
+  if fuelSlot and fuelSlot.name == K.LAVA then fuelHave = 13 end       -- a bucket cooks 100
   if fuelHave < fuelNeeded and not fuelSlot and count >= 32 then
     -- a big batch: lava, when there is more than the turtles need (it
     -- saves 8 coal a stack, and coal is what the miners run on)
     local storage, lava = listStorage(), 0
     for _, st in ipairs(storage) do
-      if st.name == LAVA then lava = lava + st.count end
+      if st.name == K.LAVA then lava = lava + st.count end
     end
-    if lava > LAVA_KEEP then
+    if lava > K.LAVA_KEEP then
       for _, st in ipairs(storage) do
-        if st.name == LAVA and (peripheral.call(st.inv, "pushItems", f, st.slot, 1, 2) or 0) > 0 then
+        if st.name == K.LAVA and (peripheral.call(st.inv, "pushItems", f, st.slot, 1, 2) or 0) > 0 then
           fuelHave = 13
           break
         end
@@ -1203,7 +1204,7 @@ local function loadFurnace(f, input, count)
       if wood then
         local have = 0
         for _, o in ipairs(all) do if o.name == st.name then have = have + o.count end end
-        if have <= LOGS_KEPT and st.name ~= "regions_unexplored:bamboo_log" then st = { name = "" } end
+        if have <= K.LOGS_KEPT and st.name ~= "regions_unexplored:bamboo_log" then st = { name = "" } end
       end
       if matches("#fuel", st.name) and not (wood and coalLeft) and input ~= st.name
         and (not fuelSlot or fuelSlot.name == st.name) then
@@ -1230,16 +1231,16 @@ end
 local BACKGROUND = {
   -- logs to charcoal first: it is fuel (8 charcoal for 1 burned), so this
   -- runs even when coal is short
-  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:jungle_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
-  { fuel = true, leave = LOGS_KEPT, input = "regions_unexplored:redwood_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "regions_unexplored:magnolia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "regions_unexplored:mauve_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:birch_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:spruce_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:jungle_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:dark_oak_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:acacia_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "minecraft:cherry_log", output = "minecraft:charcoal", keep = 4000 },
+  { fuel = true, leave = K.LOGS_KEPT, input = "regions_unexplored:redwood_log", output = "minecraft:charcoal", keep = 4000 },
   { fuel = true, leave = 0, input = "regions_unexplored:bamboo_log", output = "minecraft:charcoal", keep = 4000 },
   { input = "minecraft:cobblestone", output = "minecraft:stone", keep = 1600 },
   { input = "minecraft:raw_copper", output = "minecraft:copper_ingot", keep = 400 },
@@ -1258,23 +1259,23 @@ local BACKGROUND = {
 -- make four ingots there. Each job costs about one redstone dust of power,
 -- so this only runs while there is redstone to spare; without it, or if the
 -- foundry stops answering, the furnaces carry on as before.
-local REDSTONE = "minecraft:redstone"
+K.REDSTONE = "minecraft:redstone"
 local FOUNDRY_ORES = {      -- keep = ingots wanted; leave = raw ore kept back
   { raw = "minecraft:raw_iron", out = "minecraft:iron_ingot", keep = 600, leave = 64 },
   { raw = "minecraft:raw_gold", out = "minecraft:gold_ingot", keep = 320, leave = 64 },
   { raw = "minecraft:raw_copper", out = "minecraft:copper_ingot", keep = 600, leave = 0 },
   { raw = "alltheores:raw_osmium", out = "alltheores:osmium_ingot", keep = 200, leave = 0 },
 }
-local FOUNDRY_BATCH = 48    -- raw ore a job (64 ingots: one stack out of the smelter)
-local FOUNDRY_DUST  = 100   -- redstone dust a batch takes with it (80 jobs, and a little)
-local FOUNDRY_KEEP  = 128   -- redstone dust never sent to the foundry (crafting needs it)
+K.FOUNDRY_BATCH = 48    -- raw ore a job (64 ingots: one stack out of the smelter)
+K.FOUNDRY_DUST  = 100   -- redstone dust a batch takes with it (80 jobs, and a little)
+K.FOUNDRY_KEEP  = 128   -- redstone dust never sent to the foundry (crafting needs it)
 local foundryHello = nil    -- when the operator was last called for
 -- With power laid on (a heat generator and cable: job=power) the machines
 -- need no redstone. The operator says how much fuel the generator has left;
 -- below FOUNDRY_FUEL_LOW it is sent a fuel job, while the factory has coal
 -- to spare (FOUNDRY_FUEL_SPARE: coal and charcoal together).
-local FOUNDRY_FUEL_LOW   = 16
-local FOUNDRY_FUEL_SPARE = 160
+K.FOUNDRY_FUEL_LOW   = 16
+K.FOUNDRY_FUEL_SPARE = 160
 
 local function foundryPowered()
   local p = plots.foundry and plots.foundry.power
@@ -1291,7 +1292,7 @@ end
 local function foundryOre(stock, raw)
   if not foundryUp() then return nil end
   -- (on the cable a batch takes a little dust in case the power fails)
-  if (stock[REDSTONE] or 0) < FOUNDRY_KEEP + (foundryPowered() and 16 or FOUNDRY_DUST) then return nil end
+  if (stock[K.REDSTONE] or 0) < K.FOUNDRY_KEEP + (foundryPowered() and 16 or K.FOUNDRY_DUST) then return nil end
   for _, o in ipairs(FOUNDRY_ORES) do
     if o.raw == raw then return o end
   end
@@ -1300,7 +1301,7 @@ end
 local function foundrySend(fy)
   local job = fy.job
   rednet.send(fy.op, { type = "foundry_job", n = job.n, forId = fy.op,
-    job = { kind = job.kind, item = job.item, n = job.count } }, JOB_PROTOCOL)
+    job = { kind = job.kind, item = job.item, n = job.count } }, K.JOB_PROTOCOL)
 end
 
 -- Raise a job when there is ore and redstone for one and none is out; ask
@@ -1317,7 +1318,7 @@ local function foundryDuty(stock)
     if now - job.since > (job.acked and 3600000 or 1200000) then
       print(job.acked and "The foundry never finished its job: dropped." or "Nobody at the foundry: job dropped.")
       fy.job, fy.fails, fy.failedAt = nil, (fy.fails or 0) + 1, now
-      saveTable(PLOTS_FILE, plots)
+      saveTable(K.PLOTS_FILE, plots)
     elseif now - job.asked > (job.acked and 900000 or 120000) then
       -- (not heard: asked again. One that is done already says so again.)
       job.asked = now
@@ -1328,7 +1329,7 @@ local function foundryDuty(stock)
   if not fy.op then
     if not foundryHello or now - foundryHello > 300000 then
       foundryHello = now
-      rednet.broadcast({ type = "foundry_hello" }, JOB_PROTOCOL)
+      rednet.broadcast({ type = "foundry_hello" }, K.JOB_PROTOCOL)
     end
     return
   end
@@ -1338,26 +1339,26 @@ local function foundryDuty(stock)
   if now - (fy.failedAt or 0) < 600000 or now - (fy.doneAt or 0) < 30000 then return end
   if next(orders) ~= nil then return end   -- a load is being made up: not now
   for _, o in ipairs(FOUNDRY_ORES) do
-    if foundryOre(stock, o.raw) and (stock[o.raw] or 0) >= o.leave + FOUNDRY_BATCH
+    if foundryOre(stock, o.raw) and (stock[o.raw] or 0) >= o.leave + K.FOUNDRY_BATCH
       and (stock[o.out] or 0) < o.keep then
       fy.seq = (fy.seq or 0) % 1000 + 1
-      fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = "ore", item = o.raw, count = FOUNDRY_BATCH,
+      fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = "ore", item = o.raw, count = K.FOUNDRY_BATCH,
         since = now, asked = now }
-      saveTable(PLOTS_FILE, plots)
-      print(("To the foundry: %d %s."):format(FOUNDRY_BATCH, shortName(o.raw)))
+      saveTable(K.PLOTS_FILE, plots)
+      print(("To the foundry: %d %s."):format(K.FOUNDRY_BATCH, shortName(o.raw)))
       foundrySend(fy)
       return
     end
   end
   -- the generator running low, and no ore going over to bring fuel with it
   local p = fy.power
-  if foundryPowered() and (tonumber(p.fuel) or FOUNDRY_FUEL_LOW) < FOUNDRY_FUEL_LOW
+  if foundryPowered() and (tonumber(p.fuel) or K.FOUNDRY_FUEL_LOW) < K.FOUNDRY_FUEL_LOW
     and now - (fy.fuelAt or 0) > 600000
-    and (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) >= FOUNDRY_FUEL_SPARE then
+    and (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) >= K.FOUNDRY_FUEL_SPARE then
     fy.seq = (fy.seq or 0) % 1000 + 1
     fy.fuelAt = now
     fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = "fuel", count = 64, since = now, asked = now }
-    saveTable(PLOTS_FILE, plots)
+    saveTable(K.PLOTS_FILE, plots)
     print("Fuel to the foundry's generator.")
     foundrySend(fy)
   end
@@ -1374,7 +1375,7 @@ local function foundryHeard(id, msg)
     fy.op = id
     fy.machines = type(msg.machines) == "table" and msg.machines or {}
     fy.power = type(msg.power) == "table" and msg.power or nil
-    saveTable(PLOTS_FILE, plots)
+    saveTable(K.PLOTS_FILE, plots)
     return
   end
   local job = fy.job
@@ -1397,13 +1398,13 @@ local function foundryHeard(id, msg)
     end
     fy.last = { item = job.item, ok = msg.ok and true or false, why = msg.why, made = table.concat(made, ", ") }
   end
-  saveTable(PLOTS_FILE, plots)
+  saveTable(K.PLOTS_FILE, plots)
 end
 
 local function keepFurnacesBusy(stock)
   local busy = next(orders) ~= nil         -- a builder load is being made: only fuel is cooked
   -- cooking ahead is a luxury: not when coal is short
-  local shortOfCoal = (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < FUEL_RESERVE + 144
+  local shortOfCoal = (stock["minecraft:coal"] or 0) + (stock["minecraft:charcoal"] or 0) < K.FUEL_RESERVE + 144
   for _, f in ipairs(furnaces) do
     local okList, items = pcall(furnaceList, f)
     if okList and not items[1] then
@@ -1479,17 +1480,17 @@ end
 
 local function setStage(stage)
   if stage then
-    local h = fs.open(STAGE_FILE, "w")
+    local h = fs.open(K.STAGE_FILE, "w")
     h.write(stage)
     h.close()
   else
-    fs.delete(STAGE_FILE)
+    fs.delete(K.STAGE_FILE)
   end
 end
 
 local function getStage()
-  if not fs.exists(STAGE_FILE) then return nil end
-  local h = fs.open(STAGE_FILE, "r")
+  if not fs.exists(K.STAGE_FILE) then return nil end
+  local h = fs.open(K.STAGE_FILE, "r")
   local stage = h.readAll()
   h.close()
   return stage
@@ -1507,7 +1508,7 @@ end
 -- map things). Left in this turtle's inventory, staged as "builder".
 local function assembleBuilder()
   stashAll()
-  if not (pull(TURTLE, 1, 1) and pull(MODEM, 1, 2)) then
+  if not (pull(K.TURTLE, 1, 1) and pull(K.MODEM, 1, 2)) then
     error("Parts for the builder went missing.", 0)
   end
   turtle.select(16)
@@ -1528,8 +1529,8 @@ local function assemble()
     stashAll()
     -- [pickaxe][turtle] : the tool goes on the turtle's left side (a chunk
     -- loader gets a Chunk Controller there instead)
-    local tool = plots.makingLoader and CHUNKY or PICKAXE
-    if not (pull(tool, 1, 1) and pull(TURTLE, 1, 2)) then
+    local tool = plots.makingLoader and K.CHUNKY or K.PICKAXE
+    if not (pull(tool, 1, 1) and pull(K.TURTLE, 1, 2)) then
       error("Parts went missing before assembly.", 0)
     end
     turtle.select(16)
@@ -1548,7 +1549,7 @@ local function assemble()
       turtle.transferTo(1)
     end
     -- (a chunk loader may be given a plain wireless modem: plots.loaderModem)
-    local modem = plots.makingLoader and plots.loaderModem or MODEM
+    local modem = plots.makingLoader and plots.loaderModem or K.MODEM
     if not pull(modem, 1, 2) then error("The " .. shortName(modem) .. " went missing.", 0) end
     turtle.select(16)
     local ok, err = turtle.craft()
@@ -1679,7 +1680,7 @@ local function survey()
     exit1 = { x = f.x, y = f.y + 1, z = f.z },
     exit2 = { x = p.x, y = p.y + 1, z = p.z },
   }
-  saveTable(BASE_FILE, base)
+  saveTable(K.BASE_FILE, base)
   print(("Base mapped. I am at %d, %d, %d."):format(f.x, f.y, f.z))
   return base
 end
@@ -1972,21 +1973,21 @@ local function spareControllers(stock)
   local eyes = n("minecraft:ender_eye")
     + math.min(n("minecraft:ender_pearl"), n("minecraft:blaze_powder") + 2 * n("minecraft:blaze_rod"))
   local gold = n("minecraft:gold_ingot") + n("minecraft:raw_gold")
-  local modems = n(MODEM) + math.min(eyes, math.floor(gold / 8))
+  local modems = n(K.MODEM) + math.min(eyes, math.floor(gold / 8))
   local forLoaders = plots.noLoaders and 0
     or math.max(0, math.min(LOADERS - #(plots.loaders or {}), modems))
-  return math.max(0, n(CHUNKY) - forLoaders)
+  return math.max(0, n(K.CHUNKY) - forLoaders)
 end
 
 -- One controller to the turtle that asked for it (and to no other), standing
 -- on top of me or on the pad.
 local function giveController(dir, id)
   if not ctlQueue[id] or spareControllers(stockTotals()) < 1 then return false end
-  if not giveTo(dir, CHUNKY, 1) then return false end
+  if not giveTo(dir, K.CHUNKY, 1) then return false end
   local key = tostring(id)
   plots.ctlGiven = plots.ctlGiven or {}
   plots.ctlGiven[key] = (plots.ctlGiven[key] or 0) + 1
-  saveTable(PLOTS_FILE, plots)
+  saveTable(K.PLOTS_FILE, plots)
   ctlQueue[id] = nil
   print("Gave a Chunk Controller to turtle " .. key .. " to carry.")
   return true
@@ -2009,9 +2010,9 @@ local function serveRequests(canCraft)
     and not next(scannerQueue) and not ctlNow then return end
   local wantEmpties = 0
   for _, n in pairs(emptiesQueue) do wantEmpties = math.max(wantEmpties, n) end
-  if canCraft and wantEmpties > 0 then pcall(ensureStock, BUCKET, wantEmpties) end
+  if canCraft and wantEmpties > 0 then pcall(ensureStock, K.BUCKET, wantEmpties) end
   if canCraft and next(bucketQueue) then
-    pcall(ensureStock, BUCKET, 1)
+    pcall(ensureStock, K.BUCKET, 1)
   end
   for _, dir in ipairs({ "up", "front" }) do
     local side = "top"
@@ -2026,8 +2027,8 @@ local function serveRequests(canCraft)
         -- least 8 (nobody is left stranded) and at most a stack
         local stock = stockTotals()
         local coal = countIn(stock, "#fuel")
-        local share = math.max(8, math.min(64, math.floor((coal - FUEL_RESERVE) * 0.05)))
-        if (stock[LAVA] or 0) > LAVA_KEEP and giveTo(dir, LAVA, 1) then
+        local share = math.max(8, math.min(64, math.floor((coal - K.FUEL_RESERVE) * 0.05)))
+        if (stock[K.LAVA] or 0) > K.LAVA_KEEP and giveTo(dir, K.LAVA, 1) then
           -- lava first, when there is some to spare: 1,000 moves a bucket,
           -- and the miners bring it home themselves
           print("Gave a lava bucket to a miner.")
@@ -2036,17 +2037,17 @@ local function serveRequests(canCraft)
         else
           print("A miner needs fuel but I have no coal.")
           report("out of coal")
-          if not plots.hunter and giveTo(dir, SCANNER, 1) then
+          if not plots.hunter and giveTo(dir, K.SCANNER, 1) then
             plots.hunter = true
-            saveTable(PLOTS_FILE, plots)
+            saveTable(K.PLOTS_FILE, plots)
             print("Gave it the Geo Scanner to hunt for coal.")
           end
         end
       end
-      if next(bucketQueue) and giveTo(dir, BUCKET, 1) then
+      if next(bucketQueue) and giveTo(dir, K.BUCKET, 1) then
         print("Gave a bucket to a miner.")
       end
-      if next(scannerQueue) and giveTo(dir, SCANNER, 1) then
+      if next(scannerQueue) and giveTo(dir, K.SCANNER, 1) then
         print("Gave a Geo Scanner to a new hunter.")
         scannerQueue = {}
       end
@@ -2055,7 +2056,7 @@ local function serveRequests(canCraft)
         if okId and here then giveController(dir, here) end
       end
       if wantEmpties > 0 then
-        local ok, moved = giveTo(dir, BUCKET, wantEmpties)
+        local ok, moved = giveTo(dir, K.BUCKET, wantEmpties)
         if ok then
           print("Gave " .. tostring(moved) .. " empty buckets to the lava runner.")
           wantEmpties = 0
@@ -2161,7 +2162,7 @@ local function serveOrders(onlyReady)
       end
       order.lines, order.ready, order.told = lines, true, os.clock()
       order.readyAt = os.clock()
-      rednet.send(id, { type = "load_ready", forId = id, n = order.n }, JOB_PROTOCOL)
+      rednet.send(id, { type = "load_ready", forId = id, n = order.n }, K.JOB_PROTOCOL)
       print("Load ready. Waiting for the builder.")
       return true
     end
@@ -2177,7 +2178,7 @@ local function serveOrders(onlyReady)
       for id, o in pairs(orders) do
         if o.ready and os.clock() - (o.told or 0) > 60 then        -- remind it
           o.told = os.clock()
-          rednet.send(id, { type = "load_ready", forId = id, n = o.n }, JOB_PROTOCOL)
+          rednet.send(id, { type = "load_ready", forId = id, n = o.n }, K.JOB_PROTOCOL)
         end
       end
       return false
@@ -2216,9 +2217,9 @@ local function serveOrders(onlyReady)
       -- lava first (a bucket is 1,000 moves, about 12 coal), coal for the rest
       local stock = stockTotals()
       local want = order.fuel * 80
-      local buckets = math.min(stock[LAVA] or 0, 4, math.floor(want / 1000 + 0.5))
+      local buckets = math.min(stock[K.LAVA] or 0, 4, math.floor(want / 1000 + 0.5))
       for _ = 1, buckets do
-        if giveTo("front", LAVA, 1) then want = want - 1000 end
+        if giveTo("front", K.LAVA, 1) then want = want - 1000 end
       end
       local coal = math.ceil(math.max(0, want) / 80)
       if coal > 0 then
@@ -2230,7 +2231,7 @@ local function serveOrders(onlyReady)
     giveController("front", id)       -- (if it asked for one to carry)
     turnTo(0)
     rednet.send(id, { type = "materials_ready", forId = id, n = order.n,
-      given = given, missing = missing, full = full }, JOB_PROTOCOL)
+      given = given, missing = missing, full = full }, K.JOB_PROTOCOL)
     print("Load handed over.")
     report("load handed over")
     return true
@@ -2254,7 +2255,7 @@ local function deploy()
       fuelQueue = {}
       print("Gave fuel to a miner.")
     end
-    if busy and next(bucketQueue) and giveToFront(BUCKET, 1) then
+    if busy and next(bucketQueue) and giveToFront(K.BUCKET, 1) then
       bucketQueue = {}
       print("Gave a bucket to a miner.")
     end
@@ -2264,13 +2265,13 @@ local function deploy()
       serveOrders(true)
       turnTo(base.padTurns)
     end
-    if not busy and coal >= NEWBORN_COAL then break end
+    if not busy and coal >= K.NEWBORN_COAL then break end
     if waited % 6 == 0 then
       if busy then
         print("Launch pad is busy, waiting...")
         report(coal > 0 and "launch pad busy" or "out of coal")
       else
-        print("Waiting for " .. NEWBORN_COAL .. " coal to fuel the new miner...")
+        print("Waiting for " .. K.NEWBORN_COAL .. " coal to fuel the new miner...")
         report("out of coal")
       end
     end
@@ -2282,15 +2283,15 @@ local function deploy()
   setStage(nil)
   pending = pending + 1
   sleep(0.5)
-  fuelTurtleInFront(NEWBORN_COAL, true)
+  fuelTurtleInFront(K.NEWBORN_COAL, true)
   if isBuilder then
-    giveToFront(SCANNER, 1, true)   -- for mapping
-    giveToFront(CORE, 1, true)      -- for later: lets it right-click things
+    giveToFront(K.SCANNER, 1, true)   -- for mapping
+    giveToFront(K.CORE, 1, true)      -- for later: lets it right-click things
     for _ = 1, 10 do
       local okId, id = pcall(peripheral.call, "front", "getID")
       if okId and id then
         plots.builderId = id
-        saveTable(PLOTS_FILE, plots)
+        saveTable(K.PLOTS_FILE, plots)
         break
       end
       sleep(0.5)
@@ -2308,9 +2309,9 @@ local function deploy()
       sleep(0.5)
     end
     plots.makingLoader, plots.loaderModem = nil, nil
-    saveTable(PLOTS_FILE, plots)
+    saveTable(K.PLOTS_FILE, plots)
   else
-    giveToFront(BUCKET, 1, true)    -- for scooping lava as fuel
+    giveToFront(K.BUCKET, 1, true)    -- for scooping lava as fuel
     if launchingHelper then
       -- a builder's mate: note which turtle it is, so it gets that job
       for _ = 1, 10 do
@@ -2318,7 +2319,7 @@ local function deploy()
         if okId and id then
           plots.helpers = plots.helpers or {}
           plots.helpers[#plots.helpers + 1] = id
-          saveTable(PLOTS_FILE, plots)
+          saveTable(K.PLOTS_FILE, plots)
           print("That one is a builder's mate.")
           break
         end
@@ -2344,12 +2345,12 @@ local function plotOrigin(index)
     for gx = -r, r do
       for gz = -r, r do
         if math.max(math.abs(gx), math.abs(gz)) == r then
-          local x0 = base.f.x + gx * PLOT_SIZE
-          local z0 = base.f.z + gz * PLOT_SIZE
-          local clear = base.f.x < x0 - KEEP_OUT
-            or base.f.x > x0 + PLOT_SIZE - 1 + KEEP_OUT
-            or base.f.z < z0 - KEEP_OUT
-            or base.f.z > z0 + PLOT_SIZE - 1 + KEEP_OUT
+          local x0 = base.f.x + gx * K.PLOT_SIZE
+          local z0 = base.f.z + gz * K.PLOT_SIZE
+          local clear = base.f.x < x0 - K.KEEP_OUT
+            or base.f.x > x0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
+            or base.f.z < z0 - K.KEEP_OUT
+            or base.f.z > z0 + K.PLOT_SIZE - 1 + K.KEEP_OUT
           if clear then
             n = n + 1
             if n == index then return x0, z0 end
@@ -2384,7 +2385,7 @@ local function jobFor(id)
     -- no new plots while the storage is nearly full: what they dig has
     -- nowhere to go (they wait, and are given one when room comes back)
     local room = storageSpace()
-    if room and room.slots > 0 and room.free < math.max(16, room.slots * MINE_ROOM) then
+    if room and room.slots > 0 and room.free < math.max(16, room.slots * K.MINE_ROOM) then
       if not plots.noRoomSaid then
         print("Storage nearly full: no new plots until there is room.")
         plots.noRoomSaid = true
@@ -2395,7 +2396,7 @@ local function jobFor(id)
     local returning = plots.between and plots.between[key]
     if returning then
       plots.between[key] = nil
-    elseif activeCount() >= MAX_MINERS and pending == 0 then
+    elseif activeCount() >= K.MAX_MINERS and pending == 0 then
       return nil
     elseif pending > 0 then
       pending = pending - 1                   -- one we launched: it gets a plot
@@ -2407,14 +2408,14 @@ local function jobFor(id)
       plots.next = index + 1
     end
     plots.byId[key] = index
-    saveTable(PLOTS_FILE, plots)
+    saveTable(K.PLOTS_FILE, plots)
   end
   local x0, z0 = plotOrigin(index)
   return {
     type = "job", forId = id, index = index,
-    x0 = x0, z0 = z0, size = PLOT_SIZE,
-    topY = math.min(TOP_Y_MAX, base.f.y - 10), bottom = BOTTOM_Y,
-    cruise = base.f.y + CRUISE_UP + ((index - 1) % 40),
+    x0 = x0, z0 = z0, size = K.PLOT_SIZE,
+    topY = math.min(K.TOP_Y_MAX, base.f.y - 10), bottom = K.BOTTOM_Y,
+    cruise = base.f.y + K.CRUISE_UP + ((index - 1) % 40),
     dock = base.dock, exit1 = base.exit1, exit2 = base.exit2,
   }
 end
@@ -2431,9 +2432,9 @@ local fleet = {}          -- name (see nameKey) -> what it last said
 local escortGiven = {}    -- turtle (nameKey) -> { loader = id, at = clock }
 local escortRest = {}     -- turtle -> not offered again before this (a loader found nothing there)
 local feedSent = {}       -- who asked (id) -> when a mate was last sent
-local ESCORT_FAR = 64     -- blocks from the factory (either way) beyond which a turtle is "far"
-local ESCORTS_OUT = 3     -- at most this many loaders out with turtles at once (each trip burns fuel)
-local SILENT = 240        -- seconds without a word: far away, that is a turtle frozen in an unloaded chunk
+K.ESCORT_FAR = 64     -- blocks from the factory (either way) beyond which a turtle is "far"
+K.ESCORTS_OUT = 3     -- at most this many loaders out with turtles at once (each trip burns fuel)
+K.SILENT = 240        -- seconds without a word: far away, that is a turtle frozen in an unloaded chunk
 local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
   ["waiting for a plot"] = true, ["stopped by player"] = true }
 
@@ -2467,8 +2468,8 @@ local function noteStatus(id, msg)
 end
 
 local function isFar(u)
-  return u.x ~= nil and base ~= nil and (math.abs(u.x - base.f.x) > ESCORT_FAR
-    or math.abs(u.z - base.f.z) > ESCORT_FAR)
+  return u.x ~= nil and base ~= nil and (math.abs(u.x - base.f.x) > K.ESCORT_FAR
+    or math.abs(u.z - base.f.z) > K.ESCORT_FAR)
 end
 
 local directSeq = 0
@@ -2506,7 +2507,7 @@ local function escortFor(id, msg)
     if u.role == "loader" and u.id ~= id and now - u.at < 600
       and (u.mode == "escort" or u.state == "escorting" or isFar(u)) then out = out + 1 end
   end
-  if out >= ESCORTS_OUT then return end
+  if out >= K.ESCORTS_OUT then return end
   local best, bestScore
   for key, u in pairs(fleet) do
     if u.role == "miner" and isFar(u) and not RESTING[u.state]
@@ -2516,7 +2517,7 @@ local function escortFor(id, msg)
       for _, l in pairs(fleet) do
         if l.role == "loader" and l.id ~= id and l.who == key and now - l.at < 600 then taken = true end
       end
-      local silent = now - u.at > SILENT
+      local silent = now - u.at > K.SILENT
       -- a turtle that carries its own Chunk Controller looks after itself,
       -- unless it has gone quiet all the same
       if not taken and (silent or not u.chunky) then
@@ -2598,7 +2599,7 @@ local function lavaFarmDuty(stock)
   local farm = plots.lavafarm
   if not (farm and (farm.n or 0) > 0) or not swarm then return end
   local now = os.clock()
-  if now - farmAt < FARM.every or (stock[LAVA] or 0) >= FARM.low then return end
+  if now - farmAt < FARM.every or (stock[K.LAVA] or 0) >= FARM.low then return end
   local buckets = math.min(farm.n, stock["minecraft:bucket"] or 0)
   if buckets == 0 then return end
   local best
@@ -2688,12 +2689,12 @@ end
 local function responder()
   if swarm then swarm.open() end
   while true do
-    local id, msg = rednet.receive(JOB_PROTOCOL)
+    local id, msg = rednet.receive(K.JOB_PROTOCOL)
     if type(msg) == "table" and id then
       if msg.type == "need_job" then
         if base then
           local job = jobFor(id)
-          if job then rednet.send(id, job, JOB_PROTOCOL) end
+          if job then rednet.send(id, job, K.JOB_PROTOCOL) end
         end
       elseif msg.type == "job_done" then
         if plots.byId[tostring(id)] == msg.index then
@@ -2701,7 +2702,7 @@ local function responder()
           plots.between = plots.between or {}
           plots.between[tostring(id)] = true
           plots.done = (plots.done or 0) + 1
-          saveTable(PLOTS_FILE, plots)
+          saveTable(K.PLOTS_FILE, plots)
         end
       elseif msg.type == "fuel_request" then
         fuelQueue[id] = true
@@ -2716,10 +2717,10 @@ local function responder()
       elseif msg.type == "controller_request" then
         -- a turtle with room for a Chunk Controller of its own
         local given = (plots.ctlGiven or {})[tostring(id)] or 0
-        if given < CTL_PER_TURTLE and spareControllers() > 0 then
+        if given < K.CTL_PER_TURTLE and spareControllers() > 0 then
           ctlQueue[id] = os.clock()
         else
-          rednet.send(id, { type = "controller_none", forId = id }, JOB_PROTOCOL)
+          rednet.send(id, { type = "controller_none", forId = id }, K.JOB_PROTOCOL)
         end
       elseif msg.type == "empties_request" then
         emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
@@ -2735,7 +2736,7 @@ local function responder()
           plots.free = plots.free or {}
           table.insert(plots.free, msg.index)
           plots.hunter = true
-          saveTable(PLOTS_FILE, plots)
+          saveTable(K.PLOTS_FILE, plots)
         end
       end
     end
@@ -2948,9 +2949,9 @@ local function tryBuild()
     local pretend = {}
     for name, c in pairs(lastStock) do pretend[name] = c end
     local steps, missing = {}, {}
-    plan(pretend, TURTLE, 1, steps, missing)
-    plan(pretend, MODEM, 1, steps, missing)
-    plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)
+    plan(pretend, K.TURTLE, 1, steps, missing)
+    plan(pretend, K.MODEM, 1, steps, missing)
+    plan(pretend, "#fuel", K.NEWBORN_COAL, steps, missing)
     if not next(missing) then
       print("Building the builder...")
       report("building")
@@ -2965,27 +2966,27 @@ local function tryBuild()
   end
 
   -- a chunk loader, while there is a Chunk Controller to put on one
-  if #(plots.loaders or {}) < LOADERS and (lastStock[CHUNKY] or 0) > 0 and not plots.noLoaders then
+  if #(plots.loaders or {}) < LOADERS and (lastStock[K.CHUNKY] or 0) > 0 and not plots.noLoaders then
     -- with an ender modem. (PLAIN_LOADERS: failing that a plain wireless
     -- modem, stone and an ender pearl: a loader flies high, where even that
     -- reaches far, and the others' ender modems hear it anywhere.)
     local steps, missing, modem
-    for _, m in ipairs(PLAIN_LOADERS and { MODEM, PLAIN_MODEM } or { MODEM }) do
+    for _, m in ipairs(K.PLAIN_LOADERS and { K.MODEM, K.PLAIN_MODEM } or { K.MODEM }) do
       local pretend = {}
       for name, c in pairs(lastStock) do pretend[name] = c end
       local st2, miss2 = {}, {}
-      plan(pretend, TURTLE, 1, st2, miss2)
+      plan(pretend, K.TURTLE, 1, st2, miss2)
       plan(pretend, m, 1, st2, miss2)
-      plan(pretend, "#fuel", NEWBORN_COAL, st2, miss2)
+      plan(pretend, "#fuel", K.NEWBORN_COAL, st2, miss2)
       if not missing or not next(miss2) then steps, missing, modem = st2, miss2, m end
       if not next(miss2) then break end
     end
     if not next(missing) then
-      print("Building a chunk loader" .. (modem == PLAIN_MODEM and " (plain wireless modem)..." or "..."))
+      print("Building a chunk loader" .. (modem == K.PLAIN_MODEM and " (plain wireless modem)..." or "..."))
       report("building")
       runSteps(steps)
       plots.makingLoader, plots.loaderModem = true, modem
-      saveTable(PLOTS_FILE, plots)
+      saveTable(K.PLOTS_FILE, plots)
       local okFit, why = pcall(assemble)
       if not okFit then
         if why == "Terminated" then error(why, 0) end
@@ -2993,7 +2994,7 @@ local function tryBuild()
           -- the controller would not go on: put the parts back and leave it
           -- (until .plots is edited), rather than trying for ever
           plots.makingLoader, plots.noLoaders, plots.loaderModem = nil, true, nil
-          saveTable(PLOTS_FILE, plots)
+          saveTable(K.PLOTS_FILE, plots)
           stashAll()
         end
         error("chunk loader: " .. tostring(why), 0)
@@ -3012,8 +3013,8 @@ local function tryBuild()
     end
   end
 
-  local forHelper = #(plots.helpers or {}) < HELPERS
-  if not forHelper and activeCount() + pending >= MAX_MINERS then
+  local forHelper = #(plots.helpers or {}) < K.HELPERS
+  if not forHelper and activeCount() + pending >= K.MAX_MINERS then
     lastMissing = {}
     report("fleet full")
     return false
@@ -3026,8 +3027,8 @@ local function tryBuild()
   for name, n in pairs(MINER_PARTS) do
     plan(pretend, name, n, steps, missing)
   end
-  plan(pretend, "#fuel", NEWBORN_COAL, steps, missing)   -- fuel to send it off with
-  plan(pretend, BUCKET, 1, steps, missing)               -- and a bucket for lava
+  plan(pretend, "#fuel", K.NEWBORN_COAL, steps, missing)   -- fuel to send it off with
+  plan(pretend, K.BUCKET, 1, steps, missing)               -- and a bucket for lava
   lastMissing = missing
   if next(missing) then
     print("Waiting for: " .. describeMissing(missing))
@@ -3060,7 +3061,7 @@ local function buildLoop()
       report("problem")
       result = false
     end
-    if not result then sleep(CHECK_EVERY) end
+    if not result then sleep(K.CHECK_EVERY) end
   end
 end
 
@@ -3090,7 +3091,7 @@ do
   if not label or label == "factory" then os.setComputerLabel("Crafty") end
 end
 
-local task = fs.exists(PAUSE_FILE) and paused or work
+local task = fs.exists(K.PAUSE_FILE) and paused or work
 
 if not swarm then
   task()
@@ -3105,13 +3106,13 @@ while true do
     elseif c.cmd == "lavafarm" then        -- lavafarm Crafty n=<units built> how=place|use
       plots.lavafarm = { n = tonumber(c.n) or 0,
         how = (c.how == "use" or c.how == "hut") and c.how or "place" }
-      saveTable(PLOTS_FILE, plots)
+      saveTable(K.PLOTS_FILE, plots)
       print("Lava farm: " .. plots.lavafarm.n .. " cauldrons (" .. plots.lavafarm.how .. ").")
       return true
     elseif c.cmd == "haul" then            -- haul Crafty on=1|0 [x= y= z= face=]: carry bulk stock to the store
       plots.haul = plots.haul or {}
       if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
-      saveTable(PLOTS_FILE, plots)
+      saveTable(K.PLOTS_FILE, plots)
       print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
       return true
     elseif c.cmd == "make" and c.item then     -- make Crafty item=<id> n=<count>: craft into stock
@@ -3130,7 +3131,7 @@ while true do
       if not have then
         plots.helpers[#plots.helpers + 1] = id
         if plots.byId then plots.byId[tostring(id)] = nil end
-        saveTable(PLOTS_FILE, plots)
+        saveTable(K.PLOTS_FILE, plots)
         print("Turtle " .. id .. " is a builder's mate now: " .. tostring(HELPER_NAMES[#plots.helpers]))
       end
       return true
@@ -3144,12 +3145,12 @@ while true do
     report("rebooting")
     os.reboot()
   elseif cmd.cmd == "stop" or cmd.cmd == "home" then
-    local h = fs.open(PAUSE_FILE, "w")
+    local h = fs.open(K.PAUSE_FILE, "w")
     h.write("paused")
     h.close()
     task = paused
   elseif cmd.cmd == "resume" then
-    fs.delete(PAUSE_FILE)
+    fs.delete(K.PAUSE_FILE)
     task = work
   end
 end
