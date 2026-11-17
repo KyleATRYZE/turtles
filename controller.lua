@@ -948,9 +948,13 @@ end
 ---------------------------------------------------------------- start
 
 do
-  local h = fs.open(".role", "w")
-  h.write("controller")
-  h.close()
+  -- (only when the machine has no job written down: update.lua may have just
+  -- given it another one, and this run is the old startup's second line)
+  if not fs.exists(".role") then
+    local h = fs.open(".role", "w")
+    h.write("controller")
+    h.close()
+  end
   local label = os.getComputerLabel()
   if not label or label == "controller" then os.setComputerLabel("CommandBlock") end
 end
