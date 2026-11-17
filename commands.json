@@ -1,20 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794921186,
-      "issued": 1794921186000,
+      "id": 1794921384,
+      "issued": 1794921384000,
       "cmd": "lab",
       "target": "HopTo",
       "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;home"
-    },
-    {
-      "id": 1794921187,
-      "issued": 1794921186000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "goto|-4460|84|1517;face|0;inspect|front;expect|front|turtle;call|front|reboot;home"
+      "ops": "fetch|minecraft:bucket=7;goto|-4462|80|1521;down|7;inspect|down;down|1;face|2;fwd|4;down|2;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;inv;up|2;face|3;fwd|6;face|0;fwd|4;up|8;home;handin|"
     }
   ]
 }
