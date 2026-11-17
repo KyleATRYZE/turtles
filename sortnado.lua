@@ -165,12 +165,70 @@ local function readME(bridge)
   c.size = (frac > 0.01 and c.used > 0) and math.floor(c.used / frac) or math.max(63, c.used * 2)
 end
 
+-- A controller's slots run barrel after barrel: each section gets a stretch
+-- of them (by the plan's shares), so a section's items sit together on the
+-- wall. An item goes onto a slot of its stretch that already holds it, then
+-- an empty slot there, then the Overflow stretch; 0 when none of those takes
+-- it (the caller then lets the controller put it anywhere).
+function S.bySection(container, slot, name, count, dest)
+  local c = S.chests[dest]
+  local size, shares = c.size or 0, 0
+  if size < #SECTIONS * 2 then return 0 end
+  for _, sec in ipairs(SECTIONS) do shares = shares + sec[2] end
+  local moved = 0
+  local function stretch(want)
+    local at = 0
+    for i, sec in ipairs(SECTIONS) do
+      local from = math.floor(size * at / shares + 0.5) + 1
+      local upto = i == #SECTIONS and size or math.floor(size * (at + sec[2]) / shares + 0.5)
+      if sec[1] == want then return from, upto end
+      at = at + sec[2]
+    end
+  end
+  local function try(to)
+    local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count - moved, to)
+    n = ok and tonumber(n) or 0
+    moved = moved + n
+    return n
+  end
+  local function fill(want)
+    local from, upto = stretch(want)
+    if not from then return end
+    for s = from, upto do
+      local st = c.slots[s]
+      if st and st.name == name then
+        try(s)
+        if moved >= count then return end
+      end
+    end
+    local misses = 0
+    for s = from, upto do
+      if not c.slots[s] then
+        if try(s) > 0 then
+          c.slots[s] = { name = name, count = 0 }      -- (taken, until the books are read again)
+        else
+          misses = misses + 1
+          if misses >= 6 then return end
+        end
+        if moved >= count then return end
+      end
+    end
+  end
+  fill(S.sectionOf(name))
+  if moved < count and S.sectionOf(name) ~= "Overflow" then fill("Overflow") end
+  return moved
+end
+
 -- Put count of an item lying in a container on the network into the store
 -- (the ME system, or any inventory by pushItems from the container's slot).
 local function store(container, slot, name, count, dest)
   if S.backend == "me" then
     local ok, n = pcall(peripheral.call, S.order[1], "importItem", { name = name, count = count }, container)
     return ok and tonumber(n) or 0
+  end
+  if S.backend == "controller" and S.chests[dest] then
+    local n = S.bySection(container, slot, name, count, dest)
+    if n > 0 then return n end
   end
   local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count)
   return ok and tonumber(n) or 0
