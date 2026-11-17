@@ -1,32 +1,34 @@
 # Factory retrofit: moving the base into the factory
 
 The staged plan for getting Crafty, Counter, the launch pads and the old
-base's storage out of the hut and into the factory, and for laying the
-building out properly for the long term.
+base's storage out of the hut and into the factory, laid out for the long
+term around the **drone lane** the building was built with.
 
-- **Written:** 17 Nov (evening), revised the same night with Kyle's
-  answers. The pads now go **inside**, in the launch bay, the empty room
-  inside the big door.
+- **Revisions:** first written 17 Nov. The same night the plan moved twice:
+  first to pads in the launch bay with sky shafts, then (Kyle) to the lane.
+  The drones come and go by the lane, are served at pit stops on it, and
+  dock in racks facing it. No roof shafts.
+- **Visual plan:** `docs/factory-retrofit.html` is the top-down plan, with
+  the drone routes. It is written by `python3 tools/retrofit.py page`.
 - **Coordinates:** the building's own frame unless marked "world". The
   corner is -4448 71 1518, x runs east, z runs south, y 1 is the ground
   floor and y 0 the floor. Outside the building the same frame carries on:
   the west yard has x < 0. To convert:
   **world = (-4448 + x, 71 + y, 1518 + z)**.
-- **Tool:** every cell below comes from `tools/retrofit.py`. It checks them
+- **Tool:** every cell comes from `tools/retrofit.py`. It checks them
   against:
   - the as-fitted shell;
   - the storeroom, foundry-floor, screens and touch-up fit plans;
   - the controller move;
-  - `tools/mekline.py` up to stage 5 and `tools/quartzline.py`;
+  - `tools/mekline.py` to stage 5 and `tools/quartzline.py`;
   - the stage-0 machines, the dripstone lava row, the old hut and the yard
     bench.
 
-  It also checks that the pad columns are open to the sky, the big-door
-  corridor and doorways stay clear, and the helpers' hover row is above the
-  roof. `python3 tools/retrofit.py check` prints
-  `ok: 249 retrofit cells, none on anything built or planned`, and the maps
-  here are its output.
-- **The tool only prints.** It sends no orders and writes no files. Its fit
+  It also checks that both tracks, the way over the pit stops, both racks'
+  homes and the gate approaches stay open, and that Crafty's survey will
+  map the miners' shafts where they are planned. `python3 tools/retrofit.py check`:
+  `ok: 268 retrofit cells, none on anything built or planned; the lane, both racks and the approaches open`.
+- **The tool only prints** (and writes the page). It sends no orders. Its fit
   plans are printed, to be saved into `blueprints/` when their stage is due.
 
 ---
@@ -35,42 +37,20 @@ building out properly for the long term.
 
 | what | where (building) | world | source |
 |---|---|---|---|
-| Crafty, on its modem | -13 1 3 (modem -13 0 3) | -4461 72 1521 | Crafty's `base` in status |
-| Old launch pad (drive under it) | -14 1 3 (drive -14 0 3) | -4462 72 1521 | Crafty's `base` |
-| Drop-off chest (on a furnace) | -12 1 3 | -4460 72 1521 | Crafty's `base`, hut scan |
-| Counter, in counter mode, serving | -13 2 5, its drive sunk one block beside it | -4461 73 1523 | Kyle |
-| Old base storage | 28 chests and 2 furnaces in and under the hut (x -15..-11, y -4..1, z 1..6) | | Crafty's `network` |
-| Its contents | 1,090 of 1,269 slots: 187 kinds, 56,647 items | | Crafty's `storage` and `inv` |
-| The hut | x -20..-10, z 0..14, roof at y 3, roof hole over x -14..-12 z 3 | | BlockParty's `hut_lava` scan |
-| Kyle's lava cauldrons (rounds stay) | -19 -1 3..9, reached down the old pad's roof hole | -4467 70 1521..1527 | lava rounds |
-| Dripstone lava row (11 units) | x -7..-4, y 5..10, z 19..31 | -4454, 1538..1548 | `tools/lavafarm.py` |
-| Store: west controller | 10 5 15 (its modem 10 5 16); desk modems 10..15 1 29; In and Out barrels on the desk | | `tools/ctlmove.py`, storeroom plan |
-| Store: east controller | **TBD**: a helper is scanning for it | | |
-| Store size | 803 slots, 327 used. The plan has 71 limited barrels I (bulk), 65 limited barrels IV (260 medium slots) and 18 chests (486 small slots). | | Sortnado's report, storeroom plan |
-| Inventory Managers | three, holding Kyle's memory card and two other players' (one on the desk, one on the yard bench) | | Kyle |
-| Smelting hall | 12 furnaces at x 2 (odd z 5..27), modems at x 1, cable at x 1 (even z 4..28) | | as-fitted shell |
-| Launch bay | x 19-26, z 5..29, y 1-7, empty but for the drone rack (z 3-4) and the bay panel (19, 2-3, 26-27). Upper floor (slab y 8) above, roof above that (y 14-18). | | as-fitted shell |
-| Mekanism line | stage 2 built, stage 3 being built, x 35-37 z 9-21 | | `tools/mekline.py` |
+| Crafty, on its modem | -13 1 3 | -4461 72 1521 | Crafty's `base` in status |
+| Old launch pad (drive under it) | -14 1 3 | -4462 72 1521 | Crafty's `base` |
+| Counter (counter mode, serving) | -13 2 5 | -4461 73 1523 | Kyle |
+| Old base storage | 28 chests and 2 furnaces in and under the hut: 1,090 of 1,269 slots, 187 kinds | | Crafty's `network`, `inv` |
+| The hut | x -20..-10, z 0..14; Kyle's lava cauldrons inside (rounds stay) | | BlockParty's scan |
+| Store | west controller 10 5 15 (its modem 10 5 16), desk modems 10..15 1 29, In and Out barrels; east controller **TBD** (being scanned); 803 slots, 327 used | | `ctlmove.py`, storeroom plan, Sortnado |
+| **Drone lane (built)** | x 0..44, z 1-2, y 1-3, behind a screen at z 3: the hazard floor, bars and posts, portholes at x 9, 18, 27, gates at x 0 and 44 with IN/OUT lights (0/44, 4, 1-2) | | as-fitted shell, touch-up |
+| **Rack 1 (built)** | launch bay x 19-26: copper pads at y 0 and y 2 (z 3), bars at z 4, the name board at y 4 | | as-fitted shell; the board's monitors are in `factory_screens` |
+| The plan's pit stop in the bay | drive 21 1 1, modem 22 1 1, furnace 23 1 1, chest 23 2 1, holes in the lane floor at 20 0 1 and 24 0 1 | | blueprint (as far as fitted: check in the world) |
+| Lane access from inside | the foundry's hatch at 32 1-2 3 (no bars), how the touch-up fit got onto the lane | | blueprint |
+| Smelting hall | 12 furnaces at x 2 (odd z 5..27), modems at x 1, cable at x 1 (even z 4..28; its north end is 1 1 4) | | as-fitted shell |
+| Outside the west gate | the hill's shoulder: ground up to y 3 at x -1..-2 z 1, y 1 at x -1 z 2 (scan from before the building) | | meadow scan |
+| Outside the east gate | the dirt bank, below the floor: open | | terraform plan |
 | Chunks round the factory | force-loaded | | Kyle |
-
-**What ties the drones to Crafty's spot.** All of this decides what works
-inside a building. Everything is measured from Crafty (`base.f`) or from its
-pad (`base.exit2`):
-
-- **Helpers** come straight down onto the pad and go straight back up.
-  - They wait in a row 12 above Crafty, 4 blocks north of the pad, at pad
-    x + 3, + 5, + 7 and + 9 (`helper.lua hover()`).
-  - Leaving the pad, they climb only to that height (`upFromPad()`), then
-    fly sideways (`goHover()`).
-- **Loaders** park on 12 spots at Crafty x + 4..10 and z - 1, - 3, - 5,
-  landing on whatever is there (`loader.lua parkSpot()`). Short hops fly at
-  Crafty's height + 14 (`HOP_UP`).
-- **Miners** go up the in-shaft beyond the drop chest and down the out-shaft
-  beyond the pad. Their plot grid is laid out around Crafty
-  (`factory.lua plotOrigin()`).
-- **Each drone keeps its own copy** of the base in `.base`, written once.
-- **BlockParty's** base-room map (`builder.lua`, `ROOM_REACH` 12 round
-  Crafty, `DOOR_OFFSET` to the hut's door) assumes the hut.
 
 ---
 
@@ -82,26 +62,26 @@ The site, top down, x -20..56 (building's own frame; 1 char = 1 block)
       09876543210987654321012345678901234567890123456789012345678901234567890123456
 z  -1                                                                              
 z   0 HHHHHHHHHHH         #############################################            
-z   1 HHHHHHHHHHH         ---------------------------------------------            
-z   2 HHHHHHHHHHH         ---------------------------------------------            
-z   3 HHHHHHHHHHH         #::::::::#::::::::#::::::::#::::::::::::::::#            
+z   1 HHHHHHHHHHH     ,,,,<<KP<cCP<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<            
+z   2 HHHHHHHHHHH=========>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>            
+z   3 HHHHHHHHHHH=        #::::::::#::::::::#11111111#:::::::22222222:#            
 z   4 HHHHHHHHHHH=        #ssssssss#SSSSSSSS#yy    yy#fffffffffffllfff#            
-z   5 HHHHHHHHHHH=        #ssssssss#SSSSSSSS#pp    yy#fGGGGGfffffllfff# EEEE       
-z   6 HHHHHHHHHHH=========#ssssssss#SSSSSSSS#pP    yy#fGGGGGfffffll00f# EEEE       
-z   7 HHHHHHHHHHH        =#ssssssss#SSSSSSSS#pp    yy#fGGGGGfffffll00f# EEEE       
-z   8 HHHHHHHHHHH        =#ssssssss#SSSSSSSS#pp    yy#fffffffffffll00f# EEEE       
-z   9 HHHHHHHHHHH         #ssssssss#SSSSSSSS#pp    yy#fffffffMMMMll00f#            
-z  10 HHHHHHHHHHH         #ssssssss#SSSSSSSS#pp    yy#fffffffMMMMll00f#            
-z  11 HHHHHHHHHHH         #ssssssss#SSSSSSSS#pP    yy#fffffffMMMMll00f#            
-z  12 HHHHHHHHHHH         #ssssssss#SSSSSSSS#pp    yy#fggggggMMMMll00f#            
-z  13 HHHHHHHHHHH         #ssssssss#SSSSSSSS#pp    yy#fggggggMMMMll00f#            
+z   5 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fGGGGGfffffllfff# EEEE       
+z   6 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fGGGGGfffffll00f# EEEE       
+z   7 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fGGGGGfffffll00f# EEEE       
+z   8 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fffffffffffll00f# EEEE       
+z   9 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fffffffMMMMll00f#            
+z  10 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fffffffMMMMll00f#            
+z  11 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fffffffMMMMll00f#            
+z  12 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fggggggMMMMll00f#            
+z  13 HHHHHHHHHHH         #ssssssss#SSSSSSSS#yy    yy#fggggggMMMMll00f#            
 z  14 HHHHHHHHHHH         #ssssssss SSSSSSSS yy    yy fggggggMMMMll00f#            
 z  15                     #ssssssss SSSSSSSS yy    yy fggggggMMMMll00f#            
 z  16                     #ssssssss SSSSSSSS yy    yy fggggggMMMMll00f#            
-z  17                     #ssssssss#SSSSSSSS#pp    yy#fggggggMMMMll00f#            
-z  18                     #ssssAAAA#SSSSSSSS#pP    yy#fggggggMMMMll00f#            
-z  19          ~~~~~~~~   #ssssAAAA#SSSSSSSS#pp    yy#fggggggMMMMll00f#            
-z  20          ~~~~~~~~   #ssssAAAA#SSSSSSSS#pp    yy#fggggggMMMMll00f#TTTTTTTTTTT 
+z  17                     #ssssssss#SSSSSSSS#yy    yy#fggggggMMMMll00f#            
+z  18                     #ssssAAAA#SSSSSSSS#yy    yy#fggggggMMMMll00f#            
+z  19          ~~~~~~~~   #ssssAAAA#SSSSSSSS#yy    yy#fggggggMMMMll00f#            
+z  20          ~~~~~~~~   #ssssAAAA#SSSSSSSS#yy    yy#fggggggMMMMll00f#TTTTTTTTTTT 
 z  21          ~~~~~~~~   #ssssAAAA#SSSSSSSS#yy    yy#QQQQQQQQQMMll00f#TTTTTTTTTTT 
 z  22          ~~~~~~~~   #ssssAAAA#SSSSSSSS#yy    yy#QQQQQQQQQffll00f#TTTTTTTTTTT 
 z  23          ~~~~~~~~   #ssssAAAA#SSSSSSSS#yy    yy#QQQQQQQQQwwll00f#TTTTTTTTTTT 
@@ -114,216 +94,130 @@ z  29          ~~~~~~~~   #ssssssss#SSSSSSSS#yy    yy#fffffffffffllfff#TTTTTTTTT
 z  30          ~~~~~~~~   #############################################TTTTTTTTTTT 
 z  31          ~~~~~~~~                                                            
 z  32                                                                              
-P pads (open to the sky)  p pad strip: dispensers, cables, Crafty's chest and shafts
-s smelting hall (12 furnaces, on the network from stage 2)  A AE2 corner (later)
-S storage room (+ a 4th barrel row, stage 3)  y launch bay: corridor x 21-24 kept clear
-H old hut (Kyle's; its storage drained and retired)  = bridge for the drain (stage 2, temporary)
-~ dripstone lava rows (fuel)  - drone lane  : lane screen / drone rack  # walls
-f foundry floor  G power corner  M Mekanism line + walkway  g pool and gas plants
-Q quartz line  w workshop bench  l operator lane  0 stage-0 plinth (factories, stage 6+)
-E evaporation tower (outside, stage 4)  T control tower (screens, CommandBlock)
+< > the drone lane: back track westbound, front track eastbound  K Counter  C Crafty  P pads  c drop chest
+1 rack 1 (helpers' homes)  2 rack 2 (loaders' homes)  : the lane's screen  , the west gate's apron
+s smelting hall (12 furnaces, Crafty's)  A AE2 corner (later)  S storage room (+ a 4th barrel row)
+y launch bay (corridor x 21-24 clear)  H old hut  = bridge for the drain (temporary)  ~ lava rows
+f foundry floor  G power corner  M Mekanism line  g pool, gas plants  Q quartz line  w workshop bench
+l operator lane  0 stage-0 plinth  E evaporation tower (outside)  T control tower (screens)  # walls
 ```
 
 | zone | box | what it is for |
 |---|---|---|
-| **Launch bay** | x 19-26 | **The pads** on the west side: pad column x 20, cable down the wall at x 19, z 5..13 and 17..20. The corridor x 21-24 stays clear: it is the way from the big door to the doorways (x 18 and x 27, z 14-16). The rack (z 3-4) and the bay panel stay. The east strip x 25-26 is spare. |
-| **Smelting hall** | x 1-8 | Crafty's 12 furnaces (from stage 2). The **AE2 corner** goes in its south-east, x 5-8 z 18-28. |
+| **Drone lane** | x 0..44, z 1-2 | All drone traffic in and out, and the pit stops. Back track (z 1) westbound, front track (z 2) eastbound, at y 2. |
+| **Pit stops** | x 2-8, z 1 (the hall's stretch of the lane) | Counter, and Crafty with its drop chest. |
+| **Rack 1** | x 19-26, z 3 (launch bay) | the helpers' 16 homes |
+| **Rack 2** | x 35-42, z 3 (foundry) | the chunk loaders' 16 homes (stage 6) |
+| **Smelting hall** | x 1-8 | Crafty's 12 furnaces; the **AE2 corner** in its south-east, x 5-8 z 18-28 |
 | **Storage room** | x 10-17 | Sortnado's store, plus a 4th barrel row (§4) |
-| **Foundry** | x 28-43 | the Mekanism line and its expansion (§5) |
-| **Power corner** | NW plinth x 29-33 z 5-7 | generators and a cube, cabled into the line |
+| **Launch bay** | x 19-26 | Free floor now the pads are on the lane. The way in from the big door (corridor x 21-24); rack 1 at its north end. |
+| **Foundry** | x 28-43 | the Mekanism line and its expansion (§5); rack 2 at its north end |
+| **Power corner** | NW plinth x 29-33 z 5-7 | generators and a cube |
 | **Workshop bench** | x 36-38 z 23-27 | machine trials |
 | **Quartz line** | x 28-35 z 22-27 | stays as it is |
 | **East yard** | x 46-49 z 5-8 | the evaporation tower (Mekanism stage 4) |
 | **Control tower** | x 45-55 z 20-30 | screens and dashboard; CommandBlock moves in |
-| **Roof** over the bay and the foundry's west end | x 23-30, z 2-6 | helpers hover above it; loaders park on it |
-| **Fuel** | x -11..-4, z 19..31 | dripstone row 1 (built), row 2 (planned) |
-| **Old hut** | x -20..-10 | stays as Kyle's hut, with its lava cauldrons and the old pad's roof hole for the rounds. Its storage is drained and dismantled. |
+| **West gate's apron** | x -4..-1, z 1-2 | dug back to y 1 so drones can fly in |
+| **Old hut** | x -20..-10 | Kyle's hut and lava cauldrons stay; the old storage is drained and dismantled |
+| **Fuel** | x -11..-4, z 19..31 | dripstone lava rows |
 
 ---
 
-## 2. The pads, in the launch bay
+## 2. The lane: pit stops, racks, routes
 
 ```
-The launch bay and the store beside it, top down (ground floor)
-   x   10        20       
-      90123456789012345678
-z   2                     
-z   3 ##|||#||############
-z   4 #bssssssB#||||||||# 
-z   5 #b      B#/v/~~~~~R~
-z   6 #b      B#~P::::  # 
-z   7 #b      B#|T::::  # 
-z   8 #b      B#~c::::  # 
-z   9 #b      B#/^/:::  # 
-z  10 #b      B#~ ::::  # 
-z  11 #b      B#~P::::  # 
-z  12 #b      B#|K::::  # 
-z  13 #b      B#~ ::::  # 
-z  14  b      B ~ ::::    
-z  15  b      B ~ ::::    
-z  16  ~~~~~~~~R~ ::::    
-z  17 #b      B#~ ::::  # 
-z  18 #b      B#~P::::  # 
-z  19 #b      B#|3::::  # 
-z  20 #b      B#  ::::  # 
-z  21 #b      B#  ::::  # 
-z  22 #b      B#  ::::  # 
-z  23 #b      B#  ::::  # 
-z  24 #b      B#  ::::  # 
-z  25 #b      B#  ::::  ##
-z  26 #b      B#M ::::  ##
-z  27 #b       #M ::::  # 
-z  28 #b       #  ::::  # 
-z  29 |mmmmmm H#  ::::  # 
-z  30 ############    ####
-P pad (drive in the floor under it; sky shaft above)  T Crafty  K Counter  3 pad 3 (stage 6)
-c Crafty's drop chest  v out-shaft  ^ in-shaft (miners)  / hazard stripe in the floor
-| cable down the west wall (x 19, y 1-6) to each modem  ~ trunk under the upper floor (y 7)
-R partition cell replaced by cable  : big-door corridor, kept clear  % drone rack  M bay panel
-b B s storage room barrels and chests  m desk modems  H ladder
+The drone lane, top down (x -5..47, z -1..5)
+   x       0         10        20        30        40      
+      54321012345678901234567890123456789012345678901234567
+z  -1                                                      
+z   0      #############################################   
+z   1  ,,,,<<KP^cTPv<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< E 
+z   2   W,,>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> X 
+z   3      ##|||#||###|||#||##11111111##|#| |#22222222##   
+z   4      ##       ##########||||||||#       |||||||| #   
+z   5      ###      ##      ##        #                #   
+< back track (z 1, westbound)  > front track (z 2, eastbound); drones fly at y 2, gates at x 0 and 44
+K Counter  T Crafty  P their pads  c Crafty's drop chest  ^ v miners' in- and out-shaft (in the lane floor)
+1 rack 1 (launch bay, built): 16 homes, low and high  2 rack 2 (foundry, stage 6): 16 more
+W drones come down here, outside the west gate, and go in on the front track (east)
+E ... outside the east gate, in on the back track (west)  X out by the east gate on the front track
+, the west gate's apron, dug out (the hill's shoulder)  | # % the screen, walls, rack pads
 ```
 
-**The three lines.** Each runs north to south along x 20: the pad, then the
-dispenser on its modem, then (Crafty only) the drop chest. The drive and
-modem are set into the floor (y 0).
+### The pit stops
 
-| line | pad (drive in the floor under it) | dispenser on its modem | drop chest | shafts | stage |
-|---|---|---|---|---|---|
-| **A: Crafty** | 20 1 6 = world **-4428 72 1524** (drive -4428 71 1524) | 20 1 7 = **-4428 72 1525** (modem -4428 71 1525) | 20 1 8 = -4428 72 1526 | out 20 · 5 (-4428 · 1523), in 20 · 9 (-4428 · 1527) | 1, filled in 5 |
-| **B: Counter** | 20 1 11 = **-4428 72 1529** | 20 1 12 = **-4428 72 1530** | none (counter mode needs none) | none | 1, filled in 5 |
-| **C: pad 3** | 20 1 18 = **-4428 72 1536** | 20 1 19 = -4428 72 1537 | none | none | 6 |
+They sit in the smelting hall's stretch of the lane, just inside the west
+gate, on the back track at drone height (y 2). Every stop block sits on a
+block of its own at y 1, and the cable runs under the lane floor.
 
-**Cabling.** Each modem has a cable beside it in the floor (19 0 z). From
-there a cable runs up the bay's west wall (19 1..6 z) to a trunk under the
-upper floor (19 7 7..19). The trunk crosses into the storage room through
-the partition over the doorway (**18 7 16**), runs west along y 7 (17..11
-7 16), and drops onto the west controller's modem (10 7 16, 10 6 16). The
-pads therefore sit on the store's own network: Crafty and Counter see the
-store directly. The storage room's ceiling is free along z 16; the lantern
-at 10 7 4 and the doorway lanterns at y 3 are missed.
+| | building | world | under it (y 1) |
+|---|---|---|---|
+| **Counter** | 2 2 1 | -4446 73 1519 | its modem 2 1 1 |
+| Counter's pad | 3 2 1 | **-4445 73 1519** | its drive 3 1 1 |
+| Crafty's in-shaft (miners) | 4 · 1 | -4444 · 1519 | (cut when mining resumes) |
+| Crafty's drop chest | 5 2 1 | -4443 73 1519 | a block, 5 1 1 |
+| **Crafty** | 6 2 1 | **-4442 73 1519** | its modem 6 1 1 |
+| Crafty's pad | 7 2 1 | **-4441 73 1519** | its drive 7 1 1 |
+| Crafty's out-shaft (miners) | 8 · 1 | -4440 · 1519 | (cut when mining resumes) |
 
-**Sky shafts.** The x 20 column is open from floor to roof except for two
-blocks: the upper floor at y 8 and the roof tile at y 17 (the roof is 17
-high at x 20). Each pad's shaft is those two cut out. A two-high glass ring
-goes round each hole in the upper floor (y 9-10), so nobody walks into it in
-the workshop. Nothing above the roof is in the way.
+**Why there.**
+- **The cable is short.** The hall's cable ends at 1 1 4, right behind the
+  screen. A cable through the screen post at 1 1 3 runs under the lane
+  floor along the front track (1..6 0 2) and under each modem (2 0 1,
+  6 0 1). That is 9 cells, all on the hall's cable and so the 12 furnaces.
+  The desk link (stage 1) puts the hall on the store's network.
+- **Upstream of both racks.** A drone served at a pad goes on east to its
+  rack home or out of the east gate. It never has to turn back.
+- **Crafty's survey works unchanged.** It turns until its chest is in front
+  (west). North is the wall and south is the front track; east is the pad,
+  where it finds the drive. It maps:
+  - dock 5 3 1, exit1 6 3 1, exit2 7 3 1;
+  - in-shaft x 4, out-shaft x 8.
 
-```
-Section through the pads (x 20): z across, y up
-   z          10        20 
-      234567890123456789012
-y  20     .    .      .    
-y  19     .    .      .    
-y  18     .    .      .    
-y  17 ^^^^o^^^^o^^^^^^o^^^^
-y  16     .    .      .    
-y  15     .    .      .    
-y  14     .    .      .    
-y  13     .    .      .    
-y  12     .    .      .    
-y  11     .    .      .    
-y  10    g.g  g.g    g.g   
-y   9    g.g  g.g    g.g   
-y   8 ####o####o######o####
-y   7    =.    .      .    
-y   6     .    .      .    
-y   5     .    .      .    
-y   4   # .    .      .    
-y   3   | .    .      .    
-y   2  %| .    .      .    
-y   1   | PTc  PK     P3   
-y   0 #%#.dm#.#dm#####dm###
-y  -1    .   .             
-y  -2    .   .             
-Side view along x 20 (north on the left). P pad  T Crafty  K Counter  3 pad 3  d drive  m modem
-c drop chest  o cut out of the upper floor (y 8) and the roof (y 17)  . open to the sky
-g glass ring round each hole in the upper floor (y 9-10)  ^ roof  # floor, upper floor  | rack bars
-```
+  These are the cells planned for them (the check computes them). The
+  miners' service row is y 3 over the stop.
+- **Counter's survey is the same.** It looks for its pad in front too and
+  needs no chest.
 
-**Crafty finding its bearings.** `survey()` turns until the drop chest is in
-front (south). West is the cable, so that side is skipped. North is the pad:
-it steps there and finds the drive. It maps:
+### The racks
 
-| what | building | world |
-|---|---|---|
-| dock | 20 2 8 | -4428 73 1526 |
-| exit1 | 20 2 7 | -4428 73 1525 |
-| exit2 | 20 2 6 | -4428 73 1524 |
-| in-shaft | 20 · 9 | |
-| out-shaft | 20 · 5 | |
+| rack | where | homes | for |
+|---|---|---|---|
+| **1 (built)** | launch bay x 19-26, z 3 | 16: low (x, 1, 3) on the copper pad in the floor, high (x, 3, 3) on the copper pad at y 2 | the helpers (home i: x 19 + i % 8, the low row first) |
+| **2 (stage 6)** | foundry x 35-42, z 3 | 16, the same | the chunk loaders |
 
-These are exactly the cells kept open (the check keeps x 20 y 2, z 5..9
-clear). Counter also looks for its pad in front (commit e87e43f), so it
-needs no chest. Each dispenser's east side (21 1-2 z) is left open for the
-survey's step.
+Rack 2 is built where the foundry's screen is. The bars (or posts) at y 1
+and y 3 come out, copper pads go in the floor and at y 2, and the bars go
+back one row, to z 4. The bar at y 4 stays as the lintel.
 
-**The roof: where the drones wait.**
+### The routes
 
-```
-The roof over the launch bay, top down
-   x        20        30 
-      4567890123456789012
-z  -1                    
-z   0 6554887766554887766
-z   1 6554887766554887766
-z   2 655488776hLhLhLhL"6
-z   3 6554887766554887766
-z   4 6554887766L5L8L7L66
-z   5 655488776655488"7"6
-z   6 655488O766L5L8L7L66
-z   7 6554887766554887766
-z   8 655488776655488"7"6
-z   9 6554887766554887766
-z  10 6554887766554887766
-z  11 655488O76655488"7"6
-z  12 6554887766554887766
-z  13 6554887766554887766
-z  14 655488776655488"7"6
-z  15 6554887766554887766
-z  16 6554887766554887766
-z  17 655488776655488"7"6
-z  18 655488O766554887766
-z  19 6554887766554887766
-z  20 655488776655488"7"6
-z  21 6554887766554887766
-z  22 6554887766554887766
-O roof hole over a pad (stage 1; the third in stage 6)  h helpers hover, y 21, with code change H1
-L loaders park on the roof (as the code stands)  digits: top block's y, last digit (14-18)
-" roof glass (glazed sawtooth faces at x 18 and 27, roof lights over the foundry)
-```
+Drones fly the lane at y 2:
 
-- **Helpers, as the code stands, do not work here.** The hover row (pad
-  x + 3..9 = x 23-29, z 2, y 13) is *inside* the building, under the roof,
-  over the upper floor and the foundry. A helper leaving the pad climbs its
-  shaft only to y 13 (`upFromPad()`). `goHover()` then flies sideways inside
-  the upper floor, meets the foundry's wall and the roof, and ends in
-  `escape`.
-- **Code change H1 is needed:** hover 20 above Crafty, not 12. In
-  `helper.lua hover()`, `base.f.y + 12` becomes `base.f.y + 20`, or the
-  factory hands out a hover point (`base.hover`).
-  - The row is then at y 21 (world 92, z 1520, x -4425..-4419).
-  - That is 3 above the highest roof it crosses (y 18). The check confirms
-    this.
-  - A helper climbs straight up its shaft and out through the roof hole,
-    and waits in the air above the roof.
-  - `downToPad()` crosses at that height and drops down the shaft.
-  - At the old base the change only means waiting 8 higher.
-- **Loaders park on the roof** at x 24, 26, 28, 30 and z 6, 4, 2
-  (world -4424..-4418, 1524..1520). That works as the code stands: they
-  land on whatever is under their spot, here the roof. None of the spots is
-  over a pad or a shaft.
-- **Recommended change L1:** `loader.lua HOP_UP` from 14 to 22. A
-  nearly-dry loader's short hop flies at Crafty + 14 = y 15, which is into
-  the roof. Normal trips fly at cruise height and come down the pad shaft.
-- **Miners** work as before: up the in-shaft through the bay floor at
-  20 · 9, along y 2 over the chest, over Crafty and over the pad, then down
-  the out-shaft at 20 · 5.
-  - The two shaft holes are cut through the floor down to the miners' roads
-    (world 56 and 52) only when mining resumes (`ops minershafts`).
-  - Each gets hazard stripes either side.
+| route | path |
+|---|---|
+| **In from the west** | come down outside the west gate at -3 2 2 (world -4451 73 1520), in on the front track, east to the pad's x, one step north onto the pad |
+| **In from the east** | come down outside the east gate at 46 2 1 (world -4402 73 1519), in on the back track, west through the three portholes to Crafty's pad, onto it from the east |
+| **To Counter's pad from the east** | at x 8 up to y 3, over Crafty's stop, down onto 3 2 1 |
+| **From a pad** | a step south onto the front track, then east: to the rack home (a step south into it, at y 1 or y 3), or out of the east gate at 46 2 2 and up |
+| **From a rack home to a pad** | north twice (to the back track), then west |
 
-**What else changes** (code, §6): the drones' `.base` (C1), the plot grid
-(C8), and BlockParty's base-room map (B1).
+**Why this is safe:**
+- Each track runs one way.
+- The only shared stretch is y 3 over Crafty's stop, which the miners also
+  use; they are paused today.
+- A drone meeting a turtle in its way waits for it, up to 90 s (`step()`).
+
+**The gates.**
+- **West gate:** its apron is dug back (lab `apron`: 7 columns of plain
+  ground, down to y 1).
+- **East gate:** opens onto the bank and is clear. There is a lantern in
+  the east gate at 44 3 1 (y 3 of the back track), which is fine at drone
+  height y 2.
+
+**Old pit stop.** The plan's bay pit stop (whatever of it was fitted) comes
+off the back track, and its two floor holes (20 0 1, 24 0 1) are filled with
+hazard concrete.
 
 ---
 
@@ -333,24 +227,26 @@ L loaders park on the roof (as the code stands)  digits: top block's y, last dig
 The cable network, top down
    x      -10       0         10        20        30        40   
       43210987654321012345678901234567890123456789012345678901234
-z   2               #        #        #        #                #
-z   3               #        #        #        #                #
+z   0               #############################################
+z   1                 Md  Md              mf                     
+z   2      ================                                      
+z   3      =        #R       #        #        #                #
 z   4  ===R=        #-       #        #        #                #
-z   5      =        #mf      #        #~~~~~~~~R~~~~~~~~~       #
-z   6      =========#-       #        #~d      #        ~       #
-z   7              =#mf      #        #~M      #        ~       #
-z   8              =R-       #        #~       #        M~      #
-z   9               #mf      #        #~       #         ~      #
-z  10               #-       #        #~       #         ~      #
-z  11               #mf      #        #~d      #         ~      #
-z  12               #-       #        #~M      #         ~      #
-z  13               #mf      #        #~       #         ~      #
-z  14               #-                 ~                 ~       
-z  15               #mf       K        ~                 ~       
-z  16               #-        ~~~~~~~~R~                 ~       
-z  17               #mf      #-       #~       #         ~      #
-z  18               #-       #-       #~d      #         ~      #
-z  19               #mf      #-       #~M      #         M      #
+z   5               #mf      #        #        #                #
+z   6               #-       #        #        #                #
+z   7               #mf      #        #        #                #
+z   8               #-       #        #        #        M~      #
+z   9               #mf      #        #        #         ~      #
+z  10               #-       #        #        #         ~      #
+z  11               #mf      #        #        #         ~      #
+z  12               #-       #        #        #         ~      #
+z  13               #mf      #        #        #         ~      #
+z  14               #-                                   ~       
+z  15               #mf       K                          ~       
+z  16               #-        ~~~~~~~~R~~~~~~~~R~~~~~~~~~~       
+z  17               #mf      #-       #        #         ~      #
+z  18               #-       #-       #        #         ~      #
+z  19               #mf      #-       #        #         M      #
 z  20               #-       #-       #        #                #
 z  21               #mf      #-       #        #                #
 z  22               #-       #-       #        #                #
@@ -362,35 +258,35 @@ z  27               #mf      #-       #        #                #
 z  28               #-       #-       #        #                #
 z  29               #========Rmmmmmm  #        #                #
 z  30               #############################################
-= new cable low (y 0-6)  ~ new cable under the upper floor (y 7)  R wall cell replaced
-M new full modem  d new disk drive  - m f K existing cable, modems, furnaces, storage controller
-(the yard part and the hut end of the bridge come out again in stage 6)
+= new cable low (y 0-6; under the lane floor along the front track)  ~ new cable at y 7  R wall cell replaced
+M new full modem (Counter's, Crafty's, the line's)  d new disk drive  - m f K existing cable, modems, furnaces, controller
+(the bridge from the hut, x -13..-1, comes out again once the old chests are empty)
 ```
 
 | run | cells | joins | stage | by |
 |---|---|---|---|---|
-| **Pad trunk** | floor cables 19 0 7 and 19 0 12, cables up the wall 19 1..6 7 and 19 1..6 12, trunk 19 7 7..19, **partition 18 7 16**, 17..10 7 16, 10 6 16 | modems A and B (and C at 19 0 19) to the west controller's modem 10 5 16 | 1 (C's drop in 6) | swarm: fit plan `pads` |
-| **Desk link** | 1..8 1 29 along the hall's south wall, **9 1 29** through the partition | the hall's cable (end 1 1 28) to desk modem 10 1 29: the 12 furnaces join | 2 | swarm: fit plan `desklink` |
-| **Bridge** | hut: -13 2 4 (on the old modem -13 1 4), -12 2 4, -11 2 4, **-10 2 4** (hut wall, cobblestone); yard: -9 2..0 4, -9 0 5..6, -8..-1 0 6, -1 0 7..8, riser -1 1 8; **wall 0 1 8** | the old base's network to the hall's cable at 1 1 8, for the drain | 2, out again in 6 | swarm (lab), wall cell by Kyle |
-| **North line** | from the pad trunk at 19 7 5..6, east at y 7 along z 5 (20..26), **partition 27 7 5**, 28..36 7 5, down x 36 to a modem on the line's inbox (36 1 8); along x 37 at y 7 and down to a modem on the outbox (37 1 19) | the store to the Mekanism line's chests | 7 | swarm: fit plan `northline` |
+| **Pit stop link** | screen post **1 1 3** replaced by cable; under the lane floor 1 0 3, 1..6 0 2, 2 0 1, 6 0 1 | the hall's cable (1 1 4) to Counter's and Crafty's modems | 1 | swarm: fit `pitstop` |
+| **Desk link** | 1..8 1 29 along the hall's south wall, **9 1 29** through the partition | the hall's cable to desk modem 10 1 29: the store | 1 | swarm: fit `desklink` |
+| **Bridge** (for the drain) | hut: -13..-11 2 4 (on the old modem -13 1 4), **-10 2 4** (cobblestone); yard: -9 2..0 4, -9 0 3..2, -8..-1 0 2; under the west gate **0 0 2** | the old base to the pit stop link at 1 0 2 | 2, out again in 6 | swarm: lab `bridge`, fit `gatelink` |
+| **North line** | 10 6..7 16 up from the west controller's modem, east along y 7 z 16 through **18 7 16** and **27 7 16**, to modems on the Mekanism line's inbox (36 1 8) and outbox (37 1 19) | the store to the line | 7 | swarm: fit `northline` |
+
+**No hand-placed cable at all.**
+- Every replaced cell inside the building is a fit job standing in a room
+  or on the lane. The fit walker gets onto the lane by the foundry's hatch,
+  as the touch-up did.
+- The bridge comes in under the west gate. The swarm digs the hut's
+  cobblestone itself.
 
 **What sees what.**
-
-- **Sortnado:** with a controller on the network, it keeps only the
+- **Sortnado:** with a controller on the cable, it keeps only the
   controllers as the store and ignores every other chest, furnace, turtle
-  and drive (`sortnado.lua S.discover`). The pads, the hall and the old
-  base joining change nothing for it.
-- **Crafty, as written today:** it would take every inventory on the cable
-  as storage, including the store's **In and Out barrels** and, later, the
-  **line's inbox and outbox**. Code change C2 stops that. It is needed
-  before the bridge (stage 2), and before Crafty is switched on in the bay
-  (stage 5).
-
-**Why the bridge goes to the hall and not to the bay.** It is a temporary
-run to drain the old chests. The hall's west wall is the nearest point of
-the network to the hut. The bridge's one wall cell (0 1 8) is a deepslate
-tile that the lab may not dig and a fit job could only reach from outside,
-so it is Kyle's.
+  and drive.
+- **Crafty (code done):** skips barrels, Inventory Managers and anything
+  named with `stores Crafty skip=…`. It puts away into the controllers
+  first.
+- **The line's inbox and outbox (stage 7):** before their modems are
+  switched on, Crafty must be told
+  `stores Crafty skip=minecraft:chest_<inbox>,minecraft:chest_<outbox>`.
 
 ---
 
@@ -485,27 +381,26 @@ the hut lava round stands on.
 
 ---
 
+
 ## 5. The other zones
 
 **Smelting hall (x 1-8).** The 12 furnaces at x 2 join the network with the
-desk link (stage 2). Each modem at x 1 (world -4447 72, z 1523..1545 odd)
-must be switched on once by a player to show its furnace. Crafty's
-`network` list says which already are (`minecraft:furnace_N`).
+desk link. Each modem at x 1 (world -4447 72, z 1523..1545 odd) must be
+switched on once by a player to show its furnace. Crafty's `network` says
+which already are.
 
-**AE2 corner (later, after the meteorite trip): the smelting hall's
-south-east, x 5-8, y 1-3, z 18-28.** Open floor in every plan, and the
-right place for it:
+**AE2 corner (later): the smelting hall's south-east, x 5-8, y 1-3, z
+18-28.**
+- **ME Bridge:** a full modem at 8 1 28 on the desk link's cable, with the
+  ME Bridge beside it.
+- **Storage bus:** on an ME cable through the partition at 9 5 15, facing
+  the west controller (10 5 15). The east controller's bus waits on its
+  cell.
+- **Power:** a Vibration Chamber, or a heat generator and cube, on fuel.
 
-- **ME Bridge:** a full modem at 8 1 28 touches the desk link's cable at
-  8 1 29, with the ME Bridge beside it. Sortnado's desk is the other side of
-  the partition.
-- **Storage bus:** on an ME cable through the partition at **9 5 15** (stone
-  brick, over the doorway's lintel). The cable runs along 8 5 15..18 from
-  the corner, and the bus faces the west controller at 10 5 15. The east
-  controller's bus waits on its cell (TBD).
-- **Power:** an AE2 Vibration Chamber, or a heat generator and cube in the
-  corner, both on fuel. No Mekanism cable reaches the hall, and one is not
-  worth a run across three rooms.
+**Launch bay.** It is free now that the pads are on the lane. It is the way
+in from the big door, and rack 1 is at its north end. The east strip
+(x 25-26) and the west strip (x 19-20) are spare floor.
 
 **Foundry: the Mekanism line's expansion.**
 
@@ -515,9 +410,9 @@ The foundry bay and east yard, top down
       789012345678901234567890
 z   3 ##|#| |#|||#|||###      
 z   4 #                #      
-z   5 #~GGGGG~~~       # EEEE 
-z   6 # GGGGGuu~       # EEEE 
-z   7 # GGGGGbu~bbbbb=b#bEEEE 
+z   5 # GGGGG          # EEEE 
+z   6 # GGGGGuu        # EEEE 
+z   7 # GGGGGbubbbbbb=b#bEEEE 
 z   8 #      buM~    = # EEEE 
 z   9 #      buC~    = #      
 z  10 #      buS~    = #      
@@ -526,7 +421,7 @@ z  12 #  ##  b.Ww   E= #
 z  13 # #~~# b.Y~    = #      
 z  14   #~~# b.Igg   = #      
 z  15    ##  b.P~   I= #      
-z  16   %%%%%%.R~    = #      
+z  16 ~~%%%%%%.R~    = #      
 z  17 # %%%%%%.E~    B #      
 z  18 # %%%%%%.M~    H #      
 z  19 # %%%%%%.CM      #      
@@ -582,68 +477,53 @@ E R P I D W Y M H machines (see mekline.py)  = Mekanism cable  B cube  # basin
 - **Stage 0 plinth** (x 41-42): runs until the line is proven. Then it takes
   a bank of factories. The infuser stays.
 
+
 **Screens and dashboard.** The plan is `docs/screens.md` as written:
 
+- the gate lights (now in real use: drones come and go by the gates);
+- the rack board over rack 1;
+- the bay panel;
 - the map wall and touch panel in the tower;
-- the rack board and bay panel in the launch bay (both stay; the pads are
-  clear of them);
-- the gate lights;
 - the storage screen.
 
-The stations are bootstrapped on pad A after the move (stage 9).
-CommandBlock (the controller computer in the hut at -13 0 9, with its Chat
-Box and Player Detector) is carried into the tower top floor by Kyle:
-computer 50 17 28, chat box 50 18 28, detector 49 17 28.
+Rack 2 can get a board of its own later (8 monitors at y 4, z 4).
+CommandBlock (the controller computer in the hut, with its Chat Box and
+Player Detector) is carried into the tower by Kyle.
 
 **Fuel.**
-
-- **Row 1** (11 units): stays as it is.
-- **Kyle's hut cauldrons:** these stay. Their round goes down the old pad's
-  roof hole (world -4462, down to 72), so that hole and the old pad cell
-  stay open.
-- **Row 2** (optional): a second dripstone row 4 blocks west, world x -4458,
-  z 1538..1548. Build it with `ops lava2` once there are 11 lava buckets to
-  seed it.
+- **Row 1** (11 units): stays.
+- **Kyle's hut cauldrons:** these stay, and their round goes down the old
+  pad's roof hole, so that hole and the old pad cell stay open.
+- **Row 2** (optional, `ops lava2`): world x -4458, z 1538..1548, once there
+  are 11 lava buckets to seed it.
 
 ---
 
-## 6. Code for the move
+## 6. Code
 
-**Status, 17 Nov:** written and pushed (commits ce6908e to 1cb5f0a, tested
-in `test/movetest.py`). Each piece is inert until the move:
+**Done (pushed, `test/movetest.py`).** All of this is inert until the move:
 
-- **Done:** H1, L1, C1, C3, C5, C7 and C8.
-- **B1:** only the door part is done (`base.door`).
-- **C2:** done in a different form. Crafty puts away straight into the
-  controllers, never into the In barrel, because it often puts something
-  away and takes it straight back.
-- **Left:** C6, and BlockParty's base-room map at the new base (untested;
-  keep BlockParty idle or on helper-style jobs).
+- the `rebase` order (every drone asks Crafty for the new base and
+  restarts);
+- Crafty's store filter;
+- Counter reporting role `counter`;
+- the 3-way pad split (labels `Counter`, `Counter2`, …);
+- the plot grid kept where it is (`plots.origin`);
+- Sortnado's `drain`;
+- the helpers' hover height and the loaders' hop height (`base.hoverUp`,
+  `base.hopUp`);
+- the builder's door (`base.door`).
 
-The orders as written:
+**For the lane (part 2 of this change; see the commit log):**
 
-- `rebase all hover=20 hop=22 door=-4426,72,1549`
-- `drain Sortnado from=minecraft:chest_*` (or `stop=1`)
-- `stores Crafty skip=name,name*`
-- Labels `Counter`, `Counter2`, ... for the dispensers. Loads go to
-  id % (N + 1), and Crafty serves any share whose counter has been quiet
-  for 150 s.
-
-
-| id | where | what | needed before |
-|---|---|---|---|
-| **H1** | `helper.lua hover()` | **Hover 20 above Crafty, not 12** (`base.f.y + 20`), or a hover point handed out by the factory (`base.hover`). With the pads inside, y 13 is inside the building: `upFromPad()` stops there and `goHover()` flies into the upper floor. At + 20 the climb clears the roof (18) and the row waits 3 above it. | stage 5 |
-| **L1** | `loader.lua` | `HOP_UP` 14 → 22, so a nearly-dry loader's short hop clears the roof. Parking on the roof needs no change. | stage 5 (recommended) |
-| **B1** | `builder.lua` | BlockParty's base-room map (`ROOM_REACH` 12 round Crafty, `DOOR_OFFSET` to the hut's door) assumes the hut. Either point the door at the big door (22, 2, 30) or have BlockParty fetch like a helper, straight down the pad shaft. | before BlockParty next fetches after stage 5 |
-| **C1** | `swarm.lua` (+ each role) | **`rebase` order.** Every drone takes the factory's new `base` (the controller fills it in from Crafty's last status) and rewrites `.base`. Miners also drop `dock/exit1/exit2`, loaders drop their remembered base. Then reboot. | stage 5 |
-| **C2** | `factory.lua discover()` | **Crafty's stores are an allow-list.** Never the store's In or Out barrel (an order `stores Crafty skip=…`, or Sortnado broadcasts its `cfg.inbox/outbox`), never the line's inbox or outbox. Put away into the **In barrel**, so Sortnado files it. Pull from the controllers and the old chests. `storageSpace()` counts the controllers. | stage 2 |
-| **C3** | `factory.lua` | **Counter reports role `counter`**, not `factory`. Today the controller (`forge`) and the loaders may take Counter's base for Crafty's. Counter's facing is already fixed (e87e43f). | stage 5 |
-| **C5** | `sortnado.lua` | **`drain from=<names>`.** Treat the named old chests as extra In chests until they are empty, biggest piles first. Report what is left. | stage 4 |
-| **C6** | `factory.lua` | **Line duty over the cable:** raw ore from the store into the line's inbox, the outbox into the store (the mekanism plan's "line operator duty"). | stage 7 |
-| **C7** | `factory.lua` | **Pad 3:** split loads three ways (or give each to the least busy pad) instead of odd and even. Counter mode never crafts, so a spare turtle can serve pad 3. | stage 6 |
-| **C8** | `factory.lua plotOrigin()`, miners | **Keep the plot grid where it is.** Plots are laid out round `base.f`; moving Crafty 33 east and 4 south moves every plot. Save the old `base.f` as `plots.origin` and use it, in the miners' shaft-column check too. | before mining resumes |
-
-The lab, fit, haul and foundry orders already exist and need no change.
+| id | where | what |
+|---|---|---|
+| **N1** | `helper.lua` | **Fly the lane.** With `base.lane` set (by the rebase order), a fetch goes to the gate on the near side, along the right track, onto the pad from the side. Leaving, it steps onto the front track and goes east. |
+| **N2** | `helper.lua` | **Rack homes.** An idle helper, or one waiting for a load, goes to its rack home instead of hovering. Home i is x 19 + i % 8, low row first, by `SLOTS` or id. |
+| **N3** | `swarm.lua` | The rebase order carries `lane=1`, and the lane's numbers come with the base. |
+| **L2** | `loader.lua` | Loaders park in rack 2 (later; until then they park where Crafty's offsets put them, on the hill north of the lane: x 10-16, z 0..-4). |
+| **C6** | `factory.lua` | The line duty over the cable (stage 7). |
+| **B1** | `builder.lua` | BlockParty's base-room map assumes the hut. Keep it idle or on helper-style jobs after the move. |
 
 ---
 
@@ -653,293 +533,137 @@ The lab, fit, haul and foundry orders already exist and need no change.
 off the desk and never stop. Crafty keeps its old chests until they are
 empty, and sees the store from stage 2 on.
 
-### Stage 1: pads A and B, their trunk, and the sky shafts
+### Stage 1: pit stops, their cable, the desk link, the west gate
 
-**Goal:** the pad hardware in the bay, on the store's network, with the sky
-shafts open. Nothing is switched on yet. The old base carries on as it is.
+**Drones (HopTo):**
+1. Save `python3 tools/retrofit.py fit pitstop` and `fit desklink` as
+   `blueprints/factory_<name>.txt` and commit them.
+2. `tools/order.py fit HopTo ox=-4448 oy=71 oz=1518 plan=factory_pitstop shell=factory_asfit3`, then the same with `plan=factory_desklink`.
+3. `pitstop` (24 jobs, every stand on the lane):
+   - the old bay pit stop dug out from the front track;
+   - its two floor holes filled;
+   - the screen post 1 1 3 out, the floor under it cut, a cable in;
+   - the floor cable;
+   - the two modems and drives from above;
+   - the chest's block and the chest.
 
-**Drones:**
+   `desklink` is 9 jobs.
 
-- **Inside (HopTo), fit plan `pads`:**
-  1. `python3 tools/retrofit.py fit pads > blueprints/factory_pads.txt`
-     (commit it).
-  2. `tools/order.py fit HopTo ox=-4448 oy=71 oz=1518 plan=factory_pads shell=factory_asfit3`
-  3. HopTo comes in at the big door and works the 46 jobs, every stand
-     inside:
-     - each floor cell (drives, modems, floor cables, 4 hazard stripes)
-       dug out and replaced from above;
-     - the wall cables bottom up, then Crafty's drop chest;
-     - the trunk from the east;
-     - the partition cell from the storage room side;
-     - the storage room run from below;
-     - the last cell beside the controller's modem from the east.
-- **Outside (OnRepeat), the sky shafts:**
-  `tools/order.py lab OnRepeat clear=1 "ops=$(python3 tools/retrofit.py ops shafts)"`.
-  For each pad, from above:
-  1. `goto` world (-4428, 90, z).
-  2. `expect` the roof tile, then `digdown` to world 81: through the roof,
-     down inside the upper floor's room.
-  3. Glass on all four sides at y 10 and y 9.
-  4. `expect` the upper floor, then `digdown` to world 73: through it,
-     down to the pad's column at y 2.
-  5. `home` goes straight back up the shaft.
+**Drones (OnRepeat), the apron:**
+`tools/order.py lab OnRepeat clear=1 "ops=$(python3 tools/retrofit.py ops apron)"`.
+For each column, `goto` above it, then `digdown` to world 72 (plain ground
+only).
 
-  `digdown` takes only plain ground. Deepslate tiles and polished deepslate
-  both count, and nothing else is in the column.
-
-**Kyle:** nothing. Modems A and B are switched on in stage 5.
+**Kyle:** switch on any hall modem whose ring is not red (x -4447 y 72, z
+1523..1545 odd). Counter's and Crafty's modems are switched on in stage 5.
 
 **Bill:**
 
-| item | count | from |
-|---|---|---|
-| CC cable | 37 | 28 stone, 7 redstone |
-| wired modem (full) | 2 | |
-| disk drive | 2 | recipe unverified |
-| chest | 1 | |
-| glass | 16 | |
-| striped yellow concrete | 4 | Kyle's stock |
+| item | count |
+|---|---|
+| cable | 19 |
+| full modem | 2 |
+| disk drive | 2 |
+| chest | 1 |
+| polished deepslate | 1 |
+| striped yellow concrete | 2 |
 
 **Check:**
-- Sortnado still says `sorting`, 803 slots.
-- Both lab and fit outputs have no `stopped here`.
-- Looking up from 20 1 6 and 20 1 11 shows sky.
+- Sortnado still has 803 slots.
+- The hall furnaces show on the store's network.
+- A drone can fly from -3 2 2 to 44 2 2 (lab: `goto` the west apron, then
+  `fwd`).
 
-**Storage:** unaffected.
+### Stage 2: the bridge (old network joined)
 
-### Stage 2: the hall and the old base join the network
-
-**Needs C2 on Crafty first** (reboot Crafty onto it).
+**Needs** Crafty on the new code (done; `reboot Crafty`).
 
 **Drones:**
-- **Desk link (HopTo):**
-  1. `python3 tools/retrofit.py fit desklink > blueprints/factory_desklink.txt`
-     (commit it).
-  2. `fit HopTo … plan=factory_desklink shell=factory_asfit3`
-  3. HopTo takes out the stone brick at 9 1 29 from the hall side, then
-     lays 8 cables from above.
-- **Bridge (OnRepeat):**
-  `tools/order.py lab OnRepeat clear=1 "ops=$(python3 tools/retrofit.py ops bridge)"`
-  - **Inside the hut:** in through the old pad's roof hole to the row over
-    Crafty (-13 2 3). Facing south, it puts a cable on top of the old modem
-    at -13 2 4, then at -12 2 4 and -11 2 4. It runs `inspect` and `expect`
-    each time, so it stops if anything stands there.
-  - **Across the yard:** cables lying on the grass at y 0, snaking -9 0 4
-    → -9 0 6 → -1 0 6 → -1 0 8, then the riser at -1 1 8.
-  - **The hut's wall:** it `dig`s the cobblestone at -10 2 4 and puts a
-    cable in its place, and one each at -9 1 4 and -9 2 4.
-- **Then:** `tools/order.py haul Crafty on=0`.
+- `ops bridge` (OnRepeat): the hut end through the roof hole, the hut's
+  cobblestone, the yard run along z 2.
+- `fit gatelink` (HopTo): the floor under the west gate, 0 0 2.
+- Then `haul Crafty on=0`.
 
-**Kyle:**
-- **Wall cell:** break the deepslate tile at world **-4448 72 1526** (from
-  outside, beside the riser) and put a cable there.
-- **Hall modems:** right-click each modem at x -4447 y 72, z 1523..1545
-  (odd) whose ring is not red.
+**Kyle:** nothing.
 
-**Bill:** 30 cables.
+**Bill:** 18 cables.
 
-**Check:**
-- Crafty's `network` lists `sophisticatedstorage:controller_*` and the hall
-  furnaces.
-- A lab `fetch` of something only the store holds succeeds at the old pad.
-
-**Storage:** both stores usable, and Crafty smelts on up to 14 furnaces.
+**Check:** Crafty's `network` lists `sophisticatedstorage:controller_*` and
+the hall furnaces.
 
 ### Stage 3: the store wall raise
 
-**Drones (HopTo):**
-1. `fit walls` → `blueprints/factory_walls.txt`.
-2. `fit HopTo … plan=factory_walls …`
-3. 38 barrels, each put in from in front so it faces into the room.
+**Drones (HopTo):** fit `walls`, 38 jobs.
 
-**Kyle:** nothing.
-
-**Bill:**
-
-| item | count | from |
-|---|---|---|
-| limited barrel I | 20 | about 150 planks, 20 levers |
-| limited barrel IV | 18 | about 108 planks, 18 levers |
-| in all | 38 | about 70 logs of one wood per craft, 38 cobblestone |
-
-Crafty keeps 160 logs of each wood back. **Q1:** enough logs?
-
-**Check:** Sortnado's survey shows 20 more bulk slots and 72 more medium.
-
-**Storage:** usable throughout.
+**Bill:** 20 limited barrels I and 18 limited barrels IV, about 70 logs.
 
 ### Stage 4: drain the old chests
 
-**Needs C5.**
+**Drones:** `tools/order.py drain Sortnado from=minecraft:chest_*`. Before
+stage 7 the only chests on the cable are the old base's and Crafty's drop
+chest; the drop chest touches no modem, so it is never on the cable.
 
-`tools/order.py drain Sortnado from=minecraft:chest_*` (or the 28 names from
-Crafty's `network`)
+**Check:** Sortnado's status `drain` reaches 0 left.
 
-**Kyle:** nothing.
+### Stage 5: the move
 
-**Bill:** none.
+1. **Code:** stop the helpers (`stop all`, or wait for idle).
+2. **Kyle, Counter first:**
+   1. Break Counter (it keeps label, ID and files).
+   2. Set it at world **-4446 73 1519**.
+   3. Right-click its modem below (-4446 72 1519).
+3. **Kyle, Crafty:**
+   1. Move the floppy from the old drive (world -4462 71 1521) to Crafty's
+      drive (world **-4441 72 1519**).
+   2. Check Crafty's inventory is empty.
+   3. Break Crafty and set it at world **-4442 73 1519**.
+   4. Right-click its modem below (-4442 72 1519).
+4. **Wait** until Crafty's status shows `base.f` -4442 73 1519.
+5. **Orders:**
+   `tools/order.py rebase all hover=20 hop=22 lane=1 door=-4426,72,1549`,
+   then `resume all`.
+6. **When mining resumes:** `ops minershafts` cuts the two shafts through
+   the lane floor.
 
-**Check:**
-- The drain report lists every old chest as empty.
-- Sortnado has nothing `waiting`.
-
-**Storage:** usable throughout. Both stores are on the cable.
-
-### Stage 5: move Counter and Crafty into the bay; rebase
-
-**Needs** H1, C1, C2 and C3, with L1 recommended and C8 before mining
-resumes, and B1 before BlockParty next fetches.
-
-**Before:** idle the helpers (`stop`, or wait for idle).
-
-**Kyle, Counter first:**
-1. Break Counter at world -4461 73 1523. A player-broken turtle keeps its
-   label, ID and files.
-2. Set it on modem B at world **-4428 72 1530**.
-3. Right-click modem B (world **-4428 71 1530**).
-
-Crafty takes back the odd loads within 150 s of not hearing Counter.
-
-**Kyle, then Crafty:**
-1. Check its inventory is empty (it stashes between jobs; a broken turtle
-   drops what it holds).
-2. Move the floppy from the old drive (world -4462 71 1521) to drive A
-   (world **-4428 71 1524**).
-3. Break Crafty and set it on modem A at world **-4428 72 1525**.
-4. Right-click modem A (world **-4428 71 1525**).
-
-Crafty sees its GPS spot no longer matches `.base`, so it re-surveys, finds
-its chest south and its pad north, rewrites the floppy and reports the new
-`base`.
-
-**Drones:** `tools/order.py rebase all hover=20 hop=22 door=-4426,72,1549`,
-then `resume`.
-
-**Check:**
-- Crafty's `base`: f -4428 72 1525, pad -4428 72 1524, dock
-  -4428 73 1526.
-- Helpers wait at world y 92, z 1520, x -4425..-4419.
-- A lab `fetch` comes down through the roof at x -4428 z 1524.
-- Counter serves at -4428 72 1529.
-- Loaders land on the roof at x -4424..-4418.
-
-**Storage:** about 5 minutes with no dispenser while Crafty is carried.
-`$get` is unaffected.
-
-### Stage 6: retire the old base; pad 3
+### Stage 6: old base out, rack 2
 
 **Old base:**
-- **Empty chests out.** The 28 empty chests, the two old furnaces, and the
-  old network's modems and cables are dug and handed in. There are two
-  ways:
-  - **Kyle** breaks them (about 2 minutes; the hut is cramped);
-  - **the swarm**, from the old in-shaft (x -11) and out-shaft (x -15)
-    beside the z 3 chest stacks, with `dig` and `handin`.
+- The empty chests, furnaces and the old network out: Kyle, or the swarm
+  from the old shafts.
+- `ops unbridge`: the bridge out, and the hut wall made good.
 
-  The old pad's drive at -14 0 3 and the roof hole stay, for the lava
-  rounds. Counter's old sunk drive can come out.
-- **Bridge out.** `ops unbridge` takes the bridge out again:
-  - the hut end;
-  - a cobblestone back in the hut wall at -10 2 4;
-  - the yard cables and the riser.
+**Rack 2:** fit `rack2`, 56 jobs:
+- 16 bars or posts out;
+- 16 copper pads in, at y 0 and y 2;
+- 24 bars at z 4, from the foundry side.
 
-  Kyle can put a deepslate tile back at world -4448 72 1526 when passing.
-  The cable there is a dead end after that.
+Rack 2 is used once the loaders learn the lane (L2).
 
-**Pad 3:**
-1. Run `fit pad3`: its drive, modem and wall cable. The trunk already
-   reaches 19 7 19.
-2. Then `ops shaftc` cuts its sky shaft at world (-4428, ·, 1536).
-3. With C7, a spare turtle (one of the miners parked while storage was full)
-   becomes the third dispenser, on modem C at world -4428 72 1537.
-4. Kyle right-clicks modem C (world -4428 71 1537).
+**Bill:** 16 cut copper, 24 iron bars.
 
-**Bill:**
+### Stages 7-10
 
-| item | count |
-|---|---|
-| cable | 7 |
-| disk drive | 1 |
-| full modem | 1 |
-| glass | 8 |
-| cobblestone | 1 |
-
-### Stage 7: the line link
-
-**Needs C6** before the two line modems are switched on (until then Crafty
-cannot see the line's chests).
-
-**Drones (HopTo):** fit plan `northline`, 47 jobs:
-- in the foundry, everything from above, starting at the two modems;
-- the partition cell 27 7 5 from the west;
-- the launch bay run from below, to the trunk at 19 7 6.
-
-**Kyle:** right-click the two line modems: world -4412 72 1526 and
--4411 72 1537.
-
-**Bill:**
-
-| item | count |
-|---|---|
-| cable | 44 |
-| full modem | 2 |
-
-**Check:** 12 raw iron from the store comes back to the store as ingots.
-
-### Stage 8: Mekanism expansion (alongside mekline stages 3-5)
-
-**Drones** (Sticky, DropIt), lab runs in the style of `tools/mekline.py`:
-- the power corner and its 7-cable link;
-- for stage 4, the evaporation tower deck (16), the tower and the 27-pipe
-  brine run.
-
-Inside, the brine run is a fit plan for its one wall cell, 44 9 7.
-
-**Kyle:** nothing expected. If a tower valve will not push brine into the
-pipe by itself, it needs a Configurator click (unverified).
-
-**Bill:**
-
-| item | count |
-|---|---|
-| universal cable | 7 |
-| mechanical pipe | 27 |
-| polished deepslate | 16 |
-| power corner machines | 2 heat generators, 1 advanced cube, 1 gas-burning generator |
-| evaporation tower | about 48 blocks, a controller, 2 valves |
-
-### Stage 9: screens and the control tower
-
-**Drones:** as `docs/screens.md`, bootstrapping on pad A.
-
-**Kyle:** carry CommandBlock, the Chat Box and the Player Detector into the
-tower (§5).
-
-### Stage 10: AE2 corner (after the meteorite)
-
-As `docs/ae2-plan.md` stages C-E, in the smelting hall corner (§5).
-
-**Kyle:** the meteorite trip and the terminals he uses.
+7. **The north line:** fit `northline`, 51 cables and 2 modems. Then
+   `stores Crafty skip=…` for the line's two chests, then Kyle switches on
+   the two modems.
+8. **Mekanism expansion:** the power corner, the evaporation tower and
+   brine (§5).
+9. **Screens:** `docs/screens.md`. Kyle carries CommandBlock.
+10. **AE2:** after the meteorite trip.
 
 ---
 
 ## 8. Order of work at a glance
 
-| # | stage | code first | Kyle by hand | store usable | old base |
-|---|---|---|---|---|---|
-| 1 | pads A, B, trunk, sky shafts | none | none | yes | running |
-| 2 | desk link, bridge | C2 | 1 wall cell, hall modems | yes, both | running, on the cable |
-| 3 | wall raise | none | none | yes | running |
-| 4 | drain | C5 | none | yes | emptying |
-| 5 | Counter and Crafty into the bay, rebase | H1, C1, C3 (L1, B1, C8) | carry 2 turtles, the floppy, 2 modem clicks | yes; 5 min without a dispenser | pad unused |
-| 6 | old base out, pad 3 | C7 for pad 3 | chests (or swarm), modem C | yes | hut, lava cauldrons and roof hole only |
-| 7 | line link | C6 | 2 modems | yes | |
-| 8 | Mekanism expansion | none new | none | yes | |
-| 9 | screens | none new | carry CommandBlock | yes | |
-| 10 | AE2 | Sortnado's ME backend (branch `ae2`) | meteorite, terminals | yes | |
-
-Stages 1 and 3 can run side by side (different helpers), and stage 8 can
-run alongside anything.
+| # | stage | Kyle by hand | store usable | old base |
+|---|---|---|---|---|
+| 1 | pit stops, links, apron | hall modems | yes | running |
+| 2 | bridge | none | yes, both | running, on the cable |
+| 3 | wall raise | none | yes | running |
+| 4 | drain | none | yes | emptying |
+| 5 | move, rebase | carry Counter and Crafty, the floppy, 2 modem clicks | yes; minutes without a dispenser | pad unused |
+| 6 | old base out, rack 2 | chests (or swarm) | yes | hut and lava only |
+| 7-10 | north line, Mekanism, screens, AE2 | 2 modems, CommandBlock, meteorite | yes | |
 
 ---
 
@@ -947,70 +671,45 @@ run alongside anything.
 
 | item | st 1 | st 2 | st 3 | st 6 | st 7 | st 8 | total |
 |---|---|---|---|---|---|---|---|
-| CC cable | 37 | 30 | | 7 | 44 | | 118 |
-| wired modem (full) | 2 | | | 1 | 2 | | 5 |
-| disk drive | 2 | | | 1 | | | 3 |
+| CC cable | 19 | 18 | | | 51 | | 88 |
+| wired modem (full) | 2 | | | | 2 | | 4 |
+| disk drive | 2 | | | | | | 2 |
 | chest | 1 | | | | | | 1 |
-| glass | 16 | | | 8 | | | 24 |
-| striped yellow concrete | 4 | | | | | | 4 |
+| polished deepslate | 1 | | | | | 16 | 17 |
+| striped yellow concrete | 2 | | | | | | 2 |
 | limited barrel I / IV | | | 20 / 18 | | | | 38 |
-| universal cable | | | | | | 7 | 7 |
-| mechanical pipe | | | | | | 27 | 27 |
-| polished deepslate | | | | | | 16 | 16 |
+| cut copper | | | | 16 | | | 16 |
+| iron bars | | | | 24 | | | 24 |
+| universal cable / mechanical pipe | | | | | | 7 / 27 | |
 
-Raw, roughly:
-
-| raw | amount | for |
-|---|---|---|
-| stone | 140 | cables, modems, drives |
-| redstone | 30 | the same, and universal cable |
-| logs | 75 | barrels, chest |
-| cobblestone | 40 | levers |
-| glass (smelted sand) | 24 | |
-| steel ingots | 10 | |
-| buckets | 4 | |
-
-Everything but the logs is well covered by stock: stone 1,576, redstone
-1,621 plus blocks, glass 128.
+Everything is in stock or in Crafty's recipes except about 70 logs for the
+barrels (**Q1**). Cut copper takes copper ingots: 16 needs 4 copper blocks.
 
 ---
 
 ## 10. Not proven, and what to watch
 
-- **The hover row with H1:** y 21 assumes nothing else stands on the roof
-  there. The check reads the model's roof (top y 18 at x 27-28), not the
-  world. Anything added on the roof later must keep x 23-29 z 2 clear above
-  y 19.
-- **Through the roof:** a helper climbing out of a 1 × 1 shaft through the
-  roof is the same move as today's hole over the old pad. The shaft must
-  never be capped.
-- **Hall modems:** that the 12 were never switched on is a guess. Check
-  Crafty's `network` after stage 2.
-- **Modems switched on after their turtle is set down:** clicking after
-  placing is the safe order, which stage 5 uses.
-- **A broken turtle** keeps its label and files and drops its inventory.
-- **The yard and the hut** come from scans 1-2 days old. Every lab place is
-  followed by an `expect`, and a failed place stops the run.
-- **Lab `dig`** (used only outside: the bridge and grass in the way) takes
-  any `computercraft:` block, a parked turtle included. Loaders and helpers
-  do not wait on the bridge's path today.
-- **Rain and light** come in through the three 1 × 1 holes. The glass rings
-  keep people out of the holes in the upper floor; the holes in the bay
-  floor are only Crafty's two shaft holes, striped.
+- **What was fitted of the old bay pit stop.** The fit plan digs whatever is
+  there; a dig on air does nothing.
+- **The west gate's apron** comes from a scan from before the building.
+  `digdown` stops at anything that is not plain ground, and the lab notes
+  it.
+- **Traffic.** A one-way lane copes with a handful of helpers. Many at once
+  queue at the pads. A turtle waits up to 90 s for another in its way, then
+  gives up and tries again later.
+- **The lantern at 44 3 1** hangs in the east gate's top layer. It is fine at
+  drone height, but move it if anything ever flies the lane at y 3 there.
+- **The rack homes** are open to the lane only: a drone gets in and out
+  sideways from the front track, low or high.
 
 ---
 
 ## 11. Open questions for Kyle
 
-1. **Logs.** About 75 are needed for the 38 barrels and the drop chest. Are
-   there enough of one wood, or will you bring some?
-2. **The east storage controller's cell** (the scan is running). It decides
-   where the AE2 corner's second storage bus goes, and whether the trunk at
-   17..11 7 16 passes near it.
-3. **The yard bench's Inventory Manager.** Should it move onto the store's
-   network, so `$get` can use the card in it, or stay where it is? The
-   retrofit leaves the bench alone.
-4. **Stage 5 timing.** It needs you on site for about 10 minutes: Counter,
-   the floppy, Crafty, two modem clicks. When suits?
-5. **The launch bay's east strip** (x 25-26). Leave it spare, or give it a
-   job (overflow barrels, a second Mekanism bench)?
+1. **Logs.** About 70 are needed for the barrels. Enough of one wood?
+2. **The east storage controller's cell** (scan running): for AE2's second
+   bus.
+3. **The yard bench's Inventory Manager.** Move it onto the store's network,
+   or leave it?
+4. **Stage 5 timing:** about 10 minutes on site.
+5. **Rack 2's name board.** Wanted (8 more monitors)?
