@@ -1,22 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794873932,
-      "issued": 1794873932000,
-      "cmd": "newjob",
-      "target": "CleanSlate"
-    },
-    {
-      "id": 1794873933,
-      "issued": 1794873932000,
-      "cmd": "newjob",
-      "target": "Bedrocker"
-    },
-    {
-      "id": 1794873934,
-      "issued": 1794873932000,
-      "cmd": "newjob",
-      "target": "Granted"
+      "id": 1794874238,
+      "issued": 1794874238000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "job": "power"
     }
   ]
 }
