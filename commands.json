@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794946470,
-      "issued": 1794946470000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "fetch|advancedperipherals:geo_scanner=1|dump;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|14|1|15;scan|controller|12;scan|inventory_manager|12;walk|22|1|10;scan|chest|10;leave;home;handin|"
+      "id": 1794946491,
+      "issued": 1794946491000,
+      "cmd": "reboot",
+      "target": "Counter"
     }
   ]
 }
