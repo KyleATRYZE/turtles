@@ -1,20 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794901849,
-      "issued": 1794901849000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "fetch|computercraft:cable=16,computercraft:wired_modem_full=1,advancedperipherals:weak_automata_core=1;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|10|6|29;digDown;down|1;digDown;down|1;digDown;down|1;inspect|down;expect|down|controller;digDown;placeDown|computercraft:cable;up|1;placeDown|computercraft:cable;up|1;placeDown|computercraft:cable;up|1;placeDown|computercraft:cable;up|1;walk|10|6|28;placeDown|computercraft:cable;walk|10|6|27;placeDown|computercraft:cable;walk|10|6|26;placeDown|computercraft:cable;walk|10|6|25;placeDown|computercraft:cable;walk|10|6|24;placeDown|computercraft:cable;walk|10|6|23;placeDown|computercraft:cable;walk|10|6|22;placeDown|computercraft:cable;walk|10|6|21;placeDown|computercraft:cable;walk|10|6|20;placeDown|computercraft:cable;walk|10|6|19;placeDown|computercraft:cable;walk|10|6|18;placeDown|computercraft:cable;walk|10|6|17;placeDown|computercraft:cable;walk|10|6|16;placeDown|computercraft:wired_modem_full;walk|10|6|15;inspect|down;placeDown|sophisticatedstorage:controller;walk|11|5|16;face|2;expect|front|wired_modem;equip|right|advancedperipherals:weak_automata_core;use;equip|right|minecraft:diamond_pickaxe;inv;leave;home;handin|"
+      "id": 1794902292,
+      "issued": 1794902292000,
+      "cmd": "reboot",
+      "target": "Pushy"
     },
     {
-      "id": 1794901850,
-      "issued": 1794901849000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=1;goto|-4451|95|1536;face|0;drop|minecraft:lava_bucket|1;home;handin|"
+      "id": 1794902293,
+      "issued": 1794902292000,
+      "cmd": "reboot",
+      "target": "DropIt"
     }
   ]
 }
