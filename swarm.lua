@@ -164,6 +164,12 @@ function M.report(status)
   status.time = os.epoch("utc")
   status.version = M.version()
   status.booted = BOOTED
+  if fs.exists(".update_log") then
+    local h = fs.open(".update_log", "r")
+    local u = h.readAll()
+    h.close()
+    if u ~= "" then status.update = u:sub(1, 600) end
+  end
   rednet.broadcast(status, M.PROTOCOL)
   return true
 end

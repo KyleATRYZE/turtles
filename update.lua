@@ -73,24 +73,40 @@ if not manifest then
   return
 end
 
+local notes = {}
 for line in manifest:gmatch("[^\r\n]+") do
   local name = line:match("^%s*(.-)%s*$")
   if name ~= "" then
     local s = get(name)
     if not s or #s == 0 then
       print("Could not download " .. name)
+      notes[#notes + 1] = "no download: " .. name .. " (" .. tostring(s and #s or "nil") .. ")"
     elseif name:match("%.lua$") and not load(s, name) then
       -- never replace a working script with one that does not compile
       print("Skipped " .. name .. " (broken upload)")
+      local _, why = load(s, name)
+      notes[#notes + 1] = "no compile: " .. name .. " " .. #s .. " bytes: " .. tostring(why)
     elseif readFile(name) ~= s then
-      local h = fs.open(name, "w")
-      h.write(s)
-      h.close()
-      print("Updated " .. name)
+      local ok, why = pcall(function()
+        local h = fs.open(name, "w")
+        h.write(s)
+        h.close()
+      end)
+      if ok and readFile(name) == s then
+        print("Updated " .. name)
+      else
+        print("Could not write " .. name .. ": " .. tostring(why))
+        notes[#notes + 1] = "no write: " .. name .. " " .. #s .. " bytes, free " .. tostring(fs.getFreeSpace("/")) .. ": " .. tostring(why)
+      end
     end
   end
 end
 
+do
+  local h = fs.open(".update_log", "w")
+  h.write(table.concat(notes, "\n"))
+  h.close()
+end
 -- Record which version this machine is running (shown in status reports).
 do
   local h = fs.open(".version", "w")
