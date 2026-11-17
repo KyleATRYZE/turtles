@@ -1,11 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794874238,
-      "issued": 1794874238000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "job": "power"
+      "id": 1794875065,
+      "issued": 1794875065000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
