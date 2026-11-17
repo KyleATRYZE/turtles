@@ -481,6 +481,10 @@ local RECIPES = {
     key = { I = "minecraft:iron_ingot", P = "#planks", O = "alltheores:osmium_ingot",
       C = "minecraft:copper_ingot", F = "minecraft:furnace" },
   },
+  -- a pickaxe turtle cannot break wooden blocks (barrels, controllers):
+  -- helpers carry an axe for those
+  ["minecraft:diamond_axe"] = { grid = { "D", "D", "", "D", "S", "", "", "S", "" },
+    key = { D = "minecraft:diamond", S = "minecraft:stick" } },
   ["minecraft:cauldron"] = {
     grid = { "I", "", "I", "I", "", "I", "I", "I", "I" },
     key = { I = "minecraft:iron_ingot" } },
