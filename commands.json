@@ -1,10 +1,20 @@
 {
   "commands": [
     {
-      "id": 1794921084,
-      "issued": 1794921084000,
-      "cmd": "reboot",
-      "target": "HopTo"
+      "id": 1794921186,
+      "issued": 1794921186000,
+      "cmd": "lab",
+      "target": "HopTo",
+      "clear": 1,
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;home"
+    },
+    {
+      "id": 1794921187,
+      "issued": 1794921186000,
+      "cmd": "lab",
+      "target": "DropIt",
+      "clear": 1,
+      "ops": "goto|-4460|84|1517;face|0;inspect|front;expect|front|turtle;call|front|reboot;home"
     }
   ]
 }
