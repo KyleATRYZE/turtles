@@ -1,18 +1,58 @@
 {
   "commands": [
     {
-      "id": 1794877443,
-      "issued": 1794877443000,
+      "id": 1794877575,
+      "issued": 1794877575000,
       "cmd": "reboot",
-      "target": "Crafty"
+      "target": "DropIt"
     },
     {
-      "id": 1794877444,
-      "issued": 1794877443000,
+      "id": 1794877576,
+      "issued": 1794877575000,
+      "cmd": "reboot",
+      "target": "HopTo"
+    },
+    {
+      "id": 1794877577,
+      "issued": 1794877575000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "job": "power"
+    },
+    {
+      "id": 1794877578,
+      "issued": 1794877575000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "steel",
+      "n": 32
+    },
+    {
+      "id": 1794877579,
+      "issued": 1794877575000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "circuit",
+      "n": 12
+    },
+    {
+      "id": 1794877580,
+      "issued": 1794877575000,
       "cmd": "lab",
-      "target": "Pushy",
+      "target": "HopTo",
       "clear": 1,
-      "ops": "fetch|ae2:charger=1,ae2:crank=1,minecraft:compass=2|dump;inv;handin|"
+      "ops": "fetch|computercraft:computer_normal=6|dump;bootstrap|computercraft:computer_normal|6;inv"
+    },
+    {
+      "id": 1794877581,
+      "issued": 1794877575000,
+      "cmd": "fit",
+      "target": "HopTo",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_screens",
+      "shell": "factory_asfit3"
     }
   ]
 }
