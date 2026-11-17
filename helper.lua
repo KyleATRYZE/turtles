@@ -1878,7 +1878,7 @@ local function runLab()
         while pos.y > y do
           local seen, data = turtle.inspectDown()
           if seen and data.name ~= "minecraft:water" and data.name ~= "minecraft:lava" then
-            if not isGround(data.name) then res = "stopped above " .. data.name break end
+            if not (isGround(data.name) or isClutter(data.name)) then res = "stopped above " .. data.name break end
             turtle.digDown()
           end
           if not step("d") then res = "could not go down" break end
