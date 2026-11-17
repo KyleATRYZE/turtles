@@ -1,12 +1,28 @@
 {
   "commands": [
     {
-      "id": 1794944800,
-      "issued": 1794944800000,
-      "cmd": "haul",
-      "target": "Crafty",
-      "on": 1,
-      "skip": "Sticky,Dusty"
+      "id": 1794945557,
+      "issued": 1794945557000,
+      "cmd": "reboot",
+      "target": "HopTo"
+    },
+    {
+      "id": 1794945558,
+      "issued": 1794945557000,
+      "cmd": "reboot",
+      "target": "OnRepeat"
+    },
+    {
+      "id": 1794945559,
+      "issued": 1794945557000,
+      "cmd": "reboot",
+      "target": "Comparable"
+    },
+    {
+      "id": 1794945560,
+      "issued": 1794945557000,
+      "cmd": "reboot",
+      "target": "Sortnado"
     }
   ]
 }
