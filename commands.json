@@ -1,22 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794921658,
-      "issued": 1794921658000,
-      "cmd": "reboot",
-      "target": "HopTo"
-    },
-    {
-      "id": 1794921659,
-      "issued": 1794921658000,
-      "cmd": "reboot",
-      "target": "Pushy"
-    },
-    {
-      "id": 1794921660,
-      "issued": 1794921658000,
-      "cmd": "reboot",
-      "target": "DropIt"
+      "id": 1794921781,
+      "issued": 1794921781000,
+      "cmd": "lab",
+      "target": "DropIt",
+      "clear": 1,
+      "ops": "fetch|minecraft:bucket=7;goto|-4462|80|1521;down|8;face|2;fwd|4;down|2;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;face|1;fwd|1;face|2;place|minecraft:bucket;inv;up|2;face|3;fwd|6;face|0;fwd|4;up|8;home;handin|"
     }
   ]
 }
