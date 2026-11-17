@@ -125,4 +125,23 @@ check("at most 12 stacks a trip", ops.count("drop|") <= 12, ops.count("drop|"))
 check("hauling off: nobody is sent", haulRun(False, 100) == [])
 check("room to spare: nobody is sent", haulRun(True, 20) == [])
 check("no idle mate: nobody is sent", haulRun(True, 100, "fitting") == [])
+
+# 13. the lava farm: lava low, buckets in stock, an idle mate: sent round the cauldrons
+def farmRun(lava, buckets, n=6, state="idle"):
+    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true"); L.execute(HARNESS)
+    L.execute('put("minecraft:chest_1", "minecraft:coal", 64)')
+    if lava: L.execute('put("minecraft:chest_1", "minecraft:lava_bucket", %d)' % lava)
+    if buckets: L.execute('put("minecraft:chest_1", "minecraft:bucket", %d)' % buckets)
+    L.execute('''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42,43,44},["byId"]={},["lavafarm"]={["n"]=%d,["how"]="place"}}'
+MAX_IDLES=4
+STATUSQ = { { id = 21, msg = { label = "Pushy", role = "helper", state = "%s", pos = { x = 104, y = 80, z = 199 }, fuel = 900 } } }
+INBOX = {}''' % (n, state))
+    L.eval('{runFactory()}')
+    g = L.globals()
+    return [(m.to, dict(m.msg)) for m in g.OUTBOX.values() if m.msg.direct and m.msg.cmd == "lab"]
+out = farmRun(2, 4)
+check("lava low: a mate goes round the farm with the buckets there are", len(out) == 1 and "fetch|minecraft:bucket=4" in out[0][1]["ops"]
+      and "collect|-4453|76|1538|6|2|place" in out[0][1]["ops"], str(out)[:200])
+check("plenty of lava: nobody goes", farmRun(30, 4) == [])
+check("no empty buckets: nobody goes", farmRun(2, 0) == [])
 print("PASS" if not fails else "FAILED: %d" % len(fails))

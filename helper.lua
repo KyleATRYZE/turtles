@@ -1798,6 +1798,50 @@ local function runLab()
           local kinds = table.concat({ peripheral.getType(a[2]) }, ", ")
           res = (done and "on" or ("no: " .. tostring(why))) .. " (" .. (kinds ~= "" and kinds or "no peripheral") .. ")"
         end
+      elseif verb == "collect" then
+        -- collect|x|y|z|n|face|how : a row of n lava cauldrons. Stand at
+        -- x y z, facing `face`, then one step south (+z) for each next one;
+        -- at each, an empty bucket on the cauldron (how: "place" = turtle.place,
+        -- "use" = the Weak Automata Core). Never stops on an empty cauldron.
+        local x, y, z, n = tonumber(a[2]), tonumber(a[3]), tonumber(a[4]), tonumber(a[5]) or 1
+        local fc, how = tonumber(a[6]) or 2, a[7] or "place"
+        local auto
+        if how == "use" then
+          for _, side in ipairs({ "left", "right" }) do
+            if peripheral.getType(side) == "weakAutomata" then auto = peripheral.wrap(side) end
+          end
+        end
+        -- come down one block behind the stand (its own column may be walled
+        -- above), then step in
+        local bx = x - ({ [0] = 1, 0, -1, 0 })[fc]
+        local bz = z - ({ [0] = 0, 1, 0, -1 })[fc]
+        local top = math.max(highway(), y + 2, pos.y)
+        riseTo(top)
+        local there = across(bx, bz, top + 12)
+        while there and pos.y > y and step("d") do end
+        if pos.x == bx and pos.z == bz and pos.y == y then face(fc) step("f") end
+        if not (pos.x == x and pos.z == z and pos.y == y) then
+          res, stop = ("could not get there: at %d %d %d"):format(pos.x, pos.y, pos.z), true
+        else
+          local got, tried = 0, 0
+          for i = 1, n do
+            face(fc)
+            local slot = findSlot("minecraft:bucket")
+            if not slot then break end
+            tried = tried + 1
+            turtle.select(slot)
+            local done = false
+            if how == "use" and auto then done = auto.useOnBlock() and true or false
+            else done = turtle.place() end
+            turtle.select(1)
+            if done then got = got + 1 end          -- (that bucket holds lava now)
+            if i < n then
+              face(1)
+              if not step("f") then break end
+            end
+          end
+          res = ("%d of %d cauldrons gave lava (%s)"):format(got, tried, how)
+        end
       elseif verb == "use" then
         -- use[|item] : right-click the block in front, as a player would, with
         -- the Weak Automata Core (Advanced Peripherals) worn on the pickaxe
