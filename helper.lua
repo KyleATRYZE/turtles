@@ -1816,7 +1816,7 @@ local function runLab()
         local auto
         if how == "use" then
           for _, side in ipairs({ "left", "right" }) do
-            if peripheral.getType(side) == "weakAutomata" then auto = peripheral.wrap(side) end
+            if tostring(peripheral.getType(side) or ""):lower():find("automata", 1, true) then auto = peripheral.wrap(side) end
           end
         end
         -- come down one block behind the stand (its own column may be walled
@@ -1857,7 +1857,7 @@ local function runLab()
         -- to its network, a lever thrown, a bucket filled at a cauldron)
         local auto
         for _, side in ipairs({ "left", "right" }) do
-          if peripheral.getType(side) == "weakAutomata" then auto = peripheral.wrap(side) end
+          if tostring(peripheral.getType(side) or ""):lower():find("automata", 1, true) then auto = peripheral.wrap(side) end
         end
         if not auto then
           res, stop = "no automata worn (equip|right|advancedperipherals:weak_automata_core first)", true
