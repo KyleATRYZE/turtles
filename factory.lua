@@ -2759,6 +2759,20 @@ while true do
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
       return true
+    elseif c.cmd == "draft" and tonumber(c.id) then
+      -- draft Crafty id=<n>: an existing turtle (a parked miner) becomes a
+      -- builder's mate; it is told so the next time it asks for a job
+      local id = math.floor(tonumber(c.id))
+      plots.helpers = plots.helpers or {}
+      local have = false
+      for _, h in ipairs(plots.helpers) do if tostring(h) == tostring(id) then have = true end end
+      if not have then
+        plots.helpers[#plots.helpers + 1] = id
+        if plots.byId then plots.byId[tostring(id)] = nil end
+        saveTable(PLOTS_FILE, plots)
+        print("Turtle " .. id .. " is a builder's mate now: " .. tostring(HELPER_NAMES[#plots.helpers]))
+      end
+      return true
     end
   end)
   if not cmd then

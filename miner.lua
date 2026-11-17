@@ -2020,6 +2020,14 @@ local function main(args)
         print("Hunting by remote order.")
         task = jobTask
       end
+    elseif cmd.cmd == "newjob" then
+      -- drop the plot in hand and ask the factory what to do (it may have
+      -- drafted this turtle for another job)
+      st = nil
+      fs.delete(STATE_FILE)
+      located = false
+      print("Asking the base for a new job.")
+      task = jobTask
     elseif cmd.cmd == "resume" then
       if st or loadState() then
         st.paused = nil
