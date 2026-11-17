@@ -1,17 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794943826,
-      "issued": 1794943826000,
-      "cmd": "resort",
-      "target": "Sortnado"
-    },
-    {
-      "id": 1794943827,
-      "issued": 1794943826000,
-      "cmd": "haul",
-      "target": "Crafty",
-      "on": 1
+      "id": 1794944003,
+      "issued": 1794944003000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
