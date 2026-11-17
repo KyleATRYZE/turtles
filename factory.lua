@@ -2845,6 +2845,15 @@ local function tryBuild()
     pcall(keepFurnacesBusy, stockTotals())
     pcall(foundryDuty, stockTotals())
     pcall(haulDuty, stockTotals())
+    -- empty buckets go out with the miners and the farm round, and leak
+    -- away: keep a few in, made from iron when there is iron to spare
+    pcall(function()
+      local stock = stockTotals()
+      if (stock["minecraft:bucket"] or 0) < 4 and (stock["minecraft:iron_ingot"] or 0) >= 64 then
+        print("Making empty buckets.")
+        makeUpTo("minecraft:bucket", 8)
+      end
+    end)
     pcall(lavaFarmDuty, stockTotals())
   end
 
