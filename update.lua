@@ -146,7 +146,7 @@ if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "b
     role = "storage"
   elseif not turtle then
     role = "controller"
-  elseif (os.getComputerLabel() or ""):match("^factory") then
+  elseif (os.getComputerLabel() or ""):match("^factory") or (os.getComputerLabel() or ""):lower():match("^counter") then
     role = "factory"
   elseif (os.getComputerLabel() or ""):lower():match("^loader") then
     role = "loader"

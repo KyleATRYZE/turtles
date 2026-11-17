@@ -306,8 +306,10 @@ end
 
 -- Down the hole onto the launch pad. Only earth and stone in the hole is
 -- ever dug (it was open when this was written; it may have been patched).
+local padAt                          -- the pad (and dispenser) of the load being fetched
 local function downToPad()
   local e, pad = base.exit2, base.pad
+  if padAt then e, pad = { x = padAt.pad.x, z = padAt.pad.z }, padAt.pad end
   if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
   while pos.y > pad.y do
     local ok, why = step("d")
@@ -529,6 +531,7 @@ local function supplyRun(indices, reason, once)
       if type(m) == "table" and m.forId == me and m.n == st.orderSeq then
         if m.type == "materials_ready" then reply = m break end
         if m.type == "load_ready" and not onPad then
+          padAt = type(m.pad) == "table" and type(m.at) == "table" and { pad = m.pad, f = m.at } or nil
           print("The load is ready. Down to the launch pad.")
           if downToPad() then
             onPad, padSince = true, os.clock()
@@ -554,7 +557,8 @@ local function supplyRun(indices, reason, once)
     if onPad then
       -- emptied lava buckets go back to the factory, right beside the pad
       for d = 0, 3 do
-        if DIRS[d].x == base.f.x - base.pad.x and DIRS[d].z == base.f.z - base.pad.z then
+        local pf, pp = padAt and padAt.f or base.f, padAt and padAt.pad or base.pad
+        if DIRS[d].x == pf.x - pp.x and DIRS[d].z == pf.z - pp.z then
           for s = 1, 16 do
             local it = turtle.getItemDetail(s)
             -- (and, for the lab bench, everything it was not sent for)

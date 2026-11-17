@@ -697,6 +697,12 @@ K.CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 K.FUEL_RESERVE = 256 -- coal never handed out to miners
 K.LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
+-- A second dispensing turtle ("Counter", by its label) on a second launch
+-- pad: it only serves helpers' loads (odd ids), so two can be served at once.
+-- Crafty leaves the odd ids to it while it hears it (counter_alive).
+K.COUNTER = (os.getComputerLabel() or ""):lower():match("^counter") ~= nil
+K.counterSeen = -1000
+K.counterBeat = -1000
 K.HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
 -- (the fourth runs the Mekanism machines; the rest are names for mates made later)
@@ -2224,7 +2230,7 @@ local function serveOrders(onlyReady)
       end
       order.lines, order.ready, order.told = lines, true, os.clock()
       order.readyAt = os.clock()
-      rednet.send(id, { type = "load_ready", forId = id, n = order.n }, K.JOB_PROTOCOL)
+      rednet.send(id, { type = "load_ready", forId = id, n = order.n, pad = base.pad, at = base.f }, K.JOB_PROTOCOL)
       print("Load ready. Waiting for the builder.")
       return true
     end
@@ -2240,7 +2246,7 @@ local function serveOrders(onlyReady)
       for id, o in pairs(orders) do
         if o.ready and os.clock() - (o.told or 0) > 60 then        -- remind it
           o.told = os.clock()
-          rednet.send(id, { type = "load_ready", forId = id, n = o.n }, K.JOB_PROTOCOL)
+          rednet.send(id, { type = "load_ready", forId = id, n = o.n, pad = base.pad, at = base.f }, K.JOB_PROTOCOL)
         end
       end
       return false
@@ -2755,7 +2761,16 @@ local function responder()
   if swarm then swarm.open() end
   while true do
     local id, msg = rednet.receive(K.JOB_PROTOCOL)
-    if type(msg) == "table" and id then
+    if type(msg) == "table" and id and msg.type == "counter_alive" then
+      K.counterSeen = os.clock()
+    elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and id % 2 == 1
+        and os.clock() - K.counterSeen < 150)) then
+      -- the counter's share (odd ids), or not a counter's business at all
+      if K.COUNTER and id % 2 == 1 and msg.type == "materials" and type(msg.items) == "table"
+          and (msg.n == nil or served[id] ~= msg.n) then
+        orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
+      end
+    elseif type(msg) == "table" and id then
       if msg.type == "need_job" then
         if base then
           local job = jobFor(id)
@@ -2913,6 +2928,18 @@ end
 local function tryBuild()
   local ok, why = discover()
   if not ok then return notReady(why) end
+  if K.COUNTER then
+    if os.clock() - K.counterBeat > 30 then
+      K.counterBeat = os.clock()
+      rednet.broadcast({ type = "counter_alive" }, K.JOB_PROTOCOL)
+    end
+    local b
+    b, why = survey()
+    if not b then return notReady(why) end
+    if serveOrders() then return true end
+    report(next(orders) and "counter: serving" or "counter: open")
+    return false
+  end
   pcall(tidyStorage)
   if not turtle.craft then
     return notReady("I need a crafting table upgrade (Crafty Turtle)")
