@@ -1752,7 +1752,9 @@ local function runLab()
           local done, why = turtle["place" .. sfx]()
           turtle.select(1)
           res = done and "placed" or ("no: " .. tostring(why))
-          stop = not done
+          -- (an empty bucket on an empty cauldron is not a reason to stop
+          -- a lava round: the next one may be full)
+          stop = not done and a[2] ~= "minecraft:bucket"
         end
       elseif base == "dig" and SFX[sfx] then
         local seen, data = turtle["inspect" .. sfx]()
