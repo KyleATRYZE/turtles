@@ -300,6 +300,13 @@ end
 -- feed and returns false: stay put.
 local function fuelUp(want, force)
   if not hasPad() then return false end
+  -- the pads are on the drone lane inside the factory (base.lane): no way
+  -- down to them from the sky; ask for a feed instead (rack 2 is for later)
+  if base.lane then
+    refuel(math.max(GOOD_FUEL, want or 0))
+    if fuel() < LOW_FUEL then askFeed() end
+    return false
+  end
   want = math.max(GOOD_FUEL, want or 0)
   refuel(want)
   if force then

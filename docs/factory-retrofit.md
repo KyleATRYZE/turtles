@@ -514,13 +514,14 @@ Player Detector) is carried into the tower by Kyle.
   `base.hopUp`);
 - the builder's door (`base.door`).
 
-**For the lane (part 2 of this change; see the commit log):**
+**For the lane (done; inert until `rebase ... lane=1`; `test/lanetest.py`):**
 
 | id | where | what |
 |---|---|---|
-| **N1** | `helper.lua` | **Fly the lane.** With `base.lane` set (by the rebase order), a fetch goes to the gate on the near side, along the right track, onto the pad from the side. Leaving, it steps onto the front track and goes east. |
-| **N2** | `helper.lua` | **Rack homes.** An idle helper, or one waiting for a load, goes to its rack home instead of hovering. Home i is x 19 + i % 8, low row first, by `SLOTS` or id. |
-| **N3** | `swarm.lua` | The rebase order carries `lane=1`, and the lane's numbers come with the base. |
+| **N1** | `helper.lua` | **Fly the lane** (`LN`). From outside: down outside the gate on the near side, at lane height (world y 73). In by the west gate on the front track (eastbound), north onto the pad; in by the east gate on the back track (westbound), onto the pad from the east (over Crafty's stop, y 74, for the Counter's pad). Off a pad: a step south onto the front track, then east. Off to a job: east along the front track and out of the east gate before climbing. Setting something on a pad: the row just over it. |
+| **N2** | `helper.lua` | **Rack homes.** An idle helper, or one waiting for a load, goes into its rack home instead of hovering: home i is world x -4429 + i % 8, y 72 (i < 8) or 74, z 1521, i by name in the factory's helper list (Pushy 0, HopTo 1, ... TargetLock 15), else id % 16. In from the front track, a step south. |
+| **N3** | `swarm.lua` | `rebase ... lane=1` puts the lane (`M.LANE`: gates, tracks, approaches, rack) into `.base`; a later rebase without `lane=` keeps it; `lane=0` drops it. |
+| **L1b** | `loader.lua` | With the lane, a loader no longer hops onto the (indoor) pad for fuel: it burns what it carries and asks for a feed. |
 | **L2** | `loader.lua` | Loaders park in rack 2 (later; until then they park where Crafty's offsets put them, on the hill north of the lane: x 10-16, z 0..-4). |
 | **C6** | `factory.lua` | The line duty over the cable (stage 7). |
 | **B1** | `builder.lua` | BlockParty's base-room map assumes the hut. Keep it idle or on helper-style jobs after the move. |
