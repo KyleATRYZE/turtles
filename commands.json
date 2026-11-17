@@ -1,55 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794959488,
-      "issued": 1794959488000,
-      "cmd": "fit",
-      "target": "HopTo",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_pitstop"
+      "id": 1794959550,
+      "issued": 1794959550000,
+      "cmd": "newjob",
+      "target": "Granted"
     },
     {
-      "id": 1794959489,
-      "issued": 1794959488000,
-      "cmd": "fit",
-      "target": "Comparable",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_desklink"
+      "id": 1794959551,
+      "issued": 1794959550000,
+      "cmd": "newjob",
+      "target": "CleanSlate"
     },
     {
-      "id": 1794959490,
-      "issued": 1794959488000,
-      "cmd": "lab",
-      "target": "OnRepeat",
-      "clear": 1,
-      "ops": "fetch|computercraft:cable=17|dump;goto|-4461|73|1521;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|0;fwd|1;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|0;fwd|1;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|2;fwd|1;up|3;goto|-4457|72|1522;digDown;placeDown|computercraft:cable;expect|down|cable;face|3;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|3;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;goto|-4457|73|1522;placeDown|computercraft:cable;expect|down|cable;face|2;expect|front|cobblestone;dig;place|computercraft:cable;expect|front|cable;up|1;placeDown|computercraft:cable;expect|down|cable;inv;home;handin|"
-    },
-    {
-      "id": 1794959491,
-      "issued": 1794959488000,
-      "cmd": "draft",
-      "target": "Crafty",
-      "turtle": 16
-    },
-    {
-      "id": 1794959492,
-      "issued": 1794959488000,
-      "cmd": "draft",
-      "target": "Crafty",
-      "turtle": 10
-    },
-    {
-      "id": 1794959493,
-      "issued": 1794959488000,
-      "cmd": "draft",
-      "target": "Crafty",
-      "turtle": 5
+      "id": 1794959552,
+      "issued": 1794959550000,
+      "cmd": "newjob",
+      "target": "Oresome"
     }
   ]
 }
