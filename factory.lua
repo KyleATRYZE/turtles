@@ -2982,6 +2982,9 @@ local function tryBuild()
   local ok, why = discover()
   if not ok then return notReady(why) end
   if K.COUNTER then
+    -- (no drop-off chest to face: turns count from wherever it faced at start,
+    -- and it always turns back there)
+    if facing == nil then facing = 0 end
     if os.clock() - K.counterBeat > 30 then
       K.counterBeat = os.clock()
       rednet.broadcast({ type = "counter_alive" }, K.JOB_PROTOCOL)
