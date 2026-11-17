@@ -145,15 +145,23 @@ def ops(stage):
     need = items(stage)
     steps = ["fetch|" + ",".join(f"{k}={v}" for k, v in need.items()) + "|dump",
              "site|%d|%d|%d|%s|%s" % (*ORIGIN, SHELL, PLAN)]
+    planned = {(x, y, z) for st, x, y, z, *_ in BLOCKS if st >= 1}
     for st, x, y, z, item, how, cfg in BLOCKS:
         if st != stage:
             continue
+        out = []
         if how == "east":
             steps += [f"walk|{x - 1}|{y}|{z}", "face|0"]
-        elif how == "north":
-            steps += [f"walk|{x}|{y}|{z + 1}", "face|3"]
-        elif how == "south":
-            steps += [f"walk|{x}|{y}|{z - 1}", "face|1"]
+        elif how in ("north", "south"):
+            sz = z + 1 if how == "north" else z - 1
+            if (x, y, sz) in planned:
+                # the place to stand is itself a planned block (not laid yet),
+                # so the walk will not end there: step in from the west
+                steps += [f"walk|{x - 1}|{y}|{sz}", "face|0", "fwd|1"]
+                out = ["face|2", "fwd|1"]
+            else:
+                steps.append(f"walk|{x}|{y}|{sz}")
+            steps.append("face|3" if how == "north" else "face|1")
         elif how == "down":
             steps += [f"walk|{x}|{y + 1}|{z}"]
         d = "Down" if how == "down" else ""
@@ -165,6 +173,7 @@ def ops(stage):
         else:
             steps += [f"place{d}|{item}", f"expect|{side}|{item.split(':')[1]}"]
             steps += [f"call|{side}|{c}" for c in cfg]
+        steps += out
     if stage == 2:   # a stack of coal into the line's generator, from above
         steps += ["walk|36|2|21", "dropDown|minecraft:coal|16"]
     steps += ["leave", "handin|"]
