@@ -78,7 +78,7 @@ local function report(state)
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
     local level = turtle.getFuelLevel()
-    if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 15000
+    if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 2000
       and not (st and (st.feed or st.lab)) then
       turtle.select(s)
       turtle.refuel(1)
@@ -1605,7 +1605,9 @@ end
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
   "functionalstorage:", "ironfurnaces:", "minecraft:chest", "minecraft:furnace", "minecraft:barrel",
   -- the quartz line (tools/quartzline.py): its machines, and the soul sand made there
-  "create:", "actuallyadditions:", "minecraft:soul_sand" }
+  "create:", "actuallyadditions:", "minecraft:soul_sand",
+  -- (the lava farm's own cobblestone walls, when the row is extended)
+  "minecraft:cobblestone", "minecraft:cauldron", "minecraft:pointed_dripstone" }
 
 local function labValue(a)
   if a == "true" then return true elseif a == "false" then return false end
@@ -1755,6 +1757,12 @@ local function runLab()
           -- (an empty bucket on an empty cauldron is not a reason to stop
           -- a lava round: the next one may be full)
           stop = not done and a[2] ~= "minecraft:bucket"
+          if not done then
+            -- the same block already standing there is as good as placed
+            -- (a wall two farm units share, say)
+            local seen, data = turtle["inspect" .. sfx]()
+            if seen and data.name == a[2] then res, stop = "already there", false end
+          end
         end
       elseif base == "dig" and SFX[sfx] then
         local seen, data = turtle["inspect" .. sfx]()
