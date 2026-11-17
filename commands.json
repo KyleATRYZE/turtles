@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794915815,
-      "issued": 1794915815000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794915898,
+      "issued": 1794915898000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "minecraft:comparator",
+      "n": 2
     }
   ]
 }
