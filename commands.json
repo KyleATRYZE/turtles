@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794927623,
-      "issued": 1794927623000,
-      "cmd": "lab",
-      "target": "Sticky",
-      "clear": 1,
-      "ops": "fetch|minecraft:chest=2,mekanism:logistical_sorter=1,mekanism:basic_logistical_transporter=6,mekanism:enrichment_chamber=1,mekanism:energized_smelter=1,mekanismgenerators:heat_generator=1,mekanism:basic_universal_cable=11|dump;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|35|1|9;face|0;place|minecraft:chest;expect|front|chest;walk|36|1|11;face|3;place|mekanism:logistical_sorter;expect|front|logistical_sorter;call|front|setAutoMode|true;walk|35|1|11;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|12;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|13;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|14;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|15;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|16;face|0;place|mekanism:basic_logistical_transporter;expect|front|basic_logistical_transporter;walk|35|1|17;face|0;place|mekanism:enrichment_chamber;expect|front|enrichment_chamber;call|front|setMode|ITEM|LEFT|INPUT;call|front|setMode|ITEM|RIGHT|OUTPUT;call|front|setEjecting|ITEM|true;call|front|setMode|ENERGY|TOP|INPUT;walk|35|1|18;face|0;place|mekanism:energized_smelter;expect|front|energized_smelter;call|front|setMode|ITEM|LEFT|INPUT;call|front|setMode|ITEM|RIGHT|OUTPUT;call|front|setEjecting|ITEM|true;call|front|setMode|ENERGY|TOP|INPUT;walk|35|1|19;face|0;place|minecraft:chest;expect|front|chest;walk|36|1|20;face|1;place|mekanismgenerators:heat_generator;expect|front|heat_generator;walk|35|1|20;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|11;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|12;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|13;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|14;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|15;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|16;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|17;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|18;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|19;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|2|20;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|36|2|21;dropDown|minecraft:coal|16;leave;handin|"
+      "id": 1794927963,
+      "issued": 1794927963000,
+      "cmd": "reboot",
+      "target": "HopTo"
     }
   ]
 }
