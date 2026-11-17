@@ -1,60 +1,46 @@
 {
   "commands": [
     {
-      "id": 1794947078,
-      "issued": 1794947078000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "make": "alloy",
-      "n": 16
+      "id": 1794948523,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "Crafty"
     },
     {
-      "id": 1794947079,
-      "issued": 1794947078000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "make": "circuit",
-      "n": 8
+      "id": 1794948524,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "Counter"
     },
     {
-      "id": 1794947080,
-      "issued": 1794947078000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "enrich": "alltheores:raw_osmium",
-      "n": 8
+      "id": 1794948525,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "Sticky"
     },
     {
-      "id": 1794947081,
-      "issued": 1794947078000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "enrich": "minecraft:raw_iron",
-      "n": 8
+      "id": 1794948526,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "Dusty"
     },
     {
-      "id": 1794947082,
-      "issued": 1794947078000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "enrich": "minecraft:raw_gold",
-      "n": 8
+      "id": 1794948527,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "HopTo"
     },
     {
-      "id": 1794947083,
-      "issued": 1794947078000,
-      "cmd": "make",
-      "target": "Crafty",
-      "item": "mekanism:purification_chamber",
-      "n": 1
+      "id": 1794948528,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "Comparable"
     },
     {
-      "id": 1794947084,
-      "issued": 1794947078000,
-      "cmd": "make",
-      "target": "Crafty",
-      "item": "mekanism:electric_pump",
-      "n": 1
+      "id": 1794948529,
+      "issued": 1794948523000,
+      "cmd": "reboot",
+      "target": "OnRepeat"
     }
   ]
 }
