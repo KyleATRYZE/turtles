@@ -35,6 +35,7 @@ local REAL = {
   { out = "create:water_wheel", n = 1, rows = { { plank, plank, plank }, { plank, SH, plank }, { plank, plank, plank } } },
   { out = NUG, n = 9, rows = { { I } } },
   { out = IB, n = 1, rows = { { I, I, I }, { I, I, I }, { I, I, I } } },
+  { out = "minecraft:diamond_shovel", n = 1, rows = { { "minecraft:diamond" }, { S }, { S } } },
 }
 local SLOTS = { { 1, 2, 3 }, { 5, 6, 7 }, { 9, 10, 11 } }
 local craft = turtle.craft
@@ -77,13 +78,14 @@ end
 C1 = "minecraft:chest_0"
 for _ = 1, 2 do put(C1, I, 64) end
 put(C1, R, 32) put(C1, S, 32) put(C1, CB, 32) put(C1, BQ, 16) put(C1, COAL, 64)
-put(C1, AN, 32) put(C1, "regions_unexplored:mauve_planks", 16) put(C1, CAS, 1)
+put(C1, AN, 32) put(C1, "regions_unexplored:mauve_planks", 16) put(C1, CAS, 1) put(C1, "minecraft:diamond", 4)
 FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["byId"]={["9"]=1,["10"]=2,["12"]=4,["13"]=5,["5"]=6,["11"]=3}}'
 MAX_IDLES=1
 ''')
 L.eval('{runFactory()}')
 want = [("actuallyadditions:atomic_reconstructor", 1), ("actuallyadditions:coal_generator", 2),
-        ("create:andesite_alloy", 1), ("create:water_wheel", 1), ("create:encased_fan", 1)]
+        ("create:andesite_alloy", 1), ("create:water_wheel", 1), ("create:encased_fan", 1),
+        ("minecraft:diamond_shovel", 1)]
 L.execute('IDLES=0 MAX_IDLES=4 PAD_OCCUPIED=true NEXT_ID=13')
 L.execute('INBOX={{id=14,msg={type="materials",id=14,n=1,fuel=0,items={%s}}}}' % ",".join('{"%s",%d}' % i for i in want))
 L.eval('{runFactory()}')

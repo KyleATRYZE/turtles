@@ -135,6 +135,10 @@ local RECIPES = {
     grid = { "D", "D", "D", "", "S", "", "", "S", "" },
     key = { D = "minecraft:diamond", S = "minecraft:stick" },
   },
+  ["minecraft:diamond_shovel"] = {
+    grid = { "D", "", "", "S", "", "", "S", "", "" },
+    key = { D = "minecraft:diamond", S = "minecraft:stick" },
+  },
   [K.MODEM] = {
     grid = { "G", "G", "G", "G", "E", "G", "G", "G", "G" },
     key = { G = "minecraft:gold_ingot", E = "minecraft:ender_eye" },
