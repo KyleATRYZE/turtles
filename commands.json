@@ -1,64 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794873699,
-      "issued": 1794873699000,
-      "cmd": "reboot",
-      "target": "Crafty"
-    },
-    {
       "id": 10,
-      "issued": 1794873699000,
+      "issued": 1794873880000,
       "cmd": "draft",
       "target": "Crafty"
     },
     {
       "id": 15,
-      "issued": 1794873699000,
+      "issued": 1794873880000,
       "cmd": "draft",
       "target": "Crafty"
     },
     {
       "id": 16,
-      "issued": 1794873699000,
+      "issued": 1794873880000,
       "cmd": "draft",
       "target": "Crafty"
-    },
-    {
-      "id": 1794873703,
-      "issued": 1794873699000,
-      "cmd": "reboot",
-      "target": "QuarryStyles"
-    },
-    {
-      "id": 1794873704,
-      "issued": 1794873699000,
-      "cmd": "reboot",
-      "target": "ObiWanKenOrebi"
-    },
-    {
-      "id": 1794873705,
-      "issued": 1794873699000,
-      "cmd": "reboot",
-      "target": "OreSonWelles"
-    },
-    {
-      "id": 1794873706,
-      "issued": 1794873699000,
-      "cmd": "newjob",
-      "target": "QuarryStyles"
-    },
-    {
-      "id": 1794873707,
-      "issued": 1794873699000,
-      "cmd": "newjob",
-      "target": "ObiWanKenOrebi"
-    },
-    {
-      "id": 1794873708,
-      "issued": 1794873699000,
-      "cmd": "newjob",
-      "target": "OreSonWelles"
     }
   ]
 }
