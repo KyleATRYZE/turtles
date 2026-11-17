@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794910758,
-      "issued": 1794910758000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794910835,
+      "issued": 1794910835000,
+      "cmd": "lab",
+      "target": "HopTo",
+      "clear": 1,
+      "ops": "fetch|minecraft:bucket=5,minecraft:cauldron=1;inv;handin|"
     }
   ]
 }
