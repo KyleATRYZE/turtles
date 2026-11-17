@@ -3179,10 +3179,10 @@ while true do
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
       return true
-    elseif c.cmd == "draft" and tonumber(c.id) then
+    elseif c.cmd == "draft" and tonumber(c.turtle) then   -- (not id=: every order has its own id)
       -- draft Crafty id=<n>: an existing turtle (a parked miner) becomes a
       -- builder's mate; it is told so the next time it asks for a job
-      local id = math.floor(tonumber(c.id))
+      local id = math.floor(tonumber(c.turtle))
       plots.helpers = plots.helpers or {}
       local have = false
       for _, h in ipairs(plots.helpers) do if tostring(h) == tostring(id) then have = true end end
