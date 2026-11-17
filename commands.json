@@ -1,13 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794914270,
-      "issued": 1794914270000,
-      "cmd": "lavafarm",
-      "target": "Crafty",
-      "n": 7,
-      "how": "hut",
-      "skip": "HopTo"
+      "id": 1794914669,
+      "issued": 1794914669000,
+      "cmd": "lab",
+      "target": "HopTo",
+      "clear": 1,
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;fetch|sophisticatedstorage:controller=1;inv;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|10|6|29;down|2;placeDown|computercraft:cable;up|1;placeDown|computercraft:cable;up|1;placeDown|computercraft:cable;up|1;walk|10|6|16;inspect|down;walk|10|6|15;inspect|down;placeDown|sophisticatedstorage:controller;walk|11|5|16;face|2;inspect|front;expect|front|wired_modem;equip|right|advancedperipherals:weak_automata_core;use;equip|right|minecraft:diamond_pickaxe;inv;leave;home;handin|"
     }
   ]
 }
