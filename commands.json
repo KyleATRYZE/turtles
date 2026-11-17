@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794908083,
-      "issued": 1794908083000,
-      "cmd": "lab",
-      "target": "Pushy",
-      "clear": 1,
-      "ops": "fetch|minecraft:cauldron=1,minecraft:diamond_axe=1;inv;handin|"
+      "id": 1794908407,
+      "issued": 1794908407000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
