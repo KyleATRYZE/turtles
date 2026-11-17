@@ -94,9 +94,8 @@ K.CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its 
 
 -- Names starting with "#" are groups, matched by the end of the item name.
 local GROUPS = {
-  -- (Actually Additions' black quartz is tagged as quartz in this pack: the
-  -- comparator, and so the storage controller, can be made from it)
-  ["#quartz"] = { "minecraft:quartz", "actuallyadditions:black_quartz" },
+  -- (black quartz was tried in the comparator and refused: only the real thing)
+  ["#quartz"] = { "minecraft:quartz" },
   ["#planks"] = { "_planks" },
   ["#log"]    = { "_log", "_stem" },
   ["#fuel"]   = { "minecraft:coal", "minecraft:charcoal",
@@ -241,7 +240,7 @@ local RECIPES = {
   -- a group that does not touch (set with the storage tool, by a player)
   ["minecraft:comparator"] = {
     grid = { "", "T", "", "T", "Q", "T", "S", "S", "S" },
-    key = { T = "minecraft:redstone_torch", Q = "#quartz", S = "minecraft:stone" },
+    key = { T = "minecraft:redstone_torch", Q = "minecraft:quartz", S = "minecraft:stone" },
   },
   ["minecraft:repeater"] = {
     grid = { "T", "R", "T", "S", "S", "S", "", "", "" },
@@ -486,6 +485,44 @@ local RECIPES = {
     key = { I = "minecraft:iron_ingot", P = "#planks", O = "alltheores:osmium_ingot",
       C = "minecraft:copper_ingot", F = "minecraft:furnace" },
   },
+  -- Nether quartz with no Nether (tools/quartz.py, docs/quartz.md): sand
+  -- becomes soul sand in front of an Atomic Reconstructor (Actually
+  -- Additions; its casing takes the black quartz the miners bring up), and
+  -- soul sand washed by a Create fan gives quartz one time in eight, four
+  -- at a time. Grids from the mods' own recipe files for 1.21.1; not yet
+  -- crafted in this pack. The andesite casing has no crafting recipe: a
+  -- helper makes it in the world (andesite alloy used on a stripped log).
+  ["actuallyadditions:iron_casing"] = {
+    grid = { "I", "S", "I", "S", "Q", "S", "I", "S", "I" },
+    key = { I = "minecraft:iron_ingot", S = "minecraft:stick", Q = "actuallyadditions:black_quartz" } },
+  ["actuallyadditions:atomic_reconstructor"] = {
+    grid = { "I", "R", "I", "R", "C", "R", "I", "R", "I" },
+    key = { I = "minecraft:iron_ingot", R = "minecraft:redstone", C = "actuallyadditions:iron_casing" } },
+  ["actuallyadditions:coal_generator"] = {
+    grid = { "C", "I", "C", "C", "A", "C", "C", "I", "C" },
+    key = { C = "minecraft:cobblestone", I = "actuallyadditions:iron_casing", A = "minecraft:coal" } },
+  ["create:andesite_alloy"] = {
+    grid = { "N", "A", "", "A", "N", "", "", "", "" },
+    key = { N = "minecraft:iron_nugget", A = "minecraft:andesite" } },
+  ["create:shaft"] = { yield = 8,
+    grid = { "A", "", "", "A", "", "", "", "", "" },
+    key = { A = "create:andesite_alloy" } },
+  -- (the hammer is a tool: it comes back from the grid, a little worn)
+  ["alltheores:iron_ore_hammer"] = {
+    grid = { "", "B", "S", "", "S", "B", "S", "", "" },
+    key = { B = "minecraft:iron_block", S = "minecraft:stick" } },
+  ["alltheores:iron_plate"] = { tool = "alltheores:iron_ore_hammer",
+    grid = { "H", "I", "", "I", "", "", "", "", "" },
+    key = { H = "alltheores:iron_ore_hammer", I = "minecraft:iron_ingot" } },
+  ["create:propeller"] = {
+    grid = { "", "P", "", "P", "A", "P", "", "P", "" },
+    key = { P = "alltheores:iron_plate", A = "create:andesite_alloy" } },
+  ["create:encased_fan"] = {
+    grid = { "S", "", "", "C", "", "", "P", "", "" },
+    key = { S = "create:shaft", C = "create:andesite_casing", P = "create:propeller" } },
+  ["create:water_wheel"] = {
+    grid = { "P", "P", "P", "P", "S", "P", "P", "P", "P" },
+    key = { P = "#planks", S = "create:shaft" } },
   -- a pickaxe turtle cannot break wooden blocks (barrels, controllers):
   -- helpers carry an axe for those
   ["minecraft:diamond_axe"] = { grid = { "D", "D", "", "D", "S", "", "", "S", "" },
@@ -1087,7 +1124,13 @@ local function plan(stock, wanted, n, steps, missing)
     end
   else
     for name, per in pairs(ingredients(recipe)) do
-      plan(stock, name, per * batches, steps, missing)
+      if recipe.tool == name then
+        -- a tool: one does for every craft, and it comes back afterwards
+        plan(stock, name, 1, steps, missing)
+        stock[name] = (stock[name] or 0) + 1
+      else
+        plan(stock, name, per * batches, steps, missing)
+      end
     end
     if recipe.smelt then
       plan(stock, "#fuel", math.ceil(batches / 8), steps, missing)
@@ -1759,6 +1802,7 @@ end
 -- craft them all at once (up to a stack of output). Only for recipes whose
 -- ingredients are exact items (a group like any planks could mix types).
 local function canBulk(recipe)
+  if recipe.tool then return false end      -- (one tool in the grid: one craft at a time)
   for _, item in pairs(recipe.key) do
     if item:sub(1, 1) == "#" or item:sub(1, 1) == "@" then return false end
     -- something made of wood (a chest going into an iron chest): two of

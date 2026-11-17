@@ -1600,7 +1600,9 @@ end
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
-  "functionalstorage:", "ironfurnaces:", "minecraft:chest", "minecraft:furnace", "minecraft:barrel" }
+  "functionalstorage:", "ironfurnaces:", "minecraft:chest", "minecraft:furnace", "minecraft:barrel",
+  -- the quartz line (tools/quartz.py): its machines, and the soul sand made there
+  "create:", "actuallyadditions:", "minecraft:soul_sand" }
 
 local function labValue(a)
   if a == "true" then return true elseif a == "false" then return false end
@@ -1934,6 +1936,64 @@ local function runLab()
         local parts = {}
         for i = 2, r.n do parts[#parts + 1] = labShow(r[i]) end
         res = (r[1] and "" or "ERROR ") .. table.concat(parts, " | ")
+      elseif base == "toss" and SFX[sfx] then
+        -- toss[Up/Down]|item|n : drop items into the open on purpose (into a
+        -- stream that works on them: a fan's wash water). "drop" refuses to.
+        local slot = findSlot(a[2])
+        if not slot then res, stop = "none on board", true else
+          turtle.select(slot)
+          local before = turtle.getItemCount(slot)
+          turtle["drop" .. sfx](tonumber(a[3]) or 64)
+          res = "tossed " .. (before - turtle.getItemCount(slot))
+          turtle.select(1)
+        end
+      elseif verb == "seek" then
+        -- seek|text|max : straight down until the block below is named like
+        -- text (water, to fill a bucket from); stops on anything else
+        local want, limit, moved = a[2] or "water", tonumber(a[3]) or 40, 0
+        while true do
+          local seen, data = turtle.inspectDown()
+          if seen then
+            res = ("over %s at %d %d %d"):format(data.name, pos.x, pos.y, pos.z)
+            stop = not data.name:find(want, 1, true)
+            break
+          end
+          if moved >= limit or not step("d") then
+            res, stop = ("no %s within %d below"):format(want, moved), true
+            break
+          end
+          moved = moved + 1
+        end
+      elseif verb == "cycle" then
+        -- cycle|item|text|n|seconds : n times over, place the item in front,
+        -- wait until the block there is named like text (sand turned to soul
+        -- sand by an Atomic Reconstructor), and take it. Stops at the first
+        -- that has not changed in time (it is left standing).
+        local item, want = a[2], a[3] or ""
+        local n, limit, made = tonumber(a[4]) or 1, tonumber(a[5]) or 120, 0
+        for _ = 1, n do
+          local seen, data = turtle.inspect()
+          if not (seen and (data.name == item or data.name:find(want, 1, true))) then
+            local slot = findSlot(item)
+            if seen or not slot then res = (seen and "in the way: " .. data.name or "none on board") stop = true break end
+            turtle.select(slot)
+            local placed = turtle.place()
+            turtle.select(1)
+            if not placed then res, stop = "would not go down", true break end
+          end
+          local t0, changed = os.clock(), false
+          repeat
+            seen, data = turtle.inspect()
+            changed = seen and data.name:find(want, 1, true) ~= nil
+            if changed then break end
+            sleep(2)
+            tick("lab: waiting for the block to change")
+          until os.clock() - t0 > limit
+          if not changed then res, stop = "no change after " .. limit .. " s", true break end
+          if not turtle.dig() then res, stop = "would not come out", true break end
+          made = made + 1
+        end
+        res = made .. " of " .. n .. (res and (": " .. res) or "")
       elseif verb == "inspect" then
         local s = a[2] == "up" and "Up" or a[2] == "down" and "Down" or ""
         local seen, data = turtle["inspect" .. s]()
