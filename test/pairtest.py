@@ -79,4 +79,27 @@ check("an idle mate takes fuel there (once)", len(out) == 1 and out[0][0] == 21 
       and (out[0][1]["x"], out[0][1]["y"], out[0][1]["z"]) == (104, 70, 199))
 out, log, r = run('ST(23, "DropIt", "helper", "building", 150, 205, { fuel = 5000 })', FEED)
 check("no mate free: nobody is pulled off a job", out == [] and any("No builder's mate free" in l for l in log))
+
+# 9. three loaders already out: no fourth
+THREE_OUT = ', '.join('ST(%d, "L%d", "loader", "escorting", 900, %d, { job = { mode = "escort", who = "M%d" } })' % (60+i, i, 200+i*10, i) for i in range(3))
+out, log, r = run(PARKED + ', ST(9, "Oresome", "miner", "mining", %s), ' % FAR + THREE_OUT, ASK)
+check("never more than three loaders out at once", out == [])
+# 10. a helper working far away gets no loader; a miner 60 blocks out is not far
+out, log, r = run(PARKED + ', ST(21, "Pushy", "helper", "flying", %s), ST(9, "Oresome", "miner", "mining", 160, 200)' % FAR, ASK)
+check("helpers and turtles within 64 blocks get no loader", out == [])
+
+# 11. storage nearly full: a miner asking for a plot is given none; with room again, it is
+def plotRun(fill):
+    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true"); L.execute(HARNESS)
+    L.execute("put(\"minecraft:chest_1\", \"minecraft:coal\", 64)")
+    L.execute("for i = 1, %d do put(i <= 54 and \"minecraft:chest_0\" or \"minecraft:chest_1\", \"minecraft:cobblestone\", 64) end" % fill)
+    L.execute('''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42,43,44},["byId"]={}}'
+MAX_IDLES=4
+STATUSQ = {}
+INBOX = { { id = 77, msg = { type = "need_job", id = 77 } } }''')
+    L.eval('{runFactory()}')
+    g = L.globals()
+    return [dict(m.msg) for m in g.OUTBOX.values() if m.msg.type == "job"]
+check("no new plot while the storage is nearly full", plotRun(100) == [])
+check("a plot again once there is room", len(plotRun(5)) == 1)
 print("PASS" if not fails else "FAILED: %d" % len(fails))

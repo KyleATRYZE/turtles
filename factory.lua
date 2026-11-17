@@ -677,6 +677,7 @@ end
 local stores = {}    -- names of storage inventories
 
 -- How full the storage chests are (checked at most every 30 seconds).
+local MINE_ROOM = 0.10     -- share of storage slots that must be free before a miner is given a new plot
 local space, spaceAt
 local function storageSpace()
   if spaceAt and os.clock() - spaceAt < 30 then return space end
@@ -2354,6 +2355,17 @@ local function jobFor(id)
   end
   local index = plots.byId[key]
   if not index then
+    -- no new plots while the storage is nearly full: what they dig has
+    -- nowhere to go (they wait, and are given one when room comes back)
+    local room = storageSpace()
+    if room and room.slots > 0 and room.free < math.max(16, room.slots * MINE_ROOM) then
+      if not plots.noRoomSaid then
+        print("Storage nearly full: no new plots until there is room.")
+        plots.noRoomSaid = true
+      end
+      return nil
+    end
+    plots.noRoomSaid = nil
     local returning = plots.between and plots.between[key]
     if returning then
       plots.between[key] = nil
