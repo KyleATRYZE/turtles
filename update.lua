@@ -67,6 +67,22 @@ local function readFile(name)
   return s
 end
 
+-- Turtles have little disk: a helper or miner has no use for the factory's
+-- or the controller's programs (a helper ran out of space on factory.lua).
+local early = readFile(".role")
+early = early and early:gsub("%s", "") or nil
+local ONLY = {
+  factory    = { ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true, ["screens.lua"] = true },
+  helper     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
+                 ["screens.lua"] = true, ["builder.lua"] = true },
+  miner      = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
+                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true },
+  loader     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
+                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true },
+  builder    = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
+                 ["screens.lua"] = true, ["foundry.lua"] = true },
+}
+local skipFor = early and ONLY[early] or {}
 local manifest, err = get("manifest.txt")
 if not manifest then
   print("Update skipped: " .. tostring(err))
@@ -76,7 +92,10 @@ end
 local notes = {}
 for line in manifest:gmatch("[^\r\n]+") do
   local name = line:match("^%s*(.-)%s*$")
-  if name ~= "" then
+  if name ~= "" and skipFor[name] then
+    -- not needed here: free its space
+    if fs.exists(name) then fs.delete(name) end
+  elseif name ~= "" then
     local s = get(name)
     if not s or #s == 0 then
       print("Could not download " .. name)
