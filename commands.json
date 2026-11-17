@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794959011,
-      "issued": 1794959011000,
-      "cmd": "reboot",
-      "target": "all"
+      "id": 1794959134,
+      "issued": 1794959134000,
+      "cmd": "rebase",
+      "target": "HopTo",
+      "lane": 1
     }
   ]
 }
