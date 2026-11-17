@@ -2764,6 +2764,7 @@ local function haulDuty(stock)
   local best
   for _, u in pairs(fleet) do
     if u.role == "helper" and u.state == "idle" and now - u.at < 200
+      and not (plots.haul.skip and plots.haul.skip[u.label])     -- (builders between steps)
       and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
   end
   if not best then return end
@@ -3265,6 +3266,10 @@ while true do
     elseif c.cmd == "haul" then            -- haul Crafty on=1|0 [x= y= z= face=]: carry bulk stock to the store
       plots.haul = plots.haul or {}
       if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
+      if type(c.skip) == "string" then
+        plots.haul.skip = {}
+        for name in c.skip:gmatch("[^,]+") do plots.haul.skip[name] = true end
+      end
       saveTable(K.PLOTS_FILE, plots)
       print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
       return true
