@@ -152,6 +152,16 @@ b = L.eval('textutils.unserialize(FS[".base"])')
 check("rebase: the new base kept, with the order's heights and door", r[1] is True and b.f.x == -4428 and b.pad.z == 1524
       and b.hoverUp == 20 and b.hopUp == 22 and b.door.z == 1549, r)
 check("it asked the factory", any(m.type == "base_request" for m in g.SENT.values()))
+check("no lane=1 in the order: no drone lane (the helpers hover as before)", b.lane is None)
+L.eval('swarm.rebase({ cmd = "rebase", lane = "1" }, 1)')
+b = L.eval('textutils.unserialize(FS[".base"])')
+check("lane=1: the drone lane in .base (gates, tracks, the rack)", b.lane is not None and b.lane.y == 73
+      and b.lane.back == 1519 and b.lane.front == 1520 and b.lane.rackX == -4429 and b.lane.eastIn.x == -4402)
+L.eval('swarm.rebase({ cmd = "rebase" }, 1)')
+check("  kept by a later rebase without lane=", L.eval('textutils.unserialize(FS[".base"]).lane') is not None)
+L.eval('swarm.rebase({ cmd = "rebase", lane = "0" }, 1)')
+check("  and dropped by lane=0", L.eval('textutils.unserialize(FS[".base"]).lane') is None)
+L.eval('swarm.rebase({ cmd = "rebase", hover = 20, hop = "22", door = "-4426,72,1549" }, 1)')
 m = L.eval('textutils.unserialize(FS["miner.state"])')
 check("a miner's saved dock and exits follow; its grid keeps the old exit1 as origin; the plot stays",
       m.dock.z == 1526 and m.exit2.x == -4428 and m.origin.x == -4461 and m.home.y == 50 and m.size == 8)
@@ -175,9 +185,9 @@ check("the factory and the counters ignore the order (they know where they are)"
 HEL = open(os.path.join(ROOT, "helper.lua")).read()
 LOA = open(os.path.join(ROOT, "loader.lua")).read()
 MIN = open(os.path.join(ROOT, "miner.lua")).read()
-hov = HEL[HEL.index("local function hover()"):HEL.index("local escape")]
+hov = HEL[HEL.index("local function hoverAir()"):HEL.index("---------------------------------------------------------------- the drone lane")]
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
-L.execute("function slot() return 3 end " + hov.replace("local function hover", "function hover"))
+L.execute("function slot() return 3 end " + hov.replace("local function hoverAir", "function hover"))
 L.execute("base = { f = { y = 72 }, exit2 = { x = -4428, z = 1524 } }")
 before = L.eval("{hover()}")
 L.execute("base.hoverUp = 20")
@@ -190,6 +200,8 @@ L.execute("HOP_UP = 14 " + hop.replace("local function hopUp", "function hopUp")
 L.execute("base = {}")
 a = L.eval("hopUp()"); L.execute("base.hopUp = 22"); b2 = L.eval("hopUp()")
 check("loaders hop 14 up as before, 22 after a rebase with hop=22", a == 14 and b2 == 22)
+check("on the drone lane loaders do not hop onto the pad indoors for fuel: they ask for a feed",
+      "if base.lane then" in LOA[LOA.index("local function fuelUp"):LOA.index("local function fuelUp") + 600])
 check("loaders use it for both short hops", LOA.count("hopUp()") >= 3 and "+ HOP_UP" not in LOA.replace("local HOP_UP", ""))
 check("miners take the origin from the job and use it for the plot grid", "origin = j.origin" in MIN
       and "local o = st.origin or st.exit1" in MIN)

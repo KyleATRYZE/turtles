@@ -499,6 +499,18 @@ end
 -- Machines without a ".base" (the factory, the storage and screen
 -- computers) take no notice.
 local BASE_CELLS = { "dock", "exit1", "exit2" }
+
+-- The drone lane along the factory's back wall (docs/factory-retrofit.md),
+-- in world coordinates: drones fly it at y; the back track (z back) runs
+-- west, the front track (z front) east, between the gates at x west and x
+-- east. A drone comes down outside a gate (westIn: in on the front track;
+-- eastIn: in on the back track) and leaves by eastOut. Rack 1's homes:
+-- x rackX + i % perRow, low (y low) then high (y high), at z rackZ.
+-- A rebase order with lane=1 puts this in .base (base.lane); lane=0 takes
+-- it out again.
+M.LANE = { y = 73, back = 1519, front = 1520, west = -4448, east = -4404,
+  westIn = { x = -4451, z = 1520 }, eastIn = { x = -4402, z = 1519 }, eastOut = { x = -4402, z = 1520 },
+  rackX = -4429, rackZ = 1521, low = 72, high = 74, perRow = 8 }
 local STATE_FILES = { "miner.state", "helper.state", "loader.state", "builder.state" }
 
 local function readTable(file)
@@ -542,6 +554,16 @@ function M.rebase(c, tries)
     if x then base.door = { x = tonumber(x), y = tonumber(y), z = tonumber(z) } end
   end
   base.door = base.door or old.door
+  if c.lane ~= nil then
+    if tonumber(c.lane) == 1 or c.lane == true then
+      base.lane = {}
+      for k, v in pairs(M.LANE) do base.lane[k] = v end
+    else
+      base.lane = nil
+    end
+  else
+    base.lane = old.lane
+  end
   writeTable(".base", base)
   for _, file in ipairs(STATE_FILES) do
     local st = readTable(file)

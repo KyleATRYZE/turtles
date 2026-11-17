@@ -234,8 +234,13 @@ local function findHeading()
   return false
 end
 
+-- The drone lane (filled in further down): with the pads on the lane inside
+-- the factory, a helper inside it leaves by the east gate before climbing.
+local LN = {}
+
 -- Straight up to a height. A block overhead: sidestep and try again.
 local function riseTo(y)
+  if y > pos.y and LN.inside and LN.inside() then LN.exit() end
   local dodged = 0
   while pos.y < y do
     if not step("u") then
@@ -286,15 +291,142 @@ local function highway() return (st.job and st.job.oy or base.f.y) + OVER_SITE +
 -- where we wait: in the open air beside the hole over the launch pad (12
 -- above the factory; a rebase order can raise that, base.hoverUp, so the
 -- row clears the roof of a building the pad is in)
-local function hover()
+local function hoverAir()
   local e = base.exit2
   return e.x + 3 + 2 * slot(), base.f.y + (tonumber(base.hoverUp) or 12), e.z - 4
+end
+
+---------------------------------------------------------------- the drone lane
+-- With base.lane (a rebase order with lane=1; swarm.lua M.LANE) the launch
+-- pads are on the drone lane along the factory's back wall, and a helper
+-- comes and goes by it, at the lane's height (L.y):
+--   in from the west: down outside the west gate, in on the front track
+--     (eastbound), along it to the pad's x, a step north onto the pad;
+--   in from the east: down outside the east gate, in on the back track
+--     (westbound), along it onto the pad (over Crafty's stop, a block
+--     higher, for a pad beyond it);
+--   off a pad: a step south onto the front track; then east to its home in
+--     the rack (a step south into it, low or high) or out of the east gate.
+-- It waits for a load, and between jobs, in its home rather than hovering.
+-- Homes go by name (the factory's helper names, in order), else by id.
+local HOMES = { "Pushy", "HopTo", "LeverAlone", "DropIt", "Sticky", "Dusty", "OnRepeat", "Comparable",
+  "Observant", "Dispensable", "ButtonUp", "PlateUp", "Tripwired", "LampLit", "NoteWorthy", "TargetLock" }
+function LN.on() return type(base) == "table" and type(base.lane) == "table" end
+function LN.inside()
+  if not LN.on() then return false end
+  local L = base.lane
+  return pos.y >= L.y - 1 and pos.y <= L.y + 1 and pos.z >= L.back and pos.z <= L.rackZ
+    and pos.x >= L.west and pos.x <= L.east
+end
+-- on the lane, or on one of its tracks just outside a gate
+function LN.onTrack()
+  local L = base.lane
+  return LN.inside() or (pos.y == L.y and (pos.z == L.front or pos.z == L.back)
+    and pos.x >= L.west - 4 and pos.x <= L.east + 3)
+end
+function LN.home()
+  local L = base.lane
+  local label, i = os.getComputerLabel() or "", nil
+  for k, n in ipairs(HOMES) do if n == label then i = k - 1 end end
+  i = i or (os.getComputerID() % (2 * L.perRow))
+  return L.rackX + i % L.perRow, i < L.perRow and L.low or L.high, L.rackZ
+end
+function LN.go(dir, n)
+  face(dir)
+  for _ = 1, n do
+    if not step("f") then return false end
+    tick()
+  end
+  return true
+end
+function LN.toY(y)
+  while pos.y < y do if not step("u") then return false end end
+  while pos.y > y do if not step("d") then return false end end
+  return true
+end
+function LN.east(x) return pos.x >= x or LN.go(0, x - pos.x) end
+-- westbound on the back track to x: over Crafty's stop (a block higher)
+-- when x is beyond it, then down to the lane's height
+function LN.west(x)
+  local L = base.lane
+  while pos.x > x do
+    if x < base.pad.x and pos.x <= base.pad.x + 1 and pos.y == L.y then
+      if not step("u") then return false end
+    end
+    if not LN.go(2, 1) then return false end
+  end
+  return LN.toY(L.y)
+end
+-- onto the front track at the lane's height (from a home, a pad or the back
+-- track: across first, as the front track is open all the way up)
+function LN.toFront()
+  local L = base.lane
+  if pos.z == L.rackZ and not LN.go(3, 1) then return false end
+  if pos.z == L.back and not LN.go(1, 1) then return false end
+  return LN.toY(L.y) and pos.z == L.front
+end
+-- from outside: down to a gate's approach, on the line of its track
+function LN.enter(east)
+  local L = base.lane
+  local a = east and L.eastIn or L.westIn
+  riseTo(math.max(pos.y, highway()))
+  if not across(a.x, a.z, math.max(highway() + 12, pos.y + 40)) then return false end
+  return LN.toY(L.y)
+end
+function LN.toPad(p)
+  local L = base.lane
+  if not LN.onTrack() and not LN.enter(pos.x > (L.west + L.east) / 2) then return false end
+  if pos.z == L.rackZ and not LN.toFront() then return false end
+  if pos.z == L.back and pos.x < p.x and not LN.toFront() then return false end
+  if pos.z == L.front then
+    if pos.x <= p.x then
+      if not LN.east(p.x) then return false end
+      return LN.go(3, 1) and pos.x == p.x and pos.z == p.z
+    end
+    if not LN.go(3, 1) then return false end           -- (behind it: to the back track)
+  end
+  return LN.west(p.x) and pos.x == p.x and pos.z == p.z and pos.y == p.y
+end
+-- to the row just over a pad (to set something down on it), a pad taken or not
+function LN.over(p)
+  local L = base.lane
+  if not LN.onTrack() and not LN.enter(pos.x > (L.west + L.east) / 2) then return false end
+  if not LN.toFront() then return false end
+  if pos.x <= p.x then
+    return LN.east(p.x) and LN.toY(L.y + 1) and LN.go(3, 1) and pos.z == p.z
+  end
+  return LN.go(3, 1) and LN.toY(L.y + 1) and LN.go(2, pos.x - p.x) and pos.x == p.x
+end
+function LN.toHome()
+  local hx, hy, hz = LN.home()
+  if pos.x == hx and pos.y == hy and pos.z == hz then return true end
+  if not LN.onTrack() and not LN.enter(false) then return false end   -- (homes are reached eastbound)
+  if not LN.toFront() then return false end
+  if pos.x > hx then                                   -- behind it: round by the back track
+    if not (LN.go(3, 1) and LN.west(hx) and LN.go(1, 1)) then return false end
+  end
+  return LN.east(hx) and LN.toY(hy) and LN.go(1, 1) and pos.z == hz
+end
+-- out of the lane by the east gate (to climb outside)
+function LN.exit()
+  local L = base.lane
+  return LN.toFront() and LN.east(L.eastOut.x)
+end
+
+local function hover()
+  if LN.on() then return LN.home() end
+  return hoverAir()
 end
 
 local escape     -- defined further down (a way out of a place with no way straight up)
 
 local function goHover()
-  local x, y, z = hover()
+  if LN.on() then
+    if LN.toHome() then return true end
+    print("Could not get into my home in the rack: waiting outside.")
+    if LN.inside() then LN.exit() end
+  end
+  local x, y, z = hoverAir()
   if pos.y < y then riseTo(y) end
   -- (from up a mountain we may already be above the usual flying height)
   if not across(x, z, math.max(highway() + 12, pos.y + 40)) then
@@ -310,6 +442,7 @@ end
 -- ever dug (it was open when this was written; it may have been patched).
 local padAt                          -- the pad (and dispenser) of the load being fetched
 local function downToPad()
+  if LN.on() then return LN.toPad(padAt and padAt.pad or base.pad) end
   local e, pad = base.exit2, base.pad
   if padAt then e, pad = { x = padAt.pad.x, z = padAt.pad.z }, padAt.pad end
   if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
@@ -329,6 +462,7 @@ local function downToPad()
 end
 
 local function upFromPad()
+  if LN.on() then return LN.toFront() end              -- (off the pad onto the front track)
   local _, y = hover()
   while pos.y < y do
     local ok, why = step("u")
@@ -345,6 +479,7 @@ end
 
 -- Down the hole to just above the launch pad (to set something on it).
 local function overPad()
+  if LN.on() then return LN.over(base.pad) end         -- (the row over the pads)
   local e, pad = base.exit2, base.pad
   if not across(e.x, e.z, math.max(highway() + 12, pos.y + 40)) then return false end
   while pos.y > pad.y + 1 do
@@ -509,7 +644,7 @@ local function supplyRun(indices, reason, once)
   report("fetching materials")
   local hx, hy, hz = hover()
   if not (pos.x == hx and pos.y == hy and pos.z == hz) then   -- (already waiting there: no detour)
-    riseTo(highway())
+    if not LN.inside() then riseTo(highway()) end
     goHover()
   end
   local me = os.getComputerID()
@@ -2212,7 +2347,7 @@ local function runFoundry()
     home = function()
       local hx, hy, hz = hover()
       if pos.x == hx and pos.y == hy and pos.z == hz then return true end
-      riseTo(math.max(pos.y, highway()))
+      if not LN.inside() then riseTo(math.max(pos.y, highway())) end
       return goHover()
     end,
     -- up to these amounts on board: { { item, count }, ... } (one trip)
@@ -2260,25 +2395,28 @@ local function work()
     end
     turtle.select(1)
   end
-  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and st.lab then
+  -- (on the drone lane, in a home or on a track: in its place, not lost)
+  local laneOk = LN.inside() and (pos.x ~= base.pad.x or pos.z ~= base.pad.z)
+  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and st.lab and not laneOk then
     -- stopped inside a building: a lab run (site, leave, home) walks out by
     -- the door, so run it before giving up
     findHeading()
     runLab()
     locate()
   end
-  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) then
+  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and not laneOk then
     -- a miner drafted as a builder's mate wakes in its own shaft: find the
     -- way out through open space, digging nothing
     findHeading()
     pcall(escape, 800)
     locate()
   end
-  if pos.y <= base.f.y + 6 then
+  if pos.y <= base.f.y + 6 and not laneOk then
     if pos.x ~= base.pad.x or pos.z ~= base.pad.z then
       report("lost")
       error("I am down in the base and not on the launch pad.", 0)
     end
+    if LN.on() then findHeading() end                 -- (off the pad sideways, not up)
     upFromPad()
   end
   if not findHeading() then
@@ -2313,7 +2451,7 @@ local function work()
       runFoundry()
     end
   end
-  riseTo(math.max(pos.y, base.f.y + 12))
+  if not LN.on() then riseTo(math.max(pos.y, base.f.y + 12)) end
   goHover()
   print(st.done and "Share done. Waiting for jobs." or "Waiting for jobs.")
   while true do
