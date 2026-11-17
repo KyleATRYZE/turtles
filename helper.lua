@@ -1900,6 +1900,13 @@ local function runLab()
         local name = seen and data.name or "nothing"
         res = name
         stop = not name:find(a[3] or "", 1, true)
+        -- expect|dir|name|key|value : and that block state too (a wheel's
+        -- facing, say: a machine set the wrong way round is not built on)
+        if not stop and a[4] and a[4] ~= "" then
+          local got = seen and type(data.state) == "table" and data.state[a[4]]
+          res = name .. " " .. a[4] .. "=" .. tostring(got)
+          stop = tostring(got) ~= (a[5] or "")
+        end
       elseif base == "drop" and SFX[sfx] then
         local slot = findSlot(a[2])
         if not turtle["detect" .. sfx]() then
