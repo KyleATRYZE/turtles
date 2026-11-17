@@ -2201,6 +2201,13 @@ local function serveOrders(onlyReady)
       end
       given[name] = got
     end
+    do
+      local parts = {}
+      for _, l in ipairs(order.lines) do parts[#parts + 1] = shortName(l[1]) .. " " .. (given[l[1]] or 0) .. "/" .. l[2] end
+      local asked = {}
+      for _, l in ipairs(order.items) do asked[#asked + 1] = shortName(tostring(l[1])) .. " " .. tostring(l[2]) end
+      print("Load for " .. tostring(id) .. ": asked " .. table.concat(asked, ", ") .. "; gave " .. table.concat(parts, ", "))
+    end
     for _, line in ipairs(order.items) do
       local name, want = line[1], math.floor(tonumber(line[2]) or 0)
       if (given[name] or 0) < want then missing[name] = want - (given[name] or 0) end
