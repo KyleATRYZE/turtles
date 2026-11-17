@@ -1,12 +1,66 @@
 {
   "commands": [
     {
-      "id": 1794955226,
-      "issued": 1794955226000,
-      "cmd": "lab",
-      "target": "OnRepeat",
-      "clear": 1,
-      "ops": "goto|-4449|77|1519;digdown|72;inspect|down;goto|-4450|77|1519;digdown|72;inspect|down;goto|-4451|77|1519;digdown|72;inspect|down;goto|-4452|77|1519;digdown|72;inspect|down;goto|-4449|77|1520;digdown|72;inspect|down;goto|-4450|77|1520;digdown|72;inspect|down"
+      "id": 1794957481,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "clear": 1
+    },
+    {
+      "id": 1794957482,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "job": "fuel",
+      "fuel": "lava"
+    },
+    {
+      "id": 1794957483,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "alloy",
+      "n": 16
+    },
+    {
+      "id": 1794957484,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "circuit",
+      "n": 8
+    },
+    {
+      "id": 1794957485,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "alltheores:raw_osmium",
+      "n": 8
+    },
+    {
+      "id": 1794957486,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "minecraft:raw_iron",
+      "n": 8
+    },
+    {
+      "id": 1794957487,
+      "issued": 1794957481000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "minecraft:raw_gold",
+      "n": 8
+    },
+    {
+      "id": 1794957488,
+      "issued": 1794957481000,
+      "cmd": "haul",
+      "target": "Crafty",
+      "on": 0
     }
   ]
 }

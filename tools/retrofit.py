@@ -104,8 +104,45 @@ def homes(xs):
 
 
 RACK2_CUT = [(x, y, 3) for x in RACK2_X for y in (1, 3)]          # bars or posts out
-RACK2_PADS = [(x, 0, 3) for x in RACK2_X] + [(x, 2, 3) for x in RACK2_X]
-RACK2_BARS = [(x, y, 4) for x in RACK2_X for y in (1, 2, 3)]
+RACK2_PADS = [(x, 0, 3) for x in RACK2_X]                         # (the y 2 shelf is the bay modems)
+RACK2_BARS = [(x, y, 4) for x in RACK2_X for y in (1, 3)]         # (y 2 is the strip)
+
+# ---------------------------------------------------------------- the loading bays
+# Items reach a docked drone over the cable: Crafty (or Sortnado) pushes the
+# load and fuel straight into it by its network name (turtle_<id>) and pulls
+# hand-ins back. Each rack column's middle shelf, between the low home (y 1)
+# and the high home (y 3), is a full-block wired modem: it touches both
+# homes, so 8 modems serve 16 homes. Behind each shelf modem, in the bars'
+# row (y 2, z 4), is one block of an 8-wide advanced-monitor strip: a
+# peripheral that never leaves, so every modem stays switched on with or
+# without a drone docked (a full-block modem switches itself off when its
+# last peripheral goes; docs/cc-lessons.md, 1 and 3). The strip is the low
+# shelf's panel; the old name board (y 4) becomes the high shelf's. One
+# computer in the wall at the west end (the board's computer, moved) drives
+# both. The modems chain into each other; connector modems (never clicked)
+# in the x 18 wall and a cable under the lane floor tie them to the hall's
+# cable. Everything is flush: no cable or modem sticks out anywhere.
+WIRED = "computercraft:wired_modem_full"
+MONITOR = "computercraft:monitor_advanced"
+PC = "computercraft:computer_normal"
+BAYS1 = [(x, 2, 3) for x in RACK1_X]                      # replace the y 2 copper shelf; clicked
+STRIP1 = [(x, 2, 4) for x in RACK1_X]                     # replace the y 2 bars; facing south
+RACK_PC = (18, 4, 4)                                      # in the wall, touching the board's west end
+RACK_CONN = [(18, 1, 3), (18, 2, 3), (18, 2, 4), (18, 3, 4)]    # bricks -> modems (not clicked)
+RACK_UNDER = (18, 0, 3)                                   # floor cell, closed on all sides: cable
+TRENCH1 = [(18, -1, 3)] + [(x, -1, 2) for x in range(18, 0, -1)] + [(1, -1, 3), (1, -1, 4)]
+HALL_PLUG = (1, 0, 4)                                     # floor under the hall cable's end: modem (not clicked)
+OLD_BOARD_PC = [(22, 4, 3), (22, 5, 3)]                   # the board's computer and ender modem: moved out
+# rack 2 (stage 6, loaders): the same, tied in at x 34
+BAYS2 = [(x, 2, 3) for x in RACK2_X]
+STRIP2 = [(x, 2, 4) for x in RACK2_X]
+RACK2_CONN = [(34, 1, 3), (34, 2, 3)]
+RACK2_UNDER = (34, 0, 3)
+TRENCH2 = [(34, -1, 3)] + [(x, -1, 2) for x in range(34, 18, -1)]
+
+
+def bay_world(c):
+    return W(*c)
 
 # the west gate's apron: the hill's shoulder comes up to y 3 outside it
 APRON = [(-1, 1), (-2, 1), (-3, 1), (-4, 1), (-1, 2), (-2, 2), (-3, 2)]   # (x, z) columns dug down to y 1
@@ -147,6 +184,9 @@ AE2 = [(x, y, z) for x in range(5, 9) for y in (1, 2, 3) for z in range(18, 29)]
 AE2_BUS = (9, 5, 15)
 AE2_RUN = [(8, 5, z) for z in range(15, 19)]
 LAVA2_X0, LAVA_N = -4458, 11
+
+
+STAGES = (1, 2, 3, 6, 7, 8, 11)
 
 
 # ================================================================= the plans
@@ -305,6 +345,29 @@ def stage_cells(stage):
             put(c, COPPER, "R")
         for c in RACK2_BARS:
             put(c, BARS)
+        for c in BAYS2:
+            put(c, WIRED, "R")
+        for c in STRIP2:
+            put(c, MONITOR + " south")
+        for c in RACK2_CONN:
+            put(c, WIRED, "R")
+        put(RACK2_UNDER, CABLE, "R")
+        for c in TRENCH2:
+            put(c, CABLE)
+    elif stage == 11:                     # rack 1's loading bays (Kyle, by hand, any time)
+        for c in BAYS1:
+            put(c, WIRED, "R")
+        for c in STRIP1:
+            put(c, MONITOR + " south", "R")
+        put(RACK_PC, PC, "R")
+        for c in RACK_CONN:
+            put(c, WIRED, "R")
+        put(RACK_UNDER, CABLE, "R")
+        for c in TRENCH1:
+            put(c, CABLE)
+        put(HALL_PLUG, WIRED, "R")
+        for c in OLD_BOARD_PC:
+            put(c, None, "cut")
     elif stage == 7:
         for c in NORTH:
             put(c, CABLE)
@@ -333,8 +396,18 @@ for _c in OLD_HOLES:
     REPLACES[_c] = None                         # (holes: nothing there)
 for _c in OLD_PIT:
     REPLACES[_c] = ""                           # (anything: the plan's pit stop, as far as it was fitted)
-for _c in RACK2_CUT + [(x, 2, 3) for x in RACK2_X]:
+for _c in RACK2_CUT + BAYS2:
     REPLACES[_c] = ("iron_bars", "polished_deepslate")
+for _c in BAYS1:
+    REPLACES[_c] = "cut_copper"
+for _c in STRIP1:
+    REPLACES[_c] = "iron_bars"
+for _c in [RACK_PC] + RACK_CONN:
+    REPLACES[_c] = "stone_bricks"
+for _c in [RACK_UNDER, HALL_PLUG, RACK2_UNDER] + RACK2_CONN:
+    REPLACES[_c] = "polished_deepslate"
+REPLACES[OLD_BOARD_PC[0]] = "computer_normal"
+REPLACES[OLD_BOARD_PC[1]] = "wireless_modem"
 for _c in [(x, 0, 3) for x in RACK2_X]:
     REPLACES[_c] = "polished_deepslate"
 
@@ -368,7 +441,7 @@ def check():
     B, O = model(), outside()
     bad, seen = [], {}
     cut = set()
-    for st in (1, 2, 3, 6, 7, 8):
+    for st in STAGES:
         for c, (it, how) in stage_cells(st).items():
             if c in seen:
                 bad.append(f"stage {st}: {c} also in stage {seen[c]}")
@@ -448,7 +521,7 @@ def draw(x0, x1, z0, z1, cell, title, legend, row="z", col="x"):
 
 def _all():
     S = {}
-    for st in (1, 2, 3, 6, 7, 8):
+    for st in STAGES:
         S.update(stage_cells(st))
     return S
 
