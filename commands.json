@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794920613,
-      "issued": 1794920613000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=2;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|15|7|19;face|0;inspect|front;expect|front|turtle;drop|minecraft:lava_bucket|1;leave;home;handin|"
+      "id": 1794921084,
+      "issued": 1794921084000,
+      "cmd": "reboot",
+      "target": "HopTo"
     }
   ]
 }
