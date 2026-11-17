@@ -1,8 +1,8 @@
 {
   "commands": [
     {
-      "id": 1794958885,
-      "issued": 1794958885000,
+      "id": 1794959011,
+      "issued": 1794959011000,
       "cmd": "reboot",
       "target": "all"
     }
