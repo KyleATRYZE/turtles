@@ -98,7 +98,7 @@ local GROUPS = {
   ["#fuel"]   = { "minecraft:coal", "minecraft:charcoal",
                   -- with no coal or charcoal left, wood keeps the furnaces (and so the
                   -- charcoal) going: the woods kept least for storage first
-                  "regions_unexplored:bamboo_log", "regions_unexplored:redwood_log" },
+                  "regions_unexplored:bamboo_log" },
 }
 
 -- How to make things. grid = 3x3 crafting layout, read left to right, top to
@@ -1184,6 +1184,11 @@ local function loadFurnace(f, input, count)
     for _, st in ipairs(all) do
       if want <= 0 then break end
       local wood = st.name:find("_log", 1, true) ~= nil
+      if wood then
+        local have = 0
+        for _, o in ipairs(all) do if o.name == st.name then have = have + o.count end end
+        if have <= LOGS_KEPT and st.name ~= "regions_unexplored:bamboo_log" then st = { name = "" } end
+      end
       if matches("#fuel", st.name) and not (wood and coalLeft) and input ~= st.name
         and (not fuelSlot or fuelSlot.name == st.name) then
         local per = wood and 5 or 1         -- a log cooks 1.5 items, a coal 8
