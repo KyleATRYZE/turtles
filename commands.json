@@ -1,30 +1,20 @@
 {
   "commands": [
     {
-      "id": 1794949488,
-      "issued": 1794949488000,
-      "cmd": "haul",
-      "target": "Crafty",
-      "on": 0
-    },
-    {
-      "id": 1794949489,
-      "issued": 1794949488000,
-      "cmd": "fit",
-      "target": "HopTo",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_pads",
-      "shell": "factory_asfit3"
-    },
-    {
-      "id": 1794949490,
-      "issued": 1794949488000,
+      "id": 1794949597,
+      "issued": 1794949597000,
       "cmd": "lab",
       "target": "OnRepeat",
       "clear": 1,
-      "ops": "fetch|minecraft:glass=16|dump;goto|-4428|90|1524;inspect|down;expect|down|deepslate_tiles;digdown|81;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;down|1;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;inspect|down;expect|down|polished_deepslate;digdown|73;inspect|down;note|pad column open;goto|-4428|90|1529;inspect|down;expect|down|deepslate_tiles;digdown|81;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;down|1;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;inspect|down;expect|down|polished_deepslate;digdown|73;inspect|down;note|pad column open;inv;home;handin|"
+      "ops": "home;handin|"
+    },
+    {
+      "id": 1794949598,
+      "issued": 1794949597000,
+      "cmd": "lab",
+      "target": "HopTo",
+      "clear": 1,
+      "ops": "leave;home;handin|"
     }
   ]
 }
