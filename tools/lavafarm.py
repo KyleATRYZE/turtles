@@ -45,6 +45,25 @@ def build(n, first=0):
     return s
 
 
+def finish(n, first=0):
+    """Units whose trough is already built: make sure each base block is
+    there (a dripstone hangs only from a solid block), then dripstone,
+    cauldron, lava and the check, as in build."""
+    zs = [Z0 + first + i for i in range(n)]
+    s = [f"fetch|{COBBLE}={n + 2},{DRIP}={n},{CAUL}={n},{LAVA}={n}"]
+    for z in zs:
+        s += [f"goto|{X0}|{LAVA_Y}|{z}", f"placeDown|{COBBLE}"]
+    for z in zs:
+        s += [f"goto|{X0 + 2}|{DRIP_Y - 1}|{z}", "face|2", "fwd|2",
+              f"placeUp|{DRIP}", f"placeDown|{CAUL}", "face|0", "fwd|2"]
+    for z in zs:
+        s += [f"goto|{X0}|{LAVA_Y + 1}|{z}", f"placeDown|{LAVA}"]
+    for z in zs:
+        s += [f"goto|{X0 + 2}|{DRIP_Y}|{z}", "face|2", "fwd|1", "inspect|front", "expect|front|dripstone",
+              "down|2", "inspect|front", "expect|front|cauldron", "face|0", "fwd|1"]
+    return s
+
+
 def collect(n, how="place", first=0):
     return [f"fetch|{BUCKET}={n}", f"collect|{X0 + 1}|{CAUL_Y}|{Z0 + first}|{n}|2|{how}"]
 
@@ -57,6 +76,8 @@ if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "test"
     if what == "build":
         ops = build(int(sys.argv[2]), int(sys.argv[3]) if len(sys.argv) > 3 else 0) + end()
+    elif what == "finish":
+        ops = finish(int(sys.argv[2]), int(sys.argv[3]) if len(sys.argv) > 3 else 0) + end()
     elif what == "collect":
         ops = collect(int(sys.argv[2]), sys.argv[3] if len(sys.argv) > 3 else "place") + end()
     else:
