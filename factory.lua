@@ -1746,7 +1746,7 @@ local function survey()
   end
   -- step out on each free side and look down for the disk drive
   local found
-  for t = 1, 3 do
+  for t = K.COUNTER and 0 or 1, 3 do          -- (the counter has no chest in front: look there too)
     turnTo(t)
     if not found and not turtle.detect() and turtle.forward() then
       local ok, data = turtle.inspectDown()
