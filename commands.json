@@ -1,10 +1,18 @@
 {
   "commands": [
     {
-      "id": 1794875065,
-      "issued": 1794875065000,
+      "id": 1794877443,
+      "issued": 1794877443000,
       "cmd": "reboot",
       "target": "Crafty"
+    },
+    {
+      "id": 1794877444,
+      "issued": 1794877443000,
+      "cmd": "lab",
+      "target": "Pushy",
+      "clear": 1,
+      "ops": "fetch|ae2:charger=1,ae2:crank=1,minecraft:compass=2|dump;inv;handin|"
     }
   ]
 }
