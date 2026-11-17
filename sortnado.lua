@@ -421,6 +421,7 @@ function S.give(name, count)
   -- way of the Out chest)
   if cfg.giveVia ~= "out" and S.backend ~= "me" then
     -- straight from where it lies
+    S.giveError = nil
     local sources = {}
     if one and cfg.giveFrom then
       sources = { cfg.giveFrom }
@@ -458,6 +459,12 @@ function S.give(name, count)
     end
     for _, chest in ipairs(read) do S.read(chest) end
     if got > 0 then note("OUT", got, name) end
+    if got == 0 and cfg.giveVia == "direct" and S.giveError and #read == 0 then
+      -- the way it used to work does not any more (the store was moved away
+      -- from the manager): forget it, and go by the Out chest
+      cfg.giveFrom, cfg.giveVia = nil, nil
+      S.saveConfig()
+    end
     if got > 0 or cfg.giveVia == "direct" then
       return got, got < want and "your inventory took no more" or nil
     end

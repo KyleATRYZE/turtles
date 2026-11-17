@@ -227,6 +227,16 @@ g.addTo(g.CTL, IRON, 64); S.scan()
 got, why = give(S, IRON, 8)
 check("manager touching nothing: items wait in the Out barrel", got == 0 and g.total(g.OUT, IRON) == 8 and "Out chest" in why and books(S, IRON) == 56, (got, why))
 
+# ---- 9b. the direct way was remembered, then the controller was moved away from the manager
+lua, g, S = new('{ sides = { ["@west"] = CTL, ["@east"] = OUT } }')
+g.addTo(g.CTL, IRON, 128); S.scan()
+got, why = give(S, IRON, 8)
+check("direct at first", got == 8 and g.PLAYER[IRON] == 8, (got, why))
+lua.execute('LAYOUT.sides = { ["@east"] = OUT }')
+got, why = give(S, IRON, 8)
+got2, why2 = give(S, IRON, 8)
+check("controller moved away: it falls back to the Out barrel", g.PLAYER[IRON] >= 16 or (g.total(g.OUT, IRON) >= 8 and lua.eval("cfg and cfg.giveVia") != "direct"), (got, why, got2, why2, g.PLAYER[IRON], g.total(g.OUT, IRON)))
+
 # ---- 10. a full store keeps the rest in the In barrel
 lua, g, S = new('{ sides = {}, slots = 2 }')
 g.addTo(g.IN, IRON, 1024); g.addTo(g.IN, COAL, 64)
