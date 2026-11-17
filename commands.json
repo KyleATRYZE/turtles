@@ -1,22 +1,22 @@
 {
   "commands": [
     {
-      "id": 10,
-      "issued": 1794873880000,
-      "cmd": "draft",
-      "target": "Crafty"
+      "id": 1794873932,
+      "issued": 1794873932000,
+      "cmd": "newjob",
+      "target": "CleanSlate"
     },
     {
-      "id": 15,
-      "issued": 1794873880000,
-      "cmd": "draft",
-      "target": "Crafty"
+      "id": 1794873933,
+      "issued": 1794873932000,
+      "cmd": "newjob",
+      "target": "Bedrocker"
     },
     {
-      "id": 16,
-      "issued": 1794873880000,
-      "cmd": "draft",
-      "target": "Crafty"
+      "id": 1794873934,
+      "issued": 1794873932000,
+      "cmd": "newjob",
+      "target": "Granted"
     }
   ]
 }
