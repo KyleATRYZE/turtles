@@ -1,12 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794915898,
-      "issued": 1794915898000,
-      "cmd": "make",
-      "target": "Crafty",
-      "item": "minecraft:comparator",
-      "n": 2
+      "id": 1794920509,
+      "issued": 1794920509000,
+      "cmd": "reboot",
+      "target": "Pushy"
+    },
+    {
+      "id": 1794920510,
+      "issued": 1794920509000,
+      "cmd": "reboot",
+      "target": "DropIt"
     }
   ]
 }
