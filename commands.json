@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794946368,
-      "issued": 1794946368000,
+      "id": 1794946395,
+      "issued": 1794946395000,
       "cmd": "reboot",
-      "target": "HopTo"
+      "target": "Counter"
     }
   ]
 }
