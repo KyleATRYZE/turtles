@@ -363,7 +363,7 @@ local function parkSpot()
   -- each loader its own spot (12 spots, two apart): all parking on one
   -- column stacked them up over the pad's approach and jammed the base
   if st.park or not base then return st.park end
-  local i = os.getComputerID() % 12
+  local i = (st.parkSlot or os.getComputerID()) % 12
   return { x = base.f.x + 4 + (i % 4) * 2, z = base.f.z - 1 - math.floor(i / 4) * 2 }
 end
 
@@ -380,7 +380,12 @@ local function park()
   end
   fuelUp()
   local dist = math.abs(pos.x - p.x) + math.abs(pos.z - p.z)
-  if dist == 0 and pos.y < CRUISE then
+  local onTurtle = false
+  do
+    local ok, below = turtle.inspectDown()
+    onTurtle = ok and below.name:find("computercraft:turtle", 1, true) ~= nil and not st.park
+  end
+  if dist == 0 and pos.y < CRUISE and not onTurtle then
     report("parked")                        -- (already there, landed: no need to go up and down again)
     return true
   end
@@ -400,6 +405,19 @@ local function park()
   report("flying home")
   if flyTo(p.x, p.z, h) then
     land()
+    -- landed on another turtle (two loaders given one spot): take the next
+    -- spot along, at most once round the twelve
+    local ok, below = turtle.inspectDown()
+    if ok and below.name:find("computercraft:turtle", 1, true) and not st.park
+      and (st.parkTries or 0) < 12 then
+      st.parkSlot = ((st.parkSlot or os.getComputerID()) + 1) % 12
+      st.parkTries = (st.parkTries or 0) + 1
+      save()
+      print("Someone is parked here: the next spot along.")
+      return park()
+    end
+    st.parkTries = 0
+    save()
     print("Parked. Keeping the base loaded.")
   end
   report("parked")
