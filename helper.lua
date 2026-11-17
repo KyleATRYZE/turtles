@@ -413,6 +413,22 @@ function LN.exit()
   return LN.toFront() and LN.east(L.eastOut.x)
 end
 
+-- The loading bay: docked in its home, the helper touches the shelf's
+-- wired modem (above a low home, below a high one) and so is on the cable
+-- as turtle_<id>. Crafty pushes its load straight in. Nil if the modem is
+-- not there or not switched on.
+function LN.bay()
+  for _, side in ipairs({ "top", "bottom" }) do
+    if peripheral.getType(side) == "modem" then
+      local okW, wireless = pcall(peripheral.call, side, "isWireless")
+      if okW and not wireless then
+        local ok, name = pcall(peripheral.call, side, "getNameLocal")
+        if ok and type(name) == "string" then return name end
+      end
+    end
+  end
+end
+
 local function hover()
   if LN.on() then return LN.home() end
   return hoverAir()
@@ -637,8 +653,20 @@ local function askController()
   rednet.broadcast({ type = "controller_request", id = os.getComputerID() }, JOB_PROTOCOL)
 end
 
+-- What goes back to the factory with a load: emptied lava buckets (not on a
+-- lab run: buckets a lab run fetched stay on board, as they were handed
+-- straight back and lava rounds went out with none), and, for the lab
+-- bench, everything it was not sent for. Never the kit.
+local function handsBack(it)
+  local bench = st.lab or st.fdy
+  local spare = bench and bench.keep and not bench.keep[it.name]
+  local wanted = bench and bench.want and bench.want[it.name]
+  return ((it.name == "minecraft:bucket" and not wanted and not st.lab) or spare) and not isKit(it.name) or false
+end
+
 -- Home for a load: wait in the air until the factory has it ready, drop
--- onto the pad, take it, and get straight back out of the way.
+-- onto the pad, take it, and get straight back out of the way. (On the drone
+-- lane: wait docked in the rack, where it comes in over the cable.)
 local function supplyRun(indices, reason, once)
   print("Going for a load: " .. reason)
   report("fetching materials")
@@ -659,6 +687,20 @@ local function supplyRun(indices, reason, once)
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
     local msg = { type = "materials", id = me, n = st.orderSeq, items = items, fuel = coal }
+    -- docked in a loading bay: the load comes in over the cable, and what
+    -- goes back (emptied buckets, a bench's spare parts) is taken from us
+    local bay = LN.on() and LN.bay() or nil
+    if bay then
+      msg.bay, msg.back = bay, {}
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it and handsBack(it) then msg.back[#msg.back + 1] = s end
+      end
+      print("Docked in my bay (" .. bay .. "): the load comes over the cable.")
+    elseif LN.on() then
+      print("No bay modem switched on in my home: fetching from the pad.")
+      report("bay modem off")
+    end
     rednet.broadcast(msg, JOB_PROTOCOL)
     askController()
     report("waiting for materials")
@@ -666,7 +708,11 @@ local function supplyRun(indices, reason, once)
     while os.clock() - started < 1800 do
       local _, m = rednet.receive(JOB_PROTOCOL, 20)
       if type(m) == "table" and m.forId == me and m.n == st.orderSeq then
-        if m.type == "materials_ready" then reply = m break end
+        if m.type == "materials_ready" then
+          reply = m
+          if m.bay then turtle.select(1) end      -- (it came over the cable: nothing to drop)
+          break
+        end
         if m.type == "load_ready" and not onPad then
           padAt = type(m.pad) == "table" and type(m.at) == "table" and { pad = m.pad, f = m.at } or nil
           print("The load is ready. Down to the launch pad.")
@@ -698,13 +744,7 @@ local function supplyRun(indices, reason, once)
         if DIRS[d].x == pf.x - pp.x and DIRS[d].z == pf.z - pp.z then
           for s = 1, 16 do
             local it = turtle.getItemDetail(s)
-            -- (and, for the lab bench, everything it was not sent for)
-            local bench = st.lab or st.fdy
-            local spare = bench and bench.keep and not bench.keep[it and it.name or ""]
-            -- (buckets a lab run fetched stay on board: they were handed
-            -- straight back, so lava rounds went out with none)
-            local wanted = bench and bench.want and it and bench.want[it.name]
-            if it and ((it.name == "minecraft:bucket" and not wanted and not st.lab) or spare) and not isKit(it.name) then
+            if it and handsBack(it) then
               face(d)
               turtle.select(s)
               turtle.drop()

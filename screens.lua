@@ -521,6 +521,18 @@ local function setUp()
     sleep(1)
     os.reboot()
   end
+  if post.kind == "rack" then
+    -- moved into the wall at the rack's end (docs/rack-build.html): on the
+    -- cable now, it runs the rack's panels instead
+    for _, name in ipairs(peripheral.getNames()) do
+      if peripheral.getType(name) == "modem" and not peripheral.call(name, "isWireless") then
+        writeFile(".role", "rack")
+        print("On the cable at the rack: becoming the rack's panels.")
+        sleep(1)
+        os.reboot()
+      end
+    end
+  end
   writeFile(POST_FILE, post.name)
   if os.getComputerLabel() ~= post.label then os.setComputerLabel(post.label) end
   print(("Post: %s (told by %s)."):format(post.name, how))

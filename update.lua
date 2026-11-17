@@ -72,15 +72,16 @@ end
 local early = readFile(".role")
 early = early and early:gsub("%s", "") or nil
 local ONLY = {
-  factory    = { ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true, ["screens.lua"] = true },
+  factory    = { ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true, ["screens.lua"] = true,
+                 ["rack.lua"] = true },
   helper     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true },
+                 ["screens.lua"] = true, ["builder.lua"] = true, ["rack.lua"] = true },
   miner      = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true },
+                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true },
   loader     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true },
+                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true },
   builder    = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["foundry.lua"] = true },
+                 ["screens.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true },
 }
 local skipFor = early and ONLY[early] or {}
 local manifest, err = get("manifest.txt")
@@ -141,7 +142,7 @@ print("Version " .. REV:sub(1, 7))
 local role = readFile(".role")
 if role then role = role:gsub("%s", "") end
 if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "builder"
-  and role ~= "loader" and role ~= "helper" and role ~= "storage" and role ~= "screen" then
+  and role ~= "loader" and role ~= "helper" and role ~= "storage" and role ~= "screen" and role ~= "rack" then
   if not turtle and (os.getComputerLabel() or ""):lower():match("^sortnado") then
     role = "storage"
   elseif not turtle then
@@ -172,6 +173,8 @@ elseif role == "storage" then
   job = 'shell.run("sortnado")'
 elseif role == "screen" then
   job = 'shell.run("screens")'
+elseif role == "rack" then
+  job = 'shell.run("rack")'
 else
   job = 'shell.run("miner", "resume")'
 end

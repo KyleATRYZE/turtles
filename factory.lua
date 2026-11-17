@@ -759,6 +759,19 @@ do
   K.SLOT = K.COUNTER and (tonumber(digits) or 1) or 0
 end
 K.counters = {}          -- counter number -> when last heard (os.clock)
+K.adopted = {}           -- helper id -> true: a Counter's load Crafty took over
+K.foreign = {}           -- helper id -> the order a Counter has (items, fuel, n, at, readyAt)
+-- The Counter fallback: a load left ready at a Counter's pad this long without
+-- being collected is made and served by Crafty instead.
+K.COUNTER_GIVE_UP = 180
+-- The watchdog: a helper in a waiting state this long gets its load
+-- announced again; still waiting this much later, it is told to reboot.
+K.STALL_AFTER = 600
+K.STALL_REBOOT = 300
+K.stall = {}             -- fleet key -> { step = 1|2, at = os.clock() }
+K.stalledList = {}       -- labels, for the status report
+-- the rack's screens hear the drones through Crafty, over the cable
+K.RACK_CHANNEL = 4711
 K.counterBeat = -1000
 function K.alive(slot)
   return slot == K.SLOT or (K.counters[slot] and os.clock() - K.counters[slot] < 150) or false
@@ -772,6 +785,7 @@ function K.shareOf(id)
 end
 -- Is turtle id's load mine to serve?
 function K.mine(id)
+  if K.adopted[id] then return not K.COUNTER end    -- (a Counter's load it never handed over)
   local share = K.shareOf(id)
   if K.COUNTER then return share == K.SLOT end
   return share == 0 or not K.alive(share)
@@ -833,6 +847,7 @@ local function report(state)
   pcall(swarm.report, {
     role = K.COUNTER and "counter" or "factory",
     state = state,
+    stalled = (not K.COUNTER and #K.stalledList > 0) and K.stalledList or nil,
     built = built,
     storage = storageSpace(),
     inv = lastStock,
@@ -886,6 +901,11 @@ end
 -- Out barrels (the store's door: Sortnado empties one and the player takes
 -- from the other), an Inventory Manager, and names (or name* prefixes) the
 -- order "stores Crafty skip=a,b" gives (the Mekanism line's chests, say).
+-- a helper's name on the cable, as it says it (turtle_<n> only)
+function K.bayName(b)
+  return type(b) == "string" and b:match("^turtle_%d+$") and b or nil
+end
+
 function K.notStore(name)
   if name:find("^minecraft:barrel") then return true end
   for _, t in ipairs({ "inventory_manager", "inventoryManager", "me_bridge", "meBridge" }) do
@@ -2291,6 +2311,90 @@ local function frontId()
   return ok and id or nil
 end
 
+-- The loading bays (docs/factory-retrofit.md 6b): a helper docked in its rack
+-- home is an inventory on the cable (turtle_<id>), so its load and fuel go
+-- straight from storage into it, and its hand-ins come straight back.
+-- Up to count of an item (or group) from storage into target; returns how many.
+function K.pushTo(target, wanted, count)
+  local need = count
+  for _, s in ipairs(listStorage()) do
+    if need <= 0 then break end
+    if matches(wanted, s.name) then
+      local ok, moved = pcall(peripheral.call, s.inv, "pushItems", target, s.slot, need)
+      need = need - (ok and tonumber(moved) or 0)
+    end
+  end
+  return count - need
+end
+
+-- Everything in one slot of target back into storage.
+function K.pullBack(target, slot)
+  local got = 0
+  for _, inv in ipairs(stores) do
+    local ok, moved = pcall(peripheral.call, inv, "pullItems", target, slot)
+    got = got + (ok and tonumber(moved) or 0)
+  end
+  return got
+end
+
+-- Hand a ready order to a helper docked in its bay. False (and a note) if
+-- it is not on the cable (yet).
+function K.deliverBay(id, order)
+  local bay = order.bay
+  if not (modem and type(bay) == "string" and peripheral.isPresent(bay)) then
+    order.bayNote = "not on the cable"
+    return false
+  end
+  local okId, who = pcall(peripheral.call, bay, "getID")
+  if okId and tonumber(who) and tonumber(who) ~= id then
+    order.bayNote = bay .. " is turtle " .. tostring(who)
+    return false
+  end
+  orders[id] = nil
+  K.adopted[id] = nil
+  local back = 0
+  for _, slot in ipairs(type(order.back) == "table" and order.back or {}) do
+    if tonumber(slot) then back = back + K.pullBack(bay, math.floor(tonumber(slot))) end
+  end
+  local given, missing, full = {}, {}, {}
+  local stock = stockTotals()
+  for _, l in ipairs(order.lines or {}) do
+    local name, want = l[1], l[2]
+    local got = K.pushTo(bay, name, want)
+    given[name] = (given[name] or 0) + got
+    if got < want and countIn(stock, name) >= want then full[#full + 1] = name end
+  end
+  for _, line in ipairs(order.items) do
+    local name, want = line[1], math.floor(tonumber(line[2]) or 0)
+    if (given[name] or 0) < want then missing[name] = want - (given[name] or 0) end
+  end
+  if (order.fuel or 0) > 0 then
+    stock = stockTotals()
+    local want = order.fuel * 80
+    local buckets = math.min(stock[K.LAVA] or 0, 4, math.floor(want / 1000 + 0.5))
+    want = want - 1000 * K.pushTo(bay, K.LAVA, buckets)
+    local coal = math.ceil(math.max(0, want) / 80)
+    if coal > 0 then
+      K.pushTo(bay, "#fuel", math.min(64, coal, math.max(8, math.floor(countIn(stock, "#fuel") * 0.4))))
+    end
+  end
+  if ctlQueue[id] and spareControllers(stockTotals()) >= 1 and K.pushTo(bay, K.CHUNKY, 1) == 1 then
+    local key = tostring(id)
+    plots.ctlGiven = plots.ctlGiven or {}
+    plots.ctlGiven[key] = (plots.ctlGiven[key] or 0) + 1
+    saveTable(K.PLOTS_FILE, plots)
+    ctlQueue[id] = nil
+  end
+  rednet.send(id, { type = "materials_ready", forId = id, n = order.n, given = given, missing = missing,
+    full = full, bay = true }, K.JOB_PROTOCOL)
+  local parts = {}
+  for _, l in ipairs(order.lines or {}) do parts[#parts + 1] = shortName(l[1]) .. " " .. (given[l[1]] or 0) .. "/" .. l[2] end
+  print("Load for " .. tostring(id) .. " into its bay (" .. bay .. "): " .. table.concat(parts, ", ")
+    .. (back > 0 and ("; " .. back .. " taken back") or ""))
+  report("load handed over")
+  return true
+end
+
 local function serveOrders(onlyReady)
   -- onlyReady: just hand a finished load to the turtle on the pad (safe with
   -- a new turtle in hand: nothing is stashed or crafted)
@@ -2329,9 +2433,25 @@ local function serveOrders(onlyReady)
       end
       order.lines, order.ready, order.told = lines, true, os.clock()
       order.readyAt = os.clock()
+      if order.bay then
+        if K.deliverBay(id, order) then return true end
+        order.tried = os.clock()
+        print("Load ready for " .. tostring(id) .. "; its bay: " .. tostring(order.bayNote))
+        return true
+      end
       rednet.send(id, { type = "load_ready", forId = id, n = order.n, pad = base.pad, at = base.f }, K.JOB_PROTOCOL)
+      if K.COUNTER then          -- (Crafty takes it over if it is not collected)
+        rednet.broadcast({ type = "counter_ready", forId = id, n = order.n }, K.JOB_PROTOCOL)
+      end
       print("Load ready. Waiting for the builder.")
       return true
+    end
+  end
+  -- a load for a bay whose helper was not docked yet: try again
+  for id, o in pairs(orders) do
+    if o.ready and o.bay and os.clock() - (o.tried or 0) > 15 then
+      o.tried = os.clock()
+      if K.deliverBay(id, o) then return true end
     end
   end
   do
@@ -2343,7 +2463,7 @@ local function serveOrders(onlyReady)
     if not order then
       turnTo(0)
       for id, o in pairs(orders) do
-        if o.ready and os.clock() - (o.told or 0) > 60 then        -- remind it
+        if o.ready and not o.bay and os.clock() - (o.told or 0) > 60 then        -- remind it
           o.told = os.clock()
           rednet.send(id, { type = "load_ready", forId = id, n = o.n, pad = base.pad, at = base.f }, K.JOB_PROTOCOL)
         end
@@ -2352,6 +2472,8 @@ local function serveOrders(onlyReady)
     end
     local id = here
     orders[id] = nil
+    K.adopted[id] = nil
+    if K.COUNTER then rednet.broadcast({ type = "counter_handed", forId = id, n = order.n }, K.JOB_PROTOCOL) end
     local given, missing, full = {}, {}, {}
     for _, l in ipairs(order.lines) do
       local name, want = l[1], l[2]
@@ -2630,7 +2752,9 @@ local function noteStatus(id, msg)
   if not x or not z or (x == 0 and z == 0) then x, y, z = old.x, old.y, old.z end   -- (0, 0 = not known)
   local job = type(msg.job) == "table" and msg.job or {}
   local loader = msg.role == "loader"
-  fleet[key] = { id = id, label = msg.label, role = msg.role, state = tostring(msg.state),
+  local state = tostring(msg.state)
+  fleet[key] = { id = id, label = msg.label, role = msg.role, state = state,
+    since = (old.state == state and old.since) or os.clock(),
     x = x, y = y, z = z, at = os.clock(), fuel = tonumber(msg.fuel), chunky = msg.chunky,
     mode = loader and job.mode or nil,
     who = loader and type(job.who) == "string" and nameKey(job.who) or nil }
@@ -2856,12 +2980,86 @@ local function feedFor(id, msg)
 end
 
 -- Listens to everyone's status reports (for the pairing above).
+-- A helper waiting for a load that never comes (a Counter's load left on a
+-- pad nobody landed on, a lost message): its load is announced again, a
+-- Counter's is taken over, and if it still waits it is told to reboot.
+function K.waiting(state)
+  state = tostring(state)
+  return state == "waiting for materials" or state == "fetching materials" or state:find("^stuck under") ~= nil
+end
+function K.adopt(id)
+  local f = K.foreign[id]
+  if not f then return false end
+  K.foreign[id] = nil
+  K.adopted[id] = true
+  orders[id] = { items = f.items, fuel = f.fuel, n = f.n, bay = f.bay, back = f.back }
+  rednet.broadcast({ type = "counter_drop", forId = id, n = f.n }, K.JOB_PROTOCOL)
+  print("Taking over turtle " .. tostring(id) .. "'s load from the Counter.")
+  return true
+end
+function K.watchdog(now)
+  now = now or os.clock()
+  if K.COUNTER then return end
+  -- the Counter fallback: ready at a Counter's pad and not collected
+  for id, f in pairs(K.foreign) do
+    if f.readyAt and now - f.readyAt > K.COUNTER_GIVE_UP then K.adopt(id)
+    elseif now - (f.at or now) > 3600 then K.foreign[id] = nil end
+  end
+  local list = {}
+  for key, u in pairs(fleet) do
+    if u.role == "helper" and K.waiting(u.state) and now - (u.since or now) > K.STALL_AFTER
+        and now - (u.at or 0) < 300 then
+      local w = K.stall[key]
+      if w and w.since ~= u.since then w = nil end
+      if not w then
+        w = { step = 1, at = now, since = u.since }
+        K.stall[key] = w
+        local o = orders[u.id]
+        if not o and K.foreign[u.id] then K.adopt(u.id) o = orders[u.id] end
+        if o and o.ready and o.bay then o.tried = 0
+        elseif o and o.ready then
+          o.told = now
+          rednet.send(u.id, { type = "load_ready", forId = u.id, n = o.n, pad = base and base.pad, at = base and base.f },
+            K.JOB_PROTOCOL)
+        end
+        print(("%s has been %s for %d min: its load announced again."):format(u.label, u.state,
+          math.floor((now - u.since) / 60)))
+      elseif w.step == 1 and now - w.at > K.STALL_REBOOT then
+        w.step, w.at = 2, now
+        if swarm then direct(u.id, { cmd = "reboot" }) end
+        print(u.label .. " still waiting: told to reboot.")
+      end
+      list[#list + 1] = u.label
+    else
+      K.stall[key] = nil
+    end
+  end
+  table.sort(list)
+  K.stalledList = list
+end
+
+-- what a drone said, passed on over the cable to the rack's screens
+function K.relay(msg)
+  if K.COUNTER or not modem or type(msg) ~= "table" then return end
+  if msg.role ~= "helper" and msg.role ~= "miner" and msg.role ~= "loader" then return end
+  pcall(modem.transmit, K.RACK_CHANNEL, K.RACK_CHANNEL, msg)
+end
+
 local function statusListener()
   if not swarm then while true do sleep(3600) end end
   swarm.open()
+  local lastWatch = os.clock()
   while true do
-    local id, msg = rednet.receive(swarm.PROTOCOL)
-    if id then noteStatus(id, msg) end
+    local id, msg = rednet.receive(swarm.PROTOCOL, 30)
+    if id then
+      noteStatus(id, msg)
+      K.relay(msg)
+    end
+    if os.clock() - lastWatch >= 30 then
+      lastWatch = os.clock()
+      local ok, err = pcall(K.watchdog)
+      if not ok then print("watchdog: " .. tostring(err)) end
+    end
   end
 end
 
@@ -2872,11 +3070,29 @@ local function responder()
     local id, msg = rednet.receive(K.JOB_PROTOCOL)
     if type(msg) == "table" and id and msg.type == "counter_alive" then
       K.counters[math.floor(tonumber(msg.slot) or 1)] = os.clock()
+    elseif type(msg) == "table" and id and (msg.type == "counter_ready" or msg.type == "counter_handed"
+        or msg.type == "counter_drop") then
+      local f = tonumber(msg.forId)
+      if msg.type == "counter_ready" and not K.COUNTER and f and K.foreign[f] and K.foreign[f].n == msg.n then
+        K.foreign[f].readyAt = K.foreign[f].readyAt or os.clock()
+      elseif msg.type == "counter_handed" and f then
+        K.foreign[f] = nil
+      elseif msg.type == "counter_drop" and K.COUNTER and f and orders[f] and orders[f].n == msg.n then
+        orders[f] = nil                       -- (Crafty took it over)
+        served[f] = msg.n
+      end
     elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and not K.mine(id))) then
       -- a counter's share, or not a counter's business at all
       if K.COUNTER and K.mine(id) and msg.type == "materials" and type(msg.items) == "table"
           and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
+      elseif not K.COUNTER and msg.type == "materials" and type(msg.items) == "table" then
+        -- a Counter's share: kept, in case it is never collected
+        local f = K.foreign[id]
+        if not f or f.n ~= msg.n then
+          K.foreign[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n, at = os.clock(),
+            bay = K.bayName(msg.bay), back = msg.back }
+        end
       end
     elseif type(msg) == "table" and id then
       if msg.type == "base_request" then
@@ -2917,7 +3133,11 @@ local function responder()
         emptiesQueue[id] = math.max(1, math.min(16, math.floor(tonumber(msg.n) or 8)))
       elseif msg.type == "materials" and type(msg.items) == "table"
         and (msg.n == nil or served[id] ~= msg.n) then
-        orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
+        local o = orders[id]
+        if not (o and o.ready and o.n == msg.n) then    -- (a repeat of a load already made: keep it)
+          orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n,
+            bay = K.bayName(msg.bay), back = type(msg.back) == "table" and msg.back or nil }
+        end
       elseif msg.type == "foundry_ready" or msg.type == "foundry_ack" or msg.type == "foundry_done" then
         pcall(foundryHeard, id, msg)
       elseif msg.type == "release" then
@@ -3367,6 +3587,7 @@ while true do
   if not cmd then
     return
   elseif cmd.cmd == "reboot" then
+    if modem and not K.COUNTER then pcall(modem.transmit, K.RACK_CHANNEL, K.RACK_CHANNEL, { type = "cmd", cmd = cmd }) end
     print("Rebooting by remote order.")
     swarm.pinVersion(cmd)
     report("rebooting")

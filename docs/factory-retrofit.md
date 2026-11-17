@@ -552,6 +552,16 @@ two connector bricks at the x 18 wall end. Nothing sticks out. Rack 2
 (stage 6) gets the same: modems for its y 2 shelf, a strip at y 2, z 4,
 connectors at 34 1-2 3 and a cable under the lane floor from x 34 to x 19.
 
+**The bays and the watchdog (code; test/baytest.py):**
+
+| what | where | when |
+|---|---|---|
+| A helper on the lane waits for a load docked in its rack home, says its name on the cable (`LN.bay()`: the shelf modem's `getNameLocal`) and which slots go back; with the bay modem off it says `bay modem off` and uses the pad | `helper.lua` | after `rebase ... lane=1` |
+| Crafty takes the hand-ins back (`pullItems`) and pushes the load and fuel straight in (`pushItems` to `turtle_<id>`); not on the cable yet: it tries again every 15 s | `factory.lua` `K.deliverBay` | whenever an order names a bay |
+| Watchdog: a helper in `waiting for materials`, `fetching materials` or `stuck under ...` over 10 min gets its load announced again (and a Counter's load taken over); 5 min later a direct `reboot`; listed as `stalled` in Crafty's status | `factory.lua` `K.watchdog` | now |
+| Counter fallback: a load ready at a Counter's pad 3 min and not collected is made and served by Crafty | `factory.lua` | now |
+| Rack panels: per home name, state, fuel; green docked, amber out, grey free, red silent; tap for the drone's screen. Crafty passes statuses and reboot orders on over the cable (channel 4711). The board's computer becomes `rack` by itself once it is in the wall on the cable | `rack.lua`, `screens.lua` | when moved |
+
 ## 7. The stages
 
 **Storage stays usable at every step.** `$get` and the storage screen run
