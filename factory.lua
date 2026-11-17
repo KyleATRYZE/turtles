@@ -103,6 +103,7 @@ local GROUPS = {
 
 -- How to make things. grid = 3x3 crafting layout, read left to right, top to
 -- bottom ("" = empty). smelt = furnace input. yield = items per craft.
+pendingMake = nil
 local RECIPES = {
   ["minecraft:stone"]      = { smelt = "minecraft:cobblestone" },
   ["minecraft:iron_ingot"] = { smelt = "minecraft:raw_iron" },
@@ -2843,6 +2844,21 @@ local function tryBuild()
   end
   for _, f in ipairs(furnaces) do emptyOutput(f) end
   if not held then
+    if pendingMake then
+      local item, n = pendingMake[1], pendingMake[2]
+      pendingMake = nil
+      pcall(function()
+        local stock = stockTotals()
+        local steps, missing = {}, {}
+        plan(stock, item, n + countIn(stockTotals(), item), steps, missing)
+        local parts = {}
+        for k, v in pairs(missing) do parts[#parts + 1] = tostring(v) .. " " .. shortName(k) end
+        if #parts > 0 then print("Make " .. shortName(item) .. ": short of " .. table.concat(parts, ", ")) end
+        local okRun, err = pcall(runSteps, steps)
+        print("Make " .. shortName(item) .. ": " .. (okRun and "done" or tostring(err)) .. ", have "
+          .. countIn(stockTotals(), item))
+      end)
+    end
     -- coal comes in blocks (and compressed blocks): keep some loose coal
     pcall(function()
       local stock = stockTotals()
@@ -3073,6 +3089,9 @@ while true do
       if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
       saveTable(PLOTS_FILE, plots)
       print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
+      return true
+    elseif c.cmd == "make" and c.item then     -- make Crafty item=<id> n=<count>: craft into stock
+      pendingMake = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
       return true
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
