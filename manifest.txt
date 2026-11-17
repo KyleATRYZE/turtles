@@ -1,4 +1,5 @@
 update.lua
+mirror.lua
 swarm.lua
 miner.lua
 controller.lua

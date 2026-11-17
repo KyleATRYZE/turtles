@@ -164,6 +164,10 @@ function M.report(status)
   status.time = os.epoch("utc")
   status.version = M.version()
   status.booted = BOOTED
+  if status.screen == nil and _G.SCREEN_MIRROR then
+    local ok, lines = pcall(_G.SCREEN_MIRROR, 12)
+    if ok then status.screen = lines end
+  end
   if fs.exists(".update_log") then
     local h = fs.open(".update_log", "r")
     local u = h.readAll()

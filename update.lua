@@ -175,7 +175,17 @@ elseif role == "screen" then
 else
   job = 'shell.run("miner", "resume")'
 end
-local wanted = 'shell.run("update")\n' .. job .. '\n'
+-- (mirror.lua keeps a copy of the screen for the status reports; if the
+-- job ever stops, what is on the screen goes to the base, then a restart)
+local wanted = 'pcall(dofile, "mirror.lua")\nshell.run("update")\n' .. job .. '\n'
+  .. 'pcall(function()\n'
+  .. '  local r = fs.open(".role", "r")\n'
+  .. '  local role = r and r.readAll() or "?"\n'
+  .. '  if r then r.close() end\n'
+  .. '  require("swarm").report({ role = role, state = "stopped", screen = _G.SCREEN_MIRROR and _G.SCREEN_MIRROR(16) })\n'
+  .. 'end)\n'
+  .. 'print("Stopped. Restarting in 2 minutes (hold Ctrl+T to stay).")\n'
+  .. 'sleep(120)\nos.reboot()\n'
 local current = readFile("startup.lua")
 -- never touch a GPS host
 if current ~= wanted and not (current and current:find("gps", 1, true)) then
