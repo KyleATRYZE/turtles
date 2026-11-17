@@ -1,22 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794926957,
-      "issued": 1794926957000,
-      "cmd": "newjob",
-      "target": "Cobbler"
-    },
-    {
-      "id": 1794926958,
-      "issued": 1794926957000,
-      "cmd": "newjob",
-      "target": "Pickle"
-    },
-    {
-      "id": 1794926959,
-      "issued": 1794926957000,
-      "cmd": "newjob",
-      "target": "Bedrocker"
+      "id": 1794927222,
+      "issued": 1794927222000,
+      "cmd": "lab",
+      "target": "Dusty",
+      "clear": 1,
+      "ops": "fetch|minecraft:diamond_axe=1,create:andesite_alloy=1,advancedperipherals:weak_automata_core=1|dump;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|35|1|27;face|3;inspect|front;equip|right|advancedperipherals:weak_automata_core;use|minecraft:diamond_axe;expect|front|stripped_jungle_log;use|create:andesite_alloy;expect|front|andesite_casing;equip|right|minecraft:diamond_pickaxe;dig;inv;leave;home;handin|"
     }
   ]
 }
