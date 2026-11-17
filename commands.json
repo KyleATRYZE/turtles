@@ -1,12 +1,70 @@
 {
   "commands": [
     {
-      "id": 1794899979,
-      "issued": 1794899979000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=10|dump;goto|-4462|84|1517;face|0;drop|minecraft:lava_bucket|1;goto|-4463|82|1521;face|0;drop|minecraft:lava_bucket|1;goto|-4462|86|1521;face|0;drop|minecraft:lava_bucket|1;goto|-4458|75|1520;face|0;drop|minecraft:lava_bucket|1;goto|-4458|76|1520;face|0;drop|minecraft:lava_bucket|1;goto|-4458|77|1520;face|0;drop|minecraft:lava_bucket|1;goto|-4460|74|1522;dropDown|minecraft:lava_bucket|1;goto|-4459|74|1523;dropDown|minecraft:lava_bucket|1;goto|-4460|74|1524;dropDown|minecraft:lava_bucket|1;goto|-4461|74|1525;dropDown|minecraft:lava_bucket|1;inv;home;handin|"
+      "id": 1794900249,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Squawk"
+    },
+    {
+      "id": 1794900250,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Shulky"
+    },
+    {
+      "id": 1794900251,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "AllayOop"
+    },
+    {
+      "id": 1794900252,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "WitherOrNot"
+    },
+    {
+      "id": 1794900253,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Vexed"
+    },
+    {
+      "id": 1794900254,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Beehave"
+    },
+    {
+      "id": 1794900255,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Ghastly"
+    },
+    {
+      "id": 1794900256,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Phantastic"
+    },
+    {
+      "id": 1794900257,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Breezy"
+    },
+    {
+      "id": 1794900258,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Batty"
+    },
+    {
+      "id": 1794900259,
+      "issued": 1794900249000,
+      "cmd": "reboot",
+      "target": "Ablaze"
     }
   ]
 }
