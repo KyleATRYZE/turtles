@@ -1,54 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794900769,
-      "issued": 1794900769000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "goto|-4462|83|1521;digDown;goto|-4461|87|1521;digDown;goto|-4461|85|1517;digDown;inv;fetch|minecraft:lava_bucket=6;inv;goto|-4451|95|1530;face|0;place|computercraft:turtle_normal;drop|minecraft:lava_bucket|1;call|front|turnOn;goto|-4451|95|1533;face|0;place|computercraft:turtle_normal;drop|minecraft:lava_bucket|1;call|front|turnOn;goto|-4451|95|1536;face|0;place|computercraft:turtle_normal;drop|minecraft:lava_bucket|1;call|front|turnOn;inv;home;handin|"
-    },
-    {
-      "id": 1794900770,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "Granted"
-    },
-    {
-      "id": 1794900771,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "Bedrocker"
-    },
-    {
-      "id": 1794900772,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "Cobbler"
-    },
-    {
-      "id": 1794900773,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "CleanSlate"
-    },
-    {
-      "id": 1794900774,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "Pickle"
-    },
-    {
-      "id": 1794900775,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "OreLando"
-    },
-    {
-      "id": 1794900776,
-      "issued": 1794900769000,
-      "cmd": "home",
-      "target": "NotoriousDIG"
+      "id": 1794900834,
+      "issued": 1794900834000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
