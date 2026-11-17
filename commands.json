@@ -1,10 +1,34 @@
 {
   "commands": [
     {
-      "id": 1794926811,
-      "issued": 1794926811000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794926894,
+      "issued": 1794926894000,
+      "cmd": "draft",
+      "target": "Crafty",
+      "turtle": 9
+    },
+    {
+      "id": 1794926895,
+      "issued": 1794926894000,
+      "cmd": "draft",
+      "target": "Crafty",
+      "turtle": 0
+    },
+    {
+      "id": 1794926896,
+      "issued": 1794926894000,
+      "cmd": "draft",
+      "target": "Crafty",
+      "turtle": 15
+    },
+    {
+      "id": 1794926897,
+      "issued": 1794926894000,
+      "cmd": "lavafarm",
+      "target": "Crafty",
+      "n": 7,
+      "how": "hut",
+      "skip": "HopTo,DropIt"
     }
   ]
 }
