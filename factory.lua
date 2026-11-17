@@ -2393,7 +2393,8 @@ local fleet = {}          -- name (see nameKey) -> what it last said
 local escortGiven = {}    -- turtle (nameKey) -> { loader = id, at = clock }
 local escortRest = {}     -- turtle -> not offered again before this (a loader found nothing there)
 local feedSent = {}       -- who asked (id) -> when a mate was last sent
-local ESCORT_FAR = 48     -- blocks from the factory (either way) beyond which a turtle is "far"
+local ESCORT_FAR = 64     -- blocks from the factory (either way) beyond which a turtle is "far"
+local ESCORTS_OUT = 3     -- at most this many loaders out with turtles at once (each trip burns fuel)
 local SILENT = 240        -- seconds without a word: far away, that is a turtle frozen in an unloaded chunk
 local RESTING = { done = true, parked = true, idle = true, stopped = true, paused = true,
   ["waiting for a plot"] = true, ["stopped by player"] = true }
@@ -2461,9 +2462,16 @@ local function escortFor(id, msg)
     end
   end
   if not kept then return end
+  -- no more than ESCORTS_OUT out at once
+  local out = 0
+  for _, u in pairs(fleet) do
+    if u.role == "loader" and u.id ~= id and now - u.at < 600
+      and (u.mode == "escort" or u.state == "escorting" or isFar(u)) then out = out + 1 end
+  end
+  if out >= ESCORTS_OUT then return end
   local best, bestScore
   for key, u in pairs(fleet) do
-    if (u.role == "miner" or u.role == "helper") and isFar(u) and not RESTING[u.state]
+    if u.role == "miner" and isFar(u) and not RESTING[u.state]
       and not (escortRest[key] and now < escortRest[key]) then
       local g = escortGiven[key]
       local taken = g ~= nil and now - g.at < 300 and g.loader ~= id
