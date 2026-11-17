@@ -1,41 +1,32 @@
 {
   "commands": [
     {
-      "id": 1794934324,
-      "issued": 1794934324000,
-      "cmd": "lavafarm",
-      "target": "Crafty",
-      "n": 7,
-      "how": "hut",
-      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Cobbler,Granted"
-    },
-    {
-      "id": 1794934325,
-      "issued": 1794934324000,
+      "id": 1794934426,
+      "issued": 1794934426000,
       "cmd": "reboot",
       "target": "Pushy"
     },
     {
-      "id": 1794934326,
-      "issued": 1794934324000,
+      "id": 1794934427,
+      "issued": 1794934426000,
       "cmd": "reboot",
       "target": "HopTo"
     },
     {
-      "id": 1794934327,
-      "issued": 1794934324000,
+      "id": 1794934428,
+      "issued": 1794934426000,
       "cmd": "reboot",
       "target": "Sticky"
     },
     {
-      "id": 1794934328,
-      "issued": 1794934324000,
+      "id": 1794934429,
+      "issued": 1794934426000,
       "cmd": "reboot",
       "target": "Dusty"
     },
     {
-      "id": 1794934329,
-      "issued": 1794934324000,
+      "id": 1794934430,
+      "issued": 1794934426000,
       "cmd": "reboot",
       "target": "OnRepeat"
     }
