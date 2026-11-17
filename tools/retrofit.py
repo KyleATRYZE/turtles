@@ -6,7 +6,7 @@ and the lab steps for the swarm's share. Prints only; it sends nothing.
     python3 tools/retrofit.py check            every retrofit cell is free in the plans
     python3 tools/retrofit.py map site|pads|net|foundry|store
     python3 tools/retrofit.py items <stage>    bill of blocks for a stage (1 2 3 6 7 8)
-    python3 tools/retrofit.py ops <job>        lab steps: deck bridge bench padc lava2
+    python3 tools/retrofit.py ops <job>        lab steps: deck bridge unbridge bench padc lava2
     python3 tools/retrofit.py fit <plan>       a fit plan's text: desklink walls northline
                                                (save as blueprints/factory_<plan>.txt to use)
 
@@ -729,6 +729,17 @@ def ops(job):
         s += [wgoto(-9, 2, 4), "inspect|down", f"placeDown|{CABLE}", "expect|down|cable",
               "face|2", "expect|front|cobblestone", "dig", f"place|{CABLE}", "expect|front|cable",
               "up|1", f"placeDown|{CABLE}", "expect|down|cable"]
+    elif job == "unbridge":
+        # stage 6, once the old chests are empty: the bridge's hut end out
+        # again and the hut wall made good (the yard part stays in the deck)
+        s = [f"fetch|minecraft:cobblestone=1|dump"]
+        s += [wgoto(-13, 2, 3), "face|1", "expect|front|cable", "dig",
+              "face|0", "fwd|1", "face|1", "expect|front|cable", "dig",
+              "face|0", "fwd|1", "face|1", "expect|front|cable", "dig",
+              "face|2", "fwd|1", "up|3"]
+        s += [wgoto(-9, 3, 4), "expect|down|cable", "digDown", "down|1", "face|2",
+              "expect|front|cable", "dig", "place|minecraft:cobblestone", "expect|front|cobblestone",
+              "expect|down|cable", "digDown"]
     elif job == "bench":
         # the yard bench's cobblestone, a layer at a time from the top (the
         # infuser and the Inventory Manager must be off it first: see the plan)
