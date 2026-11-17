@@ -1798,6 +1798,33 @@ local function runLab()
           local kinds = table.concat({ peripheral.getType(a[2]) }, ", ")
           res = (done and "on" or ("no: " .. tostring(why))) .. " (" .. (kinds ~= "" and kinds or "no peripheral") .. ")"
         end
+      elseif verb == "use" then
+        -- use[|item] : right-click the block in front, as a player would, with
+        -- the Weak Automata Core (Advanced Peripherals) worn on the pickaxe
+        -- side: an empty hand, or the item named held (a wired modem joined
+        -- to its network, a lever thrown, a bucket filled at a cauldron)
+        local auto
+        for _, side in ipairs({ "left", "right" }) do
+          if peripheral.getType(side) == "weakAutomata" then auto = peripheral.wrap(side) end
+        end
+        if not auto then
+          res, stop = "no automata worn (equip|right|advancedperipherals:weak_automata_core first)", true
+        else
+          local slot
+          if a[2] and a[2] ~= "" then
+            slot = findSlot(a[2])
+            if not slot then res, stop = "none on board: " .. a[2], true end
+          else
+            for s2 = 16, 1, -1 do if turtle.getItemCount(s2) == 0 then slot = s2 break end end
+          end
+          if slot then
+            turtle.select(slot)
+            local done, why = auto.useOnBlock()
+            turtle.select(1)
+            res = done and "used" or ("no: " .. tostring(why))
+            stop = not done
+          elseif not res then res, stop = "no empty slot for an empty hand", true end
+        end
       elseif verb == "until" then
         -- wait for a machine: until|side|method|n|seconds (a count, or a number)
         local want, limit = tonumber(a[4]) or 1, tonumber(a[5]) or 180
