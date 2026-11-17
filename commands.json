@@ -1,35 +1,64 @@
 {
   "commands": [
     {
-      "id": 1794873276,
-      "issued": 1794873276000,
+      "id": 1794873699,
+      "issued": 1794873699000,
       "cmd": "reboot",
       "target": "Crafty"
     },
     {
-      "id": 1794873277,
-      "issued": 1794873276000,
+      "id": 10,
+      "issued": 1794873699000,
+      "cmd": "draft",
+      "target": "Crafty"
+    },
+    {
+      "id": 15,
+      "issued": 1794873699000,
+      "cmd": "draft",
+      "target": "Crafty"
+    },
+    {
+      "id": 16,
+      "issued": 1794873699000,
+      "cmd": "draft",
+      "target": "Crafty"
+    },
+    {
+      "id": 1794873703,
+      "issued": 1794873699000,
       "cmd": "reboot",
-      "target": "HopTo"
+      "target": "QuarryStyles"
     },
     {
-      "id": 1794873278,
-      "issued": 1794873276000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;home"
+      "id": 1794873704,
+      "issued": 1794873699000,
+      "cmd": "reboot",
+      "target": "ObiWanKenOrebi"
     },
     {
-      "id": 1794873279,
-      "issued": 1794873276000,
-      "cmd": "fit",
-      "target": "HopTo",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_storeroom",
-      "shell": "factory_asfit3"
+      "id": 1794873705,
+      "issued": 1794873699000,
+      "cmd": "reboot",
+      "target": "OreSonWelles"
+    },
+    {
+      "id": 1794873706,
+      "issued": 1794873699000,
+      "cmd": "newjob",
+      "target": "QuarryStyles"
+    },
+    {
+      "id": 1794873707,
+      "issued": 1794873699000,
+      "cmd": "newjob",
+      "target": "ObiWanKenOrebi"
+    },
+    {
+      "id": 1794873708,
+      "issued": 1794873699000,
+      "cmd": "newjob",
+      "target": "OreSonWelles"
     }
   ]
 }
