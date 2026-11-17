@@ -1,18 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794901445,
-      "issued": 1794901445000,
+      "id": 1794901714,
+      "issued": 1794901714000,
       "cmd": "reboot",
-      "target": "Crafty"
+      "target": "HopTo"
     },
     {
-      "id": 1794901446,
-      "issued": 1794901445000,
-      "cmd": "lab",
-      "target": "DropIt",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=3;inv;goto|-4451|95|1530;face|0;drop|minecraft:lava_bucket|1;goto|-4451|95|1533;face|0;drop|minecraft:lava_bucket|1;goto|-4451|95|1536;face|0;drop|minecraft:lava_bucket|1;home;handin|"
+      "id": 1794901715,
+      "issued": 1794901714000,
+      "cmd": "reboot",
+      "target": "Pushy"
     }
   ]
 }
