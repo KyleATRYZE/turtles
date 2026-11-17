@@ -1,16 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794902292,
-      "issued": 1794902292000,
-      "cmd": "reboot",
-      "target": "Pushy"
-    },
-    {
-      "id": 1794902293,
-      "issued": 1794902292000,
-      "cmd": "reboot",
-      "target": "DropIt"
+      "id": 1794902370,
+      "issued": 1794902370000,
+      "cmd": "lab",
+      "target": "Pushy",
+      "clear": 1,
+      "ops": "fetch|minecraft:cobblestone=5,minecraft:pointed_dripstone=1,minecraft:cauldron=1,minecraft:lava_bucket=1;goto|-4454|80|1538;placeDown|minecraft:cobblestone;goto|-4455|81|1538;placeDown|minecraft:cobblestone;goto|-4453|81|1538;placeDown|minecraft:cobblestone;goto|-4454|81|1537;placeDown|minecraft:cobblestone;goto|-4454|81|1539;placeDown|minecraft:cobblestone;goto|-4452|77|1538;face|2;fwd|2;placeUp|minecraft:pointed_dripstone;placeDown|minecraft:cauldron;face|0;fwd|2;goto|-4454|81|1538;placeDown|minecraft:lava_bucket;goto|-4452|78|1538;face|2;fwd|1;inspect|front;expect|front|dripstone;down|2;inspect|front;expect|front|cauldron;face|0;fwd|1;fetch|minecraft:bucket=2;collect|-4453|76|1538|1|2|place;inv;home;handin|"
     }
   ]
 }
