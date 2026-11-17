@@ -1,12 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794908802,
-      "issued": 1794908802000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_storeroom;leave;home"
+      "id": 1794909502,
+      "issued": 1794909502000,
+      "cmd": "scan",
+      "target": "BlockParty",
+      "name": "hut_lava"
     }
   ]
 }
