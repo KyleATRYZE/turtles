@@ -2106,7 +2106,7 @@ local function serveOrders(onlyReady)
     if not order then
       turnTo(0)
       for id, o in pairs(orders) do
-        if os.clock() - o.told > 60 then         -- remind it
+        if o.ready and os.clock() - (o.told or 0) > 60 then        -- remind it
           o.told = os.clock()
           rednet.send(id, { type = "load_ready", forId = id, n = o.n }, JOB_PROTOCOL)
         end
