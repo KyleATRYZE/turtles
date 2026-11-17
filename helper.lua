@@ -560,7 +560,8 @@ local function supplyRun(indices, reason, once)
             -- (and, for the lab bench, everything it was not sent for)
             local bench = st.lab or st.fdy
             local spare = bench and bench.keep and not bench.keep[it and it.name or ""]
-            if it and (it.name == "minecraft:bucket" or spare) and not isKit(it.name) then
+            local wanted = bench and bench.want and it and bench.want[it.name]
+            if it and ((it.name == "minecraft:bucket" and not wanted) or spare) and not isKit(it.name) then
               face(d)
               turtle.select(s)
               turtle.drop()
@@ -1666,6 +1667,9 @@ local function runLab()
           end
           save()
         end
+        -- (empty buckets asked for stay on board: the pad takes the others back)
+        lab.want = {}
+        for _, w in ipairs(want) do lab.want[w[1]] = true end
         supplyRun(function()
           local items = {}
           for _, w in ipairs(want) do
@@ -1688,7 +1692,7 @@ local function runLab()
           got[#got + 1] = w[1]:gsub("^.*:", "") .. "=" .. have
         end
         res = table.concat(got, " ")
-        lab.keep = nil
+        lab.keep, lab.want = nil, nil
       elseif verb == "goto" then
         local x, y, z = tonumber(a[2]), tonumber(a[3]), tonumber(a[4])
         local top = math.max(highway(), y + 2, pos.y)
@@ -1913,10 +1917,21 @@ local function runLab()
           res = "nothing there to put it in"        -- (it would fall on the ground)
           stop = true
         elseif not slot then res = "none on board" else
-          turtle.select(slot)
-          local before = turtle.getItemCount(slot)
-          local done, why = turtle["drop" .. sfx](tonumber(a[3]) or 1)
-          res = (done and "went in: " or "refused: ") .. (before - turtle.getItemCount(slot)) .. " " .. tostring(why or "")
+          -- (from every stack of it on board until n have gone: coal handed
+          -- over in two lots sits in two slots)
+          local left, went, done, why = tonumber(a[3]) or 1, 0, false, nil
+          for sl = slot, 16 do
+            local d = turtle.getItemDetail(sl)
+            if left > 0 and d and d.name == a[2] then
+              turtle.select(sl)
+              local before = turtle.getItemCount(sl)
+              done, why = turtle["drop" .. sfx](left)
+              local n = before - turtle.getItemCount(sl)
+              went, left = went + n, left - n
+              if not done then break end
+            end
+          end
+          res = (went > 0 and "went in: " or "refused: ") .. went .. " " .. tostring(why or "")
           turtle.select(1)
         end
       elseif base == "suck" and SFX[sfx] then
