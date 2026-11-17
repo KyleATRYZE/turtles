@@ -1,10 +1,26 @@
 {
   "commands": [
     {
-      "id": 1794943504,
-      "issued": 1794943504000,
-      "cmd": "resort",
-      "target": "Sortnado"
+      "id": 1794943698,
+      "issued": 1794943698000,
+      "cmd": "lavafarm",
+      "target": "Crafty",
+      "n": 7,
+      "how": "hut",
+      "row": "-4453,76,1538,11,2",
+      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Comparable"
+    },
+    {
+      "id": 1794943699,
+      "issued": 1794943698000,
+      "cmd": "reboot",
+      "target": "Crafty"
+    },
+    {
+      "id": 1794943700,
+      "issued": 1794943698000,
+      "cmd": "reboot",
+      "target": "controller"
     }
   ]
 }
