@@ -177,57 +177,77 @@ local function readME(bridge)
   c.size = (frac > 0.01 and c.used > 0) and math.floor(c.used / frac) or math.max(63, c.used * 2)
 end
 
--- A controller's slots run barrel after barrel: each section gets a stretch
--- of them (by the plan's shares), so a section's items sit together on the
--- wall. An item goes onto a slot of its stretch that already holds it, then
--- an empty slot there, then the Overflow stretch; 0 when none of those takes
--- it (the caller then lets the controller put it anywhere).
-function S.bySection(container, slot, name, count)
-  local size, shares = 0, 0
-  for _, n in ipairs(S.order) do size = size + (S.chests[n].size or 0) end
-  if size < #SECTIONS * 2 then return 0 end
+-- Where things live behind the controllers. Slots come in three kinds, by
+-- how much one holds (getItemLimit): bulk (2,048 and up: the single-item
+-- barrels), medium (over 64: barrels with stack upgrades) and small (plain
+-- barrels). An item goes by how much of it there is: 256 or more to a bulk
+-- slot of its own, 64 or more to the medium slots, the rest to the small
+-- ones. The medium and small slots are shared out between the sections (by
+-- the plan's shares), so a section's items sit together.
+function S.pools()
+  if S.poolCache then return S.poolCache end
+  local p = { bulk = {}, med = {}, small = {} }
+  for _, n in ipairs(S.order) do
+    for to = 1, S.chests[n].size or 0 do
+      local ok, lim = pcall(peripheral.call, n, "getItemLimit", to)
+      lim = ok and tonumber(lim) or 64
+      local kind = lim >= 2048 and "bulk" or lim > 64 and "med" or "small"
+      p[kind][#p[kind] + 1] = { n, to }
+    end
+  end
+  S.poolCache = p
+  return p
+end
+
+function S.classOf(total)
+  if total >= 256 then return { "bulk", "med", "small" } end
+  if total >= 64 then return { "med", "small" } end
+  return { "small", "med" }
+end
+
+-- the part of a pool that is a section's (the whole of the bulk pool)
+function S.stretch(pool, kind, want)
+  if kind == "bulk" then return 1, #pool end
+  local shares, done = 0, 0
   for _, sec in ipairs(SECTIONS) do shares = shares + sec[2] end
-  -- slot g of the whole store: which controller, and which slot of it
-  local function at(g)
-    for _, n in ipairs(S.order) do
-      local c = S.chests[n]
-      if g <= c.size then return n, c, g end
-      g = g - c.size
-    end
+  for i, sec in ipairs(SECTIONS) do
+    local from = math.floor(#pool * done / shares + 0.5) + 1
+    local upto = i == #SECTIONS and #pool or math.floor(#pool * (done + sec[2]) / shares + 0.5)
+    if sec[1] == want then return from, upto end
+    done = done + sec[2]
   end
+  return 1, 0
+end
+
+-- Push count of an item from a container's slot to where it lives. total:
+-- how much of it the store will then hold. Returns how many went (0: none
+-- of its places took it).
+function S.place(container, slot, name, count, total)
+  local okP, pools = pcall(S.pools)
+  if not okP then return 0 end
   local moved = 0
-  local function stretch(want)
-    local done = 0
-    for i, sec in ipairs(SECTIONS) do
-      local from = math.floor(size * done / shares + 0.5) + 1
-      local upto = i == #SECTIONS and size or math.floor(size * (done + sec[2]) / shares + 0.5)
-      if sec[1] == want then return from, upto end
-      done = done + sec[2]
-    end
-  end
   local function try(n, to)
+    if n == container and to == slot then return 0 end
     local ok, k = pcall(peripheral.call, container, "pushItems", n, slot, count - moved, to)
     k = ok and tonumber(k) or 0
     moved = moved + k
     return k
   end
-  local function fill(want)
-    local from, upto = stretch(want)
-    if not from then return end
-    for g = from, upto do
-      local n, c, to = at(g)
-      local st = c.slots[to]
+  local function fill(pool, from, upto)
+    for i = from, upto do
+      local n, to = pool[i][1], pool[i][2]
+      local st = S.chests[n].slots[to]
       if st and st.name == name then
         try(n, to)
         if moved >= count then return end
       end
     end
     local misses = 0
-    for g = from, upto do
-      local n, c, to = at(g)
-      if not c.slots[to] then
+    for i = from, upto do
+      local n, to = pool[i][1], pool[i][2]
+      if not S.chests[n].slots[to] and not (n == container and to == slot) then
         if try(n, to) > 0 then
-          c.slots[to] = { name = name, count = 0 }     -- (taken, until the books are read again)
+          S.chests[n].slots[to] = { name = name, count = 0 }   -- (taken, until the books are read again)
         else
           misses = misses + 1
           if misses >= 6 then return end
@@ -236,10 +256,94 @@ function S.bySection(container, slot, name, count)
       end
     end
   end
-  fill(S.sectionOf(name))
-  if moved < count and S.sectionOf(name) ~= "Overflow" then fill("Overflow") end
+  local sec = S.sectionOf(name)
+  for _, kind in ipairs(S.classOf(total)) do
+    local pool = pools[kind]
+    if #pool > 0 then
+      fill(pool, S.stretch(pool, kind, sec))
+      if moved < count and kind ~= "bulk" and sec ~= "Overflow" then fill(pool, S.stretch(pool, kind, "Overflow")) end
+      if moved < count and kind ~= "bulk" then fill(pool, 1, #pool) end      -- its section is full: any slot of the kind
+    end
+    if moved >= count then break end
+  end
   return moved
 end
+
+-- Is this slot a good enough place for the item: of the first kind of slot
+-- for it, and in its section's part (or Overflow's), or anywhere of that
+-- kind when those parts have no free slot left?
+function S.atHome(n, to, name, total)
+  local pools = S.pools()
+  local kind = S.classOf(total)[1]
+  local pool = pools[kind]
+  local inPool, free = false, false
+  local function look(from, upto)
+    for i = from, upto do
+      if pool[i][1] == n and pool[i][2] == to then return true end
+      if not S.chests[pool[i][1]].slots[pool[i][2]] then free = true end
+    end
+  end
+  if look(S.stretch(pool, kind, S.sectionOf(name))) then return true end
+  if kind ~= "bulk" and look(S.stretch(pool, kind, "Overflow")) then return true end
+  if free then return false end
+  for i = 1, #pool do
+    if pool[i][1] == n and pool[i][2] == to then inPool = true break end
+  end
+  return inPool
+end
+
+-- resort Sortnado: move everything in the store to where it lives, the
+-- biggest piles first (they get the bulk slots). Nothing leaves the store.
+function S.resortPass(round)
+  S.scan()
+  local names = {}
+  for name, it in pairs(S.items) do names[#names + 1] = { name, it.total } end
+  table.sort(names, function(a, b) return a[2] > b[2] end)
+  local movedAll, kinds = 0, 0
+  for k, e in ipairs(names) do
+    local name, total = e[1], e[2]
+    local any = false
+    for _, n in ipairs(S.order) do
+      local mine = {}
+      for to, st in pairs(S.chests[n].slots) do
+        if st.name == name and not S.atHome(n, to, name, total) then mine[#mine + 1] = { to, st.count } end
+      end
+      for _, m in ipairs(mine) do
+        local left = m[2]
+        for _ = 1, 40 do
+          if left <= 0 then break end
+          local got = S.place(n, m[1], name, left, total)
+          if got == 0 then break end
+          left, movedAll, any = left - got, movedAll + got, true
+        end
+        if left <= 0 then S.chests[n].slots[m[1]] = nil end
+      end
+    end
+    if any then
+      kinds = kinds + 1
+      for _, n in ipairs(S.order) do S.chests[n].slots = {} end
+      S.scan()
+    end
+    S.resortNote = ("round %d: %d of %d kinds looked at, %d moved (%d items)"):format(round, k, #names, kinds, movedAll)
+  end
+  S.scan()
+  return kinds, movedAll
+end
+
+-- (the first round clears odds and ends out of the bulk slots; the piles
+-- that found them taken move in on the next)
+function S.resort()
+  S.busy = true
+  local kinds, items, rounds = 0, 0, 0
+  for round = 1, 4 do
+    local k, m = S.resortPass(round)
+    kinds, items, rounds = kinds + k, items + m, round
+    if k == 0 then break end
+  end
+  S.busy = nil
+  S.resortNote = ("done in %d rounds: %d moves of a kind (%d items)"):format(rounds, kinds, items)
+end
+
 
 -- Put count of an item lying in a container on the network into the store
 -- (the ME system, or any inventory by pushItems from the container's slot).
@@ -249,7 +353,7 @@ local function store(container, slot, name, count, dest)
     return ok and tonumber(n) or 0
   end
   if S.backend == "controller" then
-    local n = S.bySection(container, slot, name, count)
+    local n = S.place(container, slot, name, count, (S.items[name] and S.items[name].total or 0) + count)
     if n > 0 then return n end
     for _, ctl in ipairs(S.order) do              -- anywhere a controller will take it
       local ok, k = pcall(peripheral.call, container, "pushItems", ctl, slot, count)
@@ -297,10 +401,12 @@ end
 
 function S.scan()
   S.items = {}
-  for _, n in ipairs(S.order) do
-    S.chests[n].slots = {}
-    S.read(n)
+  for _, n in ipairs(S.order) do S.chests[n].slots = {} end
+  if S.backend == "controller" then
+    S.read(S.order[1])                  -- (reads every controller, once each)
+    return
   end
+  for _, n in ipairs(S.order) do S.read(n) end
 end
 
 local function note(dir, count, name)
@@ -342,7 +448,7 @@ end
 
 -- Empty the In chest into the store. Returns how many items moved.
 function S.sortInbox()
-  if not cfg.inbox then return 0 end
+  if not cfg.inbox or S.busy then return 0 end
   local ok, list = pcall(peripheral.call, cfg.inbox, "list")
   if not ok or type(list) ~= "table" then return 0 end
   local moved, pending, touched = 0, 0, nil
@@ -818,7 +924,7 @@ local function report()
   if not swarm then return end
   local used, slots = S.totals()
   pcall(swarm.report, { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
-    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey })
+    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote })
 end
 
 -- survey Sortnado: what every slot of the store can hold and what is in it,
@@ -867,14 +973,16 @@ parallel.waitForAny(
     while true do
       pcall(S.sortInbox)
       tick = tick + 1
-      if tick % 30 == 0 then                    -- and look over a few chests again, in case
+      if tick % 30 == 0 and S.busy then
+        report()
+      elseif tick % 30 == 0 then                -- and look over a few chests again, in case
         for k = 1, math.min(3, #S.order) do     -- someone moved things by hand
           local n = S.order[(tick / 30 * 3 + k) % math.max(1, #S.order) + 1]
           if n then pcall(S.read, n) end
         end
         report()
       end
-      if tick % 600 == 0 then
+      if tick % 600 == 0 and not S.busy then
         S.discover()                            -- (new chests, a controller, a manager)
         S.scan()
       end
@@ -907,6 +1015,11 @@ parallel.waitForAny(
         os.reboot()
       elseif c.cmd == "survey" then
         pcall(S.makeSurvey)
+        report()
+      elseif c.cmd == "resort" then
+        local okR, err = pcall(S.resort)
+        S.busy = nil
+        if not okR then S.resortNote = "stopped: " .. tostring(err) end
         report()
       elseif c.cmd == "ping" then
         report()
