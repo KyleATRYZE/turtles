@@ -1,16 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794920509,
-      "issued": 1794920509000,
-      "cmd": "reboot",
-      "target": "Pushy"
-    },
-    {
-      "id": 1794920510,
-      "issued": 1794920509000,
-      "cmd": "reboot",
-      "target": "DropIt"
+      "id": 1794920613,
+      "issued": 1794920613000,
+      "cmd": "lab",
+      "target": "DropIt",
+      "clear": 1,
+      "ops": "fetch|minecraft:lava_bucket=2;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|15|7|19;face|0;inspect|front;expect|front|turtle;drop|minecraft:lava_bucket|1;leave;home;handin|"
     }
   ]
 }
