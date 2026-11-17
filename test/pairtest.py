@@ -4,8 +4,8 @@ import os, lupa
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 HARNESS = open(os.path.join(HERE, 'fharness.lua')).read().replace('/home/claude/turtles', ROOT)
 fails = []
-def check(what, ok):
-    print(("ok   " if ok else "FAIL ") + what)
+def check(what, ok, detail=""):
+    print(("ok   " if ok else "FAIL ") + what + ("" if ok or not detail else "  [%s]" % detail))
     if not ok: fails.append(what)
 
 def run(statuses, inbox, idles=4):
@@ -102,4 +102,27 @@ INBOX = { { id = 77, msg = { type = "need_job", id = 77 } } }''')
     return [dict(m.msg) for m in g.OUTBOX.values() if m.msg.type == "job"]
 check("no new plot while the storage is nearly full", plotRun(100) == [])
 check("a plot again once there is room", len(plotRun(5)) == 1)
+
+# 12. hauling: storage nearly full, hauling switched on, an idle mate: it is sent with the biggest piles
+def haulRun(on, fill, helper_state="idle"):
+    L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute("MODEM_ON=true"); L.execute(HARNESS)
+    L.execute('put("minecraft:chest_1", "minecraft:coal", 64)')
+    L.execute('for i = 1, %d do put(i <= 54 and "minecraft:chest_0" or "minecraft:chest_1", i %% 3 == 0 and "minecraft:cobbled_deepslate" or "minecraft:cobblestone", 64) end' % fill)
+    L.execute('''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42,43,44},["byId"]={},["haul"]={["on"]=%s}}'
+MAX_IDLES=4
+local function st(id, label, role, state, x, z) return { id = id, msg = { label = label, role = role, state = state, pos = { x = x, y = 80, z = z }, fuel = 900 } } end
+STATUSQ = { st(21, "Pushy", "helper", "%s", 104, 199) }
+INBOX = {}''' % ("true" if on else "false", helper_state))
+    L.eval('{runFactory()}')
+    g = L.globals()
+    return [(m.to, dict(m.msg)) for m in g.OUTBOX.values() if m.msg.direct and m.msg.cmd == "lab"]
+out = haulRun(True, 100)
+ops = out[0][1]["ops"] if out else ""
+check("full and hauling on: the idle mate is sent to the store", len(out) == 1 and out[0][0] == 21, str(out)[:200])
+check("with the biggest pile, full stacks, keeping 256 back", "fetch|minecraft:cobblestone=" in ops and ops.count("drop|minecraft:cobblestone|64") >= 4
+      and "expect|front|controller" in ops and ops.endswith("handin|") and "minecraft:coal=" not in ops, ops[:200])
+check("at most 12 stacks a trip", ops.count("drop|") <= 12, ops.count("drop|"))
+check("hauling off: nobody is sent", haulRun(False, 100) == [])
+check("room to spare: nobody is sent", haulRun(True, 20) == [])
+check("no idle mate: nobody is sent", haulRun(True, 100, "fitting") == [])
 print("PASS" if not fails else "FAILED: %d" % len(fails))

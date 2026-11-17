@@ -48,4 +48,25 @@ check("the desk modem is still there", b((10, 1, 29)) == "computercraft:wired_mo
 check("the new modem was right-clicked once", list(g.CLICKS.values()) == ["computercraft:wired_modem_full 10 5 16"], str(list(g.CLICKS.values())))
 check("no barrel was dug", not {k: v for k, v in dict(g.DUG.items()).items() if "barrel" in k or "chest" in k}, str(dict(g.DUG.items())))
 check("nothing on the floor", not g.FLOOR, str(g.FLOOR))
+
+# a haul trip afterwards (the factory's haul duty sends these steps): full stacks into the new controller
+L.execute('''
+INTO = {}
+local D = {[0]={1,0},[1]={0,1},[2]={-1,0},[3]={0,-1}}
+local dropPrev = turtle.drop
+turtle.drop = function(n)
+  local i = T.inv[T.sel] if not i then return false end
+  if getBlock(T.x + D[T.d][1], T.y, T.z + D[T.d][2]) == "sophisticatedstorage:controller" then
+    n = math.min(n or i.count, i.count) INTO[i.name] = (INTO[i.name] or 0) + n
+    i.count = i.count - n if i.count == 0 then T.inv[T.sel] = nil end return true end
+  return dropPrev(n) end
+STOCK["minecraft:cobblestone"] = 400
+''')
+HOPS = "fetch|minecraft:cobblestone=128;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|11|5|15;face|2;expect|front|controller;drop|minecraft:cobblestone|64;drop|minecraft:cobblestone|64;leave;home;handin|"
+L.execute('FS["helper.state"] = textutils.serialize({ done = true, lab = { ops = [[%s]] } })' % HOPS)
+L.execute("OX, OY, OZ = -4448, 71, 1518") if False else None
+r = list(L.eval('function(f) return {pcall(f)} end')(L.eval(f'loadfile("{ROOT}/helper.lua")')).values())
+st = L.eval('textutils.unserialize(FS["helper.state"])')
+out = list(st.labOut.values())
+check("a haul trip drops two stacks into the controller and goes home", dict(g.INTO.items()).get("minecraft:cobblestone") == 128 and any("handin|" in l for l in out), "\n".join(out[-5:]))
 print("PASS" if not fails else "FAILED: %d" % len(fails))

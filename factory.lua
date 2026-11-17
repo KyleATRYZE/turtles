@@ -2506,6 +2506,82 @@ local function escortFor(id, msg)
   direct(id, { cmd = "escort", who = best.label, x = best.x, z = best.z, auto = true })
 end
 
+-- Hauling: when the factory's own chests fill up, a builder's mate with
+-- nothing to do is given full stacks of what there is plenty of, and drops
+-- them into the storage room's Sophisticated Storage controller, which puts
+-- them away in its barrels. Switched on by the order "haul Crafty on=1" once
+-- the controller stands where HAUL.at says (tools/ctlmove.py puts it there).
+local HAUL = {
+  at = { x = 11, y = 5, z = 15, face = 2 },   -- standing in the room, the controller to the west
+  ox = -4448, oy = 71, oz = 1518, shell = "factory_asfit3", plan = "factory_storeroom",
+  below = 0.20,       -- haul while less than this share of the slots is free
+  keep = 256,         -- of anything, this much stays at the factory
+  stacks = 12,        -- per trip
+  every = 300,        -- seconds between trips
+}
+-- never hauled away: fuel, buckets, and what the turtles and recipes use all the time
+local HAUL_NEVER = { "minecraft:coal", "minecraft:charcoal", "minecraft:coal_block", "allthecompressed:coal_block",
+  "minecraft:lava_bucket", "minecraft:bucket", "minecraft:redstone", "_ingot", "_log", "_planks",
+  "minecraft:glass", "minecraft:sand", "computercraft:", "advancedperipherals:", "mekanism",
+  "sophisticatedstorage:", "minecraft:diamond", "minecraft:stick", "minecraft:ender", "minecraft:blaze" }
+local haulAt = -1e9
+
+local function haulList(stock)
+  local lines, n = {}, 0
+  local names = {}
+  for name, count in pairs(stock) do
+    if count > HAUL.keep + 64 then
+      local skip = false
+      for _, p in ipairs(HAUL_NEVER) do if name:find(p, 1, true) then skip = true end end
+      if not skip then names[#names + 1] = name end
+    end
+  end
+  table.sort(names, function(a, b) return stock[a] > stock[b] end)    -- the biggest piles first
+  for _, name in ipairs(names) do
+    local k = math.min(HAUL.stacks - n, math.floor((stock[name] - HAUL.keep) / 64))
+    if k > 0 then
+      lines[#lines + 1] = { name, k * 64 }
+      n = n + k
+    end
+    if n >= HAUL.stacks then break end
+  end
+  return lines
+end
+
+local function haulOps(lines)
+  local fetch, drops = {}, {}
+  for _, l in ipairs(lines) do
+    fetch[#fetch + 1] = l[1] .. "=" .. l[2]
+    for _ = 1, l[2] / 64 do drops[#drops + 1] = "drop|" .. l[1] .. "|64" end
+  end
+  local a = HAUL.at
+  return table.concat({ "fetch|" .. table.concat(fetch, ","),
+    ("site|%d|%d|%d|%s|%s"):format(HAUL.ox, HAUL.oy, HAUL.oz, HAUL.shell, HAUL.plan),
+    ("walk|%d|%d|%d"):format(a.x, a.y, a.z), "face|" .. a.face, "expect|front|controller",
+    table.concat(drops, ";"), "leave", "home", "handin|" }, ";")
+end
+
+local function haulDuty(stock)
+  if not (plots.haul and plots.haul.on) or not swarm then return end
+  local now = os.clock()
+  if now - haulAt < HAUL.every then return end
+  local room = storageSpace()
+  if not room or room.slots == 0 or room.free >= room.slots * HAUL.below then return end
+  local best
+  for _, u in pairs(fleet) do
+    if u.role == "helper" and u.state == "idle" and now - u.at < 200
+      and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
+  end
+  if not best then return end
+  local lines = haulList(stock)
+  if #lines == 0 then return end
+  haulAt = now
+  local what = {}
+  for _, l in ipairs(lines) do what[#what + 1] = l[2] .. " " .. l[1]:gsub("^.-:", "") end
+  print(best.label .. " hauls to the store: " .. table.concat(what, ", ") .. ".")
+  direct(best.id, { cmd = "lab", ops = haulOps(lines), clear = true })
+end
+
 -- A turtle too low on fuel to fetch its own: send a builder's mate that is
 -- doing nothing (the one with most fuel) with coal, as the order "feed" does.
 local function feedFor(id, msg)
@@ -2734,6 +2810,7 @@ local function tryBuild()
     pcall(dumpJunk, stockTotals())
     pcall(keepFurnacesBusy, stockTotals())
     pcall(foundryDuty, stockTotals())
+    pcall(haulDuty, stockTotals())
   end
 
   local b
@@ -2929,6 +3006,12 @@ while true do
   local cmd = swarm.runWithCommands(task, function(c)
     if c.cmd == "ping" then
       report(lastState)
+      return true
+    elseif c.cmd == "haul" then            -- haul Crafty on=1|0 [x= y= z= face=]: carry bulk stock to the store
+      plots.haul = plots.haul or {}
+      if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
+      saveTable(PLOTS_FILE, plots)
+      print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
       return true
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
