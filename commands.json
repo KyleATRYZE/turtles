@@ -1,22 +1,15 @@
 {
   "commands": [
     {
-      "id": 1794959550,
-      "issued": 1794959550000,
-      "cmd": "newjob",
-      "target": "Granted"
-    },
-    {
-      "id": 1794959551,
-      "issued": 1794959550000,
-      "cmd": "newjob",
-      "target": "CleanSlate"
-    },
-    {
-      "id": 1794959552,
-      "issued": 1794959550000,
-      "cmd": "newjob",
-      "target": "Oresome"
+      "id": 1794959563,
+      "issued": 1794959563000,
+      "cmd": "fit",
+      "target": "Sticky",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_rack2"
     }
   ]
 }
