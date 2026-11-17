@@ -1,46 +1,30 @@
 {
   "commands": [
     {
-      "id": 1794948523,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794949488,
+      "issued": 1794949488000,
+      "cmd": "haul",
+      "target": "Crafty",
+      "on": 0
     },
     {
-      "id": 1794948524,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "Counter"
+      "id": 1794949489,
+      "issued": 1794949488000,
+      "cmd": "fit",
+      "target": "HopTo",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_pads",
+      "shell": "factory_asfit3"
     },
     {
-      "id": 1794948525,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "Sticky"
-    },
-    {
-      "id": 1794948526,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "Dusty"
-    },
-    {
-      "id": 1794948527,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "HopTo"
-    },
-    {
-      "id": 1794948528,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "Comparable"
-    },
-    {
-      "id": 1794948529,
-      "issued": 1794948523000,
-      "cmd": "reboot",
-      "target": "OnRepeat"
+      "id": 1794949490,
+      "issued": 1794949488000,
+      "cmd": "lab",
+      "target": "OnRepeat",
+      "clear": 1,
+      "ops": "fetch|minecraft:glass=16|dump;goto|-4428|90|1524;inspect|down;expect|down|deepslate_tiles;digdown|81;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;down|1;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;inspect|down;expect|down|polished_deepslate;digdown|73;inspect|down;note|pad column open;goto|-4428|90|1529;inspect|down;expect|down|deepslate_tiles;digdown|81;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;down|1;face|0;place|minecraft:glass;face|1;place|minecraft:glass;face|2;place|minecraft:glass;face|3;place|minecraft:glass;inspect|down;expect|down|polished_deepslate;digdown|73;inspect|down;note|pad column open;inv;home;handin|"
     }
   ]
 }
