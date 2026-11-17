@@ -1,48 +1,21 @@
 {
   "commands": [
     {
-      "id": 9,
-      "issued": 1794926333000,
-      "cmd": "draft",
-      "target": "Crafty"
-    },
-    {
-      "id": 0,
-      "issued": 1794926333000,
-      "cmd": "draft",
-      "target": "Crafty"
-    },
-    {
-      "id": 15,
-      "issued": 1794926333000,
-      "cmd": "draft",
-      "target": "Crafty"
-    },
-    {
-      "id": 1794926336,
-      "issued": 1794926333000,
-      "cmd": "lavafarm",
-      "target": "Crafty",
-      "n": 7,
-      "how": "hut",
-      "skip": "HopTo,DropIt"
-    },
-    {
-      "id": 1794926337,
-      "issued": 1794926333000,
-      "cmd": "reboot",
+      "id": 1794926436,
+      "issued": 1794926436000,
+      "cmd": "newjob",
       "target": "Cobbler"
     },
     {
-      "id": 1794926338,
-      "issued": 1794926333000,
-      "cmd": "reboot",
+      "id": 1794926437,
+      "issued": 1794926436000,
+      "cmd": "newjob",
       "target": "Pickle"
     },
     {
-      "id": 1794926339,
-      "issued": 1794926333000,
-      "cmd": "reboot",
+      "id": 1794926438,
+      "issued": 1794926436000,
+      "cmd": "newjob",
       "target": "Bedrocker"
     }
   ]
