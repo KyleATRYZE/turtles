@@ -1,28 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794945557,
-      "issued": 1794945557000,
+      "id": 1794946368,
+      "issued": 1794946368000,
       "cmd": "reboot",
       "target": "HopTo"
-    },
-    {
-      "id": 1794945558,
-      "issued": 1794945557000,
-      "cmd": "reboot",
-      "target": "OnRepeat"
-    },
-    {
-      "id": 1794945559,
-      "issued": 1794945557000,
-      "cmd": "reboot",
-      "target": "Comparable"
-    },
-    {
-      "id": 1794945560,
-      "issued": 1794945557000,
-      "cmd": "reboot",
-      "target": "Sortnado"
     }
   ]
 }
