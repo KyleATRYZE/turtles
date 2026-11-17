@@ -86,10 +86,13 @@ local function num(name) return tonumber(name:match("_(%d+)$")) or 0 end
 function S.discover()
   local names, controller, bridge = {}, nil, nil
   local controllers = {}
-  S.manager = nil
+  S.manager, S.managers = nil, {}
   for _, n in ipairs(peripheral.getNames()) do
     if peripheral.hasType(n, "inventory_manager") or peripheral.hasType(n, "inventoryManager") then
-      S.manager = n                     -- (holds the owner's memory card)
+      S.manager = S.manager or n        -- (holds the owner's memory card)
+      -- (one per player: each holds that player's card)
+      local ok, who = pcall(peripheral.call, n, "getOwner")
+      if ok and type(who) == "string" then S.managers[who:lower()] = n end
     elseif peripheral.hasType(n, "me_bridge") or peripheral.hasType(n, "meBridge") then
       bridge = bridge or n
     elseif n ~= cfg.inbox and n ~= cfg.outbox and peripheral.hasType(n, "inventory")
@@ -889,7 +892,30 @@ function S.request(msg)
   local count = msg.count == "all" and (it and it.total or 0) or tonumber(msg.count) or 64
   local sent, why = 0, nil
   if it then
-    if msg.to == "player" then sent, why = S.give(it.name, count)
+    if msg.to == "player" then
+      -- the manager holding this player's card (the first one, for the owner)
+      local mine = type(msg.player) == "string" and S.managers and S.managers[msg.player:lower()]
+      local was = S.manager
+      if type(msg.player) == "string" and next(S.managers or {}) and not mine then
+        sent, why = 0, "no Inventory Manager holds a memory card for " .. msg.player
+      else
+        local other = mine and mine ~= was
+        local keep = { cfg.giveFrom, cfg.giveVia, cfg.outSide }
+        if other then
+          -- (another player's manager: it learns its own way in, and the
+          -- owner's is put back after)
+          local per = (cfg.perManager or {})[mine] or {}
+          S.manager, cfg.giveFrom, cfg.giveVia, cfg.outSide = mine, per[1], per[2], per[3]
+        end
+        sent, why = S.give(it.name, count)
+        if other then
+          cfg.perManager = cfg.perManager or {}
+          cfg.perManager[mine] = { cfg.giveFrom, cfg.giveVia, cfg.outSide }
+          cfg.giveFrom, cfg.giveVia, cfg.outSide = keep[1], keep[2], keep[3]
+          S.saveConfig()
+        end
+        S.manager = was
+      end
     else sent = S.take(it.name, count, msg.to) end
   end
   return { type = "got", item = it and it.name, label = it and it.label, count = sent, asked = count,

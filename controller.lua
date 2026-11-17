@@ -165,8 +165,8 @@ end
 
 local chatQueue = {}
 
-local function say(text)
-  chatQueue[#chatQueue + 1] = text
+local function say(text, to)
+  chatQueue[#chatQueue + 1] = to and { text, to } or text
   while #chatQueue > 20 do table.remove(chatQueue, 1) end
 end
 
@@ -228,10 +228,12 @@ local function chatter()
     local box = chatBox()
     if box and #chatQueue > 0 then
       local text = table.remove(chatQueue, 1)
+      local to = owner
+      if type(text) == "table" then text, to = text[1], text[2] end
       local ok, res, why
       -- Advanced Peripherals 0.8: sendMessage(text, { options })
       local options = { prefix = "Swarm" }
-      if owner then options.player = owner end
+      if to then options.player = to end
       ok, res, why = pcall(box.sendMessage, text, options)
       if ok and res ~= nil and res ~= false then
         chatDebug.sent = chatDebug.sent + 1
@@ -263,11 +265,11 @@ local function parseGet(text)
   return 1, rest
 end
 
-local function askStore(count, item)
+local function askStore(count, item, user)
   storeSeq = storeSeq + 1
   local n = math.floor(os.epoch("utc") / 1000) % 100000 * 100 + storeSeq % 100
-  storePending[n] = { at = os.clock(), item = item }
-  rednet.broadcast({ type = "get", item = item, count = count, to = "player", n = n }, STORE_PROTOCOL)
+  storePending[n] = { at = os.clock(), item = item, user = user }
+  rednet.broadcast({ type = "get", item = item, count = count, to = "player", player = user, n = n }, STORE_PROTOCOL)
 end
 
 -- What to say in chat about the storage computer's answer.
@@ -293,14 +295,14 @@ local function storeReplies()
   while true do
     local _, msg = rednet.receive(STORE_PROTOCOL, 2)
     if type(msg) == "table" and msg.type == "got" and msg.n and storePending[msg.n] then
-      local asked = storePending[msg.n].item
+      local asked, user = storePending[msg.n].item, storePending[msg.n].user
       storePending[msg.n] = nil
-      say(storeLine(msg, asked))
+      say(storeLine(msg, asked), user ~= owner and user or nil)
     end
     for n, p in pairs(storePending) do
       if os.clock() - p.at > 20 then
         storePending[n] = nil
-        say("Storage did not answer about '" .. p.item .. "'. Is Sortnado running?")
+        say("Storage did not answer about '" .. p.item .. "'. Is Sortnado running?", p.user ~= owner and p.user or nil)
       end
     end
   end
@@ -316,11 +318,10 @@ local function chatOrders()
     local text = type(message) == "string" and message:lower():gsub("^%$", "") or ""
     local word, arg = text:match("^swarm%s+(%S+)%s*(%S*)")
     local getCount, getItem = parseGet(text)
-    -- (items only ever go to the owner: the Inventory Manager holds their card)
-    if getItem and owner == user then
-      askStore(getCount, getItem)
-    elseif getItem and not owner then
-      say("Say '$swarm status' once first, so I know who you are.")
+    -- (items go to whoever asks: Sortnado finds the Inventory Manager that
+    -- holds their memory card)
+    if getItem and type(user) == "string" then
+      askStore(getCount, getItem, user)
     end
     if word and (not owner or owner == user) then
       if not owner then

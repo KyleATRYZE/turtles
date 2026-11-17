@@ -105,7 +105,7 @@ check("$get all iron ingot", said == "Sent 36 Iron ingot to you. 0 left in stora
 said = chat("get 5 netherite")
 check("$get of something not stocked", said == "Storage has no 'netherite'.", said)
 calls = [c for c in g2.CALLS.values()]
-check("the manager was only ever asked to import", all(c.startswith("importItem ") for c in calls), calls)
+check("the manager was only ever asked to import", all(c.startswith("importItem ") or c.startswith("getOwner") for c in calls), calls)
 
 print("PASS" if not fails else "FAILED: " + "; ".join(fails))
 sys.exit(1 if fails else 0)

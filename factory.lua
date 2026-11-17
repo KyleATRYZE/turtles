@@ -2670,7 +2670,9 @@ local function lavaFarmDuty(stock)
   if not (farm and (farm.n or 0) > 0) or not swarm then return end
   local now = os.clock()
   if now - farmAt < FARM.every or (stock[K.LAVA] or 0) >= FARM.low then return end
-  local buckets = math.min(farm.n, stock["minecraft:bucket"] or 0)
+  -- (a second farm, the dripstone row: every other round goes there)
+  local row = farm.row and not farm.lastRow and farm.row
+  local buckets = math.min(row and row.n or farm.n, stock["minecraft:bucket"] or 0, 12)
   if buckets == 0 then return end
   local best
   for _, u in pairs(fleet) do
@@ -2683,8 +2685,13 @@ local function lavaFarmDuty(stock)
   if not best then return end
   farmAt = now
   print(best.label .. " goes round the lava farm with " .. buckets .. " buckets.")
+  farm.lastRow = row and true or nil
   local ops
-  if farm.how == "hut" then
+  if row then
+    ops = table.concat({ "fetch|minecraft:bucket=" .. buckets,
+      ("collect|%d|%d|%d|%d|%d|place"):format(row.x, row.y, row.z, buckets, row.face or 2),
+      "inv", "home", "handin|" }, ";")
+  elseif farm.how == "hut" then
     -- Kyle's farm along the hut's west wall: cauldrons at x -4467, y 70,
     -- z 1521 on; reached down the pad shaft and along the aisle in front
     local t = { "fetch|minecraft:bucket=" .. buckets, "goto|-4462|80|1521", "down|8",
@@ -3200,6 +3207,11 @@ while true do
     elseif c.cmd == "lavafarm" then        -- lavafarm Crafty n=<units built> how=place|use
       plots.lavafarm = { n = tonumber(c.n) or 0,
         how = (c.how == "use" or c.how == "hut") and c.how or "place" }
+      if type(c.row) == "string" then        -- row=x,y,z,n[,face]: the dripstone row's stand and length
+        local x, y, z, n, f = c.row:match("^(-?%d+),(-?%d+),(-?%d+),(%d+),?(%d*)$")
+        if x then plots.lavafarm.row = { x = tonumber(x), y = tonumber(y), z = tonumber(z), n = tonumber(n),
+          face = tonumber(f) or 2 } end
+      end
       if type(c.skip) == "string" then
         plots.lavafarm.skip = {}
         for name in c.skip:gmatch("[^,]+") do plots.lavafarm.skip[name] = true end
