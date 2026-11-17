@@ -1,19 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794886597,
-      "issued": 1794886597000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "job": "fuel"
-    },
-    {
-      "id": 1794886598,
-      "issued": 1794886597000,
-      "cmd": "foundry",
-      "target": "DropIt",
-      "ore": "minecraft:raw_gold",
-      "n": 48
+      "id": 1794891689,
+      "issued": 1794891689000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
