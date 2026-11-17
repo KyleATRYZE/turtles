@@ -1,10 +1,13 @@
 {
   "commands": [
     {
-      "id": 1794891689,
-      "issued": 1794891689000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794891946,
+      "issued": 1794891946000,
+      "cmd": "feed",
+      "target": "Pushy",
+      "x": -4462,
+      "y": 82,
+      "z": 1521
     }
   ]
 }
