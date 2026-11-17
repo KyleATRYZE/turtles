@@ -324,8 +324,8 @@ local RECIPES = {
     yield = 8, grid = { "S", "R", "S", "", "", "", "", "", "" },
     key = { S = "alltheores:steel_ingot", R = "minecraft:redstone" },
   },
-  ["mekanism:energy_tablet"] = {                         -- unverified (3 alloy, 2 gold, 4 redstone)
-    grid = { "R", "A", "R", "G", "A", "G", "R", "A", "R" },
+  ["mekanism:energy_tablet"] = {                         -- Mekanism 1.21 data: RGR / AGA / RGR
+    grid = { "R", "G", "R", "A", "G", "A", "R", "G", "R" },
     key = { R = "minecraft:redstone", G = "minecraft:gold_ingot", A = "mekanism:alloy_infused" },
   },
   ["mekanism:basic_energy_cube"] = {                     -- unverified
@@ -333,10 +333,10 @@ local RECIPES = {
     key = { R = "minecraft:redstone", T = "mekanism:energy_tablet", I = "minecraft:iron_ingot",
       K = "mekanism:steel_casing" },
   },
-  ["mekanismgenerators:wind_generator"] = {              -- unverified (the middle of the
-    grid = { "", "O", "", "O", "A", "O", "T", "C", "T" },  -- bottom row: an electrolytic core?)
+  ["mekanismgenerators:wind_generator"] = {              -- Mekanism 1.21 data: _O_ / OAO / TCT
+    grid = { "", "O", "", "O", "A", "O", "T", "C", "T" },
     key = { O = "alltheores:osmium_ingot", A = "mekanism:alloy_infused", T = "mekanism:energy_tablet",
-      C = "mekanism:electrolytic_core" },
+      C = "mekanism:basic_control_circuit" },
   },
   -- the Crusher (ingots to dust; cobblestone to gravel, gravel to sand): two
   -- lava buckets go into it (the buckets stay in the grid, empty)
@@ -344,6 +344,102 @@ local RECIPES = {
     grid = { "R", "C", "R", "L", "K", "L", "R", "C", "R" },
     key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", L = "minecraft:lava_bucket",
       K = "mekanism:steel_casing" },
+  },
+  -- Pipes, tubes and the next machines (docs/mekanism-plan.md). Grids are
+  -- from Mekanism's own generated recipe data for 1.21 (the 1.21.x branch);
+  -- the pack's copy may differ, so each is test-crafted once before a stage
+  -- is built. Steel is All the Ores' (ATM unifies it), dusts likewise
+  -- ("unverified id": the dust's item name in this pack not yet seen).
+  ["mekanism:basic_mechanical_pipe"] = {                 -- fluids (water)
+    yield = 8, grid = { "S", "B", "S", "", "", "", "", "", "" },
+    key = { S = "alltheores:steel_ingot", B = "minecraft:bucket" },
+  },
+  ["mekanism:basic_pressurized_tube"] = {                -- gases (oxygen, hydrogen, acid)
+    yield = 8, grid = { "S", "G", "S", "", "", "", "", "", "" },
+    key = { S = "alltheores:steel_ingot", G = "minecraft:glass" },
+  },
+  ["mekanism:basic_logistical_transporter"] = {          -- items
+    yield = 8, grid = { "S", "C", "S", "", "", "", "", "", "" },
+    key = { S = "alltheores:steel_ingot", C = "mekanism:basic_control_circuit" },
+  },
+  ["mekanism:advanced_control_circuit"] = {              -- (or infuse a basic one with redstone)
+    grid = { "A", "C", "A", "", "", "", "", "", "" },
+    key = { A = "mekanism:alloy_infused", C = "mekanism:basic_control_circuit" },
+  },
+  ["mekanism:purification_chamber"] = {                  -- 3x: raw ore + oxygen -> clumps
+    grid = { "A", "C", "A", "O", "E", "O", "A", "C", "A" },
+    key = { A = "mekanism:alloy_infused", C = "mekanism:advanced_control_circuit",
+      O = "alltheores:osmium_ingot", E = "mekanism:enrichment_chamber" },
+  },
+  ["mekanism:electrolytic_core"] = {                     -- unverified ids (the three dusts)
+    grid = { "A", "O", "A", "I", "A", "G", "A", "O", "A" },
+    key = { A = "mekanism:alloy_infused", O = "alltheores:osmium_dust", I = "alltheores:iron_dust",
+      G = "alltheores:gold_dust" },
+  },
+  ["mekanism:electrolytic_separator"] = {                -- water -> hydrogen + oxygen
+    grid = { "I", "R", "I", "A", "E", "A", "I", "R", "I" },
+    key = { I = "minecraft:iron_ingot", R = "minecraft:redstone", A = "mekanism:alloy_infused",
+      E = "mekanism:electrolytic_core" },
+  },
+  ["mekanism:electric_pump"] = {                         -- draws water from a pool below it
+    grid = { "", "B", "", "A", "K", "A", "O", "O", "O" },
+    key = { B = "minecraft:bucket", A = "mekanism:alloy_infused", K = "mekanism:steel_casing",
+      O = "alltheores:osmium_ingot" },
+  },
+  ["mekanism:basic_fluid_tank"] = {
+    grid = { "R", "I", "R", "I", "", "I", "R", "I", "R" },
+    key = { R = "minecraft:redstone", I = "minecraft:iron_ingot" },
+  },
+  ["mekanism:basic_chemical_tank"] = {
+    grid = { "R", "O", "R", "O", "", "O", "R", "O", "R" },
+    key = { R = "minecraft:redstone", O = "alltheores:osmium_ingot" },
+  },
+  ["mekanism:dynamic_tank"] = {
+    yield = 4, grid = { "", "S", "", "S", "B", "S", "", "S", "" },
+    key = { S = "alltheores:steel_ingot", B = "minecraft:bucket" },
+  },
+  ["mekanism:advanced_energy_cube"] = {
+    grid = { "A", "T", "A", "O", "C", "O", "A", "T", "A" },
+    key = { A = "mekanism:alloy_infused", T = "mekanism:energy_tablet", O = "alltheores:osmium_ingot",
+      C = "mekanism:basic_energy_cube" },
+  },
+  ["mekanismgenerators:solar_panel"] = {
+    grid = { "P", "P", "P", "R", "A", "R", "O", "O", "O" },
+    key = { P = "minecraft:glass_pane", R = "minecraft:redstone", A = "mekanism:alloy_infused",
+      O = "alltheores:osmium_ingot" },
+  },
+  ["mekanismgenerators:solar_generator"] = {
+    grid = { "P", "P", "P", "A", "I", "A", "O", "T", "O" },
+    key = { P = "mekanismgenerators:solar_panel", A = "mekanism:alloy_infused", I = "minecraft:iron_ingot",
+      O = "alltheores:osmium_ingot", T = "mekanism:energy_tablet" },
+  },
+  ["mekanismgenerators:gas_burning_generator"] = {       -- burns the separator's hydrogen
+    grid = { "O", "A", "O", "K", "E", "K", "O", "A", "O" },
+    key = { O = "alltheores:osmium_ingot", A = "mekanism:alloy_infused", K = "mekanism:steel_casing",
+      E = "mekanism:electrolytic_core" },
+  },
+  ["mekanism:basic_smelting_factory"] = {                -- three smelts at once
+    grid = { "R", "C", "R", "I", "M", "I", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", I = "minecraft:iron_ingot",
+      M = "mekanism:energized_smelter" },
+  },
+  ["mekanism:basic_enriching_factory"] = {
+    grid = { "R", "C", "R", "I", "M", "I", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", I = "minecraft:iron_ingot",
+      M = "mekanism:enrichment_chamber" },
+  },
+  ["mekanism:basic_crushing_factory"] = {
+    grid = { "R", "C", "R", "I", "M", "I", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "mekanism:basic_control_circuit", I = "minecraft:iron_ingot",
+      M = "mekanism:crusher" },
+  },
+  ["minecraft:piston"] = {
+    grid = { "P", "P", "P", "C", "I", "C", "C", "R", "C" },
+    key = { P = "#planks", C = "minecraft:cobblestone", I = "minecraft:iron_ingot", R = "minecraft:redstone" },
+  },
+  ["mekanism:logistical_sorter"] = {                     -- pulls from the inventory behind it
+    grid = { "I", "P", "I", "I", "C", "I", "I", "I", "I" },
+    key = { I = "minecraft:iron_ingot", P = "minecraft:piston", C = "mekanism:basic_control_circuit" },
   },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },

@@ -1,5 +1,6 @@
 """The Mekanism power parts: the factory's grids against Mekanism's own
-patterns, written out separately here (energy tablet, basic energy cube,
+patterns (from Mekanism's generated 1.21 recipe data), written out
+separately here (energy tablet, basic energy cube,
 universal cable, wind generator). None has been crafted in the pack yet: this
 only shows the factory can plan and craft them from the parts.
 
@@ -19,9 +20,9 @@ local S, K, T, C = "alltheores:steel_ingot", "mekanism:steel_casing", "mekanism:
 local GL, EC = "minecraft:glass", "mekanism:electrolytic_core"
 -- Mekanism's patterns, row by row ("" = empty)
 local REAL = {
-  { out = "mekanism:energy_tablet", n = 1, rows = { { R, A, R }, { G, A, G }, { R, A, R } } },
+  { out = "mekanism:energy_tablet", n = 1, rows = { { R, G, R }, { A, G, A }, { R, G, R } } },
   { out = "mekanism:basic_energy_cube", n = 1, rows = { { R, T, R }, { I, K, I }, { R, T, R } } },
-  { out = "mekanismgenerators:wind_generator", n = 1, rows = { { "", O, "" }, { O, A, O }, { T, EC, T } } },
+  { out = "mekanismgenerators:wind_generator", n = 1, rows = { { "", O, "" }, { O, A, O }, { T, C, T } } },
   { out = "mekanism:basic_universal_cable", n = 8, rows = { { S, R, S }, { "", "", "" }, { "", "", "" } } },
   { out = "mekanism:steel_casing", n = 1, rows = { { S, GL, S }, { GL, O, GL }, { S, GL, S } } },
 }
