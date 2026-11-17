@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794908407,
-      "issued": 1794908407000,
-      "cmd": "reboot",
-      "target": "Crafty"
+      "id": 1794908484,
+      "issued": 1794908484000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "minecraft:cauldron",
+      "n": 2
     }
   ]
 }
