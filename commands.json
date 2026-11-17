@@ -1,9 +1,9 @@
 {
   "commands": [
     {
-      "id": 1794942787,
-      "issued": 1794942787000,
-      "cmd": "survey",
+      "id": 1794943058,
+      "issued": 1794943058000,
+      "cmd": "reboot",
       "target": "Sortnado"
     }
   ]
