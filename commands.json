@@ -1,26 +1,60 @@
 {
   "commands": [
     {
-      "id": 1794946909,
-      "issued": 1794946909000,
+      "id": 1794947078,
+      "issued": 1794947078000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "alloy",
+      "n": 16
+    },
+    {
+      "id": 1794947079,
+      "issued": 1794947078000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "make": "circuit",
+      "n": 8
+    },
+    {
+      "id": 1794947080,
+      "issued": 1794947078000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "alltheores:raw_osmium",
+      "n": 8
+    },
+    {
+      "id": 1794947081,
+      "issued": 1794947078000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "minecraft:raw_iron",
+      "n": 8
+    },
+    {
+      "id": 1794947082,
+      "issued": 1794947078000,
+      "cmd": "foundry",
+      "target": "DropIt",
+      "enrich": "minecraft:raw_gold",
+      "n": 8
+    },
+    {
+      "id": 1794947083,
+      "issued": 1794947078000,
       "cmd": "make",
       "target": "Crafty",
-      "item": "mekanism:crusher",
+      "item": "mekanism:purification_chamber",
       "n": 1
     },
     {
-      "id": 1794946910,
-      "issued": 1794946909000,
+      "id": 1794947084,
+      "issued": 1794947078000,
       "cmd": "make",
       "target": "Crafty",
-      "item": "mekanism:electrolytic_separator",
+      "item": "mekanism:electric_pump",
       "n": 1
-    },
-    {
-      "id": 1794946911,
-      "issued": 1794946909000,
-      "cmd": "ping",
-      "target": "Sortnado"
     }
   ]
 }
