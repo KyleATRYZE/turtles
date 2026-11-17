@@ -1,20 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794910415,
-      "issued": 1794910415000,
-      "cmd": "lavafarm",
-      "target": "Crafty",
-      "n": 7,
-      "how": "hut"
-    },
-    {
-      "id": 1794910416,
-      "issued": 1794910415000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "fetch|minecraft:bucket=5;inv;handin|"
+      "id": 1794910758,
+      "issued": 1794910758000,
+      "cmd": "reboot",
+      "target": "Crafty"
     }
   ]
 }
