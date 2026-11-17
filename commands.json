@@ -1,8 +1,8 @@
 {
   "commands": [
     {
-      "id": 1794939799,
-      "issued": 1794939799000,
+      "id": 1794940675,
+      "issued": 1794940675000,
       "cmd": "reboot",
       "target": "Crafty"
     }
