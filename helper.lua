@@ -2054,6 +2054,13 @@ local function work()
     runLab()
     locate()
   end
+  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) then
+    -- a miner drafted as a builder's mate wakes in its own shaft: find the
+    -- way out through open space, digging nothing
+    findHeading()
+    pcall(escape, 800)
+    locate()
+  end
   if pos.y <= base.f.y + 6 then
     if pos.x ~= base.pad.x or pos.z ~= base.pad.z then
       report("lost")
