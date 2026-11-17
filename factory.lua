@@ -2584,7 +2584,7 @@ end
 -- with lava on their own. Once built, the order "lavafarm Crafty n=<units>
 -- how=place|use" tells the factory about it, and while lava runs low it
 -- sends a mate with nothing to do round with empty buckets.
-local FARM = { x = -4453, y = 76, z = 1538, face = 2, every = 1200, low = 24 }
+local FARM = { x = -4453, y = 76, z = 1538, face = 2, every = 1200, low = 48 }
 local farmAt = -1e9
 
 local function lavaFarmDuty(stock)
@@ -2602,10 +2602,26 @@ local function lavaFarmDuty(stock)
   if not best then return end
   farmAt = now
   print(best.label .. " goes round the lava farm with " .. buckets .. " buckets.")
-  direct(best.id, { cmd = "lab", clear = true, ops = table.concat({
-    "fetch|minecraft:bucket=" .. buckets,
-    ("collect|%d|%d|%d|%d|%d|%s"):format(FARM.x, FARM.y, FARM.z, farm.n, FARM.face, farm.how or "place"),
-    "inv", "home", "handin|" }, ";") })
+  local ops
+  if farm.how == "hut" then
+    -- Kyle's farm along the hut's west wall: cauldrons at x -4467, y 70,
+    -- z 1521 on; reached down the pad shaft and along the aisle in front
+    local t = { "fetch|minecraft:bucket=" .. buckets, "goto|-4462|80|1521", "down|8",
+      "face|2", "fwd|4", "down|2" }
+    for i = 1, buckets do
+      if i > 1 then t[#t + 1] = "face|1" t[#t + 1] = "fwd|1" end
+      t[#t + 1] = "face|2" t[#t + 1] = "place|minecraft:bucket"
+    end
+    for _, o in ipairs({ "inv", "up|2", "face|3", "fwd|" .. (buckets - 1), "face|0", "fwd|4", "up|8",
+      "home", "handin|" }) do t[#t + 1] = o end
+    ops = table.concat(t, ";")
+  else
+    ops = table.concat({
+      "fetch|minecraft:bucket=" .. buckets,
+      ("collect|%d|%d|%d|%d|%d|%s"):format(FARM.x, FARM.y, FARM.z, farm.n, FARM.face, farm.how or "place"),
+      "inv", "home", "handin|" }, ";")
+  end
+  direct(best.id, { cmd = "lab", clear = true, ops = ops })
 end
 
 local function haulDuty(stock)
@@ -3080,7 +3096,8 @@ while true do
       report(lastState)
       return true
     elseif c.cmd == "lavafarm" then        -- lavafarm Crafty n=<units built> how=place|use
-      plots.lavafarm = { n = tonumber(c.n) or 0, how = (c.how == "use") and "use" or "place" }
+      plots.lavafarm = { n = tonumber(c.n) or 0,
+        how = (c.how == "use" or c.how == "hut") and c.how or "place" }
       saveTable(PLOTS_FILE, plots)
       print("Lava farm: " .. plots.lavafarm.n .. " cauldrons (" .. plots.lavafarm.how .. ").")
       return true
