@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794909636,
-      "issued": 1794909636000,
+      "id": 1794909895,
+      "issued": 1794909895000,
       "cmd": "lab",
       "target": "HopTo",
       "clear": 1,
-      "ops": "fetch|minecraft:bucket=7;goto|-4462|80|1521;down|8;face|2;fwd|4;down|2;face|2;inspect|front;expect|front|cauldron;place|minecraft:bucket;inv;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;inv;up|2;face|3;fwd|6;face|0;fwd|4;up|8;home;handin|"
+      "ops": "up|2;face|3;fwd|2;face|0;fwd|4;up|8;fetch|minecraft:bucket=8|dump;inv;goto|-4462|80|1521;down|8;face|2;fwd|4;down|2;face|1;fwd|2;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;face|1;fwd|1;face|2;inspect|front;place|minecraft:bucket;inv;up|2;face|3;fwd|6;face|0;fwd|4;up|8;home;handin|"
     }
   ]
 }
