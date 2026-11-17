@@ -1,8 +1,13 @@
-"""The Mekanism power parts: the factory's grids against Mekanism's own
+"""The Mekanism parts: the factory's grids against Mekanism's own
 patterns (from Mekanism's generated 1.21 recipe data), written out
 separately here (energy tablet, basic energy cube,
-universal cable, wind generator). None has been crafted in the pack yet: this
-only shows the factory can plan and craft them from the parts.
+universal cable, wind generator; and for stages 4-5 of tools/mekline.py the
+chemical injection chamber, crystallizer, washer and dissolution chamber,
+with the advanced, elite and ultimate circuits, enrichment and purification
+chambers and the tanks on the way). None has been crafted in the pack yet:
+this only shows the factory can plan and craft them from the parts (the
+alloys, refined obsidian ingots and fluorite are handed in, as the infuser's
+and the compressor's work).
 
     python3 test/mekrecipes.py
 """
@@ -18,6 +23,10 @@ L.execute('''
 local R, G, A, I, O = "minecraft:redstone", "minecraft:gold_ingot", "mekanism:alloy_infused", "minecraft:iron_ingot", "alltheores:osmium_ingot"
 local S, K, T, C = "alltheores:steel_ingot", "mekanism:steel_casing", "mekanism:energy_tablet", "mekanism:basic_control_circuit"
 local GL, EC = "minecraft:glass", "mekanism:electrolytic_core"
+local AR, AA, RO, FL = "mekanism:alloy_reinforced", "mekanism:alloy_atomic", "mekanism:ingot_refined_obsidian", "mekanism:fluorite_gem"
+local AC, EL, UL = "mekanism:advanced_control_circuit", "mekanism:elite_control_circuit", "mekanism:ultimate_control_circuit"
+local EN, PU = "mekanism:enrichment_chamber", "mekanism:purification_chamber"
+local FT, CT = "mekanism:basic_fluid_tank", "mekanism:basic_chemical_tank"
 -- Mekanism's patterns, row by row ("" = empty)
 local REAL = {
   { out = "mekanism:energy_tablet", n = 1, rows = { { R, G, R }, { A, G, A }, { R, G, R } } },
@@ -25,6 +34,17 @@ local REAL = {
   { out = "mekanismgenerators:wind_generator", n = 1, rows = { { "", O, "" }, { O, A, O }, { T, C, T } } },
   { out = "mekanism:basic_universal_cable", n = 8, rows = { { S, R, S }, { "", "", "" }, { "", "", "" } } },
   { out = "mekanism:steel_casing", n = 1, rows = { { S, GL, S }, { GL, O, GL }, { S, GL, S } } },
+  { out = AC, n = 1, rows = { { A, C, A }, { "", "", "" }, { "", "", "" } } },
+  { out = EL, n = 1, rows = { { AR, AC, AR }, { "", "", "" }, { "", "", "" } } },
+  { out = UL, n = 1, rows = { { AA, EL, AA }, { "", "", "" }, { "", "", "" } } },
+  { out = EN, n = 1, rows = { { R, C, R }, { I, K, I }, { R, C, R } } },
+  { out = PU, n = 1, rows = { { A, AC, A }, { O, EN, O }, { A, AC, A } } },
+  { out = FT, n = 1, rows = { { R, I, R }, { I, "", I }, { R, I, R } } },
+  { out = CT, n = 1, rows = { { R, O, R }, { O, "", O }, { R, O, R } } },
+  { out = "mekanism:chemical_injection_chamber", n = 1, rows = { { AR, EL, AR }, { G, PU, G }, { AR, EL, AR } } },
+  { out = "mekanism:chemical_crystallizer", n = 1, rows = { { RO, FL, RO }, { UL, K, UL }, { RO, FL, RO } } },
+  { out = "mekanism:chemical_washer", n = 1, rows = { { RO, FT, RO }, { UL, K, UL }, { RO, CT, RO } } },
+  { out = "mekanism:chemical_dissolution_chamber", n = 1, rows = { { RO, CT, RO }, { UL, K, UL }, { RO, CT, RO } } },
 }
 local SLOTS = { { 1, 2, 3 }, { 5, 6, 7 }, { 9, 10, 11 } }
 local craft = turtle.craft
@@ -53,11 +73,15 @@ end
 C1, D1 = "minecraft:chest_0", "minecraft:chest_1"
 put(C1, R, 64) put(C1, G, 16) put(C1, A, 16) put(C1, I, 16) put(C1, O, 16) put(C1, S, 16) put(C1, C, 4) put(C1, GL, 16) put(C1, EC, 1)
 put(C1, "minecraft:coal", 64)
+put(D1, AR, 24) put(D1, AA, 16) put(D1, RO, 16) put(D1, FL, 8) put(D1, A, 32) put(D1, C, 16) put(D1, O, 32)
+put(D1, S, 32) put(D1, GL, 32) put(D1, R, 32) put(D1, I, 16)
 FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["byId"]={["9"]=1,["10"]=2,["12"]=4,["13"]=5,["5"]=6,["11"]=3}}'
 MAX_IDLES=1
 ''')
 L.eval('{runFactory()}')
-want = [("mekanism:basic_energy_cube", 1), ("mekanismgenerators:wind_generator", 1), ("mekanism:basic_universal_cable", 8)]
+want = [("mekanism:basic_energy_cube", 1), ("mekanismgenerators:wind_generator", 1), ("mekanism:basic_universal_cable", 8),
+        ("mekanism:chemical_injection_chamber", 1), ("mekanism:chemical_crystallizer", 1),
+        ("mekanism:chemical_washer", 1), ("mekanism:chemical_dissolution_chamber", 1)]
 L.execute('IDLES=0 MAX_IDLES=4 PAD_OCCUPIED=true NEXT_ID=13')
 L.execute('INBOX={{id=14,msg={type="materials",id=14,n=1,fuel=0,items={%s}}}}' % ",".join('{"%s",%d}' % i for i in want))
 L.eval('{runFactory()}')
@@ -71,7 +95,9 @@ print("given:", given, "| missing:", missing)
 print("crafted:", crafted)
 bad = [l for l in g.LOG.values() if "did not work" in l or "PROBLEM" in l]
 ok = given is not None and all(given.get(n) == c for n, c in want) and not missing and not bad \
-    and "mekanism:energy_tablet" in crafted and "mekanism:steel_casing" in crafted
+    and "mekanism:energy_tablet" in crafted and "mekanism:steel_casing" in crafted \
+    and all(c in crafted for c in ("mekanism:elite_control_circuit", "mekanism:ultimate_control_circuit",
+                                   "mekanism:purification_chamber", "mekanism:basic_chemical_tank"))
 print("problems:", bad)
 print("PASS" if ok else "FAILED")
 sys.exit(0 if ok else 1)

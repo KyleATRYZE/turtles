@@ -25,6 +25,10 @@ reads `getDirection` rather than assume it.
     tools/order.py foundry DropIt ore=minecraft:raw_iron n=48   ore -> chamber -> smelter -> ingots (3 raw make 4)
     tools/order.py foundry DropIt enrich=minecraft:redstone n=16   chamber only
     tools/order.py foundry DropIt make=steel n=16           infuser: steel dust (also circuit, alloy)
+    tools/order.py foundry DropIt enrich=minecraft:diamond n=8   enriched diamond (80 mB of diamond infusion each)
+    tools/order.py foundry DropIt make=reinforced n=16      infuser: infused alloy + 20 mB diamond
+    tools/order.py foundry DropIt make=refined n=16         infuser: obsidian dust (a Crusher's) + 10 mB diamond
+    tools/order.py foundry DropIt make=atomic n=8           infuser: reinforced alloy + 40 mB refined obsidian
     tools/order.py foundry DropIt job=move_infuser          bring the infuser in from the bench outside
     tools/order.py foundry DropIt on=0                      back to an ordinary helper
     tools/order.py foundry DropIt clear=1 / reset=1         drop the jobs in hand / forget what is set up

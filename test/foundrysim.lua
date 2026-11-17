@@ -42,11 +42,17 @@ local RECIPES = {
     ["minecraft:iron_ingot"] = { take = 1, give = 1, out = "mekanism:enriched_iron", gas = "mekanism:carbon", mb = 10 },
     ["mekanism:enriched_iron"] = { take = 1, give = 1, out = "alltheores:steel_dust", gas = "mekanism:carbon", mb = 10 },
     ["alltheores:osmium_ingot"] = { take = 1, give = 1, out = "mekanism:basic_control_circuit", gas = "mekanism:redstone", mb = 20 },
+    ["mekanism:alloy_infused"] = { take = 1, give = 1, out = "mekanism:alloy_reinforced", gas = "mekanism:diamond", mb = 20 },
+    ["mekanism:alloy_reinforced"] = { take = 1, give = 1, out = "mekanism:alloy_atomic", gas = "mekanism:refined_obsidian", mb = 40 },
+    ["mekanism:dust_obsidian"] = { take = 1, give = 1, out = "mekanism:dust_refined_obsidian", gas = "mekanism:diamond", mb = 10 },
   },
 }
 local GAS = {
   ["minecraft:coal"] = { "mekanism:carbon", 10 }, ["minecraft:charcoal"] = { "mekanism:carbon", 10 },
   ["minecraft:redstone"] = { "mekanism:redstone", 10 }, ["mekanism:enriched_redstone"] = { "mekanism:redstone", 80 },
+  ["mekanism:enriched_diamond"] = { "mekanism:diamond", 80 }, ["mekanism:dust_diamond"] = { "mekanism:diamond", 10 },
+  ["mekanism:enriched_refined_obsidian"] = { "mekanism:refined_obsidian", 80 },
+  ["mekanism:dust_refined_obsidian"] = { "mekanism:refined_obsidian", 10 },
 }
 
 GEN_ITEM, CUBE_ITEM, CABLE_ITEM = "mekanismgenerators:heat_generator", "mekanism:basic_energy_cube",

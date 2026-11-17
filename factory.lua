@@ -452,6 +452,49 @@ local RECIPES = {
     grid = { "I", "P", "I", "I", "C", "I", "I", "I", "I" },
     key = { I = "minecraft:iron_ingot", P = "minecraft:piston", C = "mekanism:basic_control_circuit" },
   },
+  -- Stages 4 and 5 of the line (tools/mekline.py). Grids from Mekanism's
+  -- generated 1.21.x recipe data. Made elsewhere and handed in:
+  --   alloy_reinforced  infuser (foundry make=reinforced): infused alloy + 20 mB
+  --                     diamond (enriched diamond: foundry enrich=minecraft:diamond)
+  --   alloy_atomic      infuser (make=atomic): reinforced alloy + 40 mB refined
+  --                     obsidian (its dust, or enriched: enrich=mekanism:dust_refined_obsidian)
+  --   dust_refined_obsidian  infuser (make=refined): obsidian dust + 10 mB diamond;
+  --                     the obsidian dust is a Crusher's (1 obsidian -> 4): NOT a foundry machine
+  --   ingot_refined_obsidian  Osmium Compressor (the dust + osmium gas): NOT a foundry machine
+  --   fluorite_gem      mined
+  ["mekanism:elite_control_circuit"] = {
+    grid = { "A", "C", "A", "", "", "", "", "", "" },
+    key = { A = "mekanism:alloy_reinforced", C = "mekanism:advanced_control_circuit" },
+  },
+  ["mekanism:ultimate_control_circuit"] = {
+    grid = { "A", "C", "A", "", "", "", "", "", "" },
+    key = { A = "mekanism:alloy_atomic", C = "mekanism:elite_control_circuit" },
+  },
+  ["mekanism:chemical_injection_chamber"] = {            -- takes a purification chamber
+    grid = { "A", "C", "A", "G", "P", "G", "A", "C", "A" },
+    key = { A = "mekanism:alloy_reinforced", C = "mekanism:elite_control_circuit", G = "minecraft:gold_ingot",
+      P = "mekanism:purification_chamber" },
+  },
+  ["mekanism:chemical_crystallizer"] = {
+    grid = { "I", "F", "I", "C", "K", "C", "I", "F", "I" },
+    key = { I = "mekanism:ingot_refined_obsidian", F = "mekanism:fluorite_gem",
+      C = "mekanism:ultimate_control_circuit", K = "mekanism:steel_casing" },
+  },
+  ["mekanism:chemical_washer"] = {
+    grid = { "I", "B", "I", "C", "K", "C", "I", "T", "I" },
+    key = { I = "mekanism:ingot_refined_obsidian", B = "mekanism:basic_fluid_tank",
+      C = "mekanism:ultimate_control_circuit", K = "mekanism:steel_casing", T = "mekanism:basic_chemical_tank" },
+  },
+  ["mekanism:chemical_dissolution_chamber"] = {
+    grid = { "I", "T", "I", "C", "K", "C", "I", "T", "I" },
+    key = { I = "mekanism:ingot_refined_obsidian", C = "mekanism:ultimate_control_circuit",
+      K = "mekanism:steel_casing", T = "mekanism:basic_chemical_tank" },
+  },
+  ["mekanism:osmium_compressor"] = {                     -- for refined obsidian ingots (not yet in the foundry)
+    grid = { "A", "C", "A", "B", "K", "B", "A", "C", "A" },
+    key = { A = "mekanism:alloy_infused", C = "mekanism:advanced_control_circuit", B = "minecraft:bucket",
+      K = "mekanism:steel_casing" },
+  },
   -- Applied Energistics 2, to start with (patterns from AE2's own generated
   -- recipe data): the charger turns a compass into a Meteorite Compass, the
   -- crank powers it by hand, the inscriber prints processors once the presses

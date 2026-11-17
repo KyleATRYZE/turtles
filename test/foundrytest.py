@@ -155,6 +155,31 @@ check("no infuser on the bench: one is fetched from the factory and placed",
 last = d(d(L.eval("F.info()"))["last"])
 check("no copper: said so", last.get("ok") is False and "copper" in str(last.get("why")), str(last))
 
+# the stage 4-5 alloys: reinforced (diamond), atomic (refined obsidian), refined obsidian dust
+L, g = world()
+L.execute('''
+  addMachine("mekanism:metallurgic_infuser", 41, 1, 15, 2)
+  STOCK["mekanism:alloy_infused"] = 8 STOCK["mekanism:enriched_diamond"] = 3
+  STOCK["mekanism:dust_obsidian"] = 4 STOCK["mekanism:dust_refined_obsidian"] = 20
+  F.order({ make = "reinforced", n = 8 })
+  F.order({ make = "refined", n = 4 })
+  F.order({ make = "atomic", n = 4 })
+''')
+ok, err = g.run()
+handed = d(g.HANDED)
+check("8 reinforced, 4 refined obsidian dust, then 4 of the reinforced on to atomic",
+      err == "IDLE" and handed.get("mekanism:alloy_reinforced") == 8 and handed.get("mekanism:alloy_atomic") == 4
+      and handed.get("mekanism:dust_refined_obsidian") == 4 and d(g.STOCK).get("mekanism:alloy_reinforced") == 4,
+      f"{err} {handed}")
+check("diamond and refined obsidian fetched by their own items, the tank emptied between them",
+      (g.DUMPS or 0) >= 1 and d(g.STOCK).get("mekanism:enriched_diamond", 0) <= 1, f"{g.DUMPS} {d(g.STOCK)}")
+check("stage 4-5 alloys: nothing on the floor, nothing left inside", not d(g.FLOOR) and g.inMachines() == 0,
+      f"{d(g.FLOOR)} {g.inMachines()}")
+L.execute('HANDED = {} F.order({ make = "reinforced", n = 4 })')
+ok, err = g.run()
+last = d(d(L.eval("F.info()"))["last"])
+check("no infused alloy left: said so", last.get("ok") is False and "alloy_infused" in str(last.get("why")), str(last))
+
 # ---------------------------------------------------------------- jobs from the factory
 L, g = world()
 L.execute('''

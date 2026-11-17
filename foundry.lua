@@ -92,6 +92,13 @@ M.INFUSE = {
     { input = "alltheores:osmium_ingot", gas = "redstone", mb = 20 } } },
   alloy = { makes = "mekanism:alloy_infused", passes = {
     { input = "minecraft:copper_ingot", gas = "redstone", mb = 10 } } },
+  -- (Mekanism 1.21.x data; the diamond is enriched first: enrich=minecraft:diamond)
+  reinforced = { makes = "mekanism:alloy_reinforced", passes = {
+    { input = "mekanism:alloy_infused", gas = "diamond", mb = 20 } } },
+  atomic = { makes = "mekanism:alloy_atomic", passes = {
+    { input = "mekanism:alloy_reinforced", gas = "refined_obsidian", mb = 40 } } },
+  refined = { makes = "mekanism:dust_refined_obsidian", passes = {   -- (obsidian dust: a Crusher's)
+    { input = "mekanism:dust_obsidian", gas = "diamond", mb = 10 } } },
 }
 -- what fills the infusion tank, best first: { item, mB each }. ask = what
 -- the factory is asked for (then the next one, if it has none).
@@ -100,6 +107,10 @@ M.GAS = {
     items = { { "mekanism:enriched_carbon", 80 }, { "minecraft:charcoal", 10 }, { "minecraft:coal", 10 } } },
   redstone = { name = "mekanism:redstone", ask = { "minecraft:redstone" },
     items = { { "mekanism:enriched_redstone", 80 }, { "minecraft:redstone", 10 } } },
+  diamond = { name = "mekanism:diamond",
+    items = { { "mekanism:enriched_diamond", 80 }, { "mekanism:dust_diamond", 10 } } },
+  refined_obsidian = { name = "mekanism:refined_obsidian",
+    items = { { "mekanism:enriched_refined_obsidian", 80 }, { "mekanism:dust_refined_obsidian", 10 } } },
 }
 M.MAX_BATCH = 48          -- most items per job (the result slot holds one stack)
 
@@ -143,7 +154,8 @@ end
 -- A remote order:
 --   foundry ore=minecraft:raw_iron n=48   ore through the chamber and smelter
 --   foundry enrich=minecraft:redstone n=16   the chamber only
---   foundry make=steel n=16               the infuser (steel, circuit, alloy)
+--   foundry make=steel n=16               the infuser (steel, circuit, alloy,
+--                                         reinforced, atomic, refined)
 --   foundry job=setup | job=move_infuser  find or place the machines; bring
 --                                         the infuser in from the bench
 --   foundry job=power [cube=0] [fuel=lava]  lay power on: generator, cube,
@@ -1053,6 +1065,12 @@ local function wants(s, job)
     end
     if gasMb.redstone then dust = dust + math.ceil(gasMb.redstone / 10) end
     if gasMb.carbon then job.carbon = math.ceil(gasMb.carbon / 10) end
+    for gas, mb in pairs(gasMb) do         -- (any other infusion: fetched by its own items)
+      if gas ~= "redstone" and gas ~= "carbon" then
+        job.infuse = job.infuse or {}
+        job.infuse[gas] = mb
+      end
+    end
   elseif job.kind == "smelt" then
     list[1] = { job.item, n }
     for _, name in ipairs(smelters(s)) do
@@ -1089,6 +1107,23 @@ local function fetchFor(env, s, job)
       env.fetch(list)
       list[#list] = nil
       asked = true
+    end
+  end
+  -- any other infusion (diamond, refined obsidian): the best the factory has first
+  for gas, mb in pairs(job.infuse or {}) do
+    local items = M.GAS[gas] and M.GAS[gas].items or {}
+    local function have()
+      local h = 0
+      for _, it in ipairs(items) do h = h + count(it[1]) * it[2] end
+      return h
+    end
+    for _, it in ipairs(items) do
+      if have() < mb then
+        list[#list + 1] = { it[1], count(it[1]) + math.ceil((mb - have()) / it[2]) }
+        env.fetch(list)
+        list[#list] = nil
+        asked = true
+      end
     end
   end
   -- fuel for the generator rides along when it is running low
