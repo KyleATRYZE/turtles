@@ -818,7 +818,34 @@ local function report()
   if not swarm then return end
   local used, slots = S.totals()
   pcall(swarm.report, { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
-    storage = { used = used, slots = slots, free = slots - used } })
+    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey })
+end
+
+-- survey Sortnado: what every slot of the store can hold and what is in it,
+-- for planning where things should live. Per controller: the slots' limits
+-- as runs ("64*27,2048*1,..." in slot order) and the items ("slot=name*n").
+function S.makeSurvey()
+  local out = {}
+  for _, n in ipairs(S.order) do
+    local c = S.chests[n]
+    local runs, last, run = {}, nil, 0
+    for slot = 1, c.size or 0 do
+      local ok, lim = pcall(peripheral.call, n, "getItemLimit", slot)
+      lim = ok and tonumber(lim) or -1
+      if lim == last then run = run + 1 else
+        if last then runs[#runs + 1] = last .. "*" .. run end
+        last, run = lim, 1
+      end
+    end
+    if last then runs[#runs + 1] = last .. "*" .. run end
+    local items = {}
+    local okL, list = pcall(peripheral.call, n, "list")
+    if okL and type(list) == "table" then
+      for slot, st in pairs(list) do items[#items + 1] = slot .. "=" .. st.name .. "*" .. st.count end
+    end
+    out[#out + 1] = { name = n, size = c.size, limits = table.concat(runs, ","), items = table.concat(items, ";") }
+  end
+  S.survey = out
 end
 
 local mon = peripheral.find("monitor")
@@ -869,6 +896,20 @@ parallel.waitForAny(
           pcall(S.touch, z[5])
           break
         end
+      end
+    end
+  end,
+  function()                                    -- orders from the repository
+    if not swarm then while true do sleep(3600) end end
+    while true do
+      local c = swarm.waitCommand()
+      if c.cmd == "reboot" or c.cmd == "update" then
+        os.reboot()
+      elseif c.cmd == "survey" then
+        pcall(S.makeSurvey)
+        report()
+      elseif c.cmd == "ping" then
+        report()
       end
     end
   end,
