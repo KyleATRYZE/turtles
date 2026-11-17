@@ -616,7 +616,7 @@ local function print(...)
   local parts = table.pack(...)
   for i = 1, parts.n do parts[i] = tostring(parts[i]) end
   logLines[#logLines + 1] = table.concat(parts, " ")
-  while #logLines > 6 do table.remove(logLines, 1) end
+  while #logLines > 30 do table.remove(logLines, 1) end
 end
 
 local built = 0
