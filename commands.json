@@ -1,12 +1,43 @@
 {
   "commands": [
     {
-      "id": 1794928975,
-      "issued": 1794928975000,
-      "cmd": "lab",
-      "target": "Dusty",
-      "clear": 1,
-      "ops": "fetch|create:encased_fan=1,minecraft:cobblestone=2,advancedperipherals:weak_automata_core=1|dump;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|30|1|26;face|2;inspect|front;expect|front|water_wheel;dig;fwd|1;face|2;place|minecraft:cobblestone;back|1;equip|right|advancedperipherals:weak_automata_core;use|create:water_wheel;inspect|front;expect|front|water_wheel|facing|east;face|0;fwd|1;face|2;use|create:encased_fan;inspect|front;expect|front|encased_fan|facing|east;back|1;equip|right|minecraft:diamond_pickaxe;inv;leave;home;handin|"
+      "id": 1794934324,
+      "issued": 1794934324000,
+      "cmd": "lavafarm",
+      "target": "Crafty",
+      "n": 7,
+      "how": "hut",
+      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Cobbler,Granted"
+    },
+    {
+      "id": 1794934325,
+      "issued": 1794934324000,
+      "cmd": "reboot",
+      "target": "Pushy"
+    },
+    {
+      "id": 1794934326,
+      "issued": 1794934324000,
+      "cmd": "reboot",
+      "target": "HopTo"
+    },
+    {
+      "id": 1794934327,
+      "issued": 1794934324000,
+      "cmd": "reboot",
+      "target": "Sticky"
+    },
+    {
+      "id": 1794934328,
+      "issued": 1794934324000,
+      "cmd": "reboot",
+      "target": "Dusty"
+    },
+    {
+      "id": 1794934329,
+      "issued": 1794934324000,
+      "cmd": "reboot",
+      "target": "OnRepeat"
     }
   ]
 }
