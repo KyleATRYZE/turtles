@@ -1,12 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794940787,
-      "issued": 1794940787000,
-      "cmd": "make",
+      "id": 1794941179,
+      "issued": 1794941179000,
+      "cmd": "draft",
       "target": "Crafty",
-      "item": "sophisticatedstorage:controller",
-      "n": 1
+      "turtle": 39
     }
   ]
 }
