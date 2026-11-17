@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794941518,
-      "issued": 1794941518000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "home;handin|"
+      "id": 1794941656,
+      "issued": 1794941656000,
+      "cmd": "reboot",
+      "target": "Sortnado"
     }
   ]
 }
