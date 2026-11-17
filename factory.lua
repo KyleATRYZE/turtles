@@ -555,6 +555,10 @@ local RECIPES = {
     key = { B = "minecraft:raw_copper_block" } },
   ["minecraft:raw_iron"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:raw_iron_block" } },
+  ["minecraft:coal"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "minecraft:coal_block" } },
+  ["minecraft:coal_block"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
+    key = { B = "allthecompressed:coal_block_1x" } },
   ["minecraft:raw_gold"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
     key = { B = "minecraft:raw_gold_block" } },
   ["minecraft:cobblestone"] = { unpack = true, yield = 9, grid = { "B", "", "", "", "", "", "", "", "" },
@@ -2697,6 +2701,15 @@ local function tryBuild()
   end
   for _, f in ipairs(furnaces) do emptyOutput(f) end
   if not held then
+    -- coal comes in blocks (and compressed blocks): keep some loose coal
+    pcall(function()
+      local stock = stockTotals()
+      if (stock["minecraft:coal"] or 0) < 128 and ((stock["minecraft:coal_block"] or 0) > 0
+          or (stock["allthecompressed:coal_block_1x"] or 0) > 0) then
+        print("Unpacking coal blocks.")
+        makeUpTo("minecraft:coal", 256)
+      end
+    end)
     pcall(bootstrapFuel, stockTotals())
     pcall(dumpJunk, stockTotals())
     pcall(keepFurnacesBusy, stockTotals())
