@@ -1,6 +1,8 @@
-"""docs/rack-build.html: Kyle's build guide for rack 1's loading bays.
+"""Kyle's voxel build guides: docs/rack-build.html (rack 1's loading bays),
+docs/racks23-build.html (racks 2 and 3), docs/foundry-build.html (the
+foundry on the cable).
 
-python3 tools/rackpage.py   writes the page (cells from tools/retrofit.py,
+python3 tools/rackpage.py   writes all three (cells from tools/retrofit.py,
 checked there: python3 tools/retrofit.py check).
 
 Layer-by-layer top-down grids (y -1 .. 5) and a rotatable isometric view of
@@ -16,7 +18,6 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import retrofit as R  # noqa: E402
 
-X0, X1, Y0, Y1, Z0, Z1 = 0, 28, -1, 5, 1, 5
 
 # (code, label, light colour, dark colour, kind) - kind: new / ctx / cut
 CAT = [
@@ -35,12 +36,18 @@ CAT = [
     ("store", "Storage (barrels, chests)", "#a07c4a", "#8c6c42", "ctx"),
     ("hall", "Hall cable (built)", "#e0c060", "#b39a40", "ctx"),
     ("other", "Other", "#b8b4ac", "#6a6a72", "ctx"),
+    ("mach", "Mekanism machine (built)", "#6c8ebf", "#4f6d99", "ctx"),
+    ("ctxcut", "Bars or post: take out", "#e03131", "#ff6b6b", "cut"),
+    ("bars2", "Iron bars (new, behind the homes)", "#868e96", "#adb5bd", "new"),
+    ("copper2", "Cut copper pad (new)", "#d9480f", "#ff8a3d", "new"),
 ]
 CODE = {c[0]: i for i, c in enumerate(CAT)}
 
 
 def ctx_code(it):
     n = it.split(":")[-1]
+    if it.startswith("mekanism") and "cable" not in n and "transporter" not in n and "tube" not in n and "pipe" not in n:
+        return "mach"
     if "monitor" in n:
         return "board"
     if "cable" in n:
@@ -60,7 +67,7 @@ def ctx_code(it):
     return "other"
 
 
-STEPS = [
+RACK1_STEPS = [
     ("Take down the old board computer",
      "The computer behind the name board and the ender modem on top of it come out. Keep the computer: it is "
      "labelled RackBoard and keeps its files. It goes back into the wall in step 5. The ender modem goes back in "
@@ -102,10 +109,9 @@ STEPS = [
 ]
 
 
-def data():
+def data(G):
+    STEPS, (X0, X1, Y0, Y1, Z0, Z1) = G["steps"], G["region"]
     B = R.model()
-    for c in R.OLD_BOARD_PC:
-        pass
     new = {}
     for i, (_, _, parts) in enumerate(STEPS):
         for code, cells in parts:
@@ -126,7 +132,7 @@ def data():
     return out
 
 
-def counts():
+def counts(STEPS):
     n = {}
     for _, _, parts in STEPS:
         for code, cells in parts:
@@ -138,12 +144,17 @@ def clicks():
     return [list(R.W(*c)) for c in R.BAYS1]
 
 
+def serves_homes(c):
+    w = R.W(*c)
+    return f"low {w[0]} {w[1] - 1} {w[2]} · high {w[0]} {w[1] + 1} {w[2]}"
+
+
 PAGE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rack 1 loading bays: build guide</title>
+<title>%%TITLE%%</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -176,29 +187,29 @@ table.clicks td, table.clicks th { padding: 6px 10px; }
 <body>
 <main>
 <header>
-  <h1>Rack 1: loading bays</h1>
-  <p class="lede">What you build by hand so loads reach a docked drone over the cable instead of on a launch pad. Crafty pushes each load and its fuel straight into the drone in its home, and takes hand-ins back the same way. Nothing sticks out: every modem is a full block that is part of the shelf or the wall, and every cable is under the floor or inside the wall.</p>
+  <h1>%%H1%%</h1>
+  <p class="lede">%%LEDE%%</p>
   <div class="facts">%%CHIPS%%</div>
 </header>
 
 <section aria-labelledby="iso-h">
-  <h2 id="iso-h">The rack wall in 3D</h2>
+  <h2 id="iso-h">%%ISOH%%</h2>
   <div class="toggles">
     <button id="rl" aria-label="Turn left">⟲ Turn</button>
     <button id="rr" aria-label="Turn right">Turn ⟳</button>
     <button id="ctx" aria-pressed="true">Existing blocks</button>
     <button id="far" aria-pressed="false">Whole cable run</button>
-    <label class="cut">Cut away above y <input type="range" id="cuty" min="-1" max="5" value="5"><output id="cutv">5</output></label>
+    <label class="cut">Cut away above y <input type="range" id="cuty" min="%%Y0%%" max="%%Y1%%" value="%%Y1%%"><output id="cutv">%%Y1%%</output></label>
     <label class="cut">Show up to step <input type="range" id="upto" min="0" max="%%NSTEPS%%" value="%%NSTEPS%%"><output id="uptov">all</output></label>
   </div>
   <div class="plan" id="isoBox"><canvas id="iso" height="560"></canvas><div class="tip" id="isoTip"></div></div>
-  <p class="cap">Drag sideways (or use the buttons) to turn it. Seen from the launch bay by default: the lane is behind the rack, the storage room to the left. New blocks are bright; existing ones are pale. Hover a block for its world coordinates.</p>
+  <p class="cap">Drag sideways (or use the buttons) to turn it. %%ISOCAP%% New blocks are bright; existing ones are pale. Hover a block for its world coordinates.</p>
   <ul class="key" id="key"></ul>
 </section>
 
 <section aria-labelledby="layers-h">
   <h2 id="layers-h">Layer by layer</h2>
-  <p class="cap">Each slice from above, north up (the lane at the top), x running east. One square is one block. y -1 is under the floor; y 0 is the floor you walk on. Only x 0-28, z 1-5 is shown: the hall's corner on the left, the launch bay on the right.</p>
+  <p class="cap">Each slice from above, north up (the lane at the top), x running east. One square is one block. y -1 is under the floor; y 0 is the floor you walk on. %%LAYERCAP%%</p>
   <div class="layers" id="layers"></div>
 </section>
 
@@ -210,10 +221,9 @@ table.clicks td, table.clicks th { padding: 6px 10px; }
 
 <section aria-labelledby="click-h">
   <h2 id="click-h">The right-clicks</h2>
-  <p>Only the eight shelf modems are clicked, once each, after the strip is up (the strip is what keeps each of them switched on when no drone is docked). One modem serves two homes, the one below it and the one on it, so eight is all there is: it can't be fewer, as each home touches only its own shelf block. The connector modems and the floor plug are never clicked.</p>
-  <div class="tablewrap"><table class="clicks"><thead><tr><th>#</th><th>World x y z</th><th>Serves homes</th></tr></thead><tbody id="clicks"></tbody></table></div>
-  <p class="cap">If the server ever adds the <code>computercraft:turtle_can_use</code> tag for modems, a drone holding a stick can do these clicks too (docs/cc-lessons.md, 3). It is optional: by hand is the plan.</p>
-  <p>Then right-click the computer in the wall (world %%PCW%%) to start it.</p>
+  %%CLICKTOP%%
+  <div class="tablewrap"><table class="clicks"><thead><tr><th>#</th><th>World x y z</th><th>%%SERVESHEAD%%</th></tr></thead><tbody id="clicks"></tbody></table></div>
+  %%CLICKBOTTOM%%
 </section>
 </main>
 <script>
@@ -259,11 +269,11 @@ function drawIso() {
   const H = 560; iso.height = H * devicePixelRatio; iso.style.height = H + 'px';
   const g = iso.getContext('2d'); g.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   g.clearRect(0, 0, W, H);
-  const xa = far ? X0 : 14, xb = X1;
+  const xa = far ? X0 : %%NEARX0%%, xb = far ? X1 : %%NEARX1%%;
   const cs = Math.cos(yaw), sn = Math.sin(yaw), tilt = 0.5;
   const list = CELLS.filter(c => c[0] >= xa && c[0] <= xb && c[1] <= cutY && visible(c));
   const cx = (xa + xb + 1) / 2, cz = (Z0 + Z1 + 1) / 2;
-  const span = (xb - xa + 1) * 1.15;
+  const span = Math.max(xb - xa + 1, (Z1 - Z0 + 1) * 1.6) * 1.15;
   const S = Math.min(W / span, 52);
   const P = (x, y, z) => { const dx = x - cx, dz = z - cz; const u = dx * cs - dz * sn, v = dx * sn + dz * cs;
     return [W / 2 + u * S, H * 0.62 + v * S * tilt - (y - 1) * S * 0.85]; };
@@ -408,7 +418,7 @@ for (const li of stepsEl.children) {
   li.onclick = pick; li.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
 }
 document.getElementById('clicks').innerHTML = CLICKS.map((c, i) =>
-  '<tr><td class="num">' + (i + 1) + '</td><td class="mono">' + c.join(' ') + '</td><td class="mono">low ' + c[0] + ' ' + (c[1] - 1) + ' ' + c[2] + ' · high ' + c[0] + ' ' + (c[1] + 1) + ' ' + c[2] + '</td></tr>').join('');
+  '<tr><td class="num">' + (i + 1) + '</td><td class="mono">' + c[0].join(' ') + '</td><td class="mono">' + c[1] + '</td></tr>').join('');
 function drawAll() { drawIso(); LCV.forEach(drawLayer); }
 addEventListener('resize', drawAll);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
@@ -419,14 +429,12 @@ drawAll();
 """
 
 
-def write():
+def write(G):
     src = open(os.path.join(ROOT, "docs", "factory-plan.html"), encoding="utf-8").read()
     css = src[src.index("<style>") + 7:src.index("</style>")]
     css = css[:css.index("/* the model */")] + css[css.index("/* rooms */"):]
-    n = counts()
-    chips = [f"{n['bay']} bay modems serve 16 homes", f"{n['conn']} connector modems", f"{n['cable']} cables",
-             f"{n['mon']} advanced monitors", "1 computer (moved)", f"{len(clicks())} right-clicks",
-             "Corner -4448, 71, 1518 · north up"]
+    STEPS = G["steps"]
+    X0, X1, Y0, Y1, Z0, Z1 = G["region"]
     steps = []
     for title, text, parts in STEPS:
         lines = []
@@ -434,18 +442,152 @@ def write():
             ws = ", ".join(" ".join(map(str, R.W(*c))) for c in cells)
             lines.append(f"{CAT[CODE[code]][1].split(':')[0]} × {len(cells)}: {ws}")
         steps.append([title, text, lines])
-    html = (PAGE.replace("%%CSS%%", css.strip())
-            .replace("%%CHIPS%%", "".join(f'<span class="chip">{c}</span>' for c in chips))
-            .replace("%%CAT%%", json.dumps(CAT)).replace("%%DATA%%", json.dumps(data(), separators=(",", ":")))
-            .replace("%%STEPS%%", json.dumps(steps)).replace("%%CLICKS%%", json.dumps(clicks()))
-            .replace("%%NSTEPS%%", str(len(STEPS))).replace("%%PCW%%", " ".join(map(str, R.W(*R.RACK_PC))))
-            .replace("%%X0%%", str(X0)).replace("%%X1%%", str(X1)).replace("%%Y0%%", str(Y0))
-            .replace("%%Y1%%", str(Y1)).replace("%%Z0%%", str(Z0)).replace("%%Z1%%", str(Z1)))
-    out = os.path.join(ROOT, "docs", "rack-build.html")
+    rep = {"%%CSS%%": css.strip(), "%%ISOH%%": G.get("isoh", "The rack wall in 3D"), "%%TITLE%%": G["title"], "%%H1%%": G["h1"], "%%LEDE%%": G["lede"],
+           "%%CHIPS%%": "".join(f'<span class="chip">{c}</span>' for c in G["chips"](counts(STEPS))),
+           "%%ISOCAP%%": G["isocap"], "%%LAYERCAP%%": G["layercap"], "%%CLICKTOP%%": G["clicktop"],
+           "%%CLICKBOTTOM%%": G["clickbottom"], "%%SERVESHEAD%%": G["serveshead"],
+           "%%NEARX0%%": str(G["near"][0]), "%%NEARX1%%": str(G["near"][1]),
+           "%%CAT%%": json.dumps(CAT), "%%DATA%%": json.dumps(data(G), separators=(",", ":")),
+           "%%STEPS%%": json.dumps(steps),
+           "%%CLICKS%%": json.dumps([[list(R.W(*c)), why] for c, why in G["clicks"]]),
+           "%%NSTEPS%%": str(len(STEPS)), "%%X0%%": str(X0), "%%X1%%": str(X1), "%%Y0%%": str(Y0),
+           "%%Y1%%": str(Y1), "%%Z0%%": str(Z0), "%%Z1%%": str(Z1)}
+    html = PAGE
+    for k, v in rep.items():
+        html = html.replace(k, v)
+    assert "%%" not in html, html[html.index("%%") - 40:html.index("%%") + 40]
+    out = os.path.join(ROOT, "docs", G["out"])
     with open(out, "w", encoding="utf-8") as f:
         f.write(html)
     return out, len(html)
 
 
+RACK1 = {
+    "out": "rack-build.html", "title": "Rack 1 loading bays: build guide", "h1": "Rack 1: loading bays",
+    "lede": "What you build by hand so loads reach a docked drone over the cable instead of on a launch pad. Crafty "
+            "pushes each load and its fuel straight into the drone in its home, and takes hand-ins back the same way. "
+            "Nothing sticks out: every modem is a full block that is part of the shelf or the wall, and every cable is "
+            "under the floor or inside the wall.",
+    "region": (0, 28, -1, 5, 1, 5), "near": (14, 28), "steps": RACK1_STEPS,
+    "chips": lambda n: [f"{n['bay']} bay modems serve 16 homes", f"{n['conn']} connector modems", f"{n['cable']} cables",
+                        f"{n['mon']} advanced monitors", "1 computer (moved)", "8 right-clicks", "Corner -4448, 71, 1518 · north up"],
+    "isocap": "Seen from the launch bay by default: the lane is behind the rack, the storage room to the left.",
+    "layercap": "Only x 0-28, z 1-5 is shown: the hall's corner on the left, the launch bay on the right.",
+    "clicktop": "<p>Only the eight shelf modems are clicked, once each, after the strip is up (the strip is what keeps each "
+                "of them switched on when no drone is docked). One modem serves two homes, the one below it and the one "
+                "on it, so eight is all there is: it can't be fewer, as each home touches only its own shelf block. The "
+                "connector modems and the floor plug are never clicked.</p>",
+    "clickbottom": "<p class=\"cap\">If the server ever adds the <code>computercraft:turtle_can_use</code> tag for modems, a "
+                   "drone holding a stick can do these clicks too (docs/cc-lessons.md, 3). It is optional: by hand is the "
+                   "plan.</p><p>Then right-click the computer in the wall (world " + " ".join(map(str, R.W(*R.RACK_PC)))
+                   + ") to start it.</p>",
+    "serveshead": "Serves homes", "clicks": [(c, serves_homes(c)) for c in R.BAYS1],
+}
+
+RACKS23_STEPS = [
+    ("Rack 2: clear the homes",
+     "In the foundry's stretch (x 35-42), take out the bars and the posts at y 1 and y 3 of the screen row (z 3): those "
+     "are the homes. The bars at y 2 come out too: the shelf goes there.",
+     [("ctxcut", R.RACK2_CUT + R.BAYS2)]),
+    ("Rack 2: pads, shelf and bars",
+     "Cut copper in the floor under the low homes. Full-block wired modems for the middle shelf (y 2). New bars behind "
+     "the homes at y 1 and y 3 (z 4).",
+     [("copper2", R.RACK2_PADS), ("bay", R.BAYS2), ("bars2", R.RACK2_BARS)]),
+    ("Rack 2: the strip",
+     "Eight advanced monitors behind the shelf (y 2, z 4), facing the foundry. They keep the shelf modems switched on "
+     "and show the loaders' homes.",
+     [("mon", R.STRIP2)]),
+    ("Rack 2: tie it in",
+     "Two connector modems in the post at x 34 (lane side), a cable in the floor block under them, and the cable under "
+     "the lane floor from x 34 west to x 19, where rack 1's runs (lift the striped tiles, put them back).",
+     [("conn", R.RACK2_CONN), ("cable", [R.RACK2_UNDER] + R.TRENCH2)]),
+    ("Rack 3: the same, x 28-31",
+     "Homes cut, copper pads, a shelf of four wired modems, bars behind at y 1 and y 3, a 4-wide strip at y 2. The hatch "
+     "at x 32 stays open.",
+     [("ctxcut", R.RACK3_CUT + R.BAYS3), ("copper2", R.RACK3_PADS), ("bay", R.BAYS3), ("bars2", R.RACK3_BARS),
+      ("mon", R.STRIP3)]),
+    ("Rack 3: tie it in",
+     "Two connector modems in the x 27 wall (lane side) and a cable under them, down to the cable under the lane floor.",
+     [("conn", R.RACK3_CONN), ("cable", [R.RACK3_UNDER] + R.TRENCH3)]),
+    ("Switch on",
+     "Right-click each shelf modem once (eight in rack 2, four in rack 3), after its strip is up. Chat says a monitor "
+     "was connected.",
+     []),
+]
+RACKS23 = {
+    "out": "racks23-build.html", "title": "Racks 2 and 3 loading bays: build guide", "h1": "Racks 2 and 3",
+    "lede": "Homes for every other drone, built the same way as rack 1: rack 2 (x 35-42, 16 homes) for the 11 chunk "
+            "loaders, with 5 spare for more helpers; rack 3 (x 28-31, 8 homes) for the miners and BlockParty. Each "
+            "middle shelf is a row of full-block wired modems; a monitor strip behind it keeps them switched on and "
+            "shows who is home. Cable only under the lane floor and inside the posts.",
+    "region": (18, 44, -1, 5, 1, 5), "near": (26, 44), "steps": RACKS23_STEPS, "isoh": "Racks 2 and 3 in 3D",
+    "chips": lambda n: [f"{n['bay']} bay modems serve {2 * n['bay']} homes", f"{n['conn']} connector modems",
+                        f"{n['cable']} cables", f"{n['mon']} advanced monitors", f"{n['bay']} right-clicks"],
+    "isocap": "Seen from the foundry: rack 3 on the left of the hatch, rack 2 on the right, rack 1's end at the far left.",
+    "layercap": "x 18-44, z 1-5: rack 1's east end on the left, the foundry's stretch of the lane on the right.",
+    "clicktop": "<p>Only the shelf modems are clicked, once each, after the strip behind them is up: 8 in rack 2 and 4 in "
+                "rack 3. Each serves the home under it and the home on it. Connectors are never clicked.</p>",
+    "clickbottom": "<p class=\"cap\">Homes: rack 2 low row x 35-42 (homes 0-7), high row (8-15), loaders by name "
+                   "(the factory's loader names, then Ghastly); rack 3 the miners by id, BlockParty in the last home.</p>",
+    "serveshead": "Serves homes", "clicks": [(c, serves_homes(c)) for c in R.BAYS2 + R.BAYS3],
+}
+
+FOUNDRY_STEPS = [
+    ("The cable under the floor",
+     "From where rack 2's cable ends under the lane (x 34), on east under the lane floor to x 41, then south under the "
+     "plinth to z 19, with branches west under the floor at z 9 and z 19 to the piped line, and one east at z 12. "
+     "Lift the tiles, lay cable a block down, put the tiles back.",
+     [("cable", R.F_TRUNK)]),
+    ("The chamber first, then the test",
+     "Swap the plinth block under the Enrichment Chamber for a full-block wired modem (lift the operator lane's tile "
+     "in front of it to reach it) and right-click it: chat says the chamber was connected. Then send the order "
+     "<code>probe Crafty</code>. Crafty pushes one item into the chamber over the cable and pulls it back, and says "
+     "which worked (in its status and log). Yes: carry on. No: stop here and use the fallback below.",
+     [("bay", [R.F_MACHINES["chamber"]])]),
+    ("The smelter and the infuser",
+     "The same under the Energized Smelter and the Metallurgic Infuser. The infuser gets a second wired modem on its "
+     "south side (the infusion items go in there), with a cable in the plinth block under it.",
+     [("bay", [R.F_MACHINES["smelter"], R.F_MACHINES["infuser"], R.F_EXTRA]), ("cable", [R.F_EXTRA_UNDER])]),
+    ("The works computer",
+     "A wired modem a block down beside the plinth (not clicked), then a computer in the walkway floor on top of it. "
+     "It runs the machines.",
+     [("conn", [R.F_PC_MODEM]), ("pc", [R.F_PC])]),
+    ("The piped line's inbox and outbox (fallback, and later)",
+     "Under the line's inbox (z 9) and outbox (z 19): a wired modem each. Build the inbox and outbox as barrels, not "
+     "chests, so Crafty never takes them for storage.",
+     [("bay", list(R.F_LINE.values()))]),
+    ("Switch on",
+     "Right-click the four machine modems and the two under the line's barrels once each (the chamber's is already "
+     "done). Then right-click the works computer to start it.",
+     []),
+]
+FOUNDRY = {
+    "out": "foundry-build.html", "title": "The foundry on the cable: build guide", "h1": "The foundry on the cable",
+    "lede": "Ore, alloys, circuits and steel without a drone carrying anything: every machine on the plinth sits on a "
+            "wired modem in the floor, and the works computer moves items from the store straight into it and the "
+            "results straight back. The modems are flush in the plinth (the machine covers each one); the cable runs a "
+            "block under the floor.",
+    "region": (33, 44, -1, 3, 1, 20), "near": (33, 44), "steps": FOUNDRY_STEPS, "isoh": "The foundry in 3D",
+    "chips": lambda n: [f"{n['bay']} modems to click", f"{n['cable']} cables", "1 computer", "1 test order first"],
+    "isocap": "Seen from the south-west: the plinth with its machines on the right, the piped line on the left.",
+    "layercap": "x 33-44, z 1-20: the lane at the top, the piped line (x 36) and the plinth (x 39-42) below it.",
+    "clicktop": "<p>Each machine modem is clicked once; the machine on it keeps it switched on. The modem under the "
+                "works computer is never clicked. Do the chamber's first and send <code>probe Crafty</code>: it tells "
+                "whether the store can push into a Mekanism machine by name (docs/cc-lessons.md: it may not).</p>",
+    "clickbottom": "<p><b>If the probe says no</b>, the machines are fed the way the piped line is: the inbox barrel "
+                   "(on the cable) is emptied by a logistical sorter into the first machine, the machines push their "
+                   "results on (side config, ejecting) and the last one into the outbox barrel (on the cable). Crafty "
+                   "fills the inbox and empties the outbox. Only steps 1 and 5 are needed then.</p>",
+    "serveshead": "Touches",
+    "clicks": [(R.F_MACHINES["chamber"], "the Enrichment Chamber above it (click first, then probe)"),
+               (R.F_MACHINES["smelter"], "the Energized Smelter above it"),
+               (R.F_MACHINES["infuser"], "the Metallurgic Infuser above it"),
+               (R.F_EXTRA, "the infuser, beside it (infusion items)"),
+               (R.F_LINE["inbox"], "the piped line's inbox barrel"), (R.F_LINE["outbox"], "the piped line's outbox barrel")],
+}
+
+GUIDES = [RACK1, RACKS23, FOUNDRY]
+
 if __name__ == "__main__":
-    print("wrote %s (%d bytes)" % write())
+    for G in GUIDES:
+        print("wrote %s (%d bytes)" % write(G))

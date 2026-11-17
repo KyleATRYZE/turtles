@@ -860,6 +860,7 @@ local function report(state)
     foundry = plots.foundry and { op = plots.foundry.op, machines = plots.foundry.machines,
       job = plots.foundry.job and (plots.foundry.job.item or plots.foundry.job.kind), fails = plots.foundry.fails,
       last = plots.foundry.last, power = plots.foundry.power } or nil,
+    probe = plots and plots.probe or nil,
     log = logLines,
   })
 end
@@ -925,6 +926,11 @@ local function discover()
   selfName = modem.getNameLocal()
   if not selfName then
     return false, "right-click the modem next to me to switch it on"
+  end
+  -- (the works computer in the foundry talks to us over the cable)
+  if rednet and rednet.isOpen and peripheral.getName then
+    local okName, side = pcall(peripheral.getName, modem)
+    if okName and side and not rednet.isOpen(side) then pcall(rednet.open, side) end
   end
   stores, furnaces = {}, {}
   lastNetwork = {}
@@ -1448,6 +1454,12 @@ local foundryHello = nil    -- when the operator was last called for
 -- below FOUNDRY_FUEL_LOW it is sent a fuel job, while the factory has coal
 -- to spare (FOUNDRY_FUEL_SPARE: coal and charcoal together).
 K.FOUNDRY_FUEL_LOW   = 16
+-- what the foundry's infuser makes, by the item a plan found missing (the
+-- job kind as foundry.lua M.INFUSE): sent as a job when a load wants it
+K.MAKES = { ["alltheores:steel_dust"] = "steel", ["alltheores:steel_ingot"] = "steel",
+  ["mekanism:basic_control_circuit"] = "circuit", ["mekanism:alloy_infused"] = "alloy",
+  ["mekanism:alloy_reinforced"] = "reinforced", ["mekanism:alloy_atomic"] = "atomic" }
+K.wantMade = {}          -- item -> how many a load was short of
 K.FOUNDRY_FUEL_SPARE = 160
 
 local function foundryPowered()
@@ -1524,6 +1536,18 @@ local function foundryDuty(stock)
     end
   end
   -- the generator running low, and no ore going over to bring fuel with it
+  if fy.machines.infuser then
+    for item, n in pairs(K.wantMade) do
+      K.wantMade[item] = nil
+      fy.seq = (fy.seq or 0) % 1000 + 1
+      fy.job = { n = now % 1000000 * 1000 + fy.seq, kind = K.MAKES[item], item = item,
+        count = math.min(48, math.max(1, n)), since = now, asked = now }
+      saveTable(K.PLOTS_FILE, plots)
+      print(("To the foundry: make %d %s."):format(fy.job.count, shortName(item)))
+      foundrySend(fy)
+      return
+    end
+  end
   local p = fy.power
   if foundryPowered() and (tonumber(p.fuel) or K.FOUNDRY_FUEL_LOW) < K.FOUNDRY_FUEL_LOW
     and now - (fy.fuelAt or 0) > 600000
@@ -2295,9 +2319,15 @@ local function fitLoad(items)
         local _, why = planLoad(lines, stock)
         lines[#lines] = nil
         local parts = {}
-        for k, v in pairs(why or {}) do parts[#parts + 1] = tostring(v) .. " " .. shortName(k) end
+        for k, v in pairs(why or {}) do
+          parts[#parts + 1] = tostring(v) .. " " .. shortName(k)
+          if K.MAKES[k] and tonumber(v) then K.wantMade[k] = math.max(K.wantMade[k] or 0, tonumber(v)) end
+        end
+        if K.MAKES[name] then K.wantMade[name] = math.max(K.wantMade[name] or 0, want) end
         print("Cannot make " .. shortName(name) .. ": short of " .. table.concat(parts, ", "))
       end
+    elseif want > 0 and K.MAKES[name] then          -- (none, and no recipe here: the foundry makes it)
+      K.wantMade[name] = math.max(K.wantMade[name] or 0, want)
     end
   end
   return lines, planLoad(lines, stock) or {}
@@ -2325,6 +2355,40 @@ function K.pushTo(target, wanted, count)
     end
   end
   return count - need
+end
+
+-- The foundry test (order "probe Crafty"): can the store push an item into
+-- a Mekanism machine by its network name, and pull it back out? Tells the
+-- works computer's design (yes) from the barrels-and-sorter fallback (no).
+K.PROBE_ITEMS = { "minecraft:raw_iron", "minecraft:iron_ingot", "minecraft:redstone", "minecraft:cobblestone",
+  "minecraft:coal", "minecraft:copper_ingot" }
+function K.probe(name)
+  if not modem then return "probe: no wired modem" end
+  if not name then
+    for _, n in ipairs(modem.getNamesRemote()) do
+      if n:find("^mekanism") then name = n break end
+    end
+  end
+  if not name then return "probe: no Mekanism machine on the cable (is its modem switched on?)" end
+  local types = { peripheral.getType(name) }
+  local isInv = peripheral.hasType(name, "inventory") and true or false
+  local stock = stockTotals()
+  for _, item in ipairs(K.PROBE_ITEMS) do
+    if (stock[item] or 0) > 0 then
+      local moved = K.pushTo(name, item, 1)
+      if moved > 0 then
+        local back = 0
+        for slot = 1, 9 do
+          back = back + K.pullBack(name, slot)
+          if back > 0 then break end
+        end
+        return ("probe %s (%s; inventory methods: %s): push %s in: yes; pull it back out: %s"):format(name,
+          table.concat(types, ","), isInv and "yes" or "no", shortName(item), back > 0 and "yes" or "no")
+      end
+    end
+  end
+  return ("probe %s (%s; inventory methods: %s): push in: no (tried %s)"):format(name, table.concat(types, ","),
+    isInv and "yes" or "no", table.concat(K.PROBE_ITEMS, ", "):gsub("minecraft:", ""))
 end
 
 -- Everything in one slot of target back into storage.
@@ -3558,6 +3622,13 @@ while true do
       pendingMake = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
       return true
     elseif c.cmd == "rebase" then          -- (for the drones: the factory knows where it is)
+      return true
+    elseif c.cmd == "probe" then           -- probe Crafty [name=<machine>]: can the store push into a machine?
+      local ok, res = pcall(K.probe, c.name)
+      plots.probe = ok and res or ("probe failed: " .. tostring(res))
+      saveTable(K.PLOTS_FILE, plots)
+      print(plots.probe)
+      report(lastState)
       return true
     elseif c.cmd == "stores" then          -- stores Crafty skip=a,b*: inventories on the cable that are not storage
       plots.stores = { skip = {} }
