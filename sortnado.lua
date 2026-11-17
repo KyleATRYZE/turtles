@@ -85,6 +85,7 @@ local function num(name) return tonumber(name:match("_(%d+)$")) or 0 end
 -- the order the chests joined the network, by the plan's shares.
 function S.discover()
   local names, controller, bridge = {}, nil, nil
+  local controllers = {}
   S.manager = nil
   for _, n in ipairs(peripheral.getNames()) do
     if peripheral.hasType(n, "inventory_manager") or peripheral.hasType(n, "inventoryManager") then
@@ -97,6 +98,7 @@ function S.discover()
       if n == cfg.store or (not cfg.store and n:find("sophisticatedstorage:controller", 1, true)) then
         controller = controller or n
       end
+      if n:find("sophisticatedstorage:controller", 1, true) then controllers[#controllers + 1] = n end
     end
   end
   if bridge then
@@ -108,10 +110,20 @@ function S.discover()
   if controller then
     -- one inventory holds everything; other chests on the cable are not
     -- part of the store
-    S.backend, S.order = "controller", { controller }
-    S.chests = { [controller] = { section = "All", size = peripheral.call(controller, "size") or 0,
-      used = 0, slots = {} } }
-    return 1
+    -- (a controller reaches 15 blocks: a long room has one per stretch of
+    -- wall, and together they are the store)
+    table.sort(controllers, function(a, b)
+      if num(a) ~= num(b) then return num(a) < num(b) end
+      return a < b
+    end)
+    S.backend, S.order, S.chests = "controller", { controller }, {}
+    for _, n in ipairs(controllers) do
+      if n ~= controller then S.order[#S.order + 1] = n end
+    end
+    for _, n in ipairs(S.order) do
+      S.chests[n] = { section = "All", size = peripheral.call(n, "size") or 0, used = 0, slots = {} }
+    end
+    return #S.order
   end
   S.backend = "chests"
   table.sort(names, function(a, b)
@@ -170,42 +182,52 @@ end
 -- wall. An item goes onto a slot of its stretch that already holds it, then
 -- an empty slot there, then the Overflow stretch; 0 when none of those takes
 -- it (the caller then lets the controller put it anywhere).
-function S.bySection(container, slot, name, count, dest)
-  local c = S.chests[dest]
-  local size, shares = c.size or 0, 0
+function S.bySection(container, slot, name, count)
+  local size, shares = 0, 0
+  for _, n in ipairs(S.order) do size = size + (S.chests[n].size or 0) end
   if size < #SECTIONS * 2 then return 0 end
   for _, sec in ipairs(SECTIONS) do shares = shares + sec[2] end
-  local moved = 0
-  local function stretch(want)
-    local at = 0
-    for i, sec in ipairs(SECTIONS) do
-      local from = math.floor(size * at / shares + 0.5) + 1
-      local upto = i == #SECTIONS and size or math.floor(size * (at + sec[2]) / shares + 0.5)
-      if sec[1] == want then return from, upto end
-      at = at + sec[2]
+  -- slot g of the whole store: which controller, and which slot of it
+  local function at(g)
+    for _, n in ipairs(S.order) do
+      local c = S.chests[n]
+      if g <= c.size then return n, c, g end
+      g = g - c.size
     end
   end
-  local function try(to)
-    local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count - moved, to)
-    n = ok and tonumber(n) or 0
-    moved = moved + n
-    return n
+  local moved = 0
+  local function stretch(want)
+    local done = 0
+    for i, sec in ipairs(SECTIONS) do
+      local from = math.floor(size * done / shares + 0.5) + 1
+      local upto = i == #SECTIONS and size or math.floor(size * (done + sec[2]) / shares + 0.5)
+      if sec[1] == want then return from, upto end
+      done = done + sec[2]
+    end
+  end
+  local function try(n, to)
+    local ok, k = pcall(peripheral.call, container, "pushItems", n, slot, count - moved, to)
+    k = ok and tonumber(k) or 0
+    moved = moved + k
+    return k
   end
   local function fill(want)
     local from, upto = stretch(want)
     if not from then return end
-    for s = from, upto do
-      local st = c.slots[s]
+    for g = from, upto do
+      local n, c, to = at(g)
+      local st = c.slots[to]
       if st and st.name == name then
-        try(s)
+        try(n, to)
         if moved >= count then return end
       end
     end
     local misses = 0
-    for s = from, upto do
-      if not c.slots[s] then
-        if try(s) > 0 then
-          c.slots[s] = { name = name, count = 0 }      -- (taken, until the books are read again)
+    for g = from, upto do
+      local n, c, to = at(g)
+      if not c.slots[to] then
+        if try(n, to) > 0 then
+          c.slots[to] = { name = name, count = 0 }     -- (taken, until the books are read again)
         else
           misses = misses + 1
           if misses >= 6 then return end
@@ -226,9 +248,14 @@ local function store(container, slot, name, count, dest)
     local ok, n = pcall(peripheral.call, S.order[1], "importItem", { name = name, count = count }, container)
     return ok and tonumber(n) or 0
   end
-  if S.backend == "controller" and S.chests[dest] then
-    local n = S.bySection(container, slot, name, count, dest)
+  if S.backend == "controller" then
+    local n = S.bySection(container, slot, name, count)
     if n > 0 then return n end
+    for _, ctl in ipairs(S.order) do              -- anywhere a controller will take it
+      local ok, k = pcall(peripheral.call, container, "pushItems", ctl, slot, count)
+      if ok and (tonumber(k) or 0) > 0 then return tonumber(k) end
+    end
+    return 0
   end
   local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count)
   return ok and tonumber(n) or 0
@@ -237,6 +264,11 @@ end
 -- Read one chest again and put its contents in the books.
 function S.read(chest)
   if S.backend == "me" then return readME(chest) end
+  if S.backend == "controller" and chest == S.order[1] and not S.readingAll then
+    S.readingAll = true                 -- (the first controller stands for them all)
+    for i = 2, #S.order do S.read(S.order[i]) end
+    S.readingAll = nil
+  end
   local c = S.chests[chest]
   if not c then return end
   for _, st in pairs(c.slots) do
@@ -600,9 +632,11 @@ function S.view()
   if S.backend == "controller" or S.backend == "me" then
     -- one inventory: a section is the slots its kinds of item take up
     local bySec = {}
-    for _, st in pairs(S.chests[S.order[1]].slots) do
-      local sec = S.sectionOf(st.name)
-      bySec[sec] = (bySec[sec] or 0) + 1
+    for _, n in ipairs(S.order) do
+      for _, st in pairs(S.chests[n].slots) do
+        local sec = S.sectionOf(st.name)
+        bySec[sec] = (bySec[sec] or 0) + 1
+      end
     end
     for i, sec in ipairs(SECTIONS) do
       sections[i] = { name = sec[1], used = bySec[sec[1]] or 0, slots = math.max(1, slots) }
@@ -769,7 +803,9 @@ local found = S.discover()
 if S.backend == "me" then
   print("Sortnado: the ME system (" .. S.order[1] .. ") is the store.")
 elseif S.backend == "controller" then
-  print("Sortnado: one controller, " .. S.chests[S.order[1]].size .. " slots behind it.")
+  local all = 0
+  for _, n in ipairs(S.order) do all = all + S.chests[n].size end
+  print("Sortnado: " .. #S.order .. " controller(s), " .. all .. " slots behind them.")
 else
   print(("Sortnado: %d chests on the network."):format(found))
 end
