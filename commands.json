@@ -1,20 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794949597,
-      "issued": 1794949597000,
-      "cmd": "lab",
-      "target": "OnRepeat",
-      "clear": 1,
-      "ops": "home;handin|"
-    },
-    {
-      "id": 1794949598,
-      "issued": 1794949597000,
-      "cmd": "lab",
-      "target": "HopTo",
-      "clear": 1,
-      "ops": "leave;home;handin|"
+      "id": 1794950909,
+      "issued": 1794950909000,
+      "cmd": "reboot",
+      "target": "all"
     }
   ]
 }
