@@ -94,6 +94,9 @@ K.CHUNKY   = "advancedperipherals:chunk_controller"   -- on a turtle: keeps its 
 
 -- Names starting with "#" are groups, matched by the end of the item name.
 local GROUPS = {
+  -- (Actually Additions' black quartz is tagged as quartz in this pack: the
+  -- comparator, and so the storage controller, can be made from it)
+  ["#quartz"] = { "minecraft:quartz", "actuallyadditions:black_quartz" },
   ["#planks"] = { "_planks" },
   ["#log"]    = { "_log", "_stem" },
   ["#fuel"]   = { "minecraft:coal", "minecraft:charcoal",
@@ -238,7 +241,7 @@ local RECIPES = {
   -- a group that does not touch (set with the storage tool, by a player)
   ["minecraft:comparator"] = {
     grid = { "", "T", "", "T", "Q", "T", "S", "S", "S" },
-    key = { T = "minecraft:redstone_torch", Q = "minecraft:quartz", S = "minecraft:stone" },
+    key = { T = "minecraft:redstone_torch", Q = "#quartz", S = "minecraft:stone" },
   },
   ["minecraft:repeater"] = {
     grid = { "T", "R", "T", "S", "S", "S", "", "", "" },
