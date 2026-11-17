@@ -449,19 +449,27 @@ local function homeFor(name)
   end
 end
 
--- Empty the In chest into the store. Returns how many items moved.
-function S.sortInbox()
-  if not cfg.inbox or S.busy then return 0 end
-  local ok, list = pcall(peripheral.call, cfg.inbox, "list")
+-- Empty the In chest (or another container: a chest being drained) into
+-- the store, the biggest stacks first. Returns how many items moved (and
+-- leaves how many it could not place in S.left).
+function S.sortInbox(from)
+  local src = from or cfg.inbox
+  S.left = 0
+  if not src or S.busy then return 0 end
+  local ok, list = pcall(peripheral.call, src, "list")
   if not ok or type(list) ~= "table" then return 0 end
+  local stacks = {}
+  for slot, st in pairs(list) do stacks[#stacks + 1] = { slot, st } end
+  table.sort(stacks, function(a, b) return a[2].count > b[2].count end)
   local moved, pending, touched = 0, 0, nil
-  for slot, st in pairs(list) do
+  for _, e in ipairs(stacks) do
+    local slot, st = e[1], e[2]
     local left = st.count
     for _ = 1, 4 do
       if left <= 0 then break end
       local dest = homeFor(st.name)
       if not dest then break end
-      local n = store(cfg.inbox, slot, st.name, left, dest)
+      local n = store(src, slot, st.name, left, dest)
       if S.backend == "controller" or S.backend == "me" then
         if n == 0 then break end             -- nowhere in the store takes it
         touched = dest                       -- (read the books once, at the end)
@@ -472,12 +480,68 @@ function S.sortInbox()
       left = left - n
       moved = moved + n
     end
-    if st.count - left > 0 then note("IN", st.count - left, st.name) end
+    if st.count - left > 0 then note(from and "OLD" or "IN", st.count - left, st.name) end
     pending = pending + left
   end
   if touched then S.read(touched) end
-  S.pending = pending
+  if not from then S.pending = pending end
+  S.left = pending
   return moved
+end
+
+-- Draining: the order "drain Sortnado from=a,b,c" (names, or name* for
+-- every container on the cable whose name starts so) has the store take in
+-- everything in those containers, the fullest first, as it does the In
+-- chest. Used to empty the old base's chests over the cable. The list is
+-- kept in the settings, so a restart carries on. A container that is
+-- empty (or gone) leaves the list; with the store full it waits a minute.
+function S.drainList(spec)
+  local want, out, seen = {}, {}, {}
+  for p in tostring(spec or ""):gmatch("[^,]+") do want[#want + 1] = p end
+  local function wanted(n)
+    for _, p in ipairs(want) do
+      if n == p or (p:sub(-1) == "*" and n:sub(1, #p - 1) == p:sub(1, -2)) then return true end
+    end
+  end
+  local mine = { [cfg.inbox or ""] = true, [cfg.outbox or ""] = true }
+  for _, n in ipairs(S.order) do mine[n] = true end
+  for _, n in ipairs(peripheral.getNames()) do
+    if wanted(n) and not mine[n] and not seen[n] and peripheral.hasType(n, "inventory")
+      and not n:find("furnace") and not n:find("turtle") and not n:find("controller") then
+      local total = 0
+      for _, st in pairs(peripheral.call(n, "list") or {}) do total = total + st.count end
+      out[#out + 1] = { n, total }
+      seen[n] = true
+    end
+  end
+  table.sort(out, function(a, b) return a[2] > b[2] end)
+  local names = {}
+  for _, e in ipairs(out) do names[#names + 1] = e[1] end
+  return names
+end
+
+function S.drainStep()
+  local list = cfg.drain
+  if not list or #list == 0 or S.busy then return end
+  if S.drainWait and os.clock() < S.drainWait then return end
+  local n = list[1]
+  local ok, items = pcall(peripheral.call, n, "list")
+  if not ok or type(items) ~= "table" or next(items) == nil then
+    table.remove(list, 1)
+    cfg.drained = (cfg.drained or 0) + 1
+    if #list == 0 then cfg.drain = nil end
+    S.saveConfig()
+    S.drainNote = ok and ("emptied " .. n) or (n .. " is gone")
+    return
+  end
+  local moved = S.sortInbox(n)
+  local left = S.left or 0
+  if moved == 0 and left > 0 then
+    S.drainWait = os.clock() + 60
+    S.drainNote = "the store is full: " .. left .. " left in " .. n
+  else
+    S.drainNote = "draining " .. n
+  end
 end
 
 ---------------------------------------------------------------- handing out
@@ -950,7 +1014,9 @@ local function report()
   if not swarm then return end
   local used, slots = S.totals()
   pcall(swarm.report, { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
-    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote })
+    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote,
+    drain = (cfg.drain or S.drainNote) and { left = cfg.drain and #cfg.drain or 0, done = cfg.drained,
+      next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil })
 end
 
 -- survey Sortnado: what every slot of the store can hold and what is in it,
@@ -998,6 +1064,7 @@ parallel.waitForAny(
     local tick = 0
     while true do
       pcall(S.sortInbox)
+      pcall(S.drainStep)
       tick = tick + 1
       if tick % 30 == 0 and S.busy then
         report()
@@ -1046,6 +1113,20 @@ parallel.waitForAny(
         local okR, err = pcall(S.resort)
         S.busy = nil
         if not okR then S.resortNote = "stopped: " .. tostring(err) end
+        report()
+      elseif c.cmd == "drain" then
+        -- drain Sortnado from=minecraft:chest_3,minecraft:chest_4 (or minecraft:chest_*);
+        -- drain Sortnado stop=1
+        if c.stop then
+          cfg.drain = nil
+          S.drainNote = "stopped"
+        else
+          local okL, names = pcall(S.drainList, c.from)
+          cfg.drain = okL and #names > 0 and names or nil
+          cfg.drained = 0
+          S.drainNote = okL and (#names .. " to drain") or ("drain: " .. tostring(names))
+        end
+        S.saveConfig()
         report()
       elseif c.cmd == "ping" then
         report()
