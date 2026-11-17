@@ -1,28 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794943397,
-      "issued": 1794943397000,
-      "cmd": "lab",
-      "target": "Dusty",
-      "clear": 1,
-      "ops": "fetch|minecraft:sand=16,minecraft:coal=26,minecraft:diamond_shovel=1|dump;site|-4448|71|1518|factory_asfit3|factory_storeroom;walk|32|2|22;expect|down|coal_generator;dropDown|minecraft:coal|9;walk|33|3|22;expect|down|coal_generator;dropDown|minecraft:coal|9;walk|34|1|23;face|3;equip|right|minecraft:diamond_shovel;cycle|minecraft:sand|soul_sand|16|180;equip|right|minecraft:diamond_pickaxe;walk|32|2|26;expect|down|water;tossDown|minecraft:soul_sand|16;wait|30;suckDown|64;wait|15;suckDown|64;suckDown|64;inv;leave;home;handin|"
-    },
-    {
-      "id": 1794943398,
-      "issued": 1794943397000,
-      "cmd": "lab",
-      "target": "Sticky",
-      "clear": 1,
-      "ops": "fetch|mekanism:crusher=1,mekanism:purification_chamber=1,mekanism:electrolytic_separator=1,mekanism:basic_universal_cable=10,minecraft:stone_bricks=8,minecraft:water_bucket=4,mekanism:electric_pump=1,mekanism:basic_mechanical_pipe=13|dump;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|35|1|16;face|0;dig;walk|35|1|16;face|0;place|mekanism:crusher;expect|front|crusher;call|front|setMode|ITEM|LEFT|INPUT;call|front|setMode|ITEM|RIGHT|OUTPUT;call|front|setEjecting|ITEM|true;call|front|setMode|ENERGY|TOP|INPUT;walk|35|1|15;face|0;dig;walk|35|1|15;face|0;place|mekanism:purification_chamber;expect|front|purification_chamber;call|front|setMode|ITEM|LEFT|INPUT;call|front|setMode|ITEM|RIGHT|OUTPUT;call|front|setEjecting|ITEM|true;call|front|setMode|ENERGY|TOP|INPUT;call|front|setMode|CHEMICAL|TOP|INPUT;walk|35|2|15;face|0;dig;walk|35|2|15;face|0;place|mekanism:electrolytic_separator;expect|front|electrolytic_separator;call|front|setMode|ENERGY|TOP|INPUT;call|front|setMode|FLUID|BACK|INPUT;call|front|setMode|CHEMICAL|BOTTOM|OUTPUT;call|front|setEjecting|CHEMICAL|true;walk|35|3|14;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|3|15;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|35|3|16;face|0;place|mekanism:basic_universal_cable;expect|front|basic_universal_cable;walk|29|2|13;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|29|2|14;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|32|2|13;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|32|2|14;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|30|2|12;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|31|2|12;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|30|2|15;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|31|2|15;placeDown|minecraft:stone_bricks;expect|down|stone_bricks;walk|30|2|13;placeDown|minecraft:water_bucket;walk|31|2|13;placeDown|minecraft:water_bucket;walk|30|2|14;placeDown|minecraft:water_bucket;walk|31|2|14;placeDown|minecraft:water_bucket;walk|29|2|13;face|0;place|mekanism:electric_pump;expect|front|electric_pump;call|front|setMode|FLUID|TOP|OUTPUT;call|front|setEjecting|FLUID|true;call|front|setMode|ENERGY|BACK|INPUT;walk|30|4|13;placeDown|mekanism:basic_mechanical_pipe;expect|down|basic_mechanical_pipe;walk|30|5|13;placeDown|mekanism:basic_mechanical_pipe;expect|down|basic_mechanical_pipe;walk|31|3|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|31|3|13;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|31|4|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|32|4|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|33|4|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|34|4|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|35|4|14;placeDown|mekanism:basic_universal_cable;expect|down|basic_universal_cable;walk|30|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|31|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|32|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|33|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|34|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|35|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|36|4|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|36|3|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|36|2|13;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|36|2|14;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;walk|36|2|15;face|0;place|mekanism:basic_mechanical_pipe;expect|front|basic_mechanical_pipe;leave;handin|"
-    },
-    {
-      "id": 1794943399,
-      "issued": 1794943397000,
-      "cmd": "make",
-      "target": "Crafty",
-      "item": "mekanism:crusher",
-      "n": 1
+      "id": 1794943504,
+      "issued": 1794943504000,
+      "cmd": "resort",
+      "target": "Sortnado"
     }
   ]
 }
