@@ -588,7 +588,10 @@ local function overAShaft()
   if (pos.x == a.x and pos.z == a.z) or (pos.x == b.x and pos.z == b.z) then
     return true
   end
-  return (pos.x - st.exit1.x) % st.size == 0 and (pos.z - st.exit1.z) % st.size == 0
+  -- (the plot grid: laid out from the factory's first spot, st.origin, which
+  -- stays put when the factory moves; before that, exit1 was the same spot)
+  local o = st.origin or st.exit1
+  return (pos.x - o.x) % st.size == 0 and (pos.z - o.z) % st.size == 0
 end
 
 -- Called on every step along a road: keep it walkable for people.
@@ -1639,7 +1642,7 @@ local function stateForJob(j)
     swarm = true, index = j.index,
     home = { x = j.x0 - 1, y = j.topY, z = j.z0 }, homeD = 0,
     size = j.size, bottom = j.bottom, layer = 1,
-    cruise = j.cruise, dock = j.dock, exit1 = j.exit1, exit2 = j.exit2,
+    cruise = j.cruise, dock = j.dock, exit1 = j.exit1, exit2 = j.exit2, origin = j.origin,
   }
 end
 

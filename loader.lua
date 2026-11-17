@@ -260,7 +260,9 @@ local function tripHigh()
   return math.abs(pos.x - base.pad.x) + math.abs(pos.z - base.pad.z)
     + math.max(0, CRUISE - pos.y) + (CRUISE - base.pad.y) + 12
 end
-local function hopHeight() return math.max(base.f.y, base.pad.y) + HOP_UP end
+-- (a rebase order can set base.hopUp: over the roof of a building the pad is in)
+local function hopUp() return tonumber(base and base.hopUp) or HOP_UP end
+local function hopHeight() return math.max(base.f.y, base.pad.y) + hopUp() end
 local function tripLow()
   local h = hopHeight()
   return math.abs(pos.x - base.pad.x) + math.abs(pos.z - base.pad.z)
@@ -394,7 +396,7 @@ local function park()
   local function cost(h) return math.max(0, h - pos.y) + dist + math.max(0, h - base.f.y) + 4 end
   local h
   if base and fuel() < cost(CRUISE) then
-    h = math.max(pos.y, hasPad() and hopHeight() or (base.f.y + HOP_UP))
+    h = math.max(pos.y, hasPad() and hopHeight() or (base.f.y + hopUp()))
     if fuel() < cost(h) then
       print("Too little fuel to fly to the parking spot.")
       report("needs fuel")

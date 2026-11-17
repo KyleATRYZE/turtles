@@ -283,10 +283,12 @@ end
 local SLOTS = { Pushy = 0, HopTo = 1, LeverAlone = 2, DropIt = 3 }
 local function slot() return SLOTS[os.getComputerLabel() or ""] or (os.getComputerID() % 4) end
 local function highway() return (st.job and st.job.oy or base.f.y) + OVER_SITE + 2 * slot() end
--- where we wait: in the open air beside the hole over the launch pad
+-- where we wait: in the open air beside the hole over the launch pad (12
+-- above the factory; a rebase order can raise that, base.hoverUp, so the
+-- row clears the roof of a building the pad is in)
 local function hover()
   local e = base.exit2
-  return e.x + 3 + 2 * slot(), base.f.y + 12, e.z - 4
+  return e.x + 3 + 2 * slot(), base.f.y + (tonumber(base.hoverUp) or 12), e.z - 4
 end
 
 local escape     -- defined further down (a way out of a place with no way straight up)

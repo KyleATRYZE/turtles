@@ -405,7 +405,8 @@ local function roomSet()
 end
 
 local function doorKey()
-  local d = st.door or { x = base.f.x + DOOR_OFFSET.x, y = base.f.y + DOOR_OFFSET.y,
+  -- (base.door: a rebase order's door=x,y,z, the way into the room the pad is in now)
+  local d = st.door or base.door or { x = base.f.x + DOOR_OFFSET.x, y = base.f.y + DOOR_OFFSET.y,
     z = base.f.z + DOOR_OFFSET.z }
   return key(d.x, d.y, d.z), d
 end

@@ -489,6 +489,77 @@ end
 -- Run task() while listening for orders.
 -- inline(cmd) may handle an order without interrupting the task (return true).
 -- Returns the order that interrupted the task, or nil if the task finished.
+---------------------------------------------------------------- rebase
+-- The order "rebase": the factory (Crafty and its launch pad) has moved.
+-- Every drone keeps where the base is in ".base", written once when it was
+-- drafted, so on this order it asks the factory where it is now, keeps
+-- that (with the heights the order gives: hover=<blocks above Crafty that
+-- helpers wait at>, hop=<a loader's short hop>, door=x,y,z for the builder),
+-- brings the base's cells in its saved state up to date, and restarts.
+-- Machines without a ".base" (the factory, the storage and screen
+-- computers) take no notice.
+local BASE_CELLS = { "dock", "exit1", "exit2" }
+local STATE_FILES = { "miner.state", "helper.state", "loader.state", "builder.state" }
+
+local function readTable(file)
+  if not fs.exists(file) then return nil end
+  local h = fs.open(file, "r")
+  local t = textutils.unserialize(h.readAll() or "")
+  h.close()
+  return type(t) == "table" and t or nil
+end
+
+local function writeTable(file, t)
+  local h = fs.open(file, "w")
+  h.write(textutils.serialize(t))
+  h.close()
+end
+
+function M.rebase(c, tries)
+  if not fs.exists(".base") then return false, "no .base here" end
+  if not open() then return false, "no wireless modem" end
+  local got
+  for _ = 1, tries or 6 do
+    rednet.broadcast({ type = "base_request" }, "swarm_job")
+    local untilT = os.clock() + 5
+    while not got and os.clock() < untilT do
+      local _, msg = rednet.receive("swarm_job", 1)
+      if type(msg) == "table" and msg.type == "base" and type(msg.base) == "table"
+        and type(msg.base.f) == "table" and type(msg.base.pad) == "table" then
+        got = msg.base
+      end
+    end
+    if got then break end
+  end
+  if not got then return false, "the factory did not answer" end
+  local old = readTable(".base") or {}
+  local base = {}
+  for k, v in pairs(got) do base[k] = v end
+  base.hoverUp = tonumber(c.hover) or old.hoverUp
+  base.hopUp = tonumber(c.hop) or old.hopUp
+  if type(c.door) == "string" then
+    local x, y, z = c.door:match("^(-?%d+),(-?%d+),(-?%d+)$")
+    if x then base.door = { x = tonumber(x), y = tonumber(y), z = tonumber(z) } end
+  end
+  base.door = base.door or old.door
+  writeTable(".base", base)
+  for _, file in ipairs(STATE_FILES) do
+    local st = readTable(file)
+    if st then
+      -- a miner's plot grid stays where it was laid out: it was measured
+      -- from the old exit1
+      if file == "miner.state" and st.exit1 and not st.origin then st.origin = st.exit1 end
+      for _, k in ipairs(BASE_CELLS) do
+        if st[k] ~= nil and base[k] then st[k] = base[k] end
+      end
+      -- the builder's map of the old base room and its way in
+      st.roomCells, st.padKey, st.door, st.doorX, st.doorZ = nil, nil, nil, nil, nil
+      writeTable(file, st)
+    end
+  end
+  return true, ("base now at %d %d %d"):format(base.f.x, base.f.y, base.f.z)
+end
+
 function M.runWithCommands(task, inline)
   local cmd
   parallel.waitForAny(function()
@@ -499,7 +570,16 @@ function M.runWithCommands(task, inline)
         -- to stop work. (Orders written by hand carry numbers and words.)
         local on = c.on
         C.setEnabled(not (on == false or on == 0 or on == "0" or on == "false" or on == "off"))
-      elseif not (inline and inline(c)) then
+      elseif inline and inline(c) then
+        -- (handled by the program itself)
+      elseif c.cmd == "rebase" then
+        local ok, why = M.rebase(c)
+        print("Rebase: " .. tostring(why))
+        if ok then
+          sleep(1)
+          os.reboot()
+        end
+      else
         cmd = c
         return
       end
