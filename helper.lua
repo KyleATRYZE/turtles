@@ -1962,7 +1962,7 @@ local function runLab()
     local a = {}
     for w in (steps[lab.i] .. "|"):gmatch("(.-)|") do a[#a + 1] = w end
     local verb = a[1]
-    local base, sfx = verb:match("^(%l+)(%u?%l*)$")
+    local vbase, sfx = verb:match("^(%l+)(%u?%l*)$")
     local res, stop
     progress = { kind = "lab", done = lab.i - 1, total = #steps, step = verb }
     report("lab: " .. verb)
@@ -2065,7 +2065,7 @@ local function runLab()
       elseif verb == "turn" then
         face((heading + (a[2] == "left" and 3 or a[2] == "around" and 2 or 1)) % 4)
         res = "facing " .. heading
-      elseif base == "place" and SFX[sfx] then
+      elseif vbase == "place" and SFX[sfx] then
         local slot = findSlot(a[2])
         if not slot then res, stop = "none on board", true else
           turtle.select(slot)
@@ -2082,7 +2082,7 @@ local function runLab()
             if seen and data.name == a[2] then res, stop = "already there", false end
           end
         end
-      elseif base == "pick" and SFX[sfx] then
+      elseif vbase == "pick" and SFX[sfx] then
         -- pick[Up/Down]|name,name : dig the block that way only if it is one
         -- of these (a full-grown certus cluster: tools/certusfarm.py), else
         -- leave it and go on. A budding block is never dug, whatever is asked.
@@ -2096,7 +2096,7 @@ local function runLab()
         else
           res = "left: " .. name
         end
-      elseif base == "dig" and SFX[sfx] then
+      elseif vbase == "dig" and SFX[sfx] then
         local seen, data = turtle["inspect" .. sfx]()
         local name, allowed = seen and data.name or "nothing", false
         for _, p in ipairs(LAB_DIG) do if name:find(p, 1, true) then allowed = true end end
@@ -2255,7 +2255,7 @@ local function runLab()
           res = name .. " " .. a[4] .. "=" .. tostring(got)
           stop = tostring(got) ~= (a[5] or "")
         end
-      elseif base == "drop" and SFX[sfx] then
+      elseif vbase == "drop" and SFX[sfx] then
         local slot = findSlot(a[2])
         if not turtle["detect" .. sfx]() then
           res = "nothing there to put it in"        -- (it would fall on the ground)
@@ -2278,7 +2278,7 @@ local function runLab()
           res = (went > 0 and "went in: " or "refused: ") .. went .. " " .. tostring(why or "")
           turtle.select(1)
         end
-      elseif base == "suck" and SFX[sfx] then
+      elseif vbase == "suck" and SFX[sfx] then
         local before = {}
         for s = 1, 16 do before[s] = turtle.getItemCount(s) end
         local done, why = turtle["suck" .. sfx](tonumber(a[2]) or 64)
@@ -2302,7 +2302,7 @@ local function runLab()
         local parts = {}
         for i = 2, r.n do parts[#parts + 1] = labShow(r[i]) end
         res = (r[1] and "" or "ERROR ") .. table.concat(parts, " | ")
-      elseif base == "toss" and SFX[sfx] then
+      elseif vbase == "toss" and SFX[sfx] then
         -- toss[Up/Down]|item|n : drop items into the open on purpose (into a
         -- stream that works on them: a fan's wash water). "drop" refuses to.
         local left, tossed = tonumber(a[3]) or 64, 0
