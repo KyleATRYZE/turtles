@@ -1,111 +1,22 @@
 {
   "commands": [
     {
-      "id": 1794961597,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "HopTo",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_link",
-      "xmax": 25
-    },
-    {
-      "id": 1794961598,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "Comparable",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_link",
-      "xmin": 26,
-      "xmax": 34
-    },
-    {
-      "id": 1794961599,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "Dusty",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_link",
-      "xmin": 35
-    },
-    {
-      "id": 1794961600,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "OnRepeat",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_lava",
-      "xmax": 35
-    },
-    {
-      "id": 1794961601,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "ButtonUp",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_lava",
-      "xmin": 36
-    },
-    {
-      "id": 1794961602,
-      "issued": 1794961597000,
-      "cmd": "fit",
+      "id": 1794961617,
+      "issued": 1794961617000,
+      "cmd": "lab",
       "target": "Pushy",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_certus"
+      "clear": 1,
+      "ops": "home;handin|"
     },
     {
-      "id": 1794961603,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "Sticky",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_clear",
-      "xmax": 35
-    },
-    {
-      "id": 1794961604,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "Dispensable",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_clear",
-      "xmin": 36
-    },
-    {
-      "id": 1794961605,
-      "issued": 1794961597000,
-      "cmd": "fit",
-      "target": "Observant",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "shell": "factory_asfit3",
-      "plan": "factory_f2_power"
+      "id": 1794961618,
+      "issued": 1794961617000,
+      "cmd": "lavafarm",
+      "target": "Crafty",
+      "n": 7,
+      "how": "hut",
+      "row": "-4453,76,1538,11,2",
+      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Comparable,ButtonUp,Observant,Dispensable"
     }
   ]
 }
