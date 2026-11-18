@@ -463,6 +463,17 @@ end
 ---------------------------------------------------------------- running
 local function findMonitor()
   local best, bestArea
+  -- (a monitor touching this computer first: on a shared cable the biggest
+  -- monitor anywhere could be another screen's)
+  for _, side in ipairs({ "top", "bottom", "left", "right", "front", "back" }) do
+    if peripheral.getType(side) == "monitor" then
+      local m = peripheral.wrap(side)
+      m.setTextScale(0.5)
+      local w, h = m.getSize()
+      if not best or w * h > bestArea then best, bestArea = m, w * h end
+    end
+  end
+  if best then return best end
   for _, name in ipairs(peripheral.getNames()) do
     if peripheral.getType(name) == "monitor" then
       local m = peripheral.wrap(name)
