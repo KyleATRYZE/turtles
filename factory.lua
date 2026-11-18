@@ -516,10 +516,119 @@ local RECIPES = {
     grid = { "I", "P", "I", "C", "", "I", "I", "P", "I" },
     key = { I = "minecraft:iron_ingot", P = "minecraft:piston", C = "minecraft:copper_ingot" },
   },
-  ["ae2:energy_acceptor"] = {                            -- needs quartz glass (certus): later
+  ["ae2:energy_acceptor"] = {                            -- (optional: the controller takes FE itself)
     grid = { "I", "Q", "I", "Q", "C", "Q", "I", "Q", "I" },
     key = { I = "minecraft:iron_ingot", Q = "ae2:quartz_glass", C = "minecraft:copper_ingot" },
   },
+  -- The ME network (docs/ae2-bootstrap.md). Patterns from AE2's generated
+  -- recipe data, branch 1.21.1, and Advanced Peripherals' (dev/0.8-1.21.1);
+  -- shapeless ones laid out in the first slots. Made by the AE2 bench and
+  -- the certus farm's basin (tools/certusfarm.py lab steps) and handed in,
+  -- never crafted here: certus_quartz_crystal (the farm), charged_certus_quartz_crystal
+  -- (charger), certus_quartz_dust and fluix_dust (inscriber, no press), printed_*
+  -- and *_processor (inscribers), fluix_crystal (charged certus + redstone +
+  -- nether quartz in water: 2). Glowstone dust (panels, patterns) is bought in.
+  ["ae2:smooth_sky_stone_block"] = { smelt = "ae2:sky_stone_block" },
+  ["ae2:silicon"] = { smelt = "ae2:certus_quartz_dust" },
+  ["ae2:quartz_glass"] = { yield = 4,
+    grid = { "D", "G", "D", "G", "D", "G", "D", "G", "D" },
+    key = { D = "ae2:certus_quartz_dust", G = "minecraft:glass" } },
+  ["ae2:fluix_block"] = {
+    grid = { "F", "F", "", "F", "F", "", "", "", "" },
+    key = { F = "ae2:fluix_crystal" } },
+  ["ae2:quartz_fiber"] = { yield = 3,
+    grid = { "G", "G", "G", "D", "D", "D", "G", "G", "G" },
+    key = { G = "minecraft:glass", D = "ae2:certus_quartz_dust" } },
+  ["ae2:fluix_glass_cable"] = { yield = 4,                -- shapeless
+    grid = { "Q", "F", "F", "", "", "", "", "", "" },
+    key = { Q = "ae2:quartz_fiber", F = "ae2:fluix_crystal" } },
+  ["ae2:annihilation_core"] = { yield = 2,
+    grid = { "N", "D", "L", "", "", "", "", "", "" },
+    key = { N = "minecraft:quartz", D = "ae2:fluix_dust", L = "ae2:logic_processor" } },
+  ["ae2:formation_core"] = { yield = 2,
+    grid = { "C", "D", "L", "", "", "", "", "", "" },
+    key = { C = "ae2:certus_quartz_crystal", D = "ae2:fluix_dust", L = "ae2:logic_processor" } },
+  ["ae2:controller"] = {
+    grid = { "S", "F", "S", "F", "E", "F", "S", "F", "S" },
+    key = { S = "ae2:smooth_sky_stone_block", F = "ae2:fluix_crystal", E = "ae2:engineering_processor" } },
+  ["ae2:drive"] = {
+    grid = { "I", "E", "I", "C", "", "C", "I", "E", "I" },
+    key = { I = "minecraft:iron_ingot", E = "ae2:engineering_processor", C = "ae2:fluix_glass_cable" } },
+  ["ae2:item_cell_housing"] = {
+    grid = { "Q", "R", "Q", "R", "", "R", "I", "C", "I" },
+    key = { Q = "ae2:quartz_glass", R = "minecraft:redstone", I = "minecraft:iron_ingot", C = "minecraft:copper_ingot" } },
+  ["ae2:cell_component_1k"] = {
+    grid = { "R", "C", "R", "C", "L", "C", "R", "C", "R" },
+    key = { R = "minecraft:redstone", C = "ae2:certus_quartz_crystal", L = "ae2:logic_processor" } },
+  ["ae2:cell_component_4k"] = {
+    grid = { "R", "P", "R", "K", "Q", "K", "R", "K", "R" },
+    key = { R = "minecraft:redstone", P = "ae2:calculation_processor", K = "ae2:cell_component_1k",
+      Q = "ae2:quartz_glass" } },
+  ["ae2:item_storage_cell_1k"] = {                       -- shapeless: housing + component
+    grid = { "H", "K", "", "", "", "", "", "", "" },
+    key = { H = "ae2:item_cell_housing", K = "ae2:cell_component_1k" } },
+  ["ae2:item_storage_cell_4k"] = {
+    grid = { "H", "K", "", "", "", "", "", "", "" },
+    key = { H = "ae2:item_cell_housing", K = "ae2:cell_component_4k" } },
+  ["ae2:semi_dark_monitor"] = { yield = 3,               -- (any illuminated panel makes a terminal)
+    grid = { "", "G", "Q", "I", "R", "Q", "", "G", "Q" },
+    key = { G = "minecraft:glowstone_dust", Q = "ae2:quartz_glass", I = "minecraft:iron_ingot",
+      R = "minecraft:redstone" } },
+  ["ae2:terminal"] = {                                   -- shapeless
+    grid = { "F", "P", "L", "A", "", "", "", "", "" },
+    key = { F = "ae2:formation_core", P = "ae2:semi_dark_monitor", L = "ae2:logic_processor",
+      A = "ae2:annihilation_core" } },
+  ["ae2:crafting_terminal"] = {                          -- shapeless
+    grid = { "T", "W", "P", "", "", "", "", "", "" },
+    key = { T = "ae2:terminal", W = "minecraft:crafting_table", P = "ae2:calculation_processor" } },
+  ["ae2:pattern_encoding_terminal"] = {                  -- shapeless
+    grid = { "E", "T", "", "", "", "", "", "", "" },
+    key = { E = "ae2:engineering_processor", T = "ae2:crafting_terminal" } },
+  ["ae2:crafting_unit"] = {
+    grid = { "I", "P", "I", "C", "L", "C", "I", "P", "I" },
+    key = { I = "minecraft:iron_ingot", P = "ae2:calculation_processor", C = "ae2:fluix_glass_cable",
+      L = "ae2:logic_processor" } },
+  ["ae2:1k_crafting_storage"] = {                        -- shapeless
+    grid = { "U", "K", "", "", "", "", "", "", "" },
+    key = { U = "ae2:crafting_unit", K = "ae2:cell_component_1k" } },
+  ["ae2:molecular_assembler"] = {
+    grid = { "I", "Q", "I", "A", "W", "F", "I", "Q", "I" },
+    key = { I = "minecraft:iron_ingot", Q = "ae2:quartz_glass", A = "ae2:annihilation_core",
+      W = "minecraft:crafting_table", F = "ae2:formation_core" } },
+  ["ae2:pattern_provider"] = {
+    grid = { "I", "W", "I", "A", "", "F", "I", "W", "I" },
+    key = { I = "minecraft:iron_ingot", W = "minecraft:crafting_table", A = "ae2:annihilation_core",
+      F = "ae2:formation_core" } },
+  ["ae2:interface"] = {
+    grid = { "I", "G", "I", "A", "", "F", "I", "G", "I" },
+    key = { I = "minecraft:iron_ingot", G = "minecraft:glass", A = "ae2:annihilation_core",
+      F = "ae2:formation_core" } },
+  ["ae2:blank_pattern"] = { yield = 2,
+    grid = { "Q", "G", "Q", "G", "C", "G", "I", "K", "I" },
+    key = { Q = "ae2:quartz_glass", G = "minecraft:glowstone_dust", C = "ae2:certus_quartz_crystal",
+      I = "minecraft:iron_ingot", K = "minecraft:copper_ingot" } },
+  ["ae2:storage_bus"] = {                                -- shapeless
+    grid = { "P", "N", "P", "", "", "", "", "", "" },
+    key = { P = "minecraft:piston", N = "ae2:interface" } },
+  ["ae2:energy_cell"] = {
+    grid = { "C", "D", "C", "D", "Q", "D", "C", "D", "C" },
+    key = { C = "ae2:certus_quartz_crystal", D = "ae2:fluix_dust", Q = "ae2:quartz_glass" } },
+  ["ae2:growth_accelerator"] = {                         -- powered at its two ends (8 AE/t)
+    grid = { "I", "C", "I", "Q", "B", "Q", "I", "C", "I" },
+    key = { I = "minecraft:iron_ingot", C = "ae2:fluix_glass_cable", Q = "ae2:quartz_glass",
+      B = "ae2:fluix_block" } },
+  ["advancedperipherals:peripheral_casing"] = {
+    grid = { "I", "B", "I", "B", "R", "B", "I", "B", "I" },
+    key = { I = "minecraft:iron_ingot", B = "minecraft:iron_bars", R = "minecraft:redstone_block" } },
+  ["advancedperipherals:me_bridge"] = {
+    grid = { "F", "N", "F", "N", "A", "N", "F", "N", "F" },
+    key = { F = "ae2:fluix_block", N = "ae2:interface", A = "advancedperipherals:peripheral_casing" } },
+  ["minecraft:crafting_table"] = {
+    grid = { "P", "P", "", "P", "P", "", "", "", "" },
+    key = { P = "#planks" } },
+  ["minecraft:redstone_block"] = {
+    grid = { "R", "R", "R", "R", "R", "R", "R", "R", "R" },
+    key = { R = "minecraft:redstone" } },
   -- Mekanism, to start with: an infuser and something to power it
   ["alltheores:osmium_ingot"] = { smelt = "alltheores:raw_osmium" },
   ["mekanism:metallurgic_infuser"] = {
