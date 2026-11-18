@@ -138,6 +138,6 @@ Rule (Kyle): place by command only what we could feasibly make. Nothing needing 
 - Trunks: N blue (31 -1 15-19, bridge branch 32-34 -1 15), W green (31..33 -1 20; 33 0 18-20), A orange (31-34 -1 21, dips to y -2 under the CC spine at x 35, 36-38 -1 21, then 38 0 17-22).
 - Storage link BUILT: storage bus + ExtendedAE wireless connector at each storeroom controller (cable at 10 5 14 and 17 5 14, connectors at 10 5 13 / 17 5 13), paired by NBT `freq` (4242, 4243) with connectors on the vault (30 3 17, 31 3 17). Remote ends show powered.
 - ME Bridge at 34 0 15 beside Works (Works is still switched off; its code must stop announcing foundry_ready before it is turned on).
-- Induction card: provider placed behind infuser C (38 1 17); the card can't be set by NBT (no `upgrades` key). Card dropped at 37 1 17 for Kyle to insert and test.
+- Induction card: provider placed behind infuser C (38 1 17); the card can't be set by NBT (no `upgrades` key). Spawning the card as an item was refused; Kyle to get one (give) and try it in the provider.
 - To check in game (Kyle): crafting terminal shows the barrels; provider has an upgrade slot for the card.
 - Removed and not yet replaced: Nether pump + entangloporter (-623 32/33 373 in the Nether, 96x96 lava sheet; chunk no longer force-loaded).
