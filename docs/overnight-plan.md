@@ -155,3 +155,30 @@ Rule (Kyle): place by command only what we could feasibly make. Nothing needing 
 - 23:00 Ore line on ME (2x): providers + cards behind crusher/chamber/smelter (43 1 11-13) AND in the floor under the chamber and smelter (42 0 12-13), because RCON commands cap at 1446 bytes = 5 patterns per setblock. Machine sides back and bottom = in/out. 10 ores: raw > 4 dust per 3 (chamber), dust > ingot (smelter): iron gold copper tin osmium | lead silver nickel zinc aluminum. Not yet: uranium, platinum, iridium; crusher patterns. Joined to the core by wireless connectors (freq 4244: 43 2 13 and on the vault at 29 4 17); cable under the providers at 43 0 11-13.
 - 23:45 Crystal garden BUILT (28-30, y 1-4, z 4-12): 3 flawless budding (29 2 6/8/10), 4 growth accelerators (must be `[facing=up]` to pass the network vertically), planes in the floor and the lintel on a subnet (fluix glass cable) powered by a quartz fiber at 29 0 6, storage bus (certus crystal only) at 29 0 5 into an ME interface at 29 -1 5 on trunk N (extended: 31 -1 5-14). Old farm area was already empty.
 - 23:55 Processor press ON ME, using the bench that is there (the 4 presses are in their inscribers; the swap to extended inscribers is not needed yet): pattern providers in the floor under the inscribers (28 0 18-21, 23), inscribers `auto_export:"YES"`. Prints: silicon, logic (gold), calculation (certus), engineering (diamond); assembly inscriber (z 23, blocking mode) makes the three processors. Silicon: certus crystal > dust (ore-line crusher) > silicon (alloy smelter 2): UNTESTED (does Mekanism crush certus?). Charger (z 22) not automated. W trunk extended to 28 -1 20.
+
+## KYLE'S BRIEF, 18 Nov 23:49 (the master list for the night and after)
+His words, condensed: all the ME machines we discussed set up, plus anything else we need. Storage linked to the barrels, with more space. A system to fuel the drones. All drones parked in their bays, not AFK overhead ("they should go back to their wee home"). Maybe Create. Revisit the overall design: cooler, more sci-fi, animated screens, levers that do things, much more ComputerCraft + ME + peripherals synergy, a control room for the drones with the map as in real Minecraft. Clean up the old factory. Terraform around the factory. Pipes shipping items about, conveyors maybe, drones doing things. Redo the visuals to match. Only blocks we could reasonably have (no nether stars). "Everything sorted by tomorrow. Figure out any barriers."
+
+### Working rules for the night
+- I only work inside a turn: check-ins are scheduled; each one takes the next item, verifies it through the ME desk or RCON, logs here.
+- Verify recipes myself: `tools/order.py me crafter1 craft=<id> n=<n>` then read `me` in crafter1's status (stock, log, busy CPUs).
+- Patterns: provider placed with `patterns` in its setblock NBT, 5 per command (1446-byte RCON limit).
+- Feasible blocks only. Kyle's own blocks are collected by drones, not deleted.
+
+### A. ME (function)
+- [x] Core, vault, terminals, storage link, bridge, alloy row (11 machines), ore line 2x (10 ores), garden, processor press, ME desk
+- [ ] Recipe proving through the ME desk: logic/calc/eng processors, silicon (does the crusher take certus?), circuits, alloys, refined obsidian. Obsidian > dust moved to the CRUSHER (the chamber refused it and jammed a CPU)
+- [ ] Export-bus crafting cards tie up CPUs: add CPUs (4+), or drop the cards and use a requester
+- [ ] Crystal lab row (ex charger, crystal assembler, reaction chamber, circuit cutter); fluix + charged certus recipes
+- [ ] Assembler matrix + crafting patterns (control circuits tiers, cables, turtles, modems...)
+- [ ] Requesters / stock keeping; more cells (space); uranium/platinum/iridium ore patterns
+- [ ] Gas plant + 3x-5x; thermo generator water by ME export bus (no wrench): storage bus on a sink, fluid export bus on each generator
+### B. Fuel
+- [ ] Nether lava (pump + entangloporter at -623 31 373): needs Kyle to set the frequency (2 clicks). Until then: coal blocks (1,004 in the store = ~800k moves) loaded at the docks
+- [ ] lava1 is stranded at 0 fuel at -4451 107 1521: rescue
+### C. Drones home
+- [ ] Why "Could not get into my home in the rack (?)" and "No bay modem switched on": fix LN.toHome / switch the shelf modems on (clickUp), so idle drones sit docked
+### D. Design v2 (for Kyle to review before building): sci-fi look, control room with the live map, animated screens, levers wired to CC, ME <-> CC synergy (ME desk screens, request buttons), Create conveyors where they earn their place, visuals restyled
+### E. Old base cleanup, terraforming (tools/terraform.py), leftovers in the hall (builder1 sent 23:50)
+### Barriers (need Kyle or access)
+- Entangloporter frequency (GUI only). Wrench/bucket clicks by drones need the datapack tag widened (server datapacks folder). No CC-specific MCP found for NeoForge; the ME desk + RCON + /computercraft cover it.
