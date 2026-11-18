@@ -1001,6 +1001,13 @@ S.RACK_CHANNEL = 4711                -- the rack's panels hear the drones throug
 
 -- The name we see a docked turtle by, found by its computer id (a turtle
 -- touching two modems on the cable has a different name on each).
+-- that name, on our cable, is that drone (names are per network)
+function S.bayIs(name, id)
+  if not peripheral.isPresent(name) then return false end
+  local ok, tid = pcall(peripheral.call, name, "getID")
+  return ok and tid == id
+end
+
 function S.bayById(id)
   for _, n in ipairs(peripheral.getNames()) do
     if n:match("^turtle_%d+$") then
@@ -1016,20 +1023,20 @@ function S.bayHeard(id, msg, now)
     local q = S.bayQueue[tonumber(msg.forId)]
     if q and q.msg.n == msg.n then S.bayQueue[tonumber(msg.forId)] = nil end
   elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
-      and msg.bay:match("^turtle_%d+$") and not peripheral.isPresent(msg.bay) and S.bayById(id) then
+      and msg.bay:match("^turtle_%d+$") and not S.bayIs(msg.bay, id) and S.bayById(id) then
     -- (one turtle touching two modems has a name on each; the one it told
     -- us is not the one we see it by: find it by its computer id)
     msg.bay = S.bayById(id)
     return S.bayHeard(id, msg, now)
   elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
-      and msg.bay:match("^turtle_%d+$") and not peripheral.isPresent(msg.bay) then
+      and msg.bay:match("^turtle_%d+$") and not S.bayIs(msg.bay, id) then
     local seen = {}                                -- (say so: a bay we cannot reach is the thing to fix)
     for _, n in ipairs(peripheral.getNames()) do if n:match("^turtle_") then seen[#seen + 1] = n end end
     S.bayNote = ("%s asked from bay %s: not on my cable (turtles I see: %s)"):format(tostring(msg.label or id),
       msg.bay, #seen > 0 and table.concat(seen, ",") or "none")
     print(S.bayNote)
   elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
-      and msg.bay:match("^turtle_%d+$") and peripheral.isPresent(msg.bay) then
+      and msg.bay:match("^turtle_%d+$") and S.bayIs(msg.bay, id) then
     S.bayNote = "heard " .. tostring(msg.label or id) .. " at " .. msg.bay
     local q = S.bayQueue[id]
     if not (q and q.msg.n == msg.n) and S.bayDone ~= tostring(id) .. ":" .. tostring(msg.n) then
@@ -1075,7 +1082,7 @@ function S.bayStep(now)
   for id, q in pairs(S.bayQueue) do
     if now >= q.at then
       S.bayQueue[id] = nil
-      if peripheral.isPresent(q.msg.bay) then pcall(S.serveBay, id, q.msg) end
+      if S.bayIs(q.msg.bay, id) then pcall(S.serveBay, id, q.msg) end
     end
   end
 end

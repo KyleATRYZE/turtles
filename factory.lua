@@ -3916,7 +3916,11 @@ local function responder()
         and (msg.n == nil or served[id] ~= msg.n) then
         local o = orders[id]
         local bay = K.bayName(msg.bay)
-        if bay and not (modem and peripheral.isPresent(bay)) then
+        -- (the bay by that name on OUR cable must be that drone: names are per
+        -- network, and a turtle_<n> here can be a different turtle)
+        local okI, bid = false, nil
+        if bay and modem and peripheral.isPresent(bay) then okI, bid = pcall(peripheral.call, bay, "getID") end
+        if bay and not (okI and bid == id) then
           -- a bay on another cable (Sortnado's, before the move): the store
           -- there serves it; what it lacks comes back here, for the pad
         elseif not (o and o.ready and o.n == msg.n) then    -- (a repeat of a load already made: keep it)

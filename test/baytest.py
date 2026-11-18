@@ -33,6 +33,10 @@ put(C,"minecraft:cobblestone",64) put(C,"minecraft:coal",64) put("minecraft:ches
 INV.turtle_40 = { size = 16, items = { [1] = { name = "minecraft:bucket", count = 1 }, [2] = { name = "minecraft:torch", count = 5 } } }
 local pc = peripheral.call
 peripheral.isPresent = function(n) return INV[n] ~= nil end
+peripheral.call = function(n, m, ...)            -- (a docked turtle answers getID with its own id)
+  if m == "getID" and type(n) == "string" and n:match("^turtle_%d+$") then return tonumber(n:match("%d+")) end
+  return pc(n, m, ...)
+end
 FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={40},["loaders"]={},["byId"]={}}'
 MAX_IDLES=1''' + setup)
     L.eval('{runFactory()}')
@@ -234,6 +238,7 @@ rednet = { send = function(id, m, p) SENTJ[#SENTJ + 1] = { id = id, m = m, p = p
 peripheral.isPresent = function(n) return INV[n] ~= nil end
 local call = peripheral.call
 peripheral.call = function(n, m, a, b, c)
+  if m == "getID" and type(n) == "string" and n:match("^turtle_%d+$") then return tonumber(n:match("%d+")) end
   if m == "pullItems" then local st = INV[a].slots[b] if not st then return 0 end
     local left = addTo(n, st.name, st.count) local k = st.count - left st.count = left if left == 0 then INV[a].slots[b] = nil end return k end
   return call(n, m, a, b, c)
@@ -263,7 +268,7 @@ check("crafter1 on the same cable says bay_taken: the store leaves it alone", L.
 L.execute('''MSG2 = { type = "materials", id = 41, n = 1, bay = "turtle_41", items = {} } S.bayHeard(41, MSG2, 50)''')
 check("a bay that is not on the store's cable is not the store's", L.eval("S.bayQueue[41]") is None)
 check("crafter1 records a bay order only when the bay is on its own cable, and says bay_taken",
-      "if bay and not (modem and peripheral.isPresent(bay)) then" in FAC and 'type = "bay_taken"' in FAC)
+      "if bay and not (okI and bid == id) then" in FAC and 'type = "bay_taken"' in FAC)
 check("the helper: what the store lacked comes from the pad straight away; nobody serving the bay in 90 s: the pad",
       'reply.by == "Sortnado" and next(reply.missing or {})' in HEL and "os.clock() - started > 90" in HEL
       and "local bay = LN.on() and not noBay and LN.bay() or nil" in HEL)
