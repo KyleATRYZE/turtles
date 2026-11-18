@@ -63,3 +63,4 @@ See docs/factory-retrofit.md. Order of orders: `reboot all`, `haul Crafty on=0`,
 - Known stale test: test/baytest.py rack-board drawing checks (2) fail after the board restyle; the watchdog/pad-queue checks pass.
 - 01:33 check-in: rename applied (all on 57194aa); watchdog fix (it rebooted pad-queued drones); rack top board fix; mapper1 mapped the old base and is mapping the factory. Throughput is limited by the single pad: 5 drones waiting for loads at once. The real fix is cable loading at docked homes, which needs the docking test (next free helper).
 - 01:50: docking WORKS (the blocker was a lab-bench bug). builder1 is on lane mode alone; cable loading isn't served yet, so Sortnado now reports why. Next check-in 02:20.
+- 01:55: survey1 ran dry mid-survey (labs never topped up fuel: fixed 9b05162). Rescue queue: miner3, then survey1. Pad queue is still the throughput limit until cable loading works.

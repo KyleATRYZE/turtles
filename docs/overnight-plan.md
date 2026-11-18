@@ -41,7 +41,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Longer term: AE2 autocrafting (see E)
 
 ## C. Survey (Geo Scanner mapping the base)
-- [~] Comparable (survey1) has its lab queued: fetch the scanner, then 14 scans over the factory. It was stuck in the pad jam; it was next down at 01:19
+- [ ] survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
 - [x] mapper1 mapped the old base: maps/oldbase.json on the status branch
 - [~] mapper1 maps the factory from outside (`factory_now`, 01:41)
 - [ ] When the maps land: `python3 tools/survey.py pull`, `survey.py rack`, then fix rack rows 3-4 (M.LANE, LN.home, rack.lua)
