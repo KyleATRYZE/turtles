@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795030530,
-      "issued": 1795030530000,
+      "id": 1795030568,
+      "issued": 1795030568000,
       "cmd": "lab",
-      "target": "builder5",
+      "target": "builder1",
       "clear": 1,
-      "ops": "fetch|ae2:inscriber=2,ae2:charger=1,ae2:engineering_processor_press=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|21;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;dropDown|ae2:engineering_processor_press|1;walk|28|2|22;inspect|down;placeDown|ae2:charger;expect|down|charger;walk|28|2|23;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;inv;leave;home;handin|"
+      "ops": "fetch|computercraft:cable=2;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|35|1|22;digDown|polished_deepslate;down;digDown|cobblestone;placeDown|computercraft:cable;up;placeDown|minecraft:polished_deepslate;expect|down|polished_deepslate;walk|40|1|17;walk|40|0|17;face|2;net;walk|40|1|18;walk|40|0|18;face|2;net;walk|40|1|21;walk|40|0|21;face|2;net;walk|40|1|23;walk|40|0|23;face|2;net;walk|40|1|23;inv;leave;home;handin|"
     }
   ]
 }
