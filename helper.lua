@@ -2381,7 +2381,7 @@ local function runLab()
         if not slot then res, stop = "no geo scanner on board", true else
           local side = geoOn(slot)
           local geo = side and peripheral.wrap(side)
-          local ok, blocks = pcall(function() return geo.scan(r) end)
+          local ok, blocks = pcall(function() return (geo.scanBlocks or geo.scan)(r) end)
           if side then geoOff(slot, side) end
           if not ok or type(blocks) ~= "table" then res = "scan failed: " .. tostring(blocks) else
             local hits = {}
@@ -2407,7 +2407,7 @@ local function runLab()
           for _ = 1, 4 do                                  -- (the scanner has a cool-down)
             local side = geoOn(slot)
             local geo = side and peripheral.wrap(side)
-            local ok, b, w = pcall(function() return geo.scan(r) end)
+            local ok, b, w = pcall(function() return (geo.scanBlocks or geo.scan)(r) end)
             if side then geoOff(slot, side) end
             if ok and type(b) == "table" then blocks = b break end
             why = ok and w or b
