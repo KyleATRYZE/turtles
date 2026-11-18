@@ -1,12 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795002693,
-      "issued": 1795002693000,
-      "cmd": "lab",
-      "target": "survey1",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|20|2|9;survey|8|link;leave;home"
+      "id": 1795003206,
+      "issued": 1795003206000,
+      "cmd": "fit",
+      "target": "builder2",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_f2_storelink",
+      "shell": "factory_asfit3"
     }
   ]
 }
