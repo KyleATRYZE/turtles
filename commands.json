@@ -1,12 +1,27 @@
 {
   "commands": [
     {
-      "id": 1795025092,
-      "issued": 1795025092000,
-      "cmd": "rescue",
-      "target": "crafter1",
-      "who": "lava1",
-      "problem": "fuel"
+      "id": 1795025274,
+      "issued": 1795025274000,
+      "cmd": "lab",
+      "target": "builder6",
+      "clear": 1,
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|39|1|17;clickDown;walk|39|1|19;clickDown;walk|39|1|23;clickDown;walk|42|1|12;clickDown;walk|42|1|13;clickDown;leave;home"
+    },
+    {
+      "id": 1795025275,
+      "issued": 1795025274000,
+      "cmd": "lab",
+      "target": "builder2",
+      "clear": 1,
+      "ops": "fetch|minecraft:coal=8|dump;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|5;walk|28|2|6;face|1;face|0;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;pickDown|ae2:quartz_cluster;face|0;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|1;fwd|1;face|0;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;face|0;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;pickDown|ae2:quartz_cluster;face|0;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|1;fwd|1;face|0;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;up|3;face|3;face|0;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|0;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|3;fwd|1;face|0;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|0;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|0;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|3;fwd|1;face|0;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;up|3;face|1;fwd|1;face|0;pick|ae2:quartz_cluster;face|1;fwd|1;fwd|1;fwd|1;face|0;pick|ae2:quartz_cluster;face|1;fwd|1;down|6;face|1;fwd|1;face|0;fwd|4;face|3;fwd|6;face|1;face|2;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;pickDown|ae2:quartz_cluster;face|2;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|1;fwd|1;face|2;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;face|2;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;fwd|1;pickDown|ae2:quartz_cluster;face|2;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|1;fwd|1;face|2;fwd|1;pickDown|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|1;up|3;face|3;face|2;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|2;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|3;fwd|1;face|2;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|2;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;fwd|1;face|2;pick|ae2:quartz_cluster;up|1;pickUp|ae2:quartz_cluster;pick|ae2:quartz_cluster;down|1;face|3;fwd|1;face|2;fwd|1;up|1;pickUp|ae2:quartz_cluster;down|1;back|1;face|3;up|3;face|1;fwd|1;face|2;pick|ae2:quartz_cluster;face|1;fwd|1;fwd|1;fwd|1;face|2;pick|ae2:quartz_cluster;face|1;fwd|1;down|6;inv;leave;home;handin|;home;handin|"
+    },
+    {
+      "id": 1795025276,
+      "issued": 1795025274000,
+      "cmd": "foundry",
+      "target": "foundry1",
+      "on": 0
     }
   ]
 }
