@@ -792,8 +792,9 @@ function D.homes(mon, view, frame)
       local function at(k) return top + (k - 1) * gap end
       local function fits(k) return at(k) <= y0 + tall - 1 end
       if free then
-        text(s, x0 + 2, at(1), pad(p.name or "", iw), C.dim, back)
-        if fits(2) then text(s, x0 + 2, at(2), "free", C.line, back) end
+        -- an empty dock: whose it is, quietly (nothing to look at)
+        text(s, x0 + 2, at(1), pad(p.name or "", iw), C.line, back)
+        if fits(2) then text(s, x0 + 2, at(2), "empty", C.line, back) end
       else
         -- red blinks, so trouble is seen from across the bay
         local nameCol = (p.colour == "red" and frame % 2 == 0) and C.red or C.text

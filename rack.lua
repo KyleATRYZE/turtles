@@ -181,7 +181,7 @@ end
 function R.summary(now)
   now = now or os.clock()
   local f, lines = R.factory, {}
-  if not f then return { "FACTORY: not heard yet", R.diag }, false end
+  if not f then return { "FACTORY: not heard yet" }, false end
   local inv = type(f.inv) == "table" and f.inv or {}
   local n = function(k) return tonumber(inv[k]) or 0 end
   local s = type(f.storage) == "table" and f.storage or {}
@@ -205,7 +205,6 @@ function R.summary(now)
   lines[5] = ("FOUNDRY: %s"):format(fy.job and plainName(fy.job)
     or (type(fy.last) == "table" and fy.last.made and ("last made " .. tostring(fy.last.made))) or "idle")
   if type(f.probe) == "string" then lines[6] = f.probe end
-  if R.diag then lines[#lines + 1] = R.diag end
   return lines, #stalled > 0
 end
 
@@ -406,12 +405,13 @@ if fs.exists(".rack") then
   hh.close()
 end
 -- rack 1's two strips, by their names on the cable (seen on them 18 Nov):
--- the lower one (y 73) shows rows 1-2 (y 72, 74), the upper one (y 75)
--- rows 3-4 (y 76, 78). Guessing them stopped working once the store's
--- cable, with all its screens, joined ours.
+-- each shows the eight docks right under it, panel over dock: the lower
+-- strip (y 73) the docks at y 72, the upper one (y 75) those at y 74.
+-- (Guessing them stopped working once the store's cable, with all its
+-- screens, joined ours.)
 if not (type(cfg) == "table" and type(cfg.strips) == "table") then
   cfg = type(cfg) == "table" and cfg or {}
-  cfg.strips = { monitor_12 = { 0, 1 }, monitor_23 = { 2, 3 } }
+  cfg.strips = { monitor_12 = { 0 }, monitor_23 = { 1 } }
 end
 local wired
 for _, name in ipairs(peripheral.getNames()) do
