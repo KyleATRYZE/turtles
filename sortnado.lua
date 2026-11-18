@@ -119,13 +119,17 @@ function S.discover()
       if num(a) ~= num(b) then return num(a) < num(b) end
       return a < b
     end)
-    S.backend, S.order, S.chests = "controller", { controller }, {}
+    -- (built aside and swapped in at once: the screen and the sorter run
+    -- alongside, and peripheral calls let them in half way)
+    local order, chests = { controller }, {}
     for _, n in ipairs(controllers) do
-      if n ~= controller then S.order[#S.order + 1] = n end
+      if n ~= controller then order[#order + 1] = n end
     end
-    for _, n in ipairs(S.order) do
-      S.chests[n] = { section = "All", size = peripheral.call(n, "size") or 0, used = 0, slots = {} }
+    for _, n in ipairs(order) do
+      chests[n] = { section = "All", size = peripheral.call(n, "size") or 0, used = 0, slots = {} }
     end
+    S.poolCache = nil
+    S.backend, S.order, S.chests = "controller", order, chests
     return #S.order
   end
   S.backend = "chests"
@@ -308,7 +312,7 @@ function S.resortPass(round)
     local any = false
     for _, n in ipairs(S.order) do
       local mine = {}
-      for to, st in pairs(S.chests[n].slots) do
+      for to, st in pairs((S.chests[n] or {}).slots or {}) do
         if st.name == name and not S.atHome(n, to, name, total) then mine[#mine + 1] = { to, st.count } end
       end
       for _, m in ipairs(mine) do
@@ -806,7 +810,7 @@ function S.view()
     -- one inventory: a section is the slots its kinds of item take up
     local bySec = {}
     for _, n in ipairs(S.order) do
-      for _, st in pairs(S.chests[n].slots) do
+      for _, st in pairs((S.chests[n] or {}).slots or {}) do
         local sec = S.sectionOf(st.name)
         bySec[sec] = (bySec[sec] or 0) + 1
       end
