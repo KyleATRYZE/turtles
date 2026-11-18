@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794965844,
-      "issued": 1794965844000,
-      "cmd": "reboot",
-      "target": "RackBoard"
+      "id": 1794965870,
+      "issued": 1794965870000,
+      "cmd": "lab",
+      "target": "builder1",
+      "clear": 1,
+      "ops": "dock|in;peripherals;look;dock|out;home"
     }
   ]
 }
