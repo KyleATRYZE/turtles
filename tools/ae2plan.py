@@ -101,7 +101,7 @@ t("qe", "Quantum Entangloporter (lava from the Nether)", "mekanism:quantum_entan
 t("ghost", "Reserved: reactor pad", "bigreactors:basic_reactorcasing", "power", "#d9c24a", "#b39b2e", "frame", a=0.35)
 
 # power
-t("thermo", "Thermo Generator", "powah:thermo_generator_niotic", "power", "#2c2d33", "#ff5f5f", "machine")
+t("thermo", "Nitro Thermo Generator (1,750 FE/t measured)", "powah:thermo_generator_nitro", "power", "#2c2d33", "#ff5f5f", "machine")
 
 # services under the floor
 def pipe(key, name, rid, cat, c): t(key, name, rid, cat, c, c, "flat", "pipe")
@@ -312,7 +312,7 @@ def plan():
 
     # ---- the power bay (x 42, faces west): lava under, a closed chase behind
     for z in range(17, 24):
-        put(42, 1, z, "thermo", W, 2, "Thermo Generator: makes power from the lava block under it; uses none of it. Water-cooled from the chase")
+        put(42, 1, z, "thermo", W, 2, "Nitro Thermo Generator: 1,750 FE/t measured on your server from the lava block under it, which it does not use up. Built 18 Nov")
         put(42, 0, z, "lava", 0, 2, "A lava source block in the floor under each generator (hidden)")
         put(43, 2, z, "cap", 0, 2)
     put(43, 1, 17, "facc", N, 2, "Flux Accessor: the generators' FE goes into the ME network's FE cells; every induction card draws from there")
@@ -407,7 +407,7 @@ ZONES = [
  dict(id="gas", name="Gas plant", box=[37, 4, 39, 13], ph="6, 7", cam=[39, 1, 9],
       text="Nine machines in a row, ordered so each hands its gas straight to the neighbour that needs it. What must travel goes down a closed chase behind the row and under the lane in colour-coded tubes: oxygen, hydrogen chloride, sulfuric acid, with water and brine in mechanical pipes. Nothing shows above the floor."),
  dict(id="power", name="Power bay", box=[42, 17, 43, 23], ph="2", cam=[42, 1, 20],
-      text="Seven thermo generators, each on a lava block set in the floor. They take heat from lava without using it up, so nothing is refuelled. Water and power share one pipe in a closed chase behind them. A flux accessor puts the power into the ME network; a main two blocks down feeds the controller and the gas plant."),
+      text="Built tonight. Seven Nitro thermo generators, each on a lava block set in the floor: 1,750 FE/t each as measured, about 12,250 FE/t together, and the lava is never used up. A capped chase behind them carries the power down under the floor to the controller and the machines. Still to add: the sink and pipe that keep their water topped up (a full tank lasts about two hours), and the flux accessor that puts spare power into ME."),
  dict(id="fuel", name="Fuel station", box=[42, 26, 43, 27], ph="2", cam=[43, 1, 26.5],
       text="A pump sits on the Nether lava sea at -623 31 373, a 96 by 96 sheet of open lava, in a chunk that stays loaded. Its lava arrives here through a pair of quantum entangloporters, goes into the ME network, and the canner fills buckets with it. A requester keeps a stock of full buckets in the barrels for the docks. No drone walks the dripstone wall any more; the wall stays as the backup."),
  dict(id="yard", name="East yard", box=[46, 9, 50, 21], ph="7, 8", cam=[48, 2, 15],
