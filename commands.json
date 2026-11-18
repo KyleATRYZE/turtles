@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795032771,
-      "issued": 1795032771000,
+      "id": 1795032870,
+      "issued": 1795032870000,
       "cmd": "probe",
       "target": "crafter1",
-      "name": "metallurgicInfuser_0"
+      "name": "energizedSmelter_0"
     }
   ]
 }
