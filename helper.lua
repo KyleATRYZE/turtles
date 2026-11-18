@@ -1005,6 +1005,8 @@ local function fetchPlan(name)
       f.close()
     end
     local res = http and http.get(LIST_URL:format(rev ~= "" and rev or "main", name))
+    -- (a plan newer than the code this turtle runs: take it from main)
+    if not res and http then res = http.get(LIST_URL:format("main", name)) end
     if not res then error("Could not download " .. name .. ".", 0) end
     local f = fs.open(file, "w")
     f.write(res.readAll())
