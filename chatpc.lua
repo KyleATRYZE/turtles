@@ -39,11 +39,19 @@ end
 local function send(msg)
   msg = tostring(msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
   if msg == "" then return end
-  local ok, err = pcall(box.sendMessage, msg, cfg.name, "<>")
-  if not ok or err == false then
-    sleep(1)                                   -- (the Chat Box has a short cool-down)
-    pcall(box.sendMessage, msg, cfg.name, "<>")
+  local function try() return pcall(box.sendMessage, msg, cfg.name, "<>") end
+  local ok, res, why = try()
+  if not ok or not res then
+    sleep(1.2)                                 -- (the Chat Box has a short cool-down)
+    ok, res, why = try()
   end
+  local old = term.getTextColour()
+  if ok and res then
+    term.setTextColour(colours.lime) print("sent")
+  else
+    term.setTextColour(colours.red) print("NOT sent: " .. tostring(ok and (why or res) or res))
+  end
+  term.setTextColour(old)
 end
 
 -- quick buttons on a monitor, if there is one
