@@ -208,17 +208,28 @@ def clear():
 
 
 def power():
-    """The power row along the east wall (universal cable, x 43, z 6-23), the
-    piped line's heat generator moved into the power block, and room for more."""
-    p = Plan("power", "builder6", 1, "the east wall's power row, the second heat generator")
-    p.D((36, 1, 21), 0)                                   # the piped line's heat generator (carried)
-    p.P((42, 1, 19), "mekanismgenerators:heat_generator east", 2)
-    p.P((42, 1, 20), "mekanismgenerators:heat_generator east", 2)
-    p.P((42, 1, 21), "mekanismgenerators:heat_generator east", 2)
-    p.P((42, 1, 22), "mekanismgenerators:gas_burning_generator east", 2)
-    p.P((42, 1, 23), "mekanism:basic_energy_cube east", 2)
-    for z in range(6, 24):
+    """As built by command, 18 Nov evening (Kyle: cables under the floor). The
+    heat generators at 42 1 18-21 face east into a short cable behind them
+    (the only cable on show), which goes down at z 21 and on under the floor
+    to the run under the east door's walkway (y -1, z 24). The ore line takes
+    its power from cable in the floor under each machine (x 42 y 0), fed from
+    under the floor at x 42. The alloy cell's row is joined by its riser at
+    38 0/-1 23."""
+    p = Plan("power", "done by command", 1, "the power: generators, cable under the floor")
+    for z in range(18, 22):
+        p.P((42, 1, z), "mekanismgenerators:heat_generator east", 2)
         p.P((43, 1, z), UC, 0)
+    p.D((43, 0, 21), 0)
+    p.P((43, -1, 21), UC, 0)
+    p.P((43, 0, 21), UC, 0)
+    p.under((43, 0, 22), floor_at((43, 0, 22)), UC)       # (43 -1 23 is the alloy job's)
+    for z in range(11, 14):
+        p.D((42, 0, z), 0)
+    p.P((42, -1, 13), UC, 0)
+    for z in range(11, 14):
+        p.P((42, 0, z), UC, 0)
+    for z in range(14, 24):
+        p.under((42, 0, z), floor_at((42, 0, z)), UC)
     return p
 
 
@@ -246,37 +257,23 @@ def alloy():
     p.D((43, 0, 23), 0)
     p.P((43, -1, 23), UC, 0)
     p.P((43, 0, 23), UC, 0)
-    for z in range(7, 17):
-        p.D((42, 1, z), 0)                                # the old plinth cable
-    p.D((42, 1, 17), 0)                                   # the cube and the heat generator: turned to face the row
-    p.D((42, 1, 18), 0)
-    p.P((42, 1, 17), "mekanism:basic_energy_cube east", 0)
-    p.P((42, 1, 18), "mekanismgenerators:heat_generator east", 0)
     for z in range(17, 24):                               # the click holes beside the cell's modems
         p.D((40, 0, z), 0)
     return p
 
 
 def ore():
-    """The ore line on the east wall: the cable under it with a modem under
-    every machine, the piped line's chamber and smelter moved in, the rest as
-    they are made."""
-    p = Plan("ore", "builder3 (after alloy)", 3, "the ore line: floor modems, the chamber and smelter moved in")
-    for z in (16, 15, 14):
-        p.under((42, 0, z), DB)
-    for z in range(13, 5, -1):
-        p.under((42, 0, z), None)
-        p.P((42, 0, z), WM, 0)
-    p.D((36, 1, 17), 0)                                   # the piped line's chamber and smelter (carried)
-    p.D((36, 1, 18), 0)
-    line = [(12, "mekanism:enrichment_chamber"), (13, "mekanism:energized_smelter"),    # (moved: first)
+    """The ore line on the east wall, worked by foundry1 from the lane at x 41
+    (the store can't push into a Mekanism machine over the cable): the
+    chamber and smelter, the crusher, the rest as they are made. Power comes
+    from the cable in the floor under them (the power job)."""
+    p = Plan("ore", "any helper", 3, "the ore line's machines")
+    line = [(12, "mekanism:enrichment_chamber"), (13, "mekanism:energized_smelter"),
             (11, "mekanism:crusher"), (10, "mekanism:purification_chamber"),
             (9, "mekanism:chemical_injection_chamber"), (8, "mekanism:chemical_crystallizer"),
             (7, "mekanism:chemical_washer"), (6, "mekanism:chemical_dissolution_chamber")]
     for z, it in line:
         p.P((42, 1, z), it + " west", 4)                  # from the walkway: it faces the turtle
-    for z in range(6, 14):                                # the click holes beside the line's modems
-        p.D((41, 0, z), 0)
     return p
 
 

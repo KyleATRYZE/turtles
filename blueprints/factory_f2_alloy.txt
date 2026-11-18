@@ -1,5 +1,5 @@
 S 22 2 33
-P 10
+P 8
 mekanism:metallurgic_infuser east
 mekanism:energized_smelter east
 mekanism:enrichment_chamber east
@@ -8,9 +8,7 @@ mekanism:basic_universal_cable -
 minecraft:polished_deepslate -
 minecraft:deepslate_tiles -
 minecraft:deepslate_bricks -
-mekanism:basic_energy_cube east
-mekanismgenerators:heat_generator east
-O 62
+O 48
 D 41 1 11 4
 D 41 1 12 4
 D 41 1 15 4
@@ -52,20 +50,6 @@ P 43 0 24 5 0
 D 43 0 23 0
 R 43 -1 23 4 0
 P 43 0 23 4 0
-D 42 1 7 0
-D 42 1 8 0
-D 42 1 9 0
-D 42 1 10 0
-D 42 1 11 0
-D 42 1 12 0
-D 42 1 13 0
-D 42 1 14 0
-D 42 1 15 0
-D 42 1 16 0
-D 42 1 17 0
-D 42 1 18 0
-P 42 1 17 8 0
-P 42 1 18 9 0
 D 40 0 17 0
 D 40 0 18 0
 D 40 0 19 0

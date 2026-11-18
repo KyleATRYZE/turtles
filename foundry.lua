@@ -50,17 +50,16 @@ M.ORDER = { "chamber", "smelter", "infuser" }
 -- over the cable (probe: its own peripheral hides the inventory), so the
 -- operator carries again, to the new places. The ore line on the east wall
 -- faces WEST (lane x 41): the chamber pushes its dust south into the smelter,
--- results out of the smelter's south face. The alloy cell faces EAST (lane
--- x 40) and is powered from its cable row (the heat generator at 38 1 16):
+-- results out of the smelter's south face. Everything is powered over
+-- universal cable (no redstone dust). The alloy cell faces EAST (lane x 40):
 -- the first infuser takes the infusion items by its north face, results out
 -- of its front; the bank smelters in at the top, out at the front.
 M.LAYOUT = "v2"
 M.MACHINES = {
   chamber = { item = "mekanism:enrichment_chamber", x = 42, y = 1, z = 12, lane = "west",
-    use = { energy = "west", input = "top", output = "south" }, eject = true, perOp = 1.1 },
+    use = { input = "top", output = "south" }, eject = true, perOp = 0 },
   smelter = { item = "mekanism:energized_smelter", x = 42, y = 1, z = 13, lane = "west",
-    use = { energy = "west", input = "top", output = "south" },
-    also = { north = "INPUT" }, perOp = 1.1 },
+    use = { input = "top", output = "south" }, also = { north = "INPUT" }, perOp = 0 },
   infuser = { item = "mekanism:metallurgic_infuser", x = 39, y = 1, z = 17, lane = "east",
     use = { input = "top", extra = "north", output = "east" }, perOp = 0 },
   bank1 = { item = "mekanism:energized_smelter", x = 39, y = 1, z = 19, lane = "east", bank = true,
