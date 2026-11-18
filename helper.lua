@@ -2275,9 +2275,17 @@ local function runLab()
         -- click[Up/Down] : right-click the block there with an empty hand (a
         -- wired modem switched on): works for blocks in the
         -- computercraft:turtle_can_use tag (tools/turtle_clicks.zip)
+        -- (CC: Tweaked will not click with an empty hand: it holds something
+        -- that cannot be placed, coal by default, so the click goes to the block)
+        local hold = a[2] ~= nil and a[2] ~= "" and a[2] or nil
         local empty
-        for sl = 1, 16 do if turtle.getItemCount(sl) == 0 then empty = sl break end end
-        if not empty then res, stop = "no empty slot to click with", true else
+        for sl = 1, 16 do
+          local d = turtle.getItemDetail(sl)
+          if d and (hold and d.name == hold or (not hold and (isCoal(d.name) or d.name == "minecraft:stick"))) then
+            empty = sl break
+          end
+        end
+        if not empty then res, stop = "nothing to click with (coal or a stick)", true else
           turtle.select(empty)
           local f = verb == "clickUp" and turtle.placeUp or verb == "clickDown" and turtle.placeDown or turtle.place
           local ok, why = f()
