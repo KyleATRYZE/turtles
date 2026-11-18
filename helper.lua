@@ -1203,6 +1203,12 @@ end
 -- of the big door
 local function intoBuilding()
   local m, job = fitMap, st.job
+  -- (docked in an upper rack home: the plan has no way down from there, so
+  -- out by the lane's east gate first and in by the door like anyone else)
+  if LN.on() then
+    local L = base.lane
+    if pos.z == L.rackZ and pos.x >= L.west and pos.x <= L.east and pos.y ~= L.y then LN.exit() end
+  end
   local x, y, z = lx(), ly(), lz()
   if x >= m.x1 and x <= m.x2 and z >= m.z1 and z <= m.z2 and y >= 1 and y <= m.y2 and open(x, y, z) then
     return true
@@ -1932,6 +1938,8 @@ end
 --   site|ox|oy|oz|shell|plan   walk|x|y|z   leave   (inside a building, by its plan)
 --   handin|keep,keep            (everything else on board back to the factory)
 --   pick|name,name  pickUp  pickDown  (dig only a block of these names; never a budding one)
+--   suckDown|n|seconds          (keep trying for that long: a charger's crystal)
+--   hole|x|z                    (floor cell x 0 z is a dug click hole: walk may go into it)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -2212,6 +2220,17 @@ local function runLab()
           res = ("at %d %d %d (%d %d %d)"):format(lx(), ly(), lz(), pos.x, pos.y, pos.z)
           stop = not there
         end
+      elseif verb == "hole" then
+        -- hole|x|z : the floor cell x 0 z (building coordinates) is open (a fit
+        -- plan's click hole, dug out): walk may go down into it, to click the
+        -- floor modem beside it under a machine (click with nothing on it
+        -- does not attach what is put there later)
+        if not fitMap then res, stop = "no site set", true else
+          local k = ck(tonumber(a[2]), 0, tonumber(a[3]))
+          fitMap.dug = fitMap.dug or {}
+          fitMap.dug[k], fitMap.solid[k] = true, nil
+          res = "open"
+        end
       elseif verb == "leave" then
         if fitMap then outOfBuilding() end
         res = ("at %d %d %d"):format(pos.x, pos.y, pos.z)
@@ -2381,9 +2400,16 @@ local function runLab()
           turtle.select(1)
         end
       elseif vbase == "suck" and SFX[sfx] then
+        -- suck[Up/Down]|n|seconds : with seconds, keep trying until something
+        -- comes (a charger lets a crystal out only once it is charged)
         local before = {}
         for s = 1, 16 do before[s] = turtle.getItemCount(s) end
+        local patience, t0 = tonumber(a[3]) or 0, os.clock()
         local done, why = turtle["suck" .. sfx](tonumber(a[2]) or 64)
+        while not done and os.clock() - t0 < patience do
+          sleep(0.5)
+          done, why = turtle["suck" .. sfx](tonumber(a[2]) or 64)
+        end
         local got = {}
         for s = 1, 16 do
           local d = turtle.getItemDetail(s)
