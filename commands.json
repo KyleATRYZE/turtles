@@ -1,12 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795022725,
-      "issued": 1795022725000,
-      "cmd": "lab",
-      "target": "builder1",
-      "clear": 1,
-      "ops": "net"
+      "id": 1795022897,
+      "issued": 1795022897000,
+      "cmd": "reboot",
+      "target": "Sortnado"
     }
   ]
 }
