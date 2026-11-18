@@ -1,12 +1,39 @@
 {
   "commands": [
     {
-      "id": 1794960546,
-      "issued": 1794960546000,
-      "cmd": "lab",
+      "id": 1794960708,
+      "issued": 1794960708000,
+      "cmd": "rebase",
       "target": "HopTo",
-      "clear": 1,
-      "ops": "home;note|at home?;types|top;types|bottom;call|top|getNameLocal;call|top|isWireless;call|top|getNamesRemote;face|1;inspect|front;inspect|up;inspect|down;face|3;inspect|front"
+      "lane": 0
+    },
+    {
+      "id": 1794960709,
+      "issued": 1794960708000,
+      "cmd": "rebase",
+      "target": "OnRepeat",
+      "lane": 0
+    },
+    {
+      "id": 1794960710,
+      "issued": 1794960708000,
+      "cmd": "rebase",
+      "target": "Comparable",
+      "lane": 0
+    },
+    {
+      "id": 1794960711,
+      "issued": 1794960708000,
+      "cmd": "rebase",
+      "target": "Sticky",
+      "lane": 0
+    },
+    {
+      "id": 1794960712,
+      "issued": 1794960708000,
+      "cmd": "rebase",
+      "target": "Dusty",
+      "lane": 0
     }
   ]
 }
