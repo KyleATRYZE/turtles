@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794962732,
-      "issued": 1794962732000,
+      "id": 1794962782,
+      "issued": 1794962782000,
       "cmd": "lab",
-      "target": "Comparable",
+      "target": "HopTo",
       "clear": 1,
-      "ops": "fetch|advancedperipherals:geo_scanner=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|7|2|7;survey|8|factory;walk|21|2|7;survey|8|factory;walk|37|2|7;survey|8|factory;walk|7|2|21;survey|8|factory;walk|21|2|21;survey|8|factory;walk|37|2|21;survey|8|factory;walk|10|2|2;survey|8|factory;walk|25|2|2;survey|8|factory;walk|40|2|2;survey|8|factory;walk|7|2|27;survey|8|factory;walk|21|2|27;survey|8|factory;walk|36|2|27;survey|8|factory;leave;goto|-4451|75|1530;survey|8|factory;goto|-4398|75|1526;survey|8|factory;home"
+      "ops": "fetch|computercraft:cable=17|dump;goto|-4461|73|1521;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|0;fwd|1;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|0;fwd|1;face|1;inspect|front;place|computercraft:cable;expect|front|cable;face|2;fwd|1;up|3;goto|-4457|72|1522;digDown;placeDown|computercraft:cable;expect|down|cable;face|3;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|3;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;face|0;dig;fwd|1;digDown;placeDown|computercraft:cable;expect|down|cable;goto|-4457|73|1522;placeDown|computercraft:cable;expect|down|cable;face|2;expect|front|cobblestone;dig;place|computercraft:cable;expect|front|cable;up|1;placeDown|computercraft:cable;expect|down|cable;inv;home;handin|"
     }
   ]
 }
