@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795030785,
-      "issued": 1795030785000,
+      "id": 1795031051,
+      "issued": 1795031051000,
       "cmd": "lab",
-      "target": "builder5",
+      "target": "builder1",
       "clear": 1,
-      "ops": "fetch|ae2:inscriber=2,ae2:charger=1,ae2:engineering_processor_press=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|21;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;dropDown|ae2:engineering_processor_press|1;walk|28|2|22;inspect|down;placeDown|ae2:charger;expect|down|charger;walk|28|2|23;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;inv;leave;home;handin|"
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|40|1|17;down;face|2;net;click;net;click;net;up;walk|40|1|23;down;face|2;net;up;leave;home"
     }
   ]
 }
