@@ -405,6 +405,14 @@ if fs.exists(".rack") then
   cfg = textutils.unserialize(hh.readAll())
   hh.close()
 end
+-- rack 1's two strips, by their names on the cable (seen on them 18 Nov):
+-- the lower one (y 73) shows rows 1-2 (y 72, 74), the upper one (y 75)
+-- rows 3-4 (y 76, 78). Guessing them stopped working once the store's
+-- cable, with all its screens, joined ours.
+if not (type(cfg) == "table" and type(cfg.strips) == "table") then
+  cfg = type(cfg) == "table" and cfg or {}
+  cfg.strips = { monitor_12 = { 0, 1 }, monitor_23 = { 2, 3 } }
+end
 local wired
 for _, name in ipairs(peripheral.getNames()) do
   if peripheral.getType(name) == "modem" then
@@ -419,6 +427,11 @@ local function painter()
   while true do
     R.dups = {}
     local board, strips = R.monitors()
+    if type(cfg) == "table" and type(cfg.strips) == "table" then
+      strips = {}
+      for n in pairs(cfg.strips) do if peripheral.isPresent(n) then strips[#strips + 1] = n end end
+      table.sort(strips)
+    end
     local lay = R.layout(strips, cfg)
     -- (which monitor shows what, on the board: so a screenshot tells us)
     local parts = {}
@@ -464,7 +477,7 @@ local function listener()
       os.reboot()
     elseif ev == "monitor_touch" then
       local board, strips = R.monitors()
-      local lay = R.layout(strips, cfg)
+      local lay = (type(cfg) == "table" and type(cfg.strips) == "table") and cfg.strips or R.layout(strips, cfg)
       if a ~= board and lay[a] then pcall(R.tap, peripheral.wrap(a), lay[a], b, os.clock(), a, c) end
     end
   end
