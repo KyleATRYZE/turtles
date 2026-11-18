@@ -1,10 +1,35 @@
 {
   "commands": [
     {
-      "id": 1794962876,
-      "issued": 1794962876000,
+      "id": 1794963821,
+      "issued": 1794963821000,
       "cmd": "reboot",
-      "target": "RackBoard"
+      "target": "Crafty"
+    },
+    {
+      "id": 1794963822,
+      "issued": 1794963821000,
+      "cmd": "fit",
+      "target": "Dusty",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_f2_link",
+      "shell": "factory_asfit3",
+      "xmin": 26,
+      "xmax": 34
+    },
+    {
+      "id": 1794963823,
+      "issued": 1794963821000,
+      "cmd": "fit",
+      "target": "Dispensable",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_f2_clear",
+      "shell": "factory_asfit3",
+      "xmax": 35
     }
   ]
 }
