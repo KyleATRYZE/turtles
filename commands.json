@@ -1,16 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795023423,
-      "issued": 1795023423000,
-      "cmd": "reboot",
-      "target": "crafter1"
-    },
-    {
-      "id": 1795023424,
-      "issued": 1795023423000,
-      "cmd": "reboot",
-      "target": "Sortnado"
+      "id": 1795023512,
+      "issued": 1795023512000,
+      "cmd": "lab",
+      "target": "builder1",
+      "clear": 1,
+      "ops": "fetch|minecraft:cobblestone=16;inv"
     }
   ]
 }
