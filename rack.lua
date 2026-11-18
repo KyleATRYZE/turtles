@@ -38,8 +38,8 @@ local HOMES = {}
 for _, n in ipairs(HELPERS) do HOMES[#HOMES + 1] = n end
 for _, n in ipairs(LOADERS) do HOMES[#HOMES + 1] = n end
 local BUILDER_HOME = 31
--- where the homes are: x along, a y per row (rows 3 and 4: not surveyed yet)
-local RACK = { x = -4429, rows = { 72, 74 }, z = 1521, perRow = 8, nRows = 4 }   -- swarm.lua M.LANE
+-- where the homes are: x along, a y per row
+local RACK = { x = -4429, rows = { 72, 74, 76, 78 }, z = 1521, perRow = 8, nRows = 4 }   -- swarm.lua M.LANE (surveyed)
 local QUIET = 300                                     -- seconds unheard before a drone counts as silent
 local STALL = 600                                     -- seconds in a waiting state before it counts as stuck
 local SHOW = 20                                       -- seconds a tapped drone's screen stays up
