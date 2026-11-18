@@ -90,7 +90,9 @@ check("over 10 minutes: its load announced again, and it is listed as stalled",
 L.execute("fleet.hopto.at = 900 K.watchdog(900)")
 check("4 minutes on: nothing more yet", L.eval("#DIRECT") == 0 and L.eval("#SENT") == 1)
 L.execute("fleet.hopto.at = 970 K.watchdog(970)")
-check("5 minutes on and still waiting: told to reboot (a direct order)", L.eval("#DIRECT") == 1
+check("5 minutes on, its load still in the pad queue: not rebooted (it would lose its place)", L.eval("#DIRECT") == 0)
+L.execute("orders[21] = nil fleet.hopto.at = 975 K.watchdog(975)")
+check("5 minutes on, its load lost: told to reboot (a direct order)", L.eval("#DIRECT") == 1
       and L.eval("DIRECT[1][1]") == 21 and L.eval("DIRECT[1][2]") == "reboot")
 L.execute("fleet.hopto.state = 'building' fleet.hopto.since = 980 K.watchdog(1000)")
 check("working again: off the stalled list", L.eval("#K.stalledList") == 0 and L.eval("K.stall.hopto") is None)

@@ -3541,7 +3541,9 @@ function K.watchdog(now)
         end
         print(("%s has been %s for %d min: its load announced again."):format(u.label, u.state,
           math.floor((now - u.since) / 60)))
-      elseif w.step == 1 and now - w.at > K.STALL_REBOOT then
+      elseif w.step == 1 and now - w.at > K.STALL_REBOOT and not orders[u.id] then
+        -- (only a drone whose load is lost: one still in the pad queue
+        -- would lose its place and its work by restarting)
         w.step, w.at = 2, now
         if swarm then direct(u.id, { cmd = "reboot" }) end
         print(u.label .. " still waiting: told to reboot.")
