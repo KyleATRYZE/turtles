@@ -36,7 +36,8 @@ if not cfg.name or cfg.name == "" then
   f.close()
 end
 
-local function send(msg)
+local send
+send = function(msg)
   msg = tostring(msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
   if msg == "" then return end
   -- (newer Advanced Peripherals take the options as a table; older ones as
@@ -54,9 +55,7 @@ local function send(msg)
     ok, res, why = try()
   end
   local old = term.getTextColour()
-  if ok and res then
-    term.setTextColour(colours.lime) print("sent")
-  else
+  if not (ok and res) then
     term.setTextColour(colours.red) print("NOT sent: " .. tostring(ok and (why or res) or res))
   end
   term.setTextColour(old)
@@ -85,34 +84,76 @@ local function drawButtons()
   mon.setBackgroundColour(colours.black)
 end
 
-local function screen()
-  term.setBackgroundColour(colours.black)
-  term.clear()
-  term.setCursorPos(1, 1)
-  term.setTextColour(colours.yellow)
-  print("Chat as " .. cfg.name)
-  term.setTextColour(colours.lightGrey)
-  print("Type a message, Enter to send.")
-  if mon then print("Or tap a button on the monitor.") end
-  print("Or just a number for a quick one:")
-  for i, q in ipairs(cfg.quick or {}) do
-    write(i .. " " .. q .. (i % 2 == 0 and "\n" or string.rep(" ", math.max(1, 13 - #q - #tostring(i)))))
+-- the screen: the chat (scrolling) above, the line you type on at the bottom
+local native = term.current()
+local W, H = native.getSize()
+local head = 3                                  -- name and the quick list
+local log = window.create(native, 1, head + 1, W, H - head - 1)
+local input = window.create(native, 1, H, W, 1)
+
+local function header()
+  native.setBackgroundColour(colours.black)
+  native.clear()
+  native.setCursorPos(1, 1)
+  native.setTextColour(colours.yellow)
+  native.write(("Chat as " .. cfg.name):sub(1, W))
+  native.setTextColour(colours.lightGrey)
+  local q = {}
+  for i, t in ipairs(cfg.quick or {}) do q[#q + 1] = i .. " " .. t end
+  local line, y = "", 2
+  for _, t in ipairs(q) do
+    if #line + #t + 2 > W and y <= head then
+      native.setCursorPos(1, y) native.write(line) y = y + 1 line = ""
+    end
+    line = line == "" and t or (line .. "  " .. t)
   end
-  print("")
-  term.setTextColour(colours.white)
+  if y <= head then native.setCursorPos(1, y) native.write(line) end
+  log.setBackgroundColour(colours.black)
+  log.clear()
+  log.setCursorPos(1, 1)
 end
 
+-- one line into the chat log (wrapped, scrolling)
+local function logLine(text, col)
+  local old = term.redirect(log)
+  term.setTextColour(col or colours.white)
+  print(text)
+  term.redirect(old)
+  input.restoreCursor()
+end
+send = (function(inner)
+  return function(msg)
+    local old = term.redirect(log)
+    inner(msg)
+    term.redirect(old)
+    input.restoreCursor()
+  end
+end)(send)
+
 drawButtons()
-screen()
+header()
+logLine("Type a message, Enter to send.", colours.lightGrey)
+logLine("Or a number for a quick one.", colours.lightGrey)
 parallel.waitForAny(
   function()                                   -- typed messages
     while true do
+      term.redirect(input)
+      input.setBackgroundColour(colours.grey)
+      input.setTextColour(colours.white)
+      input.clear()
+      input.setCursorPos(1, 1)
       write("> ")
       local msg = read()
+      term.redirect(native)
       local q = tonumber(msg) and (cfg.quick or {})[tonumber(msg)]
+      if (q or msg) ~= "" then logLine("me: " .. (q or msg), colours.cyan) end
       send(q or msg)
-      local _, y = term.getCursorPos()
-      if y > select(2, term.getSize()) - 2 then screen() end
+    end
+  end,
+  function()                                   -- what everyone else says
+    while true do
+      local _, user, message, _, hidden = os.pullEvent("chat")
+      if not hidden then logLine("<" .. tostring(user) .. "> " .. tostring(message)) end
     end
   end,
   function()                                   -- monitor buttons
@@ -120,6 +161,7 @@ parallel.waitForAny(
       local _, _, _, y = os.pullEvent("monitor_touch")
       local q = buttons[y]
       if q then
+        logLine("me: " .. q, colours.cyan)
         send(q)
         if mon then
           mon.setCursorPos(1, y)
