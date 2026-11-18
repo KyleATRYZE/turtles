@@ -1,12 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794966147,
-      "issued": 1794966147000,
-      "cmd": "lab",
+      "id": 1794966385,
+      "issued": 1794966385000,
+      "cmd": "rebase",
       "target": "builder1",
-      "clear": 1,
-      "ops": "dock|in;peripherals;look;dock|out;home"
+      "lane": 1
     }
   ]
 }
