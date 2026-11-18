@@ -1,22 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794961617,
-      "issued": 1794961617000,
-      "cmd": "lab",
-      "target": "Pushy",
-      "clear": 1,
-      "ops": "home;handin|"
-    },
-    {
-      "id": 1794961618,
-      "issued": 1794961617000,
-      "cmd": "lavafarm",
-      "target": "Crafty",
-      "n": 7,
-      "how": "hut",
-      "row": "-4453,76,1538,11,2",
-      "skip": "HopTo,DropIt,Sticky,Dusty,OnRepeat,Comparable,ButtonUp,Observant,Dispensable"
+      "id": 1794961715,
+      "issued": 1794961715000,
+      "cmd": "reboot",
+      "target": "Dispensable"
     }
   ]
 }
