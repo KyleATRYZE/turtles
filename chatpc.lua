@@ -1,6 +1,7 @@
 -- chatpc.lua: a computer that sends server chat for someone who can't type in
--- Minecraft's chat. Needs an Advanced Peripherals Chat Box touching the
--- computer (and, if you like, a monitor for quick buttons).
+-- Minecraft's chat. Works on a pocket computer with the Advanced Peripherals
+-- Chat Box upgrade (craft the pocket computer with a Chat Box), or on a
+-- placed computer with a Chat Box touching it (and a monitor for buttons).
 --
 -- Install on the computer:
 --   wget https://raw.githubusercontent.com/KyleATRYZE/turtles/main/chatpc.lua startup.lua
@@ -10,8 +11,10 @@
 
 local box = peripheral.find("chatBox") or peripheral.find("chat_box")
 if not box then
-  print("No Chat Box found. Place an Advanced Peripherals Chat Box")
-  print("touching this computer, then reboot.")
+  print("No Chat Box found.")
+  print("Pocket: craft it with a Chat Box.")
+  print("Placed: put a Chat Box next to it.")
+  print("Then reboot.")
   return
 end
 
@@ -73,8 +76,12 @@ local function screen()
   term.setTextColour(colours.yellow)
   print("Chat as " .. cfg.name)
   term.setTextColour(colours.lightGrey)
-  print("Type a message and press Enter.")
+  print("Type a message, Enter to send.")
   if mon then print("Or tap a button on the monitor.") end
+  print("Or just a number for a quick one:")
+  for i, q in ipairs(cfg.quick or {}) do
+    write(i .. " " .. q .. (i % 2 == 0 and "\n" or string.rep(" ", math.max(1, 13 - #q - #tostring(i)))))
+  end
   print("")
   term.setTextColour(colours.white)
 end
@@ -86,7 +93,8 @@ parallel.waitForAny(
     while true do
       write("> ")
       local msg = read()
-      send(msg)
+      local q = tonumber(msg) and (cfg.quick or {})[tonumber(msg)]
+      send(q or msg)
       local _, y = term.getCursorPos()
       if y > select(2, term.getSize()) - 2 then screen() end
     end
