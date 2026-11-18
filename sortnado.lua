@@ -1082,6 +1082,7 @@ function S.bayStep(now)
   for id, q in pairs(S.bayQueue) do
     if now >= q.at then
       S.bayQueue[id] = nil
+      if not S.bayIs(q.msg.bay, id) then q.msg.bay = S.bayById(id) or q.msg.bay end   -- (found by its id)
       if S.bayIs(q.msg.bay, id) then
         local ok, err = pcall(S.serveBay, id, q.msg)
         if not ok then S.bayNote = "serving " .. tostring(id) .. " failed: " .. tostring(err) print(S.bayNote) end
