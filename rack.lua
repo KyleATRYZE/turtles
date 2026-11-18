@@ -221,6 +221,23 @@ function R.monitors()
       else board = board or name boards[#boards + 1] = name end
     end
   end
+  -- a monitor touching the computer can ALSO be on the cable (a modem
+  -- touches it too): then it is one monitor under two names, drawn twice a
+  -- frame (the board and a strip) and it flickers. Find those by marking the
+  -- side one's palette and looking for the mark on the cable ones.
+  local MARK, slot = 0x0b0c0d, colours and colours.lightBlue or 8
+  for _, b in ipairs(boards) do
+    local okB, old = pcall(function() return { peripheral.call(b, "getPaletteColour", slot) } end)
+    pcall(peripheral.call, b, "setPaletteColour", slot, MARK)
+    for i = #strips, 1, -1 do
+      local okS, r, g, bl = pcall(peripheral.call, strips[i], "getPaletteColour", slot)
+      if okS and r and math.floor(r * 255 + 0.5) == 0x0b and math.floor(g * 255 + 0.5) == 0x0c
+        and math.floor(bl * 255 + 0.5) == 0x0d then
+        table.remove(strips, i)
+      end
+    end
+    if okB and old and old[1] then pcall(peripheral.call, b, "setPaletteColour", slot, old[1], old[2], old[3]) end
+  end
   R.boards = boards
   table.sort(strips, function(a, b)
     return (tonumber(a:match("(%d+)$")) or 0) < (tonumber(b:match("(%d+)$")) or 0)
@@ -330,6 +347,7 @@ function R.drawSummary(mon, now)
   mon.setTextScale(0.5)
   local w, h = mon.getSize()
   local lines, alarm = R.summary(now)
+  for i = 0, 15 do pcall(mon.setPaletteColour, 2 ^ i, term.nativePaletteColour(2 ^ i)) end
   mon.setBackgroundColour(colours.black)
   mon.clear()
   for i, t in ipairs(lines) do
@@ -381,7 +399,9 @@ local function painter()
       if lay[s] then pcall(R.draw, peripheral.wrap(s), lay[s], os.clock(), s)
       else
         local m = peripheral.wrap(s)            -- (a strip with no rows: blank, not a frozen old frame)
-        if m then pcall(function() m.setBackgroundColour(colours.black) m.clear() end) end
+        if m then pcall(function()                 -- (the board's palette made black pink: back to plain)
+          for i = 0, 15 do m.setPaletteColour(2 ^ i, term.nativePaletteColour(2 ^ i)) end
+          m.setBackgroundColour(colours.black) m.clear() end) end
       end
     end
     sleep(1)
