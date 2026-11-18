@@ -27,9 +27,9 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 ## A. Fleet health
 - [x] Pad-shaft jam: Crafty now calls one drone down at a time (41b3702)
 - [x] Rescue duty live on Crafty (1c885d0); named rescuer = Dispensable (rescue1)
-- [~] Charcool (miner3) stranded at -4463 60 1521: Dispensable fetching fuel (01:20). The other TuffLuck sits above it in the same shaft and gets dug out first if it is in the way
+- [x] miner3 (Charcool) rescued at 02:28; then it went coal-hunting, so sent home (03:12). Was: stranded at -4463 60 1521: Dispensable fetching fuel (01:20). The other TuffLuck sits above it in the same shaft and gets dug out first if it is in the way
 - [ ] Sticky (builder3): out of fuel at -4423 77 1531 under the factory roof and silent since. Order `rescue Crafty who=Sticky problem=fuel` (the route in through the door hasn't been tested)
-- [ ] TuffLuck (40) at -4463 61 1521 "path blocked" by Charcool: should clear once Charcool is fuelled
+- [x] miner1 freed; it resumed its old plot (mining at y -12), so sent home 03:12. Was: TuffLuck (40) at -4463 61 1521 "path blocked" by Charcool: should clear once Charcool is fuelled
 - [ ] DropIt (foundry1): it was "stuck under turtle"; check it is clear now the jam is fixed
 - [ ] Fuel self-sufficiency: lava rounds keep running (Pushy/lava1); watch the fuel line on the board (coal / charcoal / lava)
 - [x] Renamed to task names (3770163) and applied by reboot (01:36): builder1-7, lava1, foundry1, survey1, rescue1, mapper1, crafter1/2, miner1-3; new miners name themselves miner<id>. Old names still work as order targets
@@ -41,7 +41,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Longer term: AE2 autocrafting (see E)
 
 ## C. Survey (Geo Scanner mapping the base)
-- [ ] survey1 dry under the roof at -4441 75 1520. builder6 tried to walk in with lava (02:25) and its walk failed at 21 6 5. Left to rescue duty (the route through the door); else Kyle picks it up and puts it in its home. Also fixed: the scan had used the wrong tool side (geoOn). ORIGINAL NOTE: survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
+- [x] survey1 rescued by rescue duty at 02:30 and back on the factory survey (03:14). Was: dry under the roof at -4441 75 1520. builder6 tried to walk in with lava (02:25) and its walk failed at 21 6 5. Left to rescue duty (the route through the door); else Kyle picks it up and puts it in its home. Also fixed: the scan had used the wrong tool side (geoOn). ORIGINAL NOTE: survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
 - [x] mapper1 mapped the old base: maps/oldbase.json on the status branch
 - [~] mapper1 maps the factory from outside (`factory_now`, 01:41)
 - [ ] When the maps land: `python3 tools/survey.py pull`, `survey.py rack`, then fix rack rows 3-4 (M.LANE, LN.home, rack.lua)
@@ -57,9 +57,9 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 
 ## E. Foundry v2 (docs/foundry-v2.md)
 - Phase 1
-  - [~] link (cable): Dusty x26-34; Dusty's x≥35 done except "dig at 35 0 22 (cannot get to it)"; HopTo's x≤25 re-sent to Observant, who says it's done
-  - [~] lava wall: OnRepeat x≤35, ButtonUp x≥36
-  - [~] certus pillars + barrel: Pushy's lab
+  - [x] link (cable): builder4 + builder6 164/164 done. Was: Dusty x26-34; Dusty's x≥35 done except "dig at 35 0 22 (cannot get to it)"; HopTo's x≤25 re-sent to Observant, who says it's done
+  - [x] lava wall: builder2 80/80, builder5 79/80 (one cell left)
+  - [x] certus pillars + barrel: lava1's lab done (40/41 at 03:10)
   - [x] clear: both shares done (Dispensable)
   - [x] power: done, except the gas-burning generator (none in stock)
 - [K] Works computer: Kyle runs `label set Works` and the installer at -4413 71 1533
@@ -73,9 +73,9 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Lava cauldrons from the hut into the foundry's lava wall (the hut is not kept)
 
 ## F. AE2 (docs/ae2-bootstrap.md)
-- [ ] Certus farm: drones place the 9 flawed budding certus from storage on Pushy's pillars (slots: `tools/certusfarm.py kyle`)
+- [~] Certus farm: builder4 is fitting `factory_f2_budding` (new plan, 03:15): the 9 flawed budding certus onto the pillars. If they aren't in crafter1's reach, the fit says "No flawed_budding_quartz for now". Then Kyle places them from storage, or they get moved over
 - [K] Kyle clicks the certus barrel: -4414 71 1531
-- [ ] `make Crafty item=ae2:inscriber n=5`; certusfarm.py bench and fluix labs
+- [~] AE2 bench: crafter1 making 4 inscribers + charger (03:16); builder5 is setting up the bench (bench=v2, x28 z18-23 in the foundry hall) with the four presses. Then the `fluix 8` lab
 - [ ] Harvest with the `pick` verb (first crop about 3 h after placing)
 - [ ] ME controller, drives and crafting CPU (phase 4 `ae2`); ME bridge at -4414 71 1539 (Kyle clicks it)
 
