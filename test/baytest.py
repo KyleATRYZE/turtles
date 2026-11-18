@@ -63,7 +63,7 @@ check("(on its cable but not docked when the load is made: tried again every 15 
 check("a name that is not turtle_<n> is not taken as a bay", 'b:match("^turtle_%d+$")' in FAC)
 
 # ---------------------------------------------------------------- 2-3. watchdog and Counter fallback
-wd = FAC[FAC.index("function K.waiting(state)"):FAC.index("-- what a drone said, passed on over the cable")]
+wd = FAC[FAC.index("-- The pad's queue."):FAC.index("-- what a drone said, passed on over the cable")]
 def watch():
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
     L.execute('''K = { COUNTER = false, foreign = {}, adopted = {}, stall = {}, stalledList = {},
@@ -194,7 +194,8 @@ check("strips (in the order of their names, as R.monitors gives them) take the r
 L.execute("LAY = R.layout({ 'monitor_2', 'monitor_4', 'monitor_7', 'monitor_9' })")
 check("four strips: a row each", list(L.eval("LAY.monitor_9").values()) == [3])
 check("not heard for 5 minutes: silent (red)", L.eval("R.panel(1, 500)").colour == "red")
-L.execute('''MON = { size = { 164, 10 }, rows = {} }
+L.execute('''MON = { size = { 164, 10 }, rows = {}, setPaletteColour = function() end, setPaletteColor = function() end, getPaletteColour = function() return 0,0,0 end }
+function MON.blit(t) MON.write(t) end
 local cx, cy = 1, 1
 function MON.getSize() return MON.size[1], MON.size[2] end
 function MON.setTextScale() end function MON.setBackgroundColour() end function MON.setTextColour() end
