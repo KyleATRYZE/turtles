@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry AE2 Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* one world: a Minecraft inventory screen laid over a night sky. Stage left, book right. */
+  --sky:#161a26; --sky2:#232a3d; --panel:#c6c6c6; --panel-hi:#ffffff; --panel-lo:#555555; --slot:#8b8b8b;
+  --ink:#26262b; --ink-soft:#4a4a52; --accent:#57e3c2; --warn:#b3541e; --good:#2e7d32;
+  --display:"Pixelify Sans","Courier New",monospace; --body:"Atkinson Hyperlegible",Verdana,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:linear-gradient(var(--sky),var(--sky2));color:var(--ink);font:15px/1.5 var(--body);display:flex;flex-direction:column}
+header{padding:12px 16px 8px;color:#eef;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+h1{font:700 26px/1.1 var(--display);margin:0;letter-spacing:.5px;text-shadow:2px 2px 0 #000}
+header p{margin:0;color:#b9c2dd;max-width:70ch}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:12px;padding:0 16px 16px}
+.gui{background:var(--panel);border:3px solid;border-color:var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi);box-shadow:0 0 0 2px #000}
+#stage{position:relative;min-height:420px;display:flex;flex-direction:column;background:#0d1018;border:3px solid;border-color:#555 #fff #fff #555;box-shadow:0 0 0 2px #000}
+#bar{display:flex;flex-wrap:wrap;gap:6px 10px;padding:8px;background:var(--panel);border-bottom:3px solid var(--panel-lo);align-items:center}
+#bar .grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+#bar label{font:500 14px var(--display);color:var(--ink)}
+button,.chip{font:500 14px var(--display);color:var(--ink);background:var(--slot);border:2px solid;border-color:#fff #373737 #373737 #fff;padding:4px 9px;cursor:pointer}
+button:hover{background:#a8b6e8}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+button[aria-pressed="true"]{background:#e9e9e9;border-color:#373737 #fff #fff #373737}
+button[aria-pressed="false"]{color:#3a3a3a;background:#7a7a7a}
+input[type=range]{width:110px;accent-color:#2e7d32}
+#cv{flex:1;min-height:0;width:100%;display:block;touch-action:none;cursor:grab;image-rendering:pixelated}
+#tip{position:absolute;pointer-events:none;background:#170817f2;border:2px solid #2a0a5e;outline:2px solid #170817;color:#fff;padding:6px 9px;font:14px/1.35 var(--body);max-width:330px;display:none;z-index:5}
+#tip b{font:700 15px var(--display);color:#fff}
+#tip i{color:#a8a8ff;font-style:normal;font-size:12.5px}
+#tip em{color:#ffd76b;font-style:normal;display:block;font-size:12.5px}
+#hint{position:absolute;left:10px;bottom:8px;color:#8f9bbd;font:13px var(--display);pointer-events:none}
+aside{display:flex;flex-direction:column;min-height:0}
+#tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 8px 0}
+#tabs button{border-bottom:none}
+#book{flex:1;min-height:0;overflow:auto;padding:12px 14px 18px}
+#book h2{font:700 19px/1.2 var(--display);margin:14px 0 6px;text-wrap:balance}
+#book h2:first-child{margin-top:0}
+#book h3{font:700 15.5px var(--display);margin:12px 0 2px}
+#book p{margin:6px 0;max-width:62ch}
+#book ul{margin:6px 0;padding-left:20px} #book li{margin:3px 0}
+.zone{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 10px;font:15px/1.45 var(--body);background:#b4b4b4}
+.zone b{font:700 16px var(--display);display:block}
+.zone small{color:var(--ink-soft)}
+.zone[aria-pressed="true"]{background:#e6f5e6}
+.zone p{margin:6px 0 0;display:none}.zone[aria-pressed="true"] p{display:block}
+.tag{display:inline-block;font:500 12px var(--display);padding:0 6px;border:2px solid #373737;background:#ddd;margin-left:4px;vertical-align:1px}
+.tag.t{background:#ffe9b0}.tag.ok{background:#bfe8c2}.tag.ask{background:#ffc9b0}
+table{border-collapse:collapse;width:100%;font-size:13.5px} td,th{padding:3px 6px;border-bottom:1px solid #9a9a9a;text-align:left;vertical-align:top}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td code{font-size:11.5px;color:var(--ink-soft)}
+.key{display:grid;grid-template-columns:18px 1fr;gap:4px 8px;align-items:center;font-size:13.5px}
+.key span.sw{width:18px;height:10px;border:2px solid #222}
+.mini{width:100%;height:230px;background:#0d1018;border:3px solid;border-color:#555 #fff #fff #555;display:block;margin:8px 0;image-rendering:pixelated}
+.ph{border-left:6px solid #2e7d32;padding:2px 0 2px 10px;margin:10px 0;cursor:pointer}
+.ph.off{border-color:#8b8b8b;opacity:.75}
+@media (max-width:980px){main{grid-template-columns:1fr;grid-template-rows:62vh auto}aside{min-height:420px}html,body{height:auto}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Foundry AE2 Plan</h1>
+  <p>The foundry hall as it would stand: your real walls and floor from tonight's scan, with the whole AE2 and Mekanism factory in it. The two walls nearest you are cut away. Drag to move, scroll to zoom, hover any block.</p>
+</header>
+<main>
+  <section id="stage">
+    <div id="bar">
+      <div class="grp"><button id="rl" title="Turn left">&#8630; Turn</button><button id="rr" title="Turn right">Turn &#8631;</button><button id="home">Whole hall</button></div>
+      <div class="grp"><button id="t_floor" aria-pressed="false">Lift the floor</button><button id="t_walls" aria-pressed="true">Walls</button><button id="t_mach" aria-pressed="true">Machines</button><button id="t_lab" aria-pressed="true">Labels</button></div>
+      <div class="grp"><label>Under the floor:</label><button id="t_me" aria-pressed="true">ME cable</button><button id="t_pw" aria-pressed="true">Power</button><button id="t_ch" aria-pressed="true">Pipes</button></div>
+      <div class="grp"><label for="ph">Build phase</label><input id="ph" type="range" min="0" max="8" value="8"><label id="phv">8 of 8</label></div>
+    </div>
+    <canvas id="cv"></canvas>
+    <div id="tip"></div>
+    <div id="hint">Hover a block for what it is, where it goes and why</div>
+  </section>
+  <aside class="gui">
+    <div id="tabs"></div>
+    <div id="book"></div>
+  </aside>
+</main>
+<script>
+const D = /*DATA*/null;
+const TY = D.types, HW = 16, HH = 8, BH = 18;
+// ---------------------------------------------------------------- textures
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function hex(c){const n=parseInt(c.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
+function mix(a,b,t){const A=hex(a),B=hex(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(",")})`}
+function shade(c,f){const A=hex(c);return`rgb(${A.map(v=>Math.round(Math.min(255,v*f))).join(",")})`}
+function mk(fn){const c=document.createElement("canvas");c.width=c.height=16;const g=c.getContext("2d");fn(g);return c}
+function speck(g,c,c2,r,p){g.fillStyle=c;g.fillRect(0,0,16,16);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const v=r();if(v<p){g.fillStyle=v<p/2?c2:shade(c,1.12);g.fillRect(x,y,1,1)}}}
+function frame(g,c){g.fillStyle=c;g.fillRect(0,0,16,1);g.fillRect(0,15,16,1);g.fillRect(0,0,1,16);g.fillRect(15,0,1,16)}
+function drawTex(t,face,g){
+  const r=rng(t.k.length*7919+t.k.charCodeAt(0)*131+face.length*17),c=t.c,c2=t.c2;
+  switch(t.t){
+  case"tiles":speck(g,c,c2,r,.18);g.fillStyle=shade(c,.7);g.fillRect(0,0,16,1);g.fillRect(0,0,1,16);g.fillStyle=shade(c,1.2);g.fillRect(1,15,15,1);g.fillRect(15,1,1,15);break;
+  case"bricks":speck(g,c,c2,r,.2);g.fillStyle=shade(c,.6);for(let y=0;y<16;y+=4){g.fillRect(0,y+3,16,1);for(let x=(y/4%2?0:4);x<16;x+=8)g.fillRect(x,y,1,3)}break;
+  case"glass":g.clearRect(0,0,16,16);g.fillStyle=c;g.globalAlpha=.5;g.fillRect(0,0,16,16);g.globalAlpha=1;frame(g,"#e8fbff");g.fillStyle="#fff";g.fillRect(3,4,1,1);g.fillRect(4,3,1,1);g.fillRect(5,2,1,1);g.fillRect(10,12,1,1);g.fillRect(11,11,1,1);break;
+  case"stripe":for(let y=0;y<16;y++)for(let x=0;x<16;x++){g.fillStyle=((x+y)>>2)%2?c:c2;g.fillRect(x,y,1,1)}break;
+  case"lava":speck(g,c,c2,r,.35);for(let i=0;i<5;i++){g.fillStyle=c2;g.fillRect(r()*13|0,r()*14|0,3,2)}break;
+  case"cauldron":if(face=="top"){g.fillStyle=c;g.fillRect(0,0,16,16);g.fillStyle=c2;g.fillRect(2,2,12,12);g.fillStyle="#ffc233";g.fillRect(4,5,3,2);g.fillRect(9,9,3,2)}else{speck(g,c,"#2a2a2e",r,.2);g.fillStyle="#222";g.fillRect(0,12,16,4);g.fillStyle=c;g.fillRect(0,12,3,4);g.fillRect(13,12,3,4)}break;
+  case"controller":speck(g,c,"#2a2540",r,.3);frame(g,"#1d1a2b");g.fillStyle=c2;g.fillRect(3,3,10,1);g.fillRect(3,12,10,1);g.fillRect(3,3,1,10);g.fillRect(12,3,1,10);g.fillStyle="#7df9ff";g.fillRect(6,6,4,4);g.fillStyle="#fff";g.fillRect(7,7,2,2);break;
+  case"drive":speck(g,c,shade(c,.8),r,.2);frame(g,shade(c,.55));if(face=="front"){for(let y=2;y<14;y+=2){g.fillStyle="#1b1c20";g.fillRect(2,y,5,1);g.fillRect(9,y,5,1);g.fillStyle=r()<.7?c2:"#ffb84a";g.fillRect(6,y,1,1);g.fillRect(13,y,1,1)}}break;
+  case"cell":speck(g,c,shade(c,.8),r,.2);frame(g,shade(c,.5));g.fillStyle="#17181c";g.fillRect(4,4,8,8);g.fillStyle=c2;g.fillRect(5,5,6,6);g.fillStyle=shade(c2,1.3);g.fillRect(6,6,2,2);break;
+  case"provider":speck(g,c,shade(c,.85),r,.15);frame(g,shade(c,.55));g.fillStyle=c2;g.fillRect(7,2,2,12);g.fillRect(2,7,12,2);g.fillStyle=shade(c,.55);g.fillRect(7,7,2,2);break;
+  case"crystal":speck(g,c,"#7fb8d6",r,.3);g.fillStyle=c2;for(let i=0;i<7;i++){const x=r()*14|0,y=r()*13|0;g.fillRect(x,y,1,3);g.fillRect(x+1,y+1,1,1)}break;
+  case"cpu":speck(g,c,shade(c,.8),r,.2);frame(g,shade(c,.5));g.fillStyle="#15161a";g.fillRect(3,3,10,10);g.fillStyle=c2;g.fillRect(5,5,6,6);g.fillStyle="#15161a";g.fillRect(7,7,2,2);break;
+  case"frame":speck(g,c,shade(c,.8),r,.2);frame(g,c2);g.fillStyle=shade(c,.7);g.fillRect(3,3,10,10);break;
+  case"terminal":speck(g,c,"#3a3b40",r,.25);frame(g,"#17181c");if(face=="front"){g.fillStyle="#0b0c10";g.fillRect(2,2,12,9);g.fillStyle=c2;g.fillRect(3,3,10,1);g.fillRect(3,5,6,1);g.fillRect(3,7,8,1);g.fillStyle="#8d8f99";g.fillRect(3,12,10,2)}break;
+  case"tank":speck(g,"#d5d7dc","#bfc1c8",r,.2);g.fillStyle=c2;g.globalAlpha=.75;g.fillRect(2,5,12,9);g.globalAlpha=1;frame(g,"#70727c");g.fillStyle="#70727c";g.fillRect(0,3,16,1);break;
+  case"machine":speck(g,c,shade(c,.86),r,.22);frame(g,shade(c,.55));
+    if(face=="front"){g.fillStyle="#1d1e23";g.fillRect(3,3,10,7);g.fillStyle=c2;g.fillRect(4,4,8,5);g.fillStyle=shade(c2,1.35);g.fillRect(5,5,2,1);g.fillStyle="#1d1e23";g.fillRect(3,12,10,2);g.fillStyle="#59ff7a";g.fillRect(4,12,1,1);g.fillStyle=c2;g.fillRect(11,12,1,1)}
+    else if(face=="top"){g.fillStyle=shade(c,.7);for(let x=3;x<13;x+=2)g.fillRect(x,4,1,8);g.fillStyle=c2;g.fillRect(12,2,2,2)}
+    else{g.fillStyle=shade(c,.72);g.fillRect(3,6,10,1);g.fillRect(3,9,10,1);g.fillStyle=c2;g.fillRect(2,2,2,2)}break;
+  case"flat":g.fillStyle=c;g.fillRect(0,0,16,16);break;
+  default:speck(g,c,c2,r,.3)}
+}
+const SH={top:1,l:.8,r:.6};
+function shaded(src,f){return mk(g=>{g.drawImage(src,0,0);g.globalCompositeOperation="source-atop";g.fillStyle=`rgba(0,0,0,${1-f})`;g.fillRect(0,0,16,16)})}
+const TX=TY.map(t=>{const o={};for(const face of["top","side","front"]){const base=mk(g=>drawTex(t,face,g));o[face]={top:base,l:shaded(base,SH.l),r:shaded(base,SH.r)}}return o});
+// ---------------------------------------------------------------- shapes (boxes in 0..16, world-local)
+const DIRS=[[1,0,0],[0,0,1],[-1,0,0],[0,0,-1],[0,1,0],[0,-1,0]];
+function boxes(b){const t=TY[b[3]],f=b[4],m=b[7];
+  switch(t.s){
+  case"slab":return[[0,0,0,16,8,16]];
+  case"pipe":{const w=t.cat=="pipe_me"?4:5,lo=w,hi=16-w,o=[[lo,lo,lo,hi,hi,hi]];
+    if(m&1)o.push([hi,lo,lo,16,hi,hi]);if(m&4)o.push([0,lo,lo,lo,hi,hi]);if(m&2)o.push([lo,lo,hi,hi,hi,16]);if(m&8)o.push([lo,lo,0,hi,hi,lo]);if(m&16)o.push([lo,hi,lo,hi,16,hi]);if(m&32)o.push([lo,0,lo,hi,lo,hi]);return o}
+  case"plane":return f==5?[[1,0,1,15,3,15],[6,3,6,10,16,10]]:[[1,13,1,15,16,15],[6,0,6,10,13,10]];
+  case"cluster":return f==1?[[6,7,6,9,16,9],[9,10,8,11,16,10],[4,11,9,6,16,11],[8,5,4,10,16,6]]:[[6,0,6,9,9,9],[9,0,8,11,6,10],[4,0,9,6,5,11],[8,0,4,10,11,6]];
+  case"drip":return[[5,8,5,11,16,11],[6,2,6,10,8,10]];
+  case"post":return[[6,0,6,10,6,10],[7,6,7,9,14,9]];
+  default:return null}}
+function rotBox(q,r){let[x0,y0,z0,x1,y1,z1]=q;
+  if(r==1)return[16-z1,y0,x0,16-z0,y1,x1];if(r==2)return[16-x1,y0,16-z1,16-x0,y1,16-z0];if(r==3)return[z0,y0,16-x1,z1,y1,16-x0];return q}
+function rotXZ(x,z,r){return r==0?[x,z]:r==1?[-z,x]:r==2?[-x,-z]:[z,-x]}
+const XDIR=[0,3,2,1],ZDIR=[1,0,3,2]; // world facing shown on the view's +x and +z faces
+// ---------------------------------------------------------------- scene
+function drawScene(cv,blocks,V,O){
+  const dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;
+  if(cv.width!=W*dpr||cv.height!=H*dpr){cv.width=W*dpr;cv.height=H*dpr}
+  const g=cv.getContext("2d");g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;
+  const z=V.zoom*dpr,ox=W*dpr/2+V.px*dpr,oy=H*dpr/2+V.py*dpr,r=V.rot;
+  const P=(x,y,zz)=>[(x-zz)*HW,(x+zz)*HH-y*BH];
+  const vis=new Map(),list=[];
+  for(const b of blocks){const t=TY[b[3]];
+    if(b[5]>O.phase)continue;
+    const cat=t.cat;
+    if(cat=="pipe_me"&&!O.me)continue;if((cat=="pipe_pw")&&!O.pw)continue;if((cat=="pipe_ch"||cat=="pipe_cc")&&!O.ch)continue;
+    if(cat=="build"&&b[1]>=1&&!O.walls&&b[5]==0)continue;
+    if(!O.mach&&(cat=="ae"||cat=="mek"||cat=="power"||cat=="lava")&&!(cat=="lava"))continue;
+    const[xv,zv]=rotXZ(b[0]-V.cx,b[2]-V.cz,r);
+    let a=t.a;
+    if(O.cut){ // the two walls nearest the eye are cut down to the floor, and the yard in front of them fades
+      const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=27:b[2]<=3,n=nr(XDIR[r])||nr(ZDIR[r]);
+      if(n&&b[5]==0&&(cat=="build"||cat=="lava")&&b[1]>=1)continue;
+      if(n&&b[0]>=45&&b[1]>=1)a*=.3}if(O.floor&&b[1]==0&&cat=="build")a=.1;if(O.floor&&b[1]==0&&t.k=="lava")a=.6;
+    const e={b,t,xv,zv,y:b[1],a,full:t.s=="cube"};list.push(e);vis.set(b[0]+","+b[1]+","+b[2],e)}
+  const solid=(b,d)=>{const n=vis.get((b[0]+d[0])+","+(b[1]+d[1])+","+(b[2]+d[2]));return n&&n.full&&n.a>=1};
+  list.sort((p,q)=>(p.xv+p.zv)-(q.xv+q.zv)||p.y-q.y);
+  const hits=[];
+  function face(img,ax,ay,ux,uy,vx,vy){g.setTransform(z*ux/16,z*uy/16,z*vx/16,z*vy/16,ox+z*ax,oy+z*ay);g.drawImage(img,0,0,16,16,-.04,-.04,16.08,16.08)}
+  function poly(pts,fill){g.setTransform(z,0,0,z,ox,oy);g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fillStyle=fill;g.fill()}
+  const wd=d=>DIRS[d];
+  for(const e of list){const{b,t,xv,zv,y}=e;g.globalAlpha=e.a;
+    const A=P(xv,y+1,zv),Bq=P(xv+1,y+1,zv),C=P(xv+1,y+1,zv+1),Dq=P(xv,y+1,zv+1);
+    if(e.full){const tx=TX[b[3]],xd=XDIR[r],zd=ZDIR[r];
+      const hideT=e.a>=1&&solid(b,[0,1,0]),hideX=e.a>=1&&solid(b,wd(xd)),hideZ=e.a>=1&&solid(b,wd(zd));
+      const fx=(t.t=="machine"||t.t=="drive"||t.t=="terminal")&&b[4]==xd?"front":"side",fz=(t.t=="machine"||t.t=="drive"||t.t=="terminal")&&b[4]==zd?"front":"side";
+      if(!hideZ)face(tx[fz].l,Dq[0],Dq[1],HW,HH,0,BH);
+      if(!hideX)face(tx[fx].r,C[0],C[1],HW,-HH,0,BH);
+      if(!hideT)face(tx.top.top,A[0],A[1],HW,HH,-HW,HH);
+    }else{const bs=boxes(b).map(q=>rotBox(q,r));bs.sort((p,q)=>(p[0]+p[2])-(q[0]+q[2])||p[1]-q[1]);
+      for(const q of bs){const x0=xv+q[0]/16,y0=y+q[1]/16,z0=zv+q[2]/16,x1=xv+q[3]/16,y1=y+q[4]/16,z1=zv+q[5]/16;
+        const col=t.k=="plane"||t.k=="feed"?(q[4]-q[1]<=3?t.c2:t.c):t.c;
+        poly([P(x0,y1,z1),P(x1,y1,z1),P(x1,y0,z1),P(x0,y0,z1)],shade(col,SH.l));
+        poly([P(x1,y1,z1),P(x1,y1,z0),P(x1,y0,z0),P(x1,y0,z1)],shade(col,SH.r));
+        poly([P(x0,y1,z0),P(x1,y1,z0),P(x1,y1,z1),P(x0,y1,z1)],col)}}
+    hits.push([ox+z*C[0],oy+z*(A[1]+C[1])/2,e]);}
+  g.globalAlpha=1;
+  if(O.labels&&O.zones){g.setTransform(dpr,0,0,dpr,0,0);g.font="700 14px 'Pixelify Sans',monospace";g.textBaseline="middle";
+    for(const zn of O.zones){const[xv,zv]=rotXZ(zn.cam[0]+.5-V.cx,zn.cam[2]+.5-V.cz,r),p=P(xv,zn.id=="core"?6.4:(zn.id=="garden"?5.4:3.3),zv);
+      const sx=(ox+z*p[0])/dpr,sy=(oy+z*p[1])/dpr,w=g.measureText(zn.name).width+12;
+      g.fillStyle=O.sel==zn.id?"#e6f5e6":"#c6c6c6";g.fillRect(sx-w/2,sy-11,w,22);g.strokeStyle="#000";g.lineWidth=2;g.strokeRect(sx-w/2,sy-11,w,22);
+      g.fillStyle="#000";g.fillRect(sx-1,sy+11,2,10);g.fillStyle="#26262b";g.fillText(zn.name,sx-w/2+6,sy+1);zn._r=[sx-w/2,sy-11,w,22]}}
+  return{hits,z,dpr};
+}
+// ---------------------------------------------------------------- main view
+const cv=document.getElementById("cv"),tip=document.getElementById("tip");
+const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};
+const V=Object.assign({},HOME),O={floor:false,walls:true,mach:true,labels:true,me:true,pw:true,ch:true,phase:8,zones:D.zones,sel:null,cut:true};
+let last=null,raf=0;
+function fit(){const W=cv.clientWidth,H=cv.clientHeight;HOME.zoom=Math.max(.5,Math.min(W/(30*HW*1.45),H/(30*HH*1.9)));}
+function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;last=drawScene(cv,D.blocks,V,O)})}
+function press(id,key){const el=document.getElementById(id);el.onclick=()=>{O[key]=!O[key];el.setAttribute("aria-pressed",O[key]);redraw()}}
+press("t_floor","floor");press("t_walls","walls");press("t_mach","mach");press("t_lab","labels");press("t_me","me");press("t_pw","pw");press("t_ch","ch");
+document.getElementById("rl").onclick=()=>{V.rot=(V.rot+3)%4;redraw()};
+document.getElementById("rr").onclick=()=>{V.rot=(V.rot+1)%4;redraw()};
+document.getElementById("home").onclick=()=>{Object.assign(V,HOME,{rot:V.rot});O.sel=null;syncZones();redraw()};
+const phEl=document.getElementById("ph");
+function setPhase(n){O.phase=n;phEl.value=n;document.getElementById("phv").textContent=n==0?"what is there now":n+" of 8";document.querySelectorAll(".ph").forEach(e=>e.classList.toggle("off",+e.dataset.n>n));redraw()}
+phEl.oninput=()=>setPhase(+phEl.value);
+let drag=null;
+cv.addEventListener("pointerdown",e=>{drag=[e.clientX,e.clientY,V.px,V.py,false];cv.setPointerCapture(e.pointerId);cv.style.cursor="grabbing"});
+cv.addEventListener("pointermove",e=>{if(drag){const dx=e.clientX-drag[0],dy=e.clientY-drag[1];if(Math.abs(dx)+Math.abs(dy)>3)drag[4]=true;V.px=drag[2]+dx;V.py=drag[3]+dy;tip.style.display="none";redraw()}else hover(e)});
+cv.addEventListener("pointerup",e=>{const moved=drag&&drag[4];drag=null;cv.style.cursor="grab";if(!moved)clickAt(e)});
+cv.addEventListener("pointerleave",()=>{tip.style.display="none"});
+cv.addEventListener("wheel",e=>{e.preventDefault();const f=e.deltaY<0?1.15:1/1.15,nz=Math.max(.4,Math.min(6,V.zoom*f)),k=nz/V.zoom;const R=cv.getBoundingClientRect(),mx=e.clientX-R.left-R.width/2,my=e.clientY-R.top-R.height/2;V.px=mx-(mx-V.px)*k;V.py=my-(my-V.py)*k;V.zoom=nz;redraw()},{passive:false});
+function pick(e){if(!last)return null;const R=cv.getBoundingClientRect(),mx=(e.clientX-R.left)*last.dpr,my=(e.clientY-R.top)*last.dpr,z=last.z;
+  for(let i=last.hits.length-1;i>=0;i--){const h=last.hits[i],dx=Math.abs(mx-(h[0]-HW*z)),dy=my-h[1];
+    if(dx<=HW*z&&dy>=-HH*z-.5*dx&&dy<=BH*z+HH*z-.5*dx){if(h[2].a<.2)continue;return h[2]}}return null}
+function hover(e){const h=pick(e);if(!h){tip.style.display="none";return}
+  const b=h.b,t=h.t,R=cv.parentElement.getBoundingClientRect();
+  const ph=b[5]==0?"There now":"Phase "+b[5];
+  tip.innerHTML=`<b>${t.n}</b><br><i>${t.id}</i><br>${b[6]>=0?D.notes[b[6]]+"<br>":""}<em>${ph} · world ${b[0]-4448} ${b[1]+71} ${b[2]+1518} · hall ${b[0]} ${b[1]} ${b[2]}</em>`;
+  tip.style.display="block";const x=e.clientX-R.left+16,y=e.clientY-R.top+12;
+  tip.style.left=Math.min(x,R.width-tip.offsetWidth-8)+"px";tip.style.top=Math.min(y,R.height-tip.offsetHeight-8)+"px"}
+function clickAt(e){const R=cv.getBoundingClientRect(),x=e.clientX-R.left,y=e.clientY-R.top;
+  if(O.labels)for(const zn of D.zones){const q=zn._r;if(q&&x>=q[0]&&x<=q[0]+q[2]&&y>=q[1]&&y<=q[1]+q[3]){focusZone(zn.id);return}}}
+function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;V.cx=zn.cam[0]+.5;V.cz=zn.cam[2]+.5;V.px=0;V.py=40;V.zoom=Math.max(HOME.zoom*2.2,2);show("tour");syncZones();redraw()}
+function syncZones(){document.querySelectorAll(".zone").forEach(el=>{el.setAttribute("aria-pressed",el.dataset.id==O.sel);if(el.dataset.id==O.sel)el.scrollIntoView({block:"nearest"})})}
+// ---------------------------------------------------------------- the book
+const TABS=[["tour","Tour"],["bay","How a bay works"],["makes","What it makes"],["phases","Build order"],["parts","Parts"],["open","To settle"]];
+const book=document.getElementById("book"),tabs=document.getElementById("tabs");
+const PAGES={
+tour:()=>`<h2>The hall, zone by zone</h2><p>Three aisles stay clear: the spine down the middle, the cross aisle, and the operator lane between the two machine rows. Everything that carries power, ME channels, water or gas runs under the floor or in a closed chase. Lift the floor to see it.</p>`+
+  D.zones.map(z=>`<button class="zone" data-id="${z.id}" aria-pressed="false"><b>${z.name} <span class="tag">phase ${z.ph}</span></b><p>${z.text}</p></button>`).join("")+
+  `<h3>Colours under the floor</h3><div class="key">`+TY.filter(t=>t.s=="pipe"&&t.k!="cc").map(t=>`<span class="sw" style="background:${t.c}"></span><span>${t.n}</span>`).join("")+`</div>`,
+bay:()=>`<h2>One machine bay</h2><p>Every Mekanism machine in the two rows is built the same way, so the whole floor reads as one pattern.</p><canvas class="mini" id="mini1"></canvas>
+  <ul><li><b>Behind the machine:</b> a pattern provider with an induction card. It pushes the recipe's items in, powers the machine from the network's stored FE, and takes the result when the machine ejects it.</li>
+  <li><b>Under the provider:</b> the dense ME trunk, hidden by the provider itself.</li>
+  <li><b>Under an infuser:</b> an export bus facing up, keeping the infusion slot full. One infuser per infusion type (carbon, redstone, diamond, refined obsidian), so no recipe waits for another to clear.</li>
+  <li><b>Under a gas machine:</b> the tube or pipe it needs, coming up from the trench.</li></ul>
+  <p>Why this beats the cable: tonight's test showed the CC cable cannot push items into a Mekanism machine. A pattern provider can, and AE2 then plans the whole chain. Ask for 64 steel and it makes the enriched carbon, runs both infuser passes and smelts the dust.</p>
+  <h3>The gas plant</h3><canvas class="mini" id="mini2"></canvas>
+  <p>Machines that feed each other stand side by side and hand gas across directly. Only five lines leave the row. They drop down a closed chase behind it and cross under the lane, each in its own colour, so two gases never share a tube: Mekanism tubes of different colours do not join.</p>
+  <h3>The crystal garden</h3><canvas class="mini" id="mini3"></canvas>
+  <p>Clusters grow up and down from each budding block. Planes take only full clusters (four crystals each, more with Fortune). The fixers behind are what make it permanent.</p>`,
+makes:()=>`<h2>What you can ask it for</h2><p>Type a name at the desk or the wireless terminal, or let the swarm ask through the ME Bridge. The requesters keep the everyday items in stock without anyone asking.</p>
+  <h3>Metals and Mekanism parts</h3><ul><li>Steel, bronze, refined obsidian, refined glowstone</li><li>Infused, reinforced and atomic alloy</li><li>Basic to ultimate control circuits</li><li>Enriched carbon, redstone, diamond, obsidian, tin, gold</li><li>HDPE sheets, substrate, ethylene</li><li>Every Mekanism machine, tier installer, upgrade, cable, pipe and tube</li></ul>
+  <h3>Ore</h3><ul><li>Every pack ore at 2x now, 3x with oxygen, 4x with hydrogen chloride, 5x with sulfuric acid</li><li>Dusts, clumps, shards and crystals stored between steps, so nothing clogs</li></ul>
+  <h3>AE2</h3><ul><li>Certus, charged certus and fluix, without limit</li><li>Printed circuits and logic, calculation and engineering processors</li><li>Storage cells (1k to 256k, then MEGA), fluid, chemical and FE cells</li><li>Cable, buses, planes, terminals, providers, cards</li></ul>
+  <h3>The swarm builds itself</h3><ul><li>Turtles, advanced turtles, mining and crafty upgrades</li><li>Wired and ender modems, CC cable, disk drives, monitors, computers</li><li>Geo scanners, chat boxes, inventory managers, more ME Bridges</li></ul>
+  <h3>Building and fuel</h3><ul><li>Glass, stone and deepslate bricks, tiles, concrete, anything a furnace or crafting table makes</li><li>Charcoal, and lava buckets from the wall</li></ul>
+  <h3>Not in this hall</h3><p>Fission, fusion, the SPS, Mystical Agriculture, mob drops and bees. Each can plug into the same network later through a provider or an interface; none needs a change to this layout.</p>`,
+phases:()=>`<h2>Build order</h2><p>Click a phase to see the hall at that point. Each one leaves a working factory, so we can stop after any of them.</p>`+
+  D.phases.map(p=>`<div class="ph" data-n="${p.n}"><h3>${p.n}. ${p.name}</h3><p>${p.text}</p></div>`).join(""),
+parts:()=>`<h2>Parts by phase</h2><p>Counted from the model. Cards, cells and patterns are listed at the end.</p>`+
+  Object.keys(D.bom).map(k=>`<h3>Phase ${k}</h3><table>`+D.bom[k].filter(r=>!/deepslate|Sky stone|glass|Cluster|Reserved/i.test(r[0])).map(r=>`<tr><td class="n">${r[2]}</td><td>${r[0]}<br><code>${r[1]}</code></td></tr>`).join("")+`</table>`).join("")+
+  `<h3>Not blocks</h3><table><tr><td class="n">29</td><td>Induction cards, one per provider that powers a machine</td></tr><tr><td class="n">8</td><td>Storage cells to start: 4 x 16k item, 1 fluid, 1 chemical, 2 FE</td></tr><tr><td class="n">2</td><td>Storage buses on the storeroom's controllers, and a second wireless connector</td></tr><tr><td class="n">6</td><td>Export buses for the infusion feeds, with speed cards</td></tr><tr><td class="n">1</td><td>Wireless Universal Terminal for you</td></tr><tr><td class="n">~150</td><td>Patterns, most of them written once by script from the recipes crafter1 already knows</td></tr></table>`,
+open:()=>`<h2>Checked, to test, and yours to decide</h2>
+  <h3>Checked on your server tonight <span class="tag ok">done</span></h3><ul><li>Every block and item named in this plan exists in your pack (AE2, ExtendedAE, Advanced AE, MEGA Cells, Applied Flux, Applied Mekanistics, ME Requester, Powah, Pipez, Mekanism).</li><li>The layout fits the hall as scanned at 19:30: no walkway is blocked and no pipe or cable shows above the floor.</li><li>No two service lines share a cell. Channels per trunk: N about 23, W 14, A 17, O 9, of 32 each.</li></ul>
+  <h3>To bench-test before building <span class="tag t">phase 0</span></h3><ul><li><b>Induction card.</b> That a provider with one powers a Mekanism machine. If not: universal cable in the floor under each machine, as the ore line has now.</li><li><b>Auto-eject into a provider.</b> That each machine's result comes back through the provider's face.</li><li><b>Crystal Fixer.</b> What it burns and whether it holds a flawed block at flawed.</li><li><b>Thermo generator output.</b> The pack changes Powah's numbers. Seven of them may cover the hall or may only cover AE2; one test tells us, and the reserved pad is the answer if not.</li><li><b>Wireless connector.</b> Its range to the storeroom. If short: one cable under the cross aisle.</li><li><b>Infusion feed.</b> That an export bus into an infuser's underside fills the infusion slot.</li></ul>
+  <h3>Yours to decide <span class="tag ask">4</span></h3><ul><li><b>The press.</b> Keep the bench you have with providers under it (drawn), or swap it for the two extended inscribers in the lab and free the west wall.</li><li><b>How far up the ore ladder.</b> 3x is one evening. 5x adds the brine tower outside and seven more machines.</li><li><b>The big generator.</b> Extreme Reactors or a Powah reactor on the pad, when the time comes.</li><li><b>Commands or drones.</b> I can place all of this by command as tonight, or have the factory craft it and the drones fit it, which is slower but earned.</li></ul>`
+};
+function show(id){if(book.dataset.id==id)return;book.dataset.id=id;book.innerHTML=PAGES[id]();book.scrollTop=0;
+  tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id==id));
+  book.querySelectorAll(".zone").forEach(el=>el.onclick=()=>focusZone(el.dataset.id));
+  book.querySelectorAll(".ph").forEach(el=>{el.onclick=()=>setPhase(+el.dataset.n);el.classList.toggle("off",+el.dataset.n>O.phase)});
+  if(id=="bay")requestAnimationFrame(minis);syncZones()}
+tabs.innerHTML=TABS.map(t=>`<button data-id="${t[0]}" aria-pressed="false">${t[1]}</button>`).join("");
+tabs.querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.id));
+function mini(id,f,v){const c=document.getElementById(id);if(!c)return;const bl=D.blocks.filter(f);
+  drawScene(c,bl,v,{floor:false,walls:true,mach:true,me:true,pw:true,ch:true,phase:8})}
+function minis(){
+  mini("mini1",b=>b[0]>=37&&b[0]<=40&&b[2]>=17&&b[2]<=19&&b[1]>=-1&&b[1]<=1&&!(b[0]==40&&b[1]==0)&&!(b[0]==39&&b[1]==0&&b[2]==19&&false),{cx:39,cz:18.5,rot:1,zoom:3.2,px:0,py:10});
+  mini("mini2",b=>b[0]>=38&&b[0]<=42&&b[2]>=5&&b[2]<=13&&b[1]>=-3&&b[1]<=1&&!(b[1]==0&&TY[b[3]].cat=="build")&&TY[b[3]].k!="prov"&&TY[b[3]].cat!="pipe_me",{cx:40.5,cz:9.5,rot:1,zoom:1.7,px:0,py:-10});
+  mini("mini3",b=>b[0]>=28&&b[0]<=29&&b[2]>=5&&b[2]<=11&&b[1]>=0&&b[1]<=4,{cx:29,cz:8.5,rot:0,zoom:2.3,px:-20,py:40})}
+function start(){fit();Object.assign(V,HOME);show("tour");redraw()}
+window.addEventListener("resize",()=>{fit();redraw();if(book.dataset.id=="bay")minis()});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
+start();
+</script>
+</body>
+</html>
