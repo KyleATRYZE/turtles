@@ -152,8 +152,14 @@ parallel.waitForAny(
   end,
   function()                                   -- what everyone else says
     while true do
-      local _, user, message, _, hidden = os.pullEvent("chat")
-      if not hidden then logLine("<" .. tostring(user) .. "> " .. tostring(message)) end
+      -- (this Advanced Peripherals sends the player's id first: id, name,
+      -- message; older ones send name, message, id)
+      local e = { os.pullEvent("chat") }
+      local user, message, hidden = e[2], e[3], e[5]
+      if type(e[2]) == "string" and e[2]:match("^%x+%-%x+%-%x+%-%x+%-%x+$") then
+        user, message = e[3], e[4]
+      end
+      if hidden ~= true then logLine("<" .. tostring(user) .. "> " .. tostring(message)) end
     end
   end,
   function()                                   -- monitor buttons
