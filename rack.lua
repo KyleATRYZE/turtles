@@ -241,6 +241,28 @@ function R.monitors()
     end
     if okB and old and old[1] then pcall(peripheral.call, b, "setPaletteColour", slot, old[1], old[2], old[3]) end
   end
+  -- (rack 1's strips are the same size as its board, 8 blocks by 1: since
+  -- the store's cable joined ours, its screens and others are on it too)
+  -- (measured once per monitor: changing the text scale every second flickers)
+  R.sizes = R.sizes or {}
+  local function size(n)
+    if not R.sizes[n] then
+      local ok, w, h = pcall(function()
+        local m = peripheral.wrap(n) local sc = m.getTextScale() m.setTextScale(0.5)
+        local a, b = m.getSize() m.setTextScale(sc) return a, b end)
+      R.sizes[n] = ok and { w, h } or { 0, 0 }
+    end
+    return R.sizes[n][1], R.sizes[n][2]
+  end
+  if boards[1] then
+    local bw, bh = size(boards[1])
+    if bw > 0 then
+      for i = #strips, 1, -1 do
+        local sw, sh = size(strips[i])
+        if not (sw == bw and sh == bh) then table.remove(strips, i) end
+      end
+    end
+  end
   R.boards = boards
   table.sort(strips, function(a, b)
     return (tonumber(a:match("(%d+)$")) or 0) < (tonumber(b:match("(%d+)$")) or 0)

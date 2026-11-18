@@ -1165,7 +1165,23 @@ function S.makeSurvey()
   S.survey = out
 end
 
-local mon = peripheral.find("monitor")
+-- Its screen: the one it was given (cfg.monitor), else a monitor touching
+-- the computer, else the only one there is. Once the store's cable was
+-- joined to rack 1's, peripheral.find("monitor") took one of the rack's
+-- strips. With several and none given: the first one tapped is the store's.
+local function pickMonitor()
+  if cfg.monitor and peripheral.isPresent(cfg.monitor) then return peripheral.wrap(cfg.monitor) end
+  local remote = {}
+  for _, n in ipairs(peripheral.getNames()) do
+    if peripheral.getType(n) == "monitor" then
+      if not n:find("_", 1, true) then return peripheral.wrap(n) end
+      remote[#remote + 1] = n
+    end
+  end
+  if #remote == 1 then return peripheral.wrap(remote[1]) end
+  return nil
+end
+local mon = pickMonitor()
 local zones = {}
 local function draw()
   if not (mon and dash) then return end
@@ -1209,7 +1225,13 @@ parallel.waitForAny(
   end,
   function()                                    -- taps
     while true do
-      local _, _, x, y = os.pullEvent("monitor_touch")
+      local _, side, x, y = os.pullEvent("monitor_touch")
+      if not mon and side then                      -- (claiming its screen: see pickMonitor)
+        cfg.monitor = side
+        S.saveConfig()
+        mon = peripheral.wrap(side)
+        print("The store's screen is " .. side .. ".")
+      end
       for i = #zones, 1, -1 do
         local z = zones[i]
         if x >= z[1] and x <= z[3] and y >= z[2] and y <= z[4] then
