@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795025945,
-      "issued": 1795025945000,
-      "cmd": "reboot",
-      "target": "builder6"
+      "id": 1795026018,
+      "issued": 1795026018000,
+      "cmd": "lab",
+      "target": "builder6",
+      "clear": 1,
+      "ops": "fetch|minecraft:coal=4;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|39|1|17;clickDown;walk|39|1|19;clickDown;walk|39|1|23;clickDown;walk|43|1|12;walk|42|1|12;clickDown;walk|42|1|13;clickDown;leave;home"
     }
   ]
 }
