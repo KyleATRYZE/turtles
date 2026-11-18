@@ -1,13 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795025715,
-      "issued": 1795025715000,
-      "cmd": "feed",
-      "target": "builder2",
-      "x": -4462,
-      "y": 80,
-      "z": 1521
+      "id": 1795025945,
+      "issued": 1795025945000,
+      "cmd": "reboot",
+      "target": "builder6"
     }
   ]
 }
