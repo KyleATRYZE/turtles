@@ -4,6 +4,9 @@ Where the swarm's storage goes once the Sophisticated Storage room runs out of
 reach (one controller only sees 15 blocks). AE2's network has no such limit,
 and Advanced Peripherals' **ME Bridge** lets our computers use it.
 
+**Next: docs/ae2-bootstrap.md** (the meteorite haul is in: the certus farm, the AE2 bench,
+the certus budget and the order of work to the network, autocrafting and the ME Bridge).
+
 Pack: All the Mods 10 v8.5, MC 1.21.1 (AE2 19.x, Advanced Peripherals 0.7.x
 for 1.21.1). Recipes below are from AE2's own generated recipe data and the
 AE2 guide unless marked **(unverified)**: check those in JEI before the
@@ -42,8 +45,8 @@ Mysterious Cube, which sits in the middle of every meteorite.
 
 All in stock (iron 93, copper ingots 634, redstone 480, sticks from logs).
 
-Power: the charger takes power only on its **top and bottom**, AE or FE. Two
-ways:
+Power: the charger takes power (AE or FE) on every side but its front (AE2
+1.21.1 `ChargerBlockEntity`; the guide says top and bottom). Two ways:
 
 1. **By hand (fastest):** Kyle puts the charger down anywhere, the crank on
    top, the compass in, and right-clicks the crank until it is charged.
