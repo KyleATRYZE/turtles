@@ -95,6 +95,17 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Fix the top "not heard yet" board (D)
 - [ ] Rack homes show the new task names once the rename lands
 
+## J. Older threads from today (checked against git log 17-18 Nov; none dropped)
+- [ ] Mekanism stage 3 (crusher, purification, separator, pump) and the stage 4-5 machines: folded into foundry v2 phase 3 `ore`. Crafty makes them on demand; check which ones exist (`probe`, Crafty's missing list)
+- [ ] Quartz line (sand to soul sand to quartz): keep it fed, 16 sand a run, whenever quartz is under about 32 (comparators, storage controllers)
+- [ ] Foundry generator ran dry twice (17 Nov 03:36 and 23:18): lava fuel for it goes on the fuel watch; the v2 power row replaces it
+- [ ] Lava: hut farm (7) plus the 11-unit dripstone row, worked by Pushy/lava1. The hut cauldrons move to the v2 lava wall later; keep lava above 20 on the board
+- [ ] Screens: the six screen computers HopTo fitted (17 Nov). Check all of them report and match the dash style (store, map, rack, factory)
+- [ ] Mining is paused (MAX_MINERS=0, set when storage was full). Storage now has room (about 360 free of 803): decide with Kyle in the morning whether miners go back out. They need chunk loaders, and he has those in hand
+- [ ] Drafted ex-miners and the extra turtles Kyle picked up: account for every turtle id. Any that aren't reporting get placed in a rack home once docking works
+- [ ] AE2 path beyond certus: meteorite compass, sky stone and presses (Kyle has the presses), then the ME bridge so Sortnado uses ME as the store (code is ready: Sortnado)
+- [ ] Server tweaks to offer Kyle: the turtle_can_use tag and chunkyTurtleRadius
+
 ## Kyle's to-do for the morning (one list)
 1. Works computer: `label set Works` + installer at -4413 71 1533
 2. Right-click modems: alloy cell -4409 71 1535/1537/1541 · ore line -4406 71 1530/1531 · certus barrel -4414 71 1531 · later the ME bridge -4414 71 1539
