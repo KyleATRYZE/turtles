@@ -4237,7 +4237,10 @@ local function tryBuild()
     end
   end
 
-  local forHelper = #(plots.helpers or {}) < K.HELPERS
+  -- (the helpers that report in count too: crafter1's books can lose them)
+  local seenHelpers = 0
+  for _, u in pairs(fleet) do if u.role == "helper" then seenHelpers = seenHelpers + 1 end end
+  local forHelper = math.max(#(plots.helpers or {}), seenHelpers) < K.HELPERS
   if not forHelper and activeCount() + pending >= K.MAX_MINERS then
     lastMissing = {}
     report("fleet full")
