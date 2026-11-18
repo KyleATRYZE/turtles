@@ -369,42 +369,8 @@ def stage_cells(stage):
             put(c, LB1)
         for c in WALL_E:
             put(c, LB4)
-    elif stage == 6:
-        for c in RACK1_DOWN:
-            put(c, WIRED, "R")
-        put(RACK_UNDER, CABLE, "R")
-        for c in TRENCH1:
-            put(c, CABLE)
-        for c in RACK2_CUT:
-            put(c, None, "cut")
-        for c in RACK2_PADS:
-            put(c, COPPER, "R")
-        for c in RACK2_BARS:
-            put(c, BARS)
-        for c in BAYS2:
-            put(c, WIRED, "R")
-        for c in STRIP2:
-            put(c, MONITOR + " south")
-        for c in RACK2_CONN:
-            put(c, WIRED, "R")
-        put(RACK2_UNDER, CABLE, "R")
-        for c in TRENCH2:
-            put(c, CABLE)
-        for c in RACK3_CUT:
-            put(c, None, "cut")
-        for c in RACK3_PADS:
-            put(c, COPPER, "R")
-        for c in RACK3_BARS:
-            put(c, BARS)
-        for c in BAYS3:
-            put(c, WIRED, "R")
-        for c in STRIP3:
-            put(c, MONITOR + " south")
-        for c in RACK3_CONN:
-            put(c, WIRED, "R")
-        put(RACK3_UNDER, CABLE, "R")
-        for c in TRENCH3:
-            put(c, CABLE)
+    elif stage == 6:                      # (racks 2 and 3 dropped: one rack, rack 1, for every drone)
+        pass
     elif stage == 11:                     # rack 1's loading bays (Kyle, by hand, any time)
         for c in BAYS1:
             put(c, WIRED, "R")
@@ -413,17 +379,8 @@ def stage_cells(stage):
         put(RACK_PC, PC, "R")
         for c in RACK_CONN:
             put(c, WIRED, "R")
-    elif stage == 7:                      # the foundry on the cable (replaces the old north line)
-        for c in F_MACHINES.values():
-            put(c, WIRED, "R")
-        put(F_EXTRA, WIRED)
-        put(F_EXTRA_UNDER, CABLE, "R")
-        for c in F_LINE.values():
-            put(c, WIRED, "R")
-        put(F_PC, PC, "R")
-        put(F_PC_MODEM, WIRED)
-        for c in F_TRUNK:
-            put(c, CABLE)
+    elif stage == 7:                      # (the foundry on the cable: docs/foundry-v2.md, tools/foundry2plans.py)
+        pass
     elif stage == 8:
         for c in POWER_LINK:
             put(c, UCABLE)
@@ -481,7 +438,7 @@ def lane_keep():
             keep[(x, y, FRONT)] = "front track"
             if (x, y, BACK) not in pit and not (x == 44 and y == 3):
                 keep[(x, y, BACK)] = "back track"
-    for c in homes(RACK1_X) + homes(RACK2_X) + homes(RACK3_X):
+    for c in homes(RACK1_X):
         keep[c] = "rack home"
     for y in (1, 2):
         keep[(32, y, 3)] = "the foundry's hatch onto the lane"
@@ -554,7 +511,7 @@ def check():
     bad += check_bays(B)
     assert B.get((10, 1, 29)) == MODEM and B.get((10, 5, 16)) == MODEM
     assert B.get((36, 1, 9)) == "minecraft:chest" and B.get((36, 1, 19)) == "minecraft:chest"
-    print("\n".join(bad) if bad else f"ok: {len(seen)} retrofit cells, none on anything built or planned; the lane, both racks and the approaches open")
+    print("\n".join(bad) if bad else f"ok: {len(seen)} retrofit cells, none on anything built or planned; the lane, the rack and the approaches open")
     return not bad
 
 
@@ -575,7 +532,7 @@ def check_bays(B):
     nb = lambda c: [(c[0] + d[0], c[1] + d[1], c[2] + d[2]) for d in
                     ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))]
     PERI = ("monitor", "computer_", "chest", "barrel", "furnace", "disk_drive", "turtle", "controller", "mekanism")
-    for bays, strip, xs in ((BAYS1, STRIP1, RACK1_X), (BAYS2, STRIP2, RACK2_X), (BAYS3, STRIP3, RACK3_X)):
+    for bays, strip, xs in ((BAYS1, STRIP1, RACK1_X),):
         for c, m in zip(bays, strip):
             x = c[0]
             if world.get(c) != WIRED or not (world.get(m) or "").startswith(MONITOR):
@@ -602,26 +559,10 @@ def check_bays(B):
             if n in wire and n not in seen:
                 seen.add(n)
                 todo.append(n)
-    # the foundry: each machine's modem touches its machine (and no other
-    # peripheral), and everything is wired
-    fm = list(F_MACHINES.items()) + [("infuser (extra)", F_EXTRA)]
-    for what, c in fm:
-        m = (c[0], c[1] + 1, c[2]) if c[1] == 0 else (41, 1, 15)
-        if "mekanism" not in (world.get(m) or ""):
-            bad.append(f"foundry modem {c} for the {what}: no machine at {m} ({world.get(m)})")
-        for n in nb(c):
-            it = world.get(n) or ""
-            if n != m and any(p in it for p in PERI) and not any(t in it for t in ("cable", "transporter", "tube", "pipe")):
-                bad.append(f"foundry modem {c} would also take in {it} at {n}")
-    for c in list(F_MACHINES.values()) + [F_EXTRA] + list(F_LINE.values()) + [F_PC_MODEM]:
-        if c not in seen:
-            bad.append(f"foundry {c} is not wired to the store")
-    for c in BAYS1 + BAYS2 + BAYS3 + [RACK_PC]:
+    for c in BAYS1 + [RACK_PC]:
         near = [n for n in nb(c) if n in seen] if c == RACK_PC else [c]
         if not any(n in seen for n in near):
             bad.append(f"{c} is not wired to rack 1's link into the storage room")
-    if F_PC_MODEM not in [n for n in nb(F_PC)]:
-        bad.append("the works computer has no modem")
     # nothing of the wire shows but full blocks: a cable must be closed in on every side
     for c, it in S.items():
         if it.startswith(CABLE) and c[1] >= 0 and c in (set(TRENCH1) | set(TRENCH2) | {RACK_UNDER, RACK2_UNDER, RACK3_UNDER}):
@@ -1248,7 +1189,7 @@ code { font: 13px var(--mono); }
       <p>The miners keep the service row over Crafty (y 3) and their shafts at x 4 and x 8 until they have bays of their own in rack 3.</p></div>
     <div class="room"><h3>Racks <span class="size">2 × 16 homes</span></h3>
       <p><b>Rack 1</b> (built, launch bay x 19-26): the helpers' 16 homes, low (y 1) and high (y 3), off the front track. The middle shelf is 8 wired modems: each home is a loading bay (docs/rack-build.html).</p>
-      <p><b>Rack 2</b> (stage 6, foundry x 35-42): 16 homes, the 11 chunk loaders and 5 spare. <b>Rack 3</b> (stage 6, x 28-31): 8 homes, the miners and BlockParty (docs/racks23-build.html).</p></div>
+      <p>One rack for every drone: Kyle has made rack 1 eight homes across and four rows high (32 homes: the helpers, the chunk loaders, the miners and BlockParty). No racks 2 and 3.</p></div>
   </div>
 </section>
 
@@ -1265,8 +1206,8 @@ code { font: 13px var(--mono); }
     <li><div class="ph-head"><span class="ph-num">3</span><h3>A 4th barrel row</h3></div><p>+20 bulk, +72 medium slots in the storage room.</p></li>
     <li><div class="ph-head"><span class="ph-num">4</span><h3>Drain</h3></div><p>The old chests emptied into the store over the cable.</p></li>
     <li><div class="ph-head"><span class="ph-num">5</span><h3>The move</h3></div><p>Kyle carries Crafty to its bench; every drone is told the new base and its rack home.</p></li>
-    <li><div class="ph-head"><span class="ph-num">6</span><h3>Old base out, rack 2</h3></div><p>Empty chests out, the bridge out, racks 2 and 3 built (docs/racks23-build.html).</p></li>
-    <li><div class="ph-head"><span class="ph-num">7-10</span><h3>The rest</h3></div><p>The foundry on the cable (docs/foundry-build.html), the Mekanism expansion, the screens, AE2.</p></li>
+    <li><div class="ph-head"><span class="ph-num">6</span><h3>Old base out, rack 2</h3></div><p>Empty chests out, the bridge out.</p></li>
+    <li><div class="ph-head"><span class="ph-num">7-10</span><h3>The rest</h3></div><p>The foundry hall rebuilt (docs/foundry-v2.md), the Mekanism expansion, the screens, AE2.</p></li>
   </ol>
 </section>
 </main>
@@ -1323,7 +1264,7 @@ function draw(v) {
   }
   if (v.close) {                                  // the close-up: names on the stops and racks
     ctx.font = `500 12px IBM Plex Sans, sans-serif`; ctx.fillStyle = css("--ink"); ctx.textAlign = "left"; ctx.textBaseline = "top";
-    const notes = [[3, 4, "Crafty's bench (y 2)"], [19, 4, "Rack 1: helpers"], [28, 4, "Rack 3"], [35, 4, "Rack 2: loaders"],
+    const notes = [[3, 4, "Crafty's bench (y 2)"], [19, 4, "Rack 1: every drone (8 x 4)"],
       [-5, -1, "west gate"], [41, -1, "east gate"], [9, -1, "porthole"], [18, -1, "porthole"], [27, -1, "porthole"]];
     for (const [x, z, t] of notes) ctx.fillText(t, px(x) + 2, pz(z) + 2);
   }

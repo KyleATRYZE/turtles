@@ -155,8 +155,6 @@ def before():
 
 # ---------------------------------------------------------------- the concept
 ZONES = [  # (key, label, x0, z0, x1, z1, colour, blurb)
-    ("racks", "Racks 3 and 2 on the lane", 28, 3, 42, 4, "#c0703e",
-     "Rack 3 (x 28-31: miners, BlockParty, the certus harvester), the hatch (x 32), rack 2 (x 35-42: loaders). Loading bays, panel strips behind."),
     ("ore", "Ore line (5x)", 42, 6, 43, 13, "#3aa35a",
      "Eight machines in one row on the east wall, each pushing into the next: dissolution, washer, crystallizer, injection, purification, crusher, enrichment, smelter. Ore goes in at the north end over the cable, ingots come out at the south end."),
     ("gas", "Gas plant", 37, 6, 38, 13, "#5aa0e0",
@@ -168,7 +166,7 @@ ZONES = [  # (key, label, x0, z0, x1, z1, colour, blurb)
     ("alloy", "Alloy cell", 38, 17, 40, 23, "#8b5fbf",
      "Two metallurgic infusers (steel, alloys, circuits), a bank of three smelters, a crusher, a second chamber: the works computer's make, smelt and enrich jobs."),
     ("certus", "Certus farm", 28, 5, 34, 13, "#9ad1f0",
-     "The AE2 work's farm (tools/certusfarm.py): two stone pillars (x 30, z 7 and z 10, y 1-7) with budding certus against both sides in three tiers (9 of 12 slots), corridors at x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 3 and comes in by the hatch; crystals go into a barrel on the cable at 34 1 13."),
+     "The AE2 work's farm (tools/certusfarm.py): two stone pillars (x 30, z 7 and z 10, y 1-7) with budding certus against both sides in three tiers (9 of 12 slots), corridors at x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 1 and comes in by the hatch; crystals go into a barrel on the cable at 34 1 13."),
     ("ae2", "AE2 room", 28, 17, 34, 23, "#7f9cff",
      "Controller, drives, crafting CPU, assemblers with pattern providers, four inscribers and the charger, next to the certus farm and the Mekanism power. Joins the store through the ME bridge."),
     ("quartz", "Quartz line", 28, 24, 34, 27, "#5aa9e6", "Today's sand to soul sand to quartz line, squared up in its own bay."),
@@ -201,12 +199,15 @@ def after():
             elif B.get((x, 0, z)):
                 f = B[(x, 0, z)]
                 out[(x, z)] = ("stripe" if "striped" in f else "floor", f.split(":")[-1], 0)
-    # racks 3 and 2 (stage 6) and the hatch
-    for x in list(range(28, 32)) + list(range(35, 43)):
-        put(x, 3, "bay", "Rack home pair: copper pad, bay modem shelf, home above")
-        put(x, 4, "strip", "Panel strip (y 2) between bars (y 1, y 3)")
-    for x in (33, 34):
-        put(x, 3, "post", "Screen post", 1)
+    # the lane's screen stays as it is (one rack for every drone: rack 1, in the launch bay)
+    for x in range(28, 43):
+        top = None
+        for y in (4, 3, 2, 1):
+            if B.get((x, y, 3)):
+                top = (y, B[(x, y, 3)])
+                break
+        if top:
+            put(x, 3, classify(top[1]), top[1].split(":")[-1], top[0])
     put(32, 3, "door", "The hatch onto the lane (stays open)", 0)
     for x in (32, 33, 34):
         put(x, 4, "aisle", "Walkway from the hatch", 0)

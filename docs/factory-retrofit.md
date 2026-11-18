@@ -12,9 +12,10 @@ the foundry's machines are worked over the cable (§5b).
   The drones come and go by the lane and dock in racks facing it. No roof
   shafts. Later the same day: loading bays in the racks replaced the pit
   stops (no Counter), and the foundry went onto the cable (no carrying).
-- **Build guides (voxel, for Kyle):** `docs/rack-build.html` (rack 1's
-  bays), `docs/racks23-build.html` (racks 2 and 3), `docs/foundry-build.html`
-  (the foundry on the cable). Written by `python3 tools/rackpage.py`.
+- **Build guide (voxel, for Kyle):** `docs/rack-build.html` (rack 1's
+  bays), written by `python3 tools/rackpage.py`. Rack 1 is now 8 homes
+  across and 4 rows (Kyle): one rack for every drone, no racks 2 and 3. The
+  foundry hall is rebuilt by the drones: `docs/foundry-v2.md`.
 - **Visual plan:** `docs/factory-retrofit.html` is the top-down plan, with
   the drone routes. It is written by `python3 tools/retrofit.py page`.
 - **Coordinates:** the building's own frame unless marked "world". The
@@ -116,13 +117,11 @@ l operator lane  0 stage-0 plinth  E evaporation tower (outside)  T control towe
 |---|---|---|
 | **Drone lane** | x 0..44, z 1-2 | All drone traffic in and out. Back track (z 1) westbound, front track (z 2) eastbound, at y 2. |
 | **Crafty's bench** | x 4-8, z 1 (the hall's stretch of the lane) | Crafty with its drop chest and pad (new turtles), on the hall's cable |
-| **Rack 1** | x 19-26, z 3 (launch bay) | the helpers' 16 homes, loading bays |
-| **Rack 3** | x 28-31, z 3 (foundry, west of the hatch) | 8 homes: the miners and BlockParty (stage 6) |
-| **Rack 2** | x 35-42, z 3 (foundry) | 16 homes: the 11 chunk loaders, 5 spare (stage 6) |
+| **Rack 1** | x 19-26 (launch bay) | every drone's home: 8 across, 4 rows (32), loading bays; the rack's live board |
 | **Smelting hall** | x 1-8 | Crafty's 12 furnaces; the **AE2 corner** in its south-east, x 5-8 z 18-28 |
 | **Storage room** | x 10-17 | Sortnado's store, plus a 4th barrel row (§4) |
 | **Launch bay** | x 19-26 | Free floor now the pads are on the lane. The way in from the big door (corridor x 21-24); rack 1 at its north end. |
-| **Foundry** | x 28-43 | the Mekanism line and its expansion (§5); rack 2 at its north end |
+| **Foundry** | x 28-43 | rebuilt to docs/foundry-v2.md |
 | **Power corner** | NW plinth x 29-33 z 5-7 | generators and a cube |
 | **Workshop bench** | x 36-38 z 23-27 | machine trials |
 | **Quartz line** | x 28-35 z 22-27 | stays as it is |
@@ -296,8 +295,7 @@ M new full modem  d new disk drive  - m f K existing cable, modems, furnaces, co
 |---|---|---|---|---|
 | **Crafty's link** | screen post **1 1 3** replaced by cable; under the lane floor 1 0 3, 1..6 0 2, 6 0 1 | the hall's cable (1 1 4) to Crafty's modem | 1 | swarm: fit `pitstop` |
 | **Rack 1's link** | the wall modem **18 2 3** (world -4430 73 1521) touching the bay shelf, then Kyle's cable through the wall into the storage room's network | the bays, the rack's computer, and everything below, to the store | now | Kyle (docs/rack-build.html) |
-| **Under the lane floor** | 18 1 3 (modem), 18 0 3, 18 -1 3, then 18..34 -1 2; racks 3 and 2 up through 27 1-2 3 and 34 1-2 3 | racks 2 and 3 to rack 1's link | 6 | Kyle (docs/racks23-build.html) |
-| **The foundry link** | on east under the lane floor 35..41 -1 2, south under the plinth 41 -1 3..19, branches at z 9, 12, 19 | the plinth machines, the works computer, the piped line's barrels | 7 | Kyle (docs/foundry-build.html) |
+| **The foundry's cable** | from rack 1's link down at 18 1 3, under the lane floor to the hatch, down the foundry's spine | the foundry hall (docs/foundry-v2.md) | v2 phase 1 | the drones (fit `factory_f2_link`) |
 | **Desk link** | 1..8 1 29 along the hall's south wall, **9 1 29** through the partition | the hall's cable to desk modem 10 1 29: the store | 1 | swarm: fit `desklink` |
 | **Bridge** (for the drain) | hut: -13..-11 2 4 (on the old modem -13 1 4), **-10 2 4** (cobblestone); yard: -9 2..0 4, -9 0 3..2, -8..-1 0 2; under the west gate **0 0 2** | the old base to the pit stop link at 1 0 2 | 2, out again in 6 | swarm: lab `bridge`, fit `gatelink` |
 | ~~North line~~ | (superseded: the foundry link runs under the floor instead of along the ceiling) | | | |
@@ -601,7 +599,7 @@ Player Detector) is carried into the tower by Kyle.
 | **N2** | `helper.lua` | **Rack homes.** An idle helper, or one waiting for a load, goes into its rack home instead of hovering: home i is world x -4429 + i % 8, y 72 (i < 8) or 74, z 1521, i by name in the factory's helper list (Pushy 0, HopTo 1, ... TargetLock 15), else id % 16. In from the front track, a step south. |
 | **N3** | `swarm.lua` | `rebase ... lane=1` puts the lane (`M.LANE`: gates, tracks, approaches, rack) into `.base`; a later rebase without `lane=` keeps it; `lane=0` drops it. |
 | **L1b** | `loader.lua` | With the lane, a loader no longer hops onto the (indoor) pad for fuel: it burns what it carries and asks for a feed. |
-| **L2** | `loader.lua` | Loaders park in rack 2 (later; until then they park where Crafty's offsets put them, on the hill north of the lane: x 10-16, z 0..-4). |
+| **L2** | `loader.lua` | Loaders park in rack 1's homes 16-26 (later; until then they park where Crafty's offsets put them, on the hill north of the lane: x 10-16, z 0..-4). |
 | **C6** | `factory.lua` | The line duty over the cable (stage 7). |
 | **B1** | `builder.lua` | BlockParty's base-room map assumes the hut. Keep it idle or on helper-style jobs after the move. |
 
@@ -763,18 +761,14 @@ chest; the drop chest touches no modem, so it is never on the cable.
   from the old shafts.
 - `ops unbridge`: the bridge out, and the hut wall made good.
 
-**Racks 2 and 3:** Kyle by hand from docs/racks23-build.html (or fit
-`rack2` for rack 2): homes cut, copper pads, a shelf of wired modems, bars
-behind at y 1 and y 3, a monitor strip at y 2, and the cable under the lane
-floor back to rack 1's link. 12 clicks (the shelf modems). Rack 2 is used
-once the loaders learn the lane (L2), rack 3 once the miners do.
+**Racks 2 and 3:** dropped. Rack 1 is one rack for every drone (8 × 4 homes).
 
 **Bill:** 12 cut copper, 24 iron bars, 12 + 5 wired modems, 12 advanced
 monitors, 20 cables.
 
 ### Stages 7-10
 
-7. **The foundry on the cable** (§5b, docs/foundry-build.html): the cable
+7. **The foundry on the cable** (docs/foundry-v2.md, the drones' fit plans): the cable
    under the floor, the chamber's modem, then `probe Crafty`; if yes the
    rest, the works computer, `foundry DropIt on=0`.
 8. **Mekanism expansion:** the power corner, the evaporation tower and
@@ -850,4 +844,4 @@ barrels (**Q1**). Cut copper takes copper ingots: 16 needs 4 copper blocks.
 3. **The yard bench's Inventory Manager.** Move it onto the store's network,
    or leave it?
 4. **Stage 5 timing:** about 10 minutes on site.
-5. **Rack 2's name board.** Wanted (8 more monitors)?
+5. **Rack 1's rows 3 and 4.** Where exactly (the surveyor will say)?

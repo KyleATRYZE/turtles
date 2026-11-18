@@ -1,6 +1,6 @@
-"""Kyle's voxel build guides: docs/rack-build.html (rack 1's loading bays),
-docs/racks23-build.html (racks 2 and 3), docs/foundry-build.html (the
-foundry on the cable).
+"""Kyle's voxel build guide: docs/rack-build.html (rack 1's loading bays).
+(RACKS23 and FOUNDRY below are kept for reference only: racks 2 and 3 were
+dropped, one rack for every drone; the foundry is docs/foundry-v2.md.)
 
 python3 tools/rackpage.py   writes all three (cells from tools/retrofit.py,
 checked there: python3 tools/retrofit.py check).
@@ -579,7 +579,7 @@ FOUNDRY = {
                (R.F_LINE["inbox"], "the piped line's inbox barrel"), (R.F_LINE["outbox"], "the piped line's outbox barrel")],
 }
 
-GUIDES = [RACK1, RACKS23, FOUNDRY]
+GUIDES = [RACK1]   # (racks 2 and 3 dropped: one rack; the foundry: docs/foundry-v2.md)
 
 if __name__ == "__main__":
     for G in GUIDES:

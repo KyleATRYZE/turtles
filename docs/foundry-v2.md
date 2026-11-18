@@ -28,13 +28,13 @@ The concept turns it into one floor with:
 
 | zone | where | what |
 |---|---|---|
-| Racks 3 and 2 | lane wall, x 28-31 and x 35-42 | loading bays (stage 6, docs/racks23-build.html); the hatch at x 32 stays open |
+| (racks) | | none here: one rack for every drone, rack 1 in the launch bay (8 × 4 homes). The lane's screen stays; the hatch at x 32 stays open |
 | Walkways | spine x 35-36 (z 5-29), north walkway z 5, cross aisle z 14-16 from the west door, aisle z 24-26 to the east door, service walkways x 39-41 (z 6-13) and x 41 (z 17-23) | clear; the works computer is flush in the floor at 35 0 15, where they cross |
 | Ore line (toward 5x) | east wall x 42, z 6-13, facing west; tanks behind at x 43 | dissolution, washer, crystallizer, injection, purification, crusher, enrichment, smelter, each pushing into the next. Ore goes in at the north end over the cable; ingots come out at the south end |
 | Gas plant | x 38 z 6-13 facing east; tanks at x 37 | two separators (brine, water), oxidizer, three chemical infusers (SO3, sulfuric acid, HCl), rotary condensentrator, pump on a 2 x 2 floor pool. Gases cross under the service walkway |
 | Power | east wall x 42-43, z 17-23 | cubes, four heat generators (both of today's), a gas-burning generator; room for an induction matrix behind |
 | Alloy cell | x 39, z 17-23, on a bed | 2 metallurgic infusers, 3 energized smelters, crusher, enrichment chamber: the works computer's make, smelt and enrich jobs |
-| **Certus farm** | x 28-34, z 5-13 | the AE2 work's farm (`tools/certusfarm.py`): two stone pillars at x 30 (z 7 and z 10, y 1-7), budding certus against both sides in three tiers (9 of 12 slots), corridors x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 3 and comes in by the hatch (32, z 3-4). Crystals go into a barrel on the cable at 34 1 13 |
+| **Certus farm** | x 28-34, z 5-13 | the AE2 work's farm (`tools/certusfarm.py`): two stone pillars at x 30 (z 7 and z 10, y 1-7), budding certus against both sides in three tiers (9 of 12 slots), corridors x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 1 and comes in by the hatch (32, z 3-4). Crystals go into a barrel on the cable at 34 1 13 |
 | **AE2 room** | x 28-34, z 17-23 | ME controller 3 × 3 (x 29-31 z 18-20), drives (33 18-19), crafting CPU (x 29-31 z 22-23), assemblers with pattern providers (33 20-23), inscribers ×4 on the west wall (28 18-21), charger (28 22), energy acceptor (34 17), ME bridge and terminal (34 21) |
 | Quartz line | x 29-33, z 24-27 | the built machines, squared up into one bay |
 | Workshop bench | x 38-42, z 27 | machine trials, by the east door |
@@ -54,13 +54,13 @@ moves here, next to:
 
 Things to keep:
 
-- **The harvester's way in.** It goes from rack 3 by the hatch (32, z 3)
+- **The harvester's way in.** It goes from rack 1 along the lane to the hatch (32, z 3)
   through the north walkway (z 4-5) into the farm's harvest rows. It needs
   nothing else.
 - **The walkways.** Keep the spine (x 35-36) and the cross aisle
   (z 14-16) clear.
 - **Cable.** It runs a block under the floor and joins the foundry link
-  (docs/foundry-build.html). Any CC modem on an AE2 block must touch only
+  (the fit plan `factory_f2_link`). Any CC modem on an AE2 block must touch only
   that block (the lesson from the bays).
 - **Exact cells are open.** If the AE2 chain needs more room, the AE2 room
   can take the floor up to x 34, z 17-23 inside its zone. Say so and I will
@@ -128,8 +128,9 @@ already on the cable.
    (`getDirection`).
 6. `close`.
 
-(docs/foundry-build.html and the "foundry link" of docs/factory-retrofit.md
-were for the plinth as it stood; this plan replaces them.)
+(The old plinth guide, docs/foundry-build.html, and its schematic
+schematics/foundry_cable.nbt were for the plinth as it stood; this plan
+replaces them.)
 
 ## Kyle's part (the only things that need a player)
 
