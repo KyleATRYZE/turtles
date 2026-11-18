@@ -444,6 +444,17 @@ function LN.bay()
       if okW and not wireless then
         local ok, name = pcall(peripheral.call, side, "getNameLocal")
         if ok and type(name) == "string" then return name end
+        -- (a full-block modem gives no local name to a turtle that came to
+        -- it after it was clicked, but the turtle shows on the network as
+        -- turtle_<n>, numbered by the network, not by computer id: the one
+        -- that answers with my id is me)
+        local okN, names = pcall(peripheral.call, side, "getNamesRemote")
+        for _, n in ipairs(okN and type(names) == "table" and names or {}) do
+          if n:match("^turtle_%d+$") then
+            local okI, id = pcall(peripheral.call, side, "callRemote", n, "getID")
+            if okI and id == os.getComputerID() then return n end
+          end
+        end
       end
     end
   end
