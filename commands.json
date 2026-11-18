@@ -1,12 +1,53 @@
 {
   "commands": [
     {
-      "id": 1795026293,
-      "issued": 1795026293000,
+      "id": 1795027401,
+      "issued": 1795027401000,
+      "cmd": "fit",
+      "target": "builder6",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_f2_ore",
+      "shell": "factory_asfit3"
+    },
+    {
+      "id": 1795027402,
+      "issued": 1795027401000,
       "cmd": "lab",
-      "target": "survey1",
+      "target": "builder5",
       "clear": 1,
-      "ops": "fetch|minecraft:iron_ingot=24;inv;handin|"
+      "ops": "fetch|ae2:inscriber=2,ae2:charger=1,ae2:engineering_processor_press=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|21;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;dropDown|ae2:engineering_processor_press|1;walk|28|2|22;inspect|down;placeDown|ae2:charger;expect|down|charger;walk|28|2|23;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;inv;leave;home;handin|"
+    },
+    {
+      "id": 1795027403,
+      "issued": 1795027401000,
+      "cmd": "fit",
+      "target": "builder1",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_pitstop",
+      "shell": "factory_asfit3"
+    },
+    {
+      "id": 1795027404,
+      "issued": 1795027401000,
+      "cmd": "lab",
+      "target": "builder2",
+      "clear": 1,
+      "ops": "goto|-4449|77|1519;digdown|72;inspect|down;goto|-4450|77|1519;digdown|72;inspect|down;goto|-4451|77|1519;digdown|72;inspect|down;goto|-4452|77|1519;digdown|72;inspect|down;goto|-4449|77|1520;digdown|72;inspect|down;goto|-4450|77|1520;digdown|72;inspect|down;goto|-4451|77|1520;digdown|72;inspect|down;up|6;inv;home;handin|"
+    },
+    {
+      "id": 1795027405,
+      "issued": 1795027401000,
+      "cmd": "fit",
+      "target": "survey1",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "plan": "factory_desklink",
+      "shell": "factory_asfit3"
     }
   ]
 }
