@@ -1,35 +1,35 @@
 {
   "commands": [
     {
-      "id": 1794963821,
-      "issued": 1794963821000,
+      "id": 1794964136,
+      "issued": 1794964136000,
       "cmd": "reboot",
       "target": "Crafty"
     },
     {
-      "id": 1794963822,
-      "issued": 1794963821000,
-      "cmd": "fit",
-      "target": "Dusty",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_f2_link",
-      "shell": "factory_asfit3",
-      "xmin": 26,
-      "xmax": 34
+      "id": 1794964137,
+      "issued": 1794964136000,
+      "cmd": "reboot",
+      "target": "Counter"
     },
     {
-      "id": 1794963823,
-      "issued": 1794963821000,
-      "cmd": "fit",
-      "target": "Dispensable",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_f2_clear",
-      "shell": "factory_asfit3",
-      "xmax": 35
+      "id": 1794964138,
+      "issued": 1794964136000,
+      "cmd": "reboot",
+      "target": "all"
+    },
+    {
+      "id": 1794964139,
+      "issued": 1794964136000,
+      "cmd": "assist",
+      "target": "Counter",
+      "on": 1
+    },
+    {
+      "id": 1794964140,
+      "issued": 1794964136000,
+      "cmd": "resume",
+      "target": "Counter"
     }
   ]
 }
