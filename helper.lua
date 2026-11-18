@@ -1968,6 +1968,23 @@ local function runLab()
   for s in lab.ops:gmatch("[^;]+") do steps[#steps + 1] = s end
   lab.i = lab.i or 1
   print(("Lab bench: %d steps."):format(#steps))
+  -- fuel first: a lab fetches parts only (the surveyor set out on 776 and
+  -- ran dry half way round the factory). Not for a lab that carries lava or
+  -- coal as its work (lava rounds, feeding): that must not be burned.
+  if lab.i == 1 and fuel() < 1500 and not lab.ops:find("lava", 1, true) and not lab.ops:find("coal", 1, true) then
+    st.lab = nil
+    pcall(supplyRun, function() return {} end, "fuel before the lab")
+    st.lab = lab
+    save()
+    for s = 1, 16 do
+      local d = turtle.getItemDetail(s)
+      if d and (d.name == "minecraft:lava_bucket" or isCoal(d.name)) and fuel() < FULL_TANK then
+        turtle.select(s)
+        turtle.refuel()
+      end
+    end
+    turtle.select(1)
+  end
   local SFX = { [""] = "", Up = "Up", Down = "Down" }
   while lab.i <= #steps do
     local a = {}
