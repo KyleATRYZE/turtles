@@ -1,4 +1,4 @@
-# Where things stand (17 Nov, 23:05)
+# Where things stand (18 Nov, 00:20)
 
 Working notes so the next session can pick up. Newest first.
 
@@ -38,3 +38,17 @@ See docs/factory-retrofit.md. Order of orders: `reboot all`, `haul Crafty on=0`,
 - Weak Automata Core `useOnBlock` throws "this.owner is null" on factory-placed turtles.
 - Hauling and lava rounds take any idle helper: keep builders in their `skip=` lists.
 - update.lua writes .role from the label only on first run: `rm .role`, `update`, `reboot`.
+
+## Update 18 Nov 00:20
+- Rack 1 built by Kyle (8 shelf modems clicked, monitors, RackBoard computer running rack.lua).
+  Helper docking does NOT work yet: HopTo stopped one block short of his home and found no bay.
+  Lane mode switched OFF for all helpers (`rebase <h> lane=0`): before the move it sent them out
+  by the east gate to hover. Next: test ONE helper docking while watching it.
+- Kyle removed all 11 chunk loaders until docking works.
+- The old pad shaft (-4462, 1521) jammed with a stack of helpers; Kyle asked to break the bottom one.
+- Sticky and OnRepeat out of fuel (Kyle asked to `refuel all`).
+- Foundry hall v2 concept APPROVED (docs/foundry-v2.html) + an indoor lava dripper farm. Kyle wants
+  drones to build almost everything (fit plans); he only clicks modems and places budding certus.
+- AE2: presses, sky stone, 9 flawed + 4 lesser budding certus in the old base. docs/ae2-bootstrap.md,
+  tools/certusfarm.py, docs/certus-build.html. ~100 certus crystals needed in all.
+- Create schematics: tools/schematic.py; the device bridge can write into Kyle's ATM10 schematics folder.
