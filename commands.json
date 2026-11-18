@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795031051,
-      "issued": 1795031051000,
+      "id": 1795031217,
+      "issued": 1795031217000,
       "cmd": "lab",
       "target": "builder1",
       "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|40|1|17;down;face|2;net;click;net;click;net;up;walk|40|1|23;down;face|2;net;up;leave;home"
+      "ops": "fetch|minecraft:coal=4;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|40|1|17;down;face|2;click;net;click;net;up;walk|40|1|18;down;face|2;click;click;net;up;walk|40|1|19;down;face|2;click;click;net;up;walk|40|1|20;down;face|2;click;click;net;up;walk|40|1|23;down;face|2;click;click;net;up;leave;home;handin|"
     }
   ]
 }
