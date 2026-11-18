@@ -53,7 +53,9 @@ def merge(w, part):
     d = part["data"] if "data" in part else part
     key = "%s@%d,%d,%d" % (d["tag"], *d["at"])
     p = w["pending"].setdefault(key, {"at": d["at"], "r": d["r"], "parts": d["parts"], "got": {}, "time": d.get("time", 0)})
-    if d.get("time", 0) > p["time"]:                       # a newer scan of the same point: start again
+    # a newer scan of the same point starts again; the parts of one scan are
+    # sent a second or so apart, so only a minute's gap means a new scan
+    if d.get("time", 0) > p["time"] + 60000:
         p.update({"got": {}, "time": d["time"], "parts": d["parts"], "r": d["r"]})
     flat, pal = d["b"], d["pal"]
     p["got"][str(d["part"])] = [[flat[i], flat[i + 1], flat[i + 2], pal[flat[i + 3] - 1]] for i in range(0, len(flat), 4)]
