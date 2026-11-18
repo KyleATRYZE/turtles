@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1794985247,
-      "issued": 1794985247000,
-      "cmd": "reboot",
-      "target": "all"
+      "id": 1794985299,
+      "issued": 1794985299000,
+      "cmd": "rescuer",
+      "target": "crafter1",
+      "name": "builder6"
     }
   ]
 }
