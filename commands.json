@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795032176,
-      "issued": 1795032176000,
-      "cmd": "lab",
-      "target": "builder2",
-      "clear": 1,
-      "ops": "fetch|mekanismgenerators:heat_generator=1,minecraft:coal=32;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|37|1|16;face|0;inspect;place|mekanismgenerators:heat_generator;expect|front|heat_generator;drop|minecraft:coal|32;inv;leave;home;handin|"
+      "id": 1795032486,
+      "issued": 1795032486000,
+      "cmd": "make",
+      "target": "crafter1",
+      "item": "mekanism:energized_smelter",
+      "n": 1
     }
   ]
 }
