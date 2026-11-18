@@ -1,39 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794960708,
-      "issued": 1794960708000,
-      "cmd": "rebase",
-      "target": "HopTo",
-      "lane": 0
-    },
-    {
-      "id": 1794960709,
-      "issued": 1794960708000,
-      "cmd": "rebase",
-      "target": "OnRepeat",
-      "lane": 0
-    },
-    {
-      "id": 1794960710,
-      "issued": 1794960708000,
-      "cmd": "rebase",
-      "target": "Comparable",
-      "lane": 0
-    },
-    {
-      "id": 1794960711,
-      "issued": 1794960708000,
-      "cmd": "rebase",
-      "target": "Sticky",
-      "lane": 0
-    },
-    {
-      "id": 1794960712,
-      "issued": 1794960708000,
-      "cmd": "rebase",
-      "target": "Dusty",
-      "lane": 0
+      "id": 1794961475,
+      "issued": 1794961475000,
+      "cmd": "reboot",
+      "target": "DropIt"
     }
   ]
 }
