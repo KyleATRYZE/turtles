@@ -1,14 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794965803,
-      "issued": 1794965803000,
-      "cmd": "survey",
-      "target": "mapper1",
-      "x": -4426,
-      "z": 1533,
-      "size": 64,
-      "name": "factory_now"
+      "id": 1794965844,
+      "issued": 1794965844000,
+      "cmd": "reboot",
+      "target": "RackBoard"
     }
   ]
 }
