@@ -1,13 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795029608,
-      "issued": 1795029608000,
-      "cmd": "lavafarm",
+      "id": 1795029657,
+      "issued": 1795029657000,
+      "cmd": "make",
       "target": "crafter1",
-      "n": 16,
-      "how": "wall",
-      "skip": "builder1,builder2,builder3,builder4,builder5,builder6,foundry1,survey1,rescue1"
+      "item": "mekanism:energized_smelter",
+      "n": 1
     }
   ]
 }
