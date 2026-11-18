@@ -1,12 +1,16 @@
 {
   "commands": [
     {
-      "id": 1794968771,
-      "issued": 1794968771000,
-      "cmd": "lab",
-      "target": "builder1",
-      "clear": 1,
-      "ops": "net;peripherals"
+      "id": 1794971445,
+      "issued": 1794971445000,
+      "cmd": "home",
+      "target": "miner1"
+    },
+    {
+      "id": 1794971446,
+      "issued": 1794971445000,
+      "cmd": "home",
+      "target": "miner3"
     }
   ]
 }
