@@ -41,7 +41,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Longer term: AE2 autocrafting (see E)
 
 ## C. Survey (Geo Scanner mapping the base)
-- [x] survey1 rescued by rescue duty at 02:30 and back on the factory survey (03:14). Was: dry under the roof at -4441 75 1520. builder6 tried to walk in with lava (02:25) and its walk failed at 21 6 5. Left to rescue duty (the route through the door); else Kyle picks it up and puts it in its home. Also fixed: the scan had used the wrong tool side (geoOn). ORIGINAL NOTE: survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
+- [~] survey1's scans failed again: AE's method is scanBlocks, not scan (fixed d1ba0b6). Re-sent the survey at 04:05. Earlier: rescued at 02:30. Was: dry under the roof at -4441 75 1520. builder6 tried to walk in with lava (02:25) and its walk failed at 21 6 5. Left to rescue duty (the route through the door); else Kyle picks it up and puts it in its home. Also fixed: the scan had used the wrong tool side (geoOn). ORIGINAL NOTE: survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
 - [x] mapper1 mapped the old base: maps/oldbase.json on the status branch
 - [~] mapper1 maps the factory from outside (`factory_now`, 01:41)
 - [ ] When the maps land: `python3 tools/survey.py pull`, `survey.py rack`, then fix rack rows 3-4 (M.LANE, LN.home, rack.lua)
@@ -73,9 +73,9 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Lava cauldrons from the hut into the foundry's lava wall (the hut is not kept)
 
 ## F. AE2 (docs/ae2-bootstrap.md)
-- [~] Certus farm: builder4 is fitting `factory_f2_budding` (new plan, 03:15): the 9 flawed budding certus onto the pillars. If they aren't in crafter1's reach, the fit says "No flawed_budding_quartz for now". Then Kyle places them from storage, or they get moved over
+- [x] Certus farm: builder4 placed 8 of 9 flawed budding certus (about 03:40). Only 8 were in reach; the 9th slot -4419 78 1525 is empty (Kyle can add one). **First harvest from about 06:45** (`python3 tools/certusfarm.py first bench=v2`)
 - [K] Kyle clicks the certus barrel: -4414 71 1531
-- [~] AE2 bench: crafter1 making 4 inscribers + charger (03:16); builder5 is setting up the bench (bench=v2, x28 z18-23 in the foundry hall) with the four presses. Then the `fluix 8` lab
+- [~] AE2 bench: 3 inscribers placed with the silicon, logic and calc presses (03:26). builder5 is finishing it: 2 more inscribers, the engineering press, the charger. Then the `fluix 8` lab
 - [ ] Harvest with the `pick` verb (first crop about 3 h after placing)
 - [ ] ME controller, drives and crafting CPU (phase 4 `ae2`); ME bridge at -4414 71 1539 (Kyle clicks it)
 
