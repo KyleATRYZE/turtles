@@ -1953,6 +1953,31 @@ local function labShow(v)
   return ok and s or tostring(v)
 end
 
+-- The Geo Scanner onto the tool side (the side without the modem: putting
+-- it on the right blindly took a modem or a chunk loader off and scanned
+-- with that), waiting until it shows as a peripheral. Returns the side.
+local function geoOn(slot)
+  local side = peripheral.getType("right") == "modem" and "left" or "right"
+  if peripheral.getType(side) == "modem" then return nil end
+  turtle.select(slot)
+  local ok = side == "left" and turtle.equipLeft() or (side == "right" and turtle.equipRight())
+  turtle.select(1)
+  if not ok then return nil end
+  for _ = 1, 20 do
+    local t = peripheral.getType(side)
+    if t and tostring(t):lower():find("geo", 1, true) then return side end
+    sleep(0.25)
+  end
+  return side
+end
+-- and back off again: what was on that side goes back on
+local function geoOff(slot, side)
+  -- (the scanner is on; the old tool sits in the slot the scanner came from)
+  turtle.select(slot)
+  if side == "left" then turtle.equipLeft() else turtle.equipRight() end
+  turtle.select(1)
+end
+
 local function runLab()
   local lab = st.lab
   st.labOut = st.labOut or {}
@@ -2354,13 +2379,10 @@ local function runLab()
         local want, r = a[2] or "", math.min(16, tonumber(a[3]) or 8)
         local slot = findSlot("advancedperipherals:geo_scanner")
         if not slot then res, stop = "no geo scanner on board", true else
-          turtle.select(slot)
-          turtle.equipRight()
-          local geo = peripheral.wrap("right")
+          local side = geoOn(slot)
+          local geo = side and peripheral.wrap(side)
           local ok, blocks = pcall(function() return geo.scan(r) end)
-          turtle.select(slot)
-          turtle.equipRight()
-          turtle.select(1)
+          if side then geoOff(slot, side) end
           if not ok or type(blocks) ~= "table" then res = "scan failed: " .. tostring(blocks) else
             local hits = {}
             for _, b in ipairs(blocks) do
@@ -2383,13 +2405,10 @@ local function runLab()
         if not slot then res, stop = "no geo scanner on board", true else
           local blocks, why
           for _ = 1, 4 do                                  -- (the scanner has a cool-down)
-            turtle.select(slot)
-            turtle.equipRight()
-            local geo = peripheral.wrap("right")
+            local side = geoOn(slot)
+            local geo = side and peripheral.wrap(side)
             local ok, b, w = pcall(function() return geo.scan(r) end)
-            turtle.select(slot)
-            turtle.equipRight()
-            turtle.select(1)
+            if side then geoOff(slot, side) end
             if ok and type(b) == "table" then blocks = b break end
             why = ok and w or b
             sleep(3)
