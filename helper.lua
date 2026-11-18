@@ -1847,6 +1847,10 @@ end
 -- flying height.
 escape = function(limit)
   limit = limit or 1500
+  -- under the factory's roof: out by the big door, never up into the roof
+  -- (survey1 and rescue1 both ended up in the roof looking for open sky)
+  local inside, fm = inFactory()
+  if inside and leaveFactory(fm) then return true, 0 end
   local seen, moves = {}, 0
   -- out = at flying height, and well clear above where we started (up a
   -- mountain, flying height can be inside the treetops)
@@ -1957,11 +1961,20 @@ end
 -- it on the right blindly took a modem or a chunk loader off and scanned
 -- with that), waiting until it shows as a peripheral. Returns the side.
 local function geoOn(slot)
+  for _, sd in ipairs({ "left", "right" }) do           -- (already on from a step before)
+    local t = peripheral.getType(sd)
+    if t and tostring(t):lower():find("geo", 1, true) then return sd end
+  end
   local side = peripheral.getType("right") == "modem" and "left" or "right"
   if peripheral.getType(side) == "modem" then return nil end
-  turtle.select(slot)
-  local ok = side == "left" and turtle.equipLeft() or (side == "right" and turtle.equipRight())
-  turtle.select(1)
+  local ok
+  for _ = 1, 3 do
+    turtle.select(slot)
+    ok = side == "left" and turtle.equipLeft() or (side == "right" and turtle.equipRight())
+    turtle.select(1)
+    if ok then break end
+    sleep(1)
+  end
   if not ok then return nil end
   for _ = 1, 20 do
     local t = peripheral.getType(side)
@@ -2407,7 +2420,7 @@ local function runLab()
           for _ = 1, 4 do                                  -- (the scanner has a cool-down)
             local side = geoOn(slot)
             local geo = side and peripheral.wrap(side)
-            local ok, b, w = pcall(function() return (geo.scanBlocks or geo.scan)(r) end)
+            local ok, b, w = pcall(function() if not geo then error("the scanner would not go on", 0) end return (geo.scanBlocks or geo.scan)(r) end)
             if side then geoOff(slot, side) end
             if ok and type(b) == "table" then blocks = b break end
             why = ok and w or b
