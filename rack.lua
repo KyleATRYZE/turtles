@@ -211,13 +211,17 @@ end
 ---------------------------------------------------------------- the monitors
 -- the board touching the computer (a side name) is the summary; every strip
 -- on the cable (monitor_N) shows rows of homes
+-- (every monitor touching the computer is a summary board: with two, the
+-- second was never drawn and kept an old "not heard yet" frame)
 function R.monitors()
-  local board, strips = nil, {}
+  local board, strips, boards = nil, {}, {}
   for _, name in ipairs(peripheral.getNames()) do
     if peripheral.getType(name) == "monitor" then
-      if name:find("_", 1, true) then strips[#strips + 1] = name else board = board or name end
+      if name:find("_", 1, true) then strips[#strips + 1] = name
+      else board = board or name boards[#boards + 1] = name end
     end
   end
+  R.boards = boards
   table.sort(strips, function(a, b)
     return (tonumber(a:match("(%d+)$")) or 0) < (tonumber(b:match("(%d+)$")) or 0)
   end)
@@ -372,9 +376,13 @@ local function painter()
   while true do
     local board, strips = R.monitors()
     local lay = R.layout(strips, cfg)
-    if board then pcall(R.drawSummary, peripheral.wrap(board), os.clock()) end
+    for _, b in ipairs(R.boards or { board }) do pcall(R.drawSummary, peripheral.wrap(b), os.clock()) end
     for _, s in ipairs(strips) do
-      if lay[s] then pcall(R.draw, peripheral.wrap(s), lay[s], os.clock(), s) end
+      if lay[s] then pcall(R.draw, peripheral.wrap(s), lay[s], os.clock(), s)
+      else
+        local m = peripheral.wrap(s)            -- (a strip with no rows: blank, not a frozen old frame)
+        if m then pcall(function() m.setBackgroundColour(colours.black) m.clear() end) end
+      end
     end
     sleep(1)
   end
