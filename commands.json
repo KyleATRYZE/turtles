@@ -1,12 +1,19 @@
 {
   "commands": [
     {
-      "id": 1795023716,
-      "issued": 1795023716000,
+      "id": 1795023832,
+      "issued": 1795023832000,
       "cmd": "lab",
-      "target": "builder1",
+      "target": "lava1",
       "clear": 1,
-      "ops": "fetch|minecraft:iron_ingot=24;inv;handin|"
+      "ops": "inv"
+    },
+    {
+      "id": 1795023833,
+      "issued": 1795023832000,
+      "cmd": "rebase",
+      "target": "builder6",
+      "lane": 1
     }
   ]
 }
