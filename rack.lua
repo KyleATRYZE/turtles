@@ -241,7 +241,7 @@ function R.monitors()
     end
     if okB and old and old[1] then pcall(peripheral.call, b, "setPaletteColour", slot, old[1], old[2], old[3]) end
   end
-  -- (rack 1's strips are the same size as its board, 8 blocks by 1: since
+  -- (rack 1's strips are as wide as its board, 8 blocks: since
   -- the store's cable joined ours, its screens and others are on it too)
   -- (measured once per monitor: changing the text scale every second flickers)
   R.sizes = R.sizes or {}
@@ -255,11 +255,11 @@ function R.monitors()
     return R.sizes[n][1], R.sizes[n][2]
   end
   if boards[1] then
-    local bw, bh = size(boards[1])
+    local bw = size(boards[1])
     if bw > 0 then
       for i = #strips, 1, -1 do
-        local sw, sh = size(strips[i])
-        if not (sw == bw and sh == bh) then table.remove(strips, i) end
+        local sw = size(strips[i])                -- (same width: the rack is 8 blocks wide)
+        if sw ~= bw then table.remove(strips, i) end
       end
     end
   end
