@@ -1,13 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795026028,
-      "issued": 1795026028000,
-      "cmd": "feed",
-      "target": "builder1",
-      "x": -4462,
-      "y": 80,
-      "z": 1521
+      "id": 1795026293,
+      "issued": 1795026293000,
+      "cmd": "lab",
+      "target": "survey1",
+      "clear": 1,
+      "ops": "fetch|minecraft:iron_ingot=24;inv;handin|"
     }
   ]
 }
