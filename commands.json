@@ -1,10 +1,18 @@
 {
   "commands": [
     {
-      "id": 1794962036,
-      "issued": 1794962036000,
+      "id": 1794962227,
+      "issued": 1794962227000,
       "cmd": "reboot",
-      "target": "Sticky"
+      "target": "all"
+    },
+    {
+      "id": 1794962228,
+      "issued": 1794962227000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "advancedperipherals:geo_scanner",
+      "n": 1
     }
   ]
 }
