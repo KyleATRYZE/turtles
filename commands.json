@@ -1,8 +1,15 @@
 {
   "commands": [
     {
-      "id": 1794964471,
-      "issued": 1794964471000,
+      "id": 1794964709,
+      "issued": 1794964709000,
+      "cmd": "rescuer",
+      "target": "Crafty",
+      "name": "Dispensable"
+    },
+    {
+      "id": 1794964710,
+      "issued": 1794964709000,
       "cmd": "rescue",
       "target": "Crafty",
       "who": "Charcool",
