@@ -92,17 +92,29 @@ local function facing(name)
   return type(d) == "string" and d:upper() or nil
 end
 
+-- Mekanism's own peripherals come on the cable as metallurgicInfuser_0,
+-- energizedSmelter_1 and so on (not mekanism:metallurgic_infuser_0): both
+-- spellings are read as the block's id
+local CAMEL = { enrichmentChamber = "mekanism:enrichment_chamber", energizedSmelter = "mekanism:energized_smelter",
+  metallurgicInfuser = "mekanism:metallurgic_infuser", crusher = "mekanism:crusher" }
+function W.kind(name)
+  local base, n = tostring(name):match("^(.-)_(%d+)$")
+  if base and CAMEL[base] then return CAMEL[base] .. "_" .. n end
+  return name
+end
+
 function W.scan(names)
   W.m = { bank = {}, infusers = {} }
   W.stores = {}
   for _, name in ipairs(names) do
-    local east = name:find("^mekanism") and facing(name) == "EAST"
-    if name:find("^mekanism:enrichment_chamber") then
+    local id = W.kind(name)
+    local east = id:find("^mekanism") and facing(name) == "EAST"
+    if id:find("^mekanism:enrichment_chamber") then
       if east then W.m.enrich = W.m.enrich or name else W.m.chamber = W.m.chamber or name end
-    elseif name:find("^mekanism:energized_smelter") then
+    elseif id:find("^mekanism:energized_smelter") then
       if east or W.m.smelter then W.m.bank[#W.m.bank + 1] = name else W.m.smelter = name end
-    elseif name:find("^mekanism:metallurgic_infuser") then W.m.infusers[#W.m.infusers + 1] = name
-    elseif name:find("^mekanism:crusher") then W.m.crusher = W.m.crusher or name
+    elseif id:find("^mekanism:metallurgic_infuser") then W.m.infusers[#W.m.infusers + 1] = name
+    elseif id:find("^mekanism:crusher") then W.m.crusher = W.m.crusher or name
     elseif W.isStore(name) then W.stores[#W.stores + 1] = name end
   end
   table.sort(W.stores, function(a, b)
