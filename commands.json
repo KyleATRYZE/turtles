@@ -1,15 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795032738,
-      "issued": 1795032738000,
-      "cmd": "fit",
-      "target": "builder6",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_f2_alloy",
-      "shell": "factory_asfit3"
+      "id": 1795032771,
+      "issued": 1795032771000,
+      "cmd": "probe",
+      "target": "crafter1",
+      "name": "metallurgicInfuser_0"
     }
   ]
 }
