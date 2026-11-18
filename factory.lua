@@ -3411,6 +3411,23 @@ local function lavaFarmDuty(stock)
     ops = table.concat({ "fetch|minecraft:bucket=" .. buckets,
       ("collect|%d|%d|%d|%d|%d|place"):format(row.x, row.y, row.z, buckets, row.face or 2),
       "inv", "home", "handin|" }, ";")
+  elseif farm.how == "wall" then
+    -- the foundry's lava wall (foundry v2 phase 1): 16 dripstone cauldrons
+    -- along the hall's south wall, x 28-43 z 29, filled from the walkway at
+    -- z 28 (building coordinates). Indoors, so walked to by the plan.
+    local parts = { "fetch|minecraft:bucket=" .. buckets,
+      "site|-4448|71|1518|factory_asfit3|factory_foundryfloor" }
+    -- (at most 12 buckets a round: every other round starts 4 along, so all
+    -- 16 get emptied)
+    local off = farm.wallOff and 4 or 0
+    farm.wallOff = not farm.wallOff or nil
+    for i = 0, math.min(15 - off, buckets - 1) do
+      parts[#parts + 1] = ("walk|%d|1|28"):format(28 + off + i)
+      parts[#parts + 1] = "face|1"
+      parts[#parts + 1] = "place|minecraft:bucket"
+    end
+    for _, t in ipairs({ "leave", "inv", "home", "handin|" }) do parts[#parts + 1] = t end
+    ops = table.concat(parts, ";")
   elseif farm.how == "hut" then
     -- Kyle's farm along the hut's west wall: cauldrons at x -4467, y 70,
     -- z 1521 on; reached down the pad shaft and along the aisle in front
@@ -4344,7 +4361,7 @@ while true do
       return true
     elseif c.cmd == "lavafarm" then        -- lavafarm crafter1 n=<units built> how=place|use
       plots.lavafarm = { n = tonumber(c.n) or 0,
-        how = (c.how == "use" or c.how == "hut") and c.how or "place" }
+        how = (c.how == "use" or c.how == "hut" or c.how == "wall") and c.how or "place" }
       if type(c.row) == "string" then        -- row=x,y,z,n[,face]: the dripstone row's stand and length
         local x, y, z, n, f = c.row:match("^(-?%d+),(-?%d+),(-?%d+),(%d+),?(%d*)$")
         if x then plots.lavafarm.row = { x = tonumber(x), y = tonumber(y), z = tonumber(z), n = tonumber(n),
