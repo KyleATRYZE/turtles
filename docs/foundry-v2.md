@@ -85,31 +85,51 @@ the other's as done.
 
 | phase | job | helper(s) | what | needs from Crafty |
 |---|---|---|---|---|
-| 1 | `link` | HopTo `xmax=31` (the lane) + LeverAlone `xmin=32` (the hall) | the CC cable from rack 1's link (18 1 3 down), under the front track to the hatch, under the north walkway, down the spine (x 35, to z 22); branches: the certus barrel's modem 34 0 13, the works computer (35 0 15, on its modem), the ME bridge's modem 34 0 21, the alloy cell's floor modems 39 0 17-23, and toward the ore line (39-41 0 16) | 54 cable, 11 wired modems, 1 computer |
-| 1 | `lava` | OnRepeat (+ another helper `xmin=36`) | the lava wall, 16 units | 32 polished deepslate, 16 pointed dripstone, 16 cauldrons, 16 lava buckets |
+| 1 | `link` | HopTo `xmax=25`, Comparable `xmin=26 xmax=34`, Dusty `xmin=35` | the CC cable from rack 1's link (18 1 3 down), under the front track to the hatch, under the north walkway, down the spine (x 35, to z 22); branches: the certus barrel's modem 34 0 13, the works computer (35 0 15, on its modem), the ME bridge's modem 34 0 21, the alloy cell's floor modems 39 0 17-23, and toward the ore line (39-41 0 16) | 54 cable, 11 wired modems, 1 computer |
+| 1 | `lava` | OnRepeat `xmax=35`, ButtonUp `xmin=36` | the lava wall, 16 units | 32 polished deepslate, 16 pointed dripstone, 16 cauldrons, 16 lava buckets |
 | 1 | `certus` | Pushy | the farm's two pillars (y 1-7) and its barrel; a click hole at 33 0 13 | 14 stone bricks, 1 barrel |
-| 1 | `clear` | Sticky | the piped line's chest, sorter, transporters and cable, the plans' leftovers, the bench's leftovers (a chest with things in it is left and said: empty it into the store first) | none |
-| 1 | `power` | Sticky, after `clear` | the power row (x 43); the piped line's heat generator to 42 1 19, two more, a gas-burning generator and a second cube (left if not to be had) | 18 universal cable, 2 heat generators, 1 gas-burning generator, 1 cube |
+| 1 | `clear` | Sticky `xmax=35`, Dispensable `xmin=36` | the piped line's chest, sorter, transporters and cable, the plans' leftovers, the bench's leftovers (a chest with things in it is left and said: empty it into the store first) | none |
+| 1 | `power` | Observant | the power row (x 43); the piped line's heat generator to 42 1 19, two more, a gas-burning generator and a second cube (left if not to be had) | 18 universal cable, 2 heat generators, 1 gas-burning generator, 1 cube |
 | 2 | `alloy` | DropIt (the foundry stops for the few minutes this takes) | the plinth's infuser, smelter and chamber into the alloy cell (39 1 17, 19, 23, facing east), its power row (x 38) and link to the east wall; the old plinth cable up; the cube and heat generator turned to face the row; click holes at 40 0 17-23 | 7 universal cable (10 come back from the old cable), and the cell's other machines when made: 1 infuser, 2 smelters, 1 crusher |
 | 3 | `ore` | Sticky, after `alloy` | the cable under the ore line with a modem under each machine; the piped line's chamber and smelter to 42 1 12 and 42 1 13 (facing west); the rest of the line as it is made; click holes at 41 0 6-13 | 11 cable, 8 wired modems; later the crusher, purification, injection, crystallizer, washer, dissolution chamber |
 | 4 | `ae2` | HopTo, or the AE2 work's helper | the AE2 room (controller 3 × 3, drives, crafting CPU, pattern providers and assemblers, energy acceptor, ME bridge) and its power across the spine (one universal cable flush in the floor at z 17); a click hole at 34 0 22. Fit when the parts exist; what is missing is left for a later run | the AE2 work's parts |
 | 5 | `close` | any helper, after Kyle's clicks | the floor blocks back over the click holes | 15 deepslate bricks, 2 polished deepslate |
 
-**In parallel.** In phase 1, four helpers work at once without meeting:
-- HopTo and LeverAlone on the cable (the lane and the hall's spine);
-- OnRepeat on the south wall;
+**In parallel.** In phase 1, nine helpers work at once without meeting
+(LeverAlone is lost and is not used; DropIt keeps the old foundry
+running):
+- HopTo, Comparable and Dusty on the cable (the west lane, the east lane
+  with the hatch and the north walkway, the spine with its branches);
+- OnRepeat and ButtonUp on the south wall;
 - Pushy at the farm (x 30);
-- Sticky at the old line (x 36), then at the east wall.
+- Sticky and Dispensable clearing the old line;
+- Observant on the east wall's power.
 
 The old foundry keeps running through phase 1: the new power row joins
 the old plinth cable, so the plinth machines keep their power. Phase 2
 stops it for the move. Phase 3 rebuilds the line with the works computer
 already on the cable.
 
-**Then, in order:**
-1. `probe Crafty` (docs/factory-retrofit.md §5b).
-2. The works computer (label and install).
-3. `foundry DropIt on=0`.
+**The move, step by step (keeping the old foundry running as long as it can):**
+1. Phase 1 as above. Through it, DropIt's foundry.lua keeps working the
+   plinth machines where they stand (the new power row joins their cable).
+2. After `link` and the works computer's install: `probe Crafty` (one item
+   into a machine by name and back; docs/factory-retrofit.md §5b). If it
+   says no, stop and use the fallback there.
+3. `foundry DropIt on=0`, then phase 2 (`alloy`, DropIt itself). The plinth
+   machines go into the alloy cell; Kyle clicks their three floor modems.
+4. Start the works computer: it says `foundry_ready` and the factory's
+   jobs go to it from then on (ore through the chamber; make, smelt, enrich
+   in the alloy cell). DropIt is an ordinary helper again.
+5. Phase 3 (`ore`): the piped line's chamber and smelter onto the ore line;
+   Kyle clicks their two modems. The works computer picks them up on its
+   next look (every 5 minutes, or a reboot): the ore line's machines face
+   west, the alloy cell's east, and it tells them apart that way
+   (`getDirection`).
+6. `close`.
+
+(docs/foundry-build.html and the "foundry link" of docs/factory-retrofit.md
+were for the plinth as it stood; this plan replaces them.)
 
 ## Kyle's part (the only things that need a player)
 

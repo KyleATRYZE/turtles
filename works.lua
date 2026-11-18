@@ -1,11 +1,12 @@
 -- works.lua : the foundry on the cable (docs/foundry-build.html). Runs on
 -- the works computer in the foundry floor, role "works".
 --
--- Every machine on the plinth sits on a full-block wired modem in the floor
--- (its BOTTOM face), on the same cable as the store. Items go from the store
+-- Every machine of the hall (docs/foundry-v2.md: the ore line on the east
+-- wall, the alloy cell) sits on a full-block wired modem in the floor (its
+-- BOTTOM face), on the same cable as the store. Items go from the store
 -- straight into a machine by its network name and the results come straight
--- back: no turtle carries anything. The infuser has a second modem on its
--- south (RIGHT) face for the infusion items.
+-- back: no turtle carries anything. The infuser's infusion items go in by
+-- the same face, switched to EXTRA for the moment.
 --
 -- It speaks the factory's foundry protocol (factory.lua "the foundry"), the
 -- one DropIt's foundry.lua speaks: it says foundry_ready with its machines,
@@ -26,7 +27,7 @@ W.JOB = "swarm_job"
 W.STATUS = "swarm"
 W.CHANNEL = 4711                     -- factory.lua K.RACK_CHANNEL (reboot orders)
 W.FACE = "BOTTOM"                    -- the face on the floor modem
-W.EXTRA_FACE = "RIGHT"               -- the infuser's second modem (south, facing west)
+W.ORE_OUT, W.ORE_IN = "RIGHT", "LEFT"  -- the ore line faces west: south is RIGHT, north LEFT
 W.NO_PROGRESS = 120                  -- seconds without anything coming out: the job has stopped
 W.MAX_BATCH = 48
 
@@ -80,15 +81,27 @@ function W.isStore(name)
   return peripheral.hasType(name, "inventory") and true or false
 end
 
+-- The hall (docs/foundry-v2.md): the ore line on the east wall faces WEST
+-- (the chamber at z 12 pushes south into the smelter at z 13); the alloy
+-- cell faces EAST (infusers, a smelter bank, a second chamber, a crusher),
+-- every machine on its own floor modem. Which is which is read from the
+-- machine itself (getDirection). A machine that cannot say counts as the
+-- ore line's if there is none yet.
+local function facing(name)
+  local d = call(name, "getDirection")
+  return type(d) == "string" and d:upper() or nil
+end
+
 function W.scan(names)
-  W.m = { bank = {} }
+  W.m = { bank = {}, infusers = {} }
   W.stores = {}
-  local infusers = {}
   for _, name in ipairs(names) do
-    if name:find("^mekanism:enrichment_chamber") then W.m.chamber = W.m.chamber or name
+    local east = name:find("^mekanism") and facing(name) == "EAST"
+    if name:find("^mekanism:enrichment_chamber") then
+      if east then W.m.enrich = W.m.enrich or name else W.m.chamber = W.m.chamber or name end
     elseif name:find("^mekanism:energized_smelter") then
-      if not W.m.smelter then W.m.smelter = name else W.m.bank[#W.m.bank + 1] = name end
-    elseif name:find("^mekanism:metallurgic_infuser") then infusers[#infusers + 1] = name
+      if east or W.m.smelter then W.m.bank[#W.m.bank + 1] = name else W.m.smelter = name end
+    elseif name:find("^mekanism:metallurgic_infuser") then W.m.infusers[#W.m.infusers + 1] = name
     elseif name:find("^mekanism:crusher") then W.m.crusher = W.m.crusher or name
     elseif W.isStore(name) then W.stores[#W.stores + 1] = name end
   end
@@ -97,14 +110,16 @@ function W.scan(names)
     if ca ~= cb then return ca end
     return a < b
   end)
-  table.sort(infusers)
-  W.m.infuser, W.m.extra = infusers[1], infusers[2]
+  table.sort(W.m.infusers)
+  table.sort(W.m.bank)
+  W.m.infuser = W.m.infusers[1]
+  if not W.m.chamber and W.m.enrich then W.m.chamber, W.m.enrich = W.m.enrich, nil end
   return W.m
 end
 
--- The sides: the floor modem's face takes items in and gives results out;
--- the chamber pushes its dust on north (LEFT) into the smelter; the
--- infuser's second modem is its infusion face.
+-- The sides: every machine's floor face takes items in and gives results
+-- out. On the ore line the chamber pushes its dust on south (RIGHT, facing
+-- west) into the smelter (in by its LEFT); nothing else ejects.
 function W.setup()
   local function io(name)
     if not name then return end
@@ -114,17 +129,16 @@ function W.setup()
       note(name .. ": no INPUT_OUTPUT; results by ejection only")
     end
     call(name, "setRedstoneMode", "IGNORED")
+    call(name, "setEjecting", "ITEM", false)
   end
-  io(W.m.chamber)
-  io(W.m.smelter)
-  io(W.m.crusher)
+  for _, n in ipairs({ W.m.chamber, W.m.smelter, W.m.enrich, W.m.crusher }) do io(n) end
   for _, b in ipairs(W.m.bank) do io(b) end
-  io(W.m.infuser)
+  for _, f in ipairs(W.m.infusers) do io(f) end
   if W.m.chamber and W.m.smelter then
-    call(W.m.chamber, "setMode", "ITEM", "LEFT", "OUTPUT")
-    call(W.m.smelter, "setMode", "ITEM", "RIGHT", "INPUT")
+    call(W.m.chamber, "setMode", "ITEM", W.ORE_OUT, "OUTPUT")
+    call(W.m.chamber, "setEjecting", "ITEM", true)
+    call(W.m.smelter, "setMode", "ITEM", W.ORE_IN, "INPUT")
   end
-  if W.m.infuser then call(W.m.infuser, "setMode", "ITEM", W.EXTRA_FACE, "EXTRA") end
 end
 
 ---------------------------------------------------------------- moving items
@@ -200,10 +214,10 @@ local function oreLot(item)
 end
 
 function W.ore(job, smelt)
-  local machine = W.m.chamber
+  local machine = (not smelt and W.m.enrich) or W.m.chamber
   if not machine then return false, "no enrichment chamber on the cable" end
   if smelt and not W.m.smelter then smelt = false end
-  call(machine, "setEjecting", "ITEM", smelt and true or false)
+  if machine == W.m.chamber then call(machine, "setEjecting", "ITEM", smelt and true or false) end
   local lot, yield = oreLot(job.item)
   local n = math.min(job.n or W.MAX_BATCH, W.count(job.item))
   n = n - n % lot
@@ -216,8 +230,9 @@ function W.ore(job, smelt)
 end
 
 function W.smelt(job)
-  local list = { W.m.smelter }
+  local list = {}
   for _, b in ipairs(W.m.bank) do list[#list + 1] = b end
+  if #list == 0 then list[1] = W.m.smelter end
   if #list == 0 then return false, "no smelter on the cable" end
   local n = math.min(job.n or 64, W.count(job.item))
   local per = math.ceil(n / #list)
@@ -239,7 +254,13 @@ function W.fill(gasKey, mb)
   for _, it in ipairs(gas.items) do
     if have >= mb then break end
     local n = math.min(W.count(it[1]), math.ceil((mb - have) / it[2]))
-    if n > 0 then have = have + W.put(W.m.extra or W.m.infuser, it[1], n) * it[2] end
+    if n > 0 then
+      -- the infusion items go in by the same floor face, switched to EXTRA
+      -- for the moment (the infuser has one modem)
+      if not W.m.extra then call(W.m.infuser, "setMode", "ITEM", W.FACE, "EXTRA") end
+      have = have + W.put(W.m.extra or W.m.infuser, it[1], n) * it[2]
+      if not W.m.extra then call(W.m.infuser, "setMode", "ITEM", W.FACE, "INPUT_OUTPUT") end
+    end
   end
   return have
 end
@@ -270,13 +291,14 @@ function W.run(job)
   elseif W.INFUSE[job.kind] then ok, why = W.infuse(job)
   elseif job.kind == "fuel" then ok = true             -- (the generator is not on the cable: fed by hand)
   else ok, why = false, "no such job: " .. tostring(job.kind) end
-  if W.m.chamber then call(W.m.chamber, "setEjecting", "ITEM", true) end
+  if W.m.chamber and W.m.smelter then call(W.m.chamber, "setEjecting", "ITEM", true) end
   return ok, why, W.made
 end
 
 function W.ready()
   return { chamber = W.m.chamber and true or nil, smelter = W.m.smelter and true or nil,
-    infuser = W.m.infuser and true or nil, crusher = W.m.crusher and true or nil,
+    infuser = W.m.infuser and true or nil, infusers = #W.m.infusers, crusher = W.m.crusher and true or nil,
+    enrich = W.m.enrich and true or nil,
     bank = #W.m.bank > 0 and #W.m.bank or nil, cable = true }
 end
 

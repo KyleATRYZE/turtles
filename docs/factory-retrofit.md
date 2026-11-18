@@ -506,7 +506,12 @@ E R P I D W Y M H machines (see mekline.py)  = Mekanism cable  B cube  # basin
   The tower's water and the plants' layout are drawn with stage 4.
 - **Stage 0 plinth** (x 41-42): worked over the cable from now on (§5b).
 
-### 5b. The foundry on the cable (stage 7; docs/foundry-build.html)
+### 5b. The foundry on the cable (stage 7; superseded by docs/foundry-v2.md)
+
+**The hall is being rebuilt to docs/foundry-v2.md; its fit plans
+(blueprints/factory_f2_*) replace the cells below. The probe and the works
+computer stay as described here; the works computer now finds the ore
+line's and the alloy cell's machines by their facing.**
 
 No drone carries anything to the machines. Each plinth machine stands on a
 full-block wired modem in the plinth (its BOTTOM face), switched on once

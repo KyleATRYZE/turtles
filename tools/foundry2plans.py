@@ -99,7 +99,7 @@ def link():
     the hatch, into the hall under the north walkway and down the spine (x 35),
     with branches to the certus barrel, the works computer, the ME bridge and the
     alloy cell (whose floor modems it puts in), and on toward the ore line."""
-    p = Plan("link", "HopTo (+ LeverAlone: xmin=32 for the hall, HopTo xmax=31 for the lane)", 1,
+    p = Plan("link", "HopTo xmax=25, Comparable xmin=26 xmax=34, Dusty xmin=35", 1,
              "the CC cable under the floor, the alloy cell's floor modems, the works computer")
     # down from the link at 18 2 3 (Kyle's) to under the lane floor
     p.D((18, 1, 3), 5)
@@ -137,7 +137,7 @@ def lava():
     """Sixteen dripstone lava units along the south wall, cauldrons at z 29
     (x 28-43), harvested from the walkway at z 28; lava held at y 4 between
     the wall and a row of blocks over the walkway."""
-    p = Plan("lava", "OnRepeat (+ a second helper: xmin=36)", 1, "the lava wall: 16 units")
+    p = Plan("lava", "OnRepeat xmax=35, ButtonUp xmin=36", 1, "the lava wall: 16 units")
     xs = range(28, 44)
     for x in xs:
         p.P((x, 3, 29), PD, 0)                            # the block the dripstone hangs from
@@ -169,7 +169,7 @@ def certus():
 def clear():
     """Sticky's piped line (the parts that do not move) and the bench's leftovers.
     A chest or barrel with things in it is left (and said): empty it first."""
-    p = Plan("clear", "Sticky", 1, "the old piped line's chest, sorter, transporters and cable; the bench's leftovers")
+    p = Plan("clear", "Sticky xmax=35, Dispensable xmin=36", 1, "the old piped line's chest, sorter, transporters and cable; the bench's leftovers")
     import mekline
     keep = {(36, 1, 17), (36, 1, 18), (36, 1, 21)}        # moved by the ore and power jobs
     cells = sorted((c for c in mekline.upto(5) if c not in keep), key=lambda c: (-c[1], c[2], c[0]))
@@ -183,7 +183,7 @@ def clear():
 def power():
     """The power row along the east wall (universal cable, x 43, z 6-23), the
     piped line's heat generator moved into the power block, and room for more."""
-    p = Plan("power", "Sticky (after clear)", 1, "the east wall's power row, the second heat generator")
+    p = Plan("power", "Observant", 1, "the east wall's power row, the second heat generator")
     p.D((36, 1, 21), 0)                                   # the piped line's heat generator (carried)
     p.P((42, 1, 19), "mekanismgenerators:heat_generator east", 2)
     p.P((42, 1, 20), "mekanismgenerators:heat_generator east", 2)

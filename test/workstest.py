@@ -27,19 +27,19 @@ function total(item) local n = 0 for name, I in pairs(INV) do if not name:find("
 inv("minecraft:chest_0") inv("sophisticatedstorage:controller_0", 54)
 -- machines: input slot 1, output slot 2 (as the floor face shows them)
 M = {}
-local function machine(name, accepts, make)
-  M[name] = { input = nil, output = nil, accepts = accepts, make = make, modes = {}, eject = true, tank = { name = nil, amount = 0 } }
+local function machine(name, accepts, make, dir)
+  M[name] = { input = nil, output = nil, accepts = accepts, make = make, modes = {}, eject = true, tank = { name = nil, amount = 0 },
+    dir = dir or "WEST" }
 end
 machine("mekanism:enrichment_chamber_0", function(i) return i:find("raw_") or i == "mekanism:dust_obsidian" end,
   function(i, n) if i:find("raw_") then return i:gsub("raw_", "") .. "_dust", math.floor(n * 4 / 3) end end)
 machine("mekanism:energized_smelter_0", function(i) return i:find("_dust") end,
   function(i, n) return i:gsub("_dust", "_ingot"), n end)
 machine("mekanism:metallurgic_infuser_0", function(i) return i == "minecraft:iron_ingot" or i == "mekanism:enriched_iron"
-  or i == "minecraft:copper_ingot" end, nil)
-machine("mekanism:metallurgic_infuser_1", function(i) return false end, nil)     -- the infusion face
-M["mekanism:metallurgic_infuser_1"] = M["mekanism:metallurgic_infuser_0"]        -- (the same machine)
+  or i == "minecraft:copper_ingot" end, nil, "EAST")
+machine("mekanism:energized_smelter_1", function(i) return i:find("_dust") or i == "minecraft:sand" end,
+  function(i, n) return i == "minecraft:sand" and "minecraft:glass" or i:gsub("_dust", "_ingot"), n end, "EAST")   -- the alloy cell's bank
 INFUSE_ITEMS = { ["minecraft:coal"] = { "mekanism:carbon", 10 }, ["minecraft:redstone"] = { "mekanism:redstone", 10 } }
-INFUSER_EXTRA = "mekanism:metallurgic_infuser_1"
 local function work()                                -- what a few seconds of running does
   local c, s, f = M["mekanism:enrichment_chamber_0"], M["mekanism:energized_smelter_0"], M["mekanism:metallurgic_infuser_0"]
   if c.input then
@@ -47,8 +47,10 @@ local function work()                                -- what a few seconds of ru
     c.input = nil
     if c.eject and s.accepts(out) then s.input = { name = out, count = n } else c.output = { name = out, count = n } end
   end
-  if s.input then local out, n = s.make(s.input.name, s.input.count) s.input = nil
-    s.output = { name = out, count = (s.output and s.output.count or 0) + n } end
+  for _, sm in ipairs({ s, M["mekanism:energized_smelter_1"] }) do
+    if sm.input then local out, n = sm.make(sm.input.name, sm.input.count) sm.input = nil
+      sm.output = { name = out, count = (sm.output and sm.output.count or 0) + n } end
+  end
   if f.input then
     local n = math.min(f.input.count, math.floor(f.tank.amount / 10))
     local out = f.input.name == "minecraft:iron_ingot" and "mekanism:enriched_iron"
@@ -69,7 +71,8 @@ peripheral = {
   call = function(n, method, a, b, c, d)
     local m = M[n]
     if m then
-      if method == "setMode" then m.modes[b] = c return
+      if method == "getDirection" then return m.dir
+      elseif method == "setMode" then m.modes[b] = c return
       elseif method == "setEjecting" then m.eject = b return
       elseif method == "setRedstoneMode" then return
       elseif method == "getInput" then return m.input and { name = m.input.name, count = m.input.count } or { name = "minecraft:air", count = 0 }
@@ -86,10 +89,10 @@ peripheral = {
       local T = M[a]
       if T then
         local moved = 0
-        if a == INFUSER_EXTRA and INFUSE_ITEMS[it.name] then
+        if T.modes.BOTTOM == "EXTRA" and INFUSE_ITEMS[it.name] then
           local g = INFUSE_ITEMS[it.name]
           T.tank.name, T.tank.amount, moved = g[1], T.tank.amount + g[2] * lim, lim
-        elseif a ~= INFUSER_EXTRA and T.accepts(it.name) and (not T.input or T.input.name == it.name) then
+        elseif T.modes.BOTTOM ~= "EXTRA" and T.accepts(it.name) and (not T.input or T.input.name == it.name) then
           moved = lim
           T.input = { name = it.name, count = (T.input and T.input.count or 0) + lim }
         end
@@ -118,21 +121,21 @@ def works():
     W = L.execute("return dofile(%r)" % os.path.join(ROOT, "works.lua"))
     L.globals().W = W
     L.execute('''W.scan({ "minecraft:chest_0", "sophisticatedstorage:controller_0", "mekanism:enrichment_chamber_0",
-      "mekanism:energized_smelter_0", "mekanism:metallurgic_infuser_0", "mekanism:metallurgic_infuser_1",
+      "mekanism:energized_smelter_0", "mekanism:metallurgic_infuser_0", "mekanism:energized_smelter_1",
       "minecraft:barrel_3", "computercraft:monitor_2", "turtle_40" })''')
     return L
 
 L = works()
-check("the machines found on the cable by name; the store is the chest and the controller (not the barrel, a turtle or a screen)",
+check("the machines found on the cable; the ore line's (facing west) told from the alloy cell's (east); the store is the chest and the controller",
       L.eval("W.m.chamber") == "mekanism:enrichment_chamber_0" and L.eval("W.m.smelter") == "mekanism:energized_smelter_0"
-      and L.eval("W.m.infuser") == "mekanism:metallurgic_infuser_0" and L.eval("W.m.extra") == "mekanism:metallurgic_infuser_1"
+      and L.eval("W.m.infuser") == "mekanism:metallurgic_infuser_0" and L.eval("W.m.bank[1]") == "mekanism:energized_smelter_1"
       and L.eval("#W.stores") == 2 and L.eval("W.stores[1]") == "sophisticatedstorage:controller_0")
 L.execute("W.setup()")
-check("set up: the floor face takes items in and gives results out; the chamber pushes on into the smelter; the infusion face",
+check("set up: every floor face takes items in and gives results out; the ore chamber pushes south (RIGHT) into the smelter (LEFT)",
       L.eval('M["mekanism:enrichment_chamber_0"].modes.BOTTOM') == "INPUT_OUTPUT"
-      and L.eval('M["mekanism:enrichment_chamber_0"].modes.LEFT') == "OUTPUT"
-      and L.eval('M["mekanism:energized_smelter_0"].modes.RIGHT') == "INPUT"
-      and L.eval('M["mekanism:metallurgic_infuser_0"].modes.RIGHT') == "EXTRA")
+      and L.eval('M["mekanism:enrichment_chamber_0"].modes.RIGHT') == "OUTPUT"
+      and L.eval('M["mekanism:energized_smelter_0"].modes.LEFT') == "INPUT"
+      and L.eval('M["mekanism:metallurgic_infuser_0"].modes.BOTTOM') == "INPUT_OUTPUT")
 L.execute('add("minecraft:chest_0", "minecraft:raw_iron", 50)')
 ok, why, made = L.execute('return W.run({ kind = "ore", item = "minecraft:raw_iron", n = 48 })')
 check("an ore job: 48 raw iron from the store, through the chamber and the smelter, 64 ingots back in the store",
@@ -140,7 +143,8 @@ check("an ore job: 48 raw iron from the store, through the chamber and the smelt
 check("  and it says what it made", made is not None and made["minecraft:iron_ingot"] == 64)
 L.execute('add("minecraft:chest_0", "minecraft:copper_ingot", 16) add("minecraft:chest_0", "minecraft:redstone", 32)')
 ok, why, made = L.execute('return W.run({ kind = "alloy", n = 16 })')
-check("a make job: infused alloy from copper, the redstone in by the infusion face", ok is True
+check("a make job: infused alloy from copper, the redstone in by the same floor face switched to EXTRA and back", ok is True
+      and L.eval('M["mekanism:metallurgic_infuser_0"].modes.BOTTOM') == "INPUT_OUTPUT"
       and L.eval('total("mekanism:alloy_infused")') == 16 and L.eval('total("minecraft:redstone")') == 16, (ok, why))
 L.execute('add("minecraft:chest_0", "minecraft:iron_ingot", 0) add("minecraft:chest_0", "minecraft:coal", 10)')
 ok, why, made = L.execute('return W.run({ kind = "steel", n = 4 })')
@@ -148,6 +152,10 @@ check("steel: two passes (enriched iron, then steel dust), carbon from coal", ok
       and L.eval('total("alltheores:steel_dust")') == 4, (ok, why, L.eval('total("mekanism:enriched_iron")')))
 ok, why, _ = L.execute('return W.run({ kind = "ore", item = "minecraft:raw_gold", n = 48 })')
 check("no ore in the store: the job fails and says why", ok is False and "no minecraft:raw_gold" in why, why)
+L.execute('add("minecraft:chest_0", "minecraft:sand", 20)')
+ok, why, _ = L.execute('return W.run({ kind = "smelt", item = "minecraft:sand", n = 20 })')
+check("a smelt job goes to the alloy cell's smelter bank, not the ore line's smelter", ok is True
+      and L.eval('total("minecraft:glass")') == 20, (ok, why))
 check("its readiness for the factory", L.eval("W.ready().chamber") is True and L.eval("W.ready().infuser") is True
       and L.eval("W.ready().cable") is True)
 
