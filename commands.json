@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794968699,
-      "issued": 1794968699000,
-      "cmd": "reboot",
-      "target": "builder1"
+      "id": 1794968771,
+      "issued": 1794968771000,
+      "cmd": "lab",
+      "target": "builder1",
+      "clear": 1,
+      "ops": "net;peripherals"
     }
   ]
 }
