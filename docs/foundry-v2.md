@@ -35,7 +35,7 @@ The concept turns it into one floor with:
 | Power | east wall x 42-43, z 17-23 | cubes, four heat generators (both of today's), a gas-burning generator; room for an induction matrix behind |
 | Alloy cell | x 39, z 17-23, on a bed | 2 metallurgic infusers, 3 energized smelters, crusher, enrichment chamber: the works computer's make, smelt and enrich jobs |
 | **Certus farm** | x 28-34, z 5-13 | the AE2 work's farm (`tools/certusfarm.py`): two stone pillars at x 30 (z 7 and z 10, y 1-7), budding certus against both sides in three tiers (9 of 12 slots), corridors x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 1 and comes in by the hatch (32, z 3-4). Crystals go into a barrel on the cable at 34 1 13 |
-| **AE2 room** | x 28-34, z 17-23 | ME controller 3 × 3 (x 29-31 z 18-20), drives (33 18-19), crafting CPU (x 29-31 z 22-23), assemblers with pattern providers (33 20-23), inscribers ×4 on the west wall (28 18-21), charger (28 22), energy acceptor (34 17), ME bridge and terminal (34 21) |
+| **AE2 room** | x 28-34, z 17-23 | the bench on the west wall (inscribers 28 18-21, charger 28 22, mill 28 23); ME controller 3 × 3 (x 29-31 z 18-20); drives (32 18-19); pattern providers (32 20-23) with assemblers (33 20-23); crafting CPU (x 29-31 z 22); ME bridge (34 21). One network by touching, no ME cable; no energy acceptor (the controller takes FE). Layout and orders: docs/ae2-run.md |
 | Quartz line | x 29-33, z 24-27 | the built machines, squared up into one bay |
 | Workshop bench | x 38-42, z 27 | machine trials, by the east door |
 | **Lava wall** | south wall, cauldrons x 28-43 at z 29; harvest walkway z 28 | 16 dripstone units: cauldron (y 1), pointed dripstone (y 2), a block (y 3), lava (y 4) held between the wall and a row of blocks over the walkway (y 4). A drone with empty buckets walks z 28 and fills them (turtle.place on the cauldron: proven). Fuel for the drones and the heat generators |
@@ -92,7 +92,7 @@ the other's as done.
 | 1 | `power` | builder6 | the power row (x 43); the piped line's heat generator to 42 1 19, two more, a gas-burning generator and a second cube (left if not to be had) | 18 universal cable, 2 heat generators, 1 gas-burning generator, 1 cube |
 | 2 | `alloy` | foundry1 (the foundry stops for the few minutes this takes) | the plinth's infuser, smelter and chamber into the alloy cell (39 1 17, 19, 23, facing east), its power row (x 38) and link to the east wall; the old plinth cable up; the cube and heat generator turned to face the row; click holes at 40 0 17-23 | 7 universal cable (10 come back from the old cable), and the cell's other machines when made: 1 infuser, 2 smelters, 1 crusher |
 | 3 | `ore` | builder3, after `alloy` | the cable under the ore line with a modem under each machine; the piped line's chamber and smelter to 42 1 12 and 42 1 13 (facing west); the rest of the line as it is made; click holes at 41 0 6-13 | 11 cable, 8 wired modems; later the crusher, purification, injection, crystallizer, washer, dissolution chamber |
-| 4 | `ae2` | builder1, or the AE2 work's helper | the AE2 room (controller 3 × 3, drives, crafting CPU, pattern providers and assemblers, energy acceptor, ME bridge) and its power across the spine (one universal cable flush in the floor at z 17); a click hole at 34 0 22. Fit when the parts exist; what is missing is left for a later run | the AE2 work's parts |
+| 4 | `ae2power`, then `ae2` | builder1, or the AE2 work's helper | `ae2power`: universal cable in the floor under the six bench machines and the controller's first cell, and a block under the floor along z 23 to the power run at 37 -1 24 (none on show). `ae2`: the machines from above (controller, drives, providers, assemblers, CPU, ME bridge) and a click hole at 34 0 22; what is not made yet is left for a later run (docs/ae2-run.md) | 18 universal cable; the AE2 work's parts |
 | 5 | `close` | any helper, after Kyle's clicks | the floor blocks back over the click holes | 15 deepslate bricks, 2 polished deepslate |
 
 **In parallel.** In phase 1, nine helpers work at once without meeting
@@ -148,7 +148,9 @@ replaces them.)
    - the ore line: 42 0 12 and 13 now (world -4406 71 1530 and 1531),
      and the rest as they come;
    - the certus barrel's: 34 0 13 (world -4414 71 1531);
-   - the ME bridge's: 34 0 21 (world -4414 71 1539), when the bridge is in.
+   - (the ME bridge's, 34 0 21: a drone clicks it from its click hole once
+     the bridge stands on it, `tools/certusfarm.py bridgeclick`; a modem
+     clicked with nothing on it stays off. docs/ae2-run.md)
 
    Then `close` puts the floor back.
 3. **The works computer** (35 0 15, world -4413 71 1533): open it, type

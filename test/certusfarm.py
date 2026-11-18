@@ -165,7 +165,7 @@ end
 ''')
 setsp = L.eval("setSpecial")
 for (x, y, z), name in B.items():
-    if y < 0 or (x, y, z) in MEKS: continue
+    if y < 0 or (x, y, z) in MEKS or name.startswith("("): continue   # (placeholders: kept clear)
     setsp(OX + x, OY + y, OZ + z, name)
 # the farm as Kyle builds it, the basin, and every face grown
 for p, it in cells.items():
@@ -226,9 +226,14 @@ turtle.dropDown = function(n)
   local b = getBlock(x, y, z)
   if b == "ae2:charger" then
     if CHARGER[k(x,y,z)] or i.name ~= "ae2:certus_quartz_crystal" then return false, "No space for items" end
-    n = 1 CHARGER[k(x,y,z)] = "ae2:charged_certus_quartz_crystal"
+    n = 1 CHARGER[k(x,y,z)] = { name = "ae2:charged_certus_quartz_crystal", t = CLOCK }
   elseif b == "ae2:inscriber" then
-    INSCRIBED = (INSCRIBED or 0) + n
+    local put = INSCRIBE(k(x,y,z), i.name, n)
+    if put == 0 then return false, "No space for items" end
+    n = put
+  elseif b == "ae2:drive" then
+    if not i.name:find("cell") then return false, "No space for items" end
+    DRIVECELLS = (DRIVECELLS or 0) + n
   elseif b == nil or b == "minecraft:water" then
     FLOAT[k(x,y,z)] = FLOAT[k(x,y,z)] or {}
     table.insert(FLOAT[k(x,y,z)], {name=i.name, count=n})
@@ -255,8 +260,15 @@ turtle.suckDown = function(n)
   local x, y, z = T.x, T.y - 1, T.z
   if getBlock(x,y,z) == "ae2:charger" then
     local c = CHARGER[k(x,y,z)]
-    if not c then return false, "No items to take" end
-    CHARGER[k(x,y,z)] = nil take(c, 1) CHARGED = (CHARGED or 0) + 1 return true
+    -- (only a charged crystal comes out, and charging takes a while)
+    if not c or CLOCK - c.t < CHARGE_SECONDS then return false, "No items to take" end
+    CHARGER[k(x,y,z)] = nil take(c.name, 1) CHARGED = (CHARGED or 0) + 1 return true
+  end
+  if getBlock(x,y,z) == "ae2:inscriber" then
+    local name, got = INSCRIBER_OUT(k(x,y,z), n or 64)
+    if not name then return false, "No items to take" end
+    take(name, got)
+    return true
   end
   local f = FLOAT[k(x, y, z)]
   local it = f and table.remove(f, 1)
@@ -268,6 +280,117 @@ turtle.detectDown = function() local b = getBlock(T.x, T.y-1, T.z) return b ~= n
 turtle.detect = function() local b = getBlock(front()) return b ~= nil and b ~= "minecraft:water" end
 TOOL = "minecraft:diamond_pickaxe"
 peripheral.getType = function(side) if side == "right" then return "modem" end return nil end
+peripheral.call = function(side, m)
+  if side == "bottom" and m == "list" and getBlock(T.x, T.y-1, T.z) == "ae2:inscriber" then
+    return INSCRIBER_LIST(k(T.x, T.y-1, T.z))
+  end
+  error("no peripheral " .. tostring(side) .. " " .. tostring(m))
+end
+-- a click: holding coal at a wired modem (turtle_can_use)
+local place0 = turtle.place
+turtle.place = function()
+  local i = T.inv[T.sel]
+  local fx, fy, fz = front()
+  if i and i.name == "minecraft:coal" and getBlock(fx, fy, fz) == "computercraft:wired_modem_full" then
+    CLICKED = k(fx, fy, fz) return true
+  end
+  return place0()
+end
+CHARGE_SECONDS = 6
+''')
+# AE2 1.21.1's inscriber (InscriberBlockEntity): top, bottom and middle slots
+# reached together from every side (sides not separated); an item goes to the
+# first of them its BaseFilter lets it into (a recipe it can still be part
+# of); 64 a slot; only the output comes out; 116 ticks a craft; "press" mode
+# uses up top and bottom, "inscribe" mode keeps them (the presses).
+L.execute(r'''
+local R = {
+  {top="ae2:silicon_press", mid="ae2:silicon", out="ae2:printed_silicon"},
+  {top="ae2:logic_processor_press", mid="minecraft:gold_ingot", out="ae2:printed_logic_processor"},
+  {top="ae2:calculation_processor_press", mid="ae2:certus_quartz_crystal", out="ae2:printed_calculation_processor"},
+  {top="ae2:engineering_processor_press", mid="minecraft:diamond", out="ae2:printed_engineering_processor"},
+  {top="ae2:printed_logic_processor", bot="ae2:printed_silicon", mid="minecraft:redstone", out="ae2:logic_processor", press=true},
+  {top="ae2:printed_calculation_processor", bot="ae2:printed_silicon", mid="minecraft:redstone", out="ae2:calculation_processor", press=true},
+  {top="ae2:printed_engineering_processor", bot="ae2:printed_silicon", mid="minecraft:redstone", out="ae2:engineering_processor", press=true},
+  {mid="ae2:certus_quartz_crystal", out="ae2:certus_quartz_dust"},
+  {mid="ae2:charged_certus_quartz_crystal", out="ae2:certus_quartz_dust"},
+  {mid="ae2:fluix_crystal", out="ae2:fluix_dust"},
+}
+INS, MADE = {}, {}
+local function I(key) INS[key] = INS[key] or { t = CLOCK } return INS[key] end
+local function nm(st) return st and st.name or nil end
+local function allowed(s, slot, name)
+  local top, bot, mid = nm(s.top), nm(s.bot), nm(s.mid)
+  if slot == "top" then top = name elseif slot == "bot" then bot = name else mid = name end
+  for _, r in ipairs(R) do
+    if not (mid and r.mid ~= mid) then
+      if not bot and not top then return true
+      elseif not bot then if r.top == top or r.bot == top then return true end
+      elseif not top then if r.bot == bot or r.top == bot then return true end
+      elseif (r.top == top and r.bot == bot) or (r.bot == top and r.top == bot) then return true end
+    end
+  end
+  return false
+end
+local function find(s)
+  local top, bot, mid = nm(s.top), nm(s.bot), nm(s.mid)
+  if not mid then return nil end
+  for _, r in ipairs(R) do
+    if r.mid == mid and ((r.top == top and r.bot == bot) or (r.top == bot and r.bot == top)) then return r end
+  end
+end
+local function use(s, slot) s[slot].count = s[slot].count - 1 if s[slot].count == 0 then s[slot] = nil end end
+local function advance(s)
+  while true do
+    local r = find(s)
+    if not r then s.t = CLOCK return end
+    if s.out and (s.out.name ~= r.out or s.out.count >= 64) then s.t = CLOCK return end
+    if CLOCK - s.t < 5.8 then return end
+    s.t = s.t + 5.8
+    use(s, "mid")
+    if r.press then use(s, "top") use(s, "bot") end
+    s.out = s.out or { name = r.out, count = 0 }
+    s.out.count = s.out.count + 1
+    MADE[r.out] = (MADE[r.out] or 0) + 1
+  end
+end
+function INSCRIBE(key, name, n)
+  local s = I(key)
+  advance(s)
+  local busy = find(s) ~= nil
+  local put = 0
+  for _, slot in ipairs({ "top", "bot", "mid" }) do
+    if n - put <= 0 then break end
+    local st = s[slot]
+    if st and st.name == name then
+      local k2 = math.min(64 - st.count, n - put) st.count = st.count + k2 put = put + k2
+    elseif not st and allowed(s, slot, name) then
+      local k2 = math.min(64, n - put) s[slot] = { name = name, count = k2 } put = put + k2
+    end
+  end
+  if not busy then s.t = CLOCK end
+  return put
+end
+function INSCRIBER_OUT(key, n)
+  local s = I(key)
+  advance(s)
+  if not s.out then return nil end
+  local k2 = math.min(n, s.out.count)
+  local name = s.out.name
+  s.out.count = s.out.count - k2
+  if s.out.count == 0 then s.out = nil end
+  return name, k2
+end
+function INSCRIBER_LIST(key)
+  local s = I(key)
+  advance(s)
+  local t, i = {}, 0
+  for _, slot in ipairs({ "top", "bot", "mid", "out" }) do
+    i = i + 1
+    if s[slot] then t[i] = { name = s[slot].name, count = s[slot].count } end
+  end
+  return t
+end
 ''')
 g = L.globals()
 fresh = True
@@ -319,5 +442,52 @@ check("harvest: every bud left to grow", all(world(p) == "ae2:large_quartz_bud" 
 check("harvest: no budding block broken", len(list(g.BROKE.values())) == 0 and all(world(p) == CF.BUD for p in filled))
 check("fluix: 8 charged in the charger, 16 fluix out of the basin", g.CHARGED == 8 and g.MADE_FLUIX == 16)
 check("nothing lost (the drone's slots were enough)", not g.LOSTITEMS)
+
+# ---------------------------------------------------------------- the processors, the fluix the network needs
+def made(name):
+    return g.MADE[name] or 0
+
+def ins(kind):
+    p = B6[kind]
+    return L.eval("INSCRIBER_LIST")(f"{OX + p[0]},{OY + p[1]},{OZ + p[2]}")
+
+check("bench: a press in the top slot of each printer, none in the mill",
+      all(ins(kd)[1] is not None and ins(kd)[1].name == CF.PRESS[kd] for kd in ("silicon", "logic", "calc", "eng"))
+      and len(list(ins("mill").values())) == 0)
+ops = CF.grind_ops(F, o, "certus", 80)
+r, out = lab(ops)
+done("grind 80 certus (two lots in the mill)", ops, out)
+check("grind: 80 certus dust made, the mill left empty", made("ae2:certus_quartz_dust") == 80 and len(list(ins("mill").values())) == 0)
+ops = CF.chips(F, o, 9, 4, 3)
+r, out = lab(ops)
+done("chips 9 logic, 4 calculation, 3 engineering", ops, out)
+check("chips: 16 printed silicon, 9 / 4 / 3 printed circuits", made("ae2:printed_silicon") == 16 and made("ae2:printed_logic_processor") == 9
+      and made("ae2:printed_calculation_processor") == 4 and made("ae2:printed_engineering_processor") == 3)
+check("chips: 9 logic, 4 calculation, 3 engineering processors", made("ae2:logic_processor") == 9
+      and made("ae2:calculation_processor") == 4 and made("ae2:engineering_processor") == 3,
+      ) if True else None
+check("chips: the mill empty after, the presses still in their printers", len(list(ins("mill").values())) == 0
+      and all(ins(kd)[1].name == CF.PRESS[kd] and ins(kd)[3] is None for kd in ("silicon", "logic", "calc", "eng")))
+g.CHARGED, g.MADE_FLUIX = 0, 0
+ops = CF.fluix(F, o, 70)
+r, out = lab(ops)
+done("fluix 70 (two trips)", ops, out)
+check("fluix 70: every crystal charged (the charger is slow: the drone waits for each), 140 fluix",
+      g.CHARGED == 70 and g.MADE_FLUIX == 140)
+check("fluix 70: nothing lost", not g.LOSTITEMS)
+
+# ---------------------------------------------------------------- the AE2 room: cells, the bridge's modem
+setsp(OX + 32, OY + 1, OZ + 19, "ae2:drive")
+ops = CF.cells_ops(F, o, 1)
+r, out = lab(ops)
+done("a 1k cell into the drive", ops, out)
+check("cells: one in the drive", g.DRIVECELLS == 1)
+setsp(OX + 34, OY + 1, OZ + 21, "advancedperipherals:me_bridge")
+setsp(OX + 34, OY + 0, OZ + 21, "computercraft:wired_modem_full")
+setsp(OX + 34, OY + 0, OZ + 22, False)
+ops = CF.bridgeclick(F, o)
+r, out = lab(ops)
+check("bridgeclick: every step done", not any("stopped here" in l for l in out) and any("%d home" % len(ops) in l for l in out))
+check("bridgeclick: the bridge's modem clicked from its hole", g.CLICKED == f"{OX + 34},{OY + 0},{OZ + 21}", )
 print("PASS" if not fails else "FAILED: %d" % len(fails))
 sys.exit(1 if fails else 0)

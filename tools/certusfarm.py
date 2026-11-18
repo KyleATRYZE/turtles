@@ -14,6 +14,13 @@ parts (docs/ae2-bootstrap.md, build guide docs/certus-build.html).
     python3 tools/certusfarm.py print KIND N [opts]  lab steps: N printed circuits (silicon logic calc eng)
     python3 tools/certusfarm.py proc KIND N [opts]   lab steps: N processors (logic calc eng) in the mill
     python3 tools/certusfarm.py grind ITEM N [opts]  lab steps: N crystals to dust in the mill (certus, fluix)
+    python3 tools/certusfarm.py chips L C E [opts]   lab steps: L logic, C calculation, E engineering processors
+                                                     in one trip: all four presses print at once, then the
+                                                     mill presses the processors (silicon, gold, certus,
+                                                     diamond, redstone from the store)
+    python3 tools/certusfarm.py cells N [opts]       lab steps: N 1k item cells into the AE2 room's drive
+    python3 tools/certusfarm.py bridgeclick [opts]   lab steps: switch the ME Bridge's floor modem on, from
+                                                     its click hole (after the ae2 fit has put the bridge on it)
     python3 tools/certusfarm.py renew SLOTS [opts]   lab steps: dead blocks (plain quartz blocks) dug,
                                                      made flawed again in the basin, put back (SLOTS: 0,3,5)
     python3 tools/certusfarm.py first [opts]         lab steps: the first harvest and the first fluix batch
@@ -105,6 +112,12 @@ BENCHES = {
 BENCH_ORDER = ["silicon", "logic", "calc", "eng", "charger", "mill"]
 SECONDS_PER_PRINT = 6          # 116 ticks with no speed card (AE2 InscriberBlockEntity)
 SECONDS_PER_CHARGE = 4         # 1,600 AE stored, then a 1-in-5 chance every 10 ticks
+CHARGE_PATIENCE = 15           # keep trying the charger this long (seconds) for each crystal
+                               # (0.8^28 after 15 s: none is ever left in it)
+TRIP = 64                      # crystals (and redstone, nether quartz) a drone takes on one fluix trip
+DRIVE = (32, 1, 19)            # the AE2 room's first drive (tools/foundry2plans.py AE2_ROOM)
+BRIDGE_MODEM, BRIDGE_HOLE = (34, 0, 21), (34, 0, 22)
+CELL1K = "ae2:item_storage_cell_1k"
 
 
 # ================================================================= geometry
@@ -324,10 +337,14 @@ def bench_build(F, o):
 
 
 def charge_ops(B, n, item=CRYSTAL):
+    """n crystals through the charger, one at a time. The charger lets a
+    crystal out only once it is charged, so the drone keeps trying (suck with
+    patience) instead of a fixed wait: a slow one is never left behind and
+    the next one never refused."""
     s = [walk(above(B["charger"])), "expect|down|charger"]
     for _ in range(n):
-        s += [f"dropDown|{item}|1", f"wait|{SECONDS_PER_CHARGE}", "suckDown|1"]
-    s += [f"wait|{2 * SECONDS_PER_CHARGE}", "suckDown|1", f"wait|{2 * SECONDS_PER_CHARGE}", "suckDown|1"]
+        s += [f"dropDown|{item}|1", f"suckDown|1|{CHARGE_PATIENCE}"]
+    s += ["suckDown|1|3"]
     return s
 
 
@@ -339,13 +356,20 @@ def charge(F, o, n):
 def fluix(F, o, n):
     """n certus charged, then thrown into the basin with n redstone and n
     nether quartz: 2n fluix (AE2 transform recipe; one set a tick once the
-    charged crystals have lain in the water 3 s)."""
+    charged crystals have lain in the water 3 s). Any number: one trip per
+    64 crystals, each handed in before the next is fetched."""
     B = bench_of(o)
     water, stand = F.basin()
-    s = [fetch({CRYSTAL: n, REDSTONE: n, NQUARTZ: n}), SITE] + charge_ops(B, n)
-    s += [walk(stand), "expect|down|water", f"tossDown|{CHARGED}|{n}", f"tossDown|{REDSTONE}|{n}",
-          f"tossDown|{NQUARTZ}|{n}", "wait|10", "suckDown|64", "wait|3", "suckDown|64", "suckDown|64",
-          "inv", "leave", "home", "handin|"]
+    s = []
+    left = n
+    while left > 0:
+        k = min(TRIP, left)
+        left -= k
+        sucks = (2 * k + 63) // 64 + 2                # 2k fluix, a stack a suck, and whatever is left over
+        s += [fetch({CRYSTAL: k, REDSTONE: k, NQUARTZ: k}), SITE] + charge_ops(B, k)
+        s += [walk(stand), "expect|down|water", f"tossDown|{CHARGED}|{k}", f"tossDown|{REDSTONE}|{k}",
+              f"tossDown|{NQUARTZ}|{k}", f"wait|{10 + k // 20}"] + ["suckDown|64"] * sucks
+        s += ["wait|3", "suckDown|64", "inv", "leave", "home", "handin|"]
     return s
 
 
@@ -353,12 +377,18 @@ def wait_for(n):
     return f"wait|{SECONDS_PER_PRINT * n + 10}"
 
 
+def drain(n):
+    """Take an inscriber's output as it comes until it holds nothing but its
+    press (lab verb drainDown), allowing twice the time n need."""
+    return f"drainDown|{2 * SECONDS_PER_PRINT * n + 30}"
+
+
 def print_ops(F, o, kind, n):
     B = bench_of(o)
     mat, out = PRINTS[kind]
     c = B[kind]
-    return [fetch({mat: n}), SITE, walk(above(c)), "expect|down|inscriber", f"dropDown|{mat}|{n}", wait_for(n),
-            "suckDown|64", "wait|5", "suckDown|64", "inv", "leave", "home", "handin|"]
+    return [fetch({mat: n}), SITE, walk(above(c)), "expect|down|inscriber", f"dropDown|{mat}|{n}", drain(n),
+            "inv", "leave", "home", "handin|"]
 
 
 def proc_ops(F, o, kind, n):
@@ -371,15 +401,88 @@ def proc_ops(F, o, kind, n):
     c = B["mill"]
     return [fetch({printed: n, "ae2:printed_silicon": n, REDSTONE: n}), SITE, walk(above(c)), "expect|down|inscriber",
             f"dropDown|{printed}|{n}", "dropDown|ae2:printed_silicon|" + str(n), f"dropDown|{REDSTONE}|{n}",
-            wait_for(n), "suckDown|64", "wait|5", "suckDown|64", "inv", "leave", "home", "handin|"]
+            drain(n), "inv", "leave", "home", "handin|"]
 
 
 def grind_ops(F, o, what, n):
     B = bench_of(o)
     mat, out = GRIND[what]
     c = B["mill"]
-    return [fetch({mat: n}), SITE, walk(above(c)), "expect|down|inscriber", f"dropDown|{mat}|{n}", wait_for(n),
-            "suckDown|64", "wait|5", "suckDown|64", "inv", "leave", "home", "handin|"]
+    s = []
+    while n > 0:
+        trip = min(n, 256)                         # (4 stacks in, 4 out: room on board)
+        n -= trip
+        s += [fetch({mat: trip}), SITE, walk(above(c)), "expect|down|inscriber"]
+        while trip > 0:
+            k = min(trip, 64)                      # the mill's middle slot and its output hold 64
+            trip -= k
+            s += [f"dropDown|{mat}|{k}", drain(k)]
+        s += ["inv", "leave", "home", "handin|"]
+    return s
+
+
+def chips(F, o, nl, nc, ne):
+    """Processors in one trip: the four press inscribers print at the same
+    time (silicon for every processor, gold, certus, diamond), then the mill
+    presses each kind in turn: its printed circuit, as many printed silicon and
+    as much redstone. AE2 1.21.1's inscriber (InscriberBlockEntity): with
+    sides not separated, every side reaches top, bottom and middle together,
+    and an item goes to the first of them whose recipe it fits (a printed
+    circuit to the top, printed silicon then to the bottom, redstone, gold,
+    silicon, certus and diamond to the middle); only the output can be taken
+    out, so presses and part-used inputs stay put. 64 at most in each slot
+    and in the output: a kind over 64 takes another trip."""
+    B = bench_of(o)
+    s = []
+    while nl + nc + ne > 0:
+        L, C, E = min(nl, 64), min(nc, 64), min(ne, 64)
+        S = L + C + E
+        while S > 64:                              # (64 printed silicon a trip)
+            if E > 0 and E >= C and E >= L: E -= 1
+            elif C > 0 and C >= L: C -= 1
+            else: L -= 1
+            S = L + C + E
+        nl, nc, ne = nl - L, nc - C, ne - E
+        want = OrderedDictish([(SILICON, S), ("minecraft:gold_ingot", L), (CRYSTAL, C), ("minecraft:diamond", E),
+                               (REDSTONE, S)])
+        s += [fetch({k: v for k, v in want.items() if v > 0}), SITE]
+        for kind, n in (("silicon", S), ("logic", L), ("calc", C), ("eng", E)):
+            if n > 0:
+                s += [walk(above(B[kind])), "expect|down|inscriber", f"dropDown|{PRINTS[kind][0]}|{n}"]
+        s += [f"wait|{SECONDS_PER_PRINT * max(S, L, C, E) - 20}"] if max(S, L, C, E) > 5 else []
+        for kind, n in (("silicon", S), ("logic", L), ("calc", C), ("eng", E)):
+            if n > 0:
+                s += [walk(above(B[kind])), drain(n)]
+        s += [walk(above(B["mill"])), "expect|down|inscriber"]
+        for kind, n in (("logic", L), ("calc", C), ("eng", E)):
+            if n > 0:
+                s += [f"dropDown|{PRINTS[kind][1]}|{n}", f"dropDown|ae2:printed_silicon|{n}", f"dropDown|{REDSTONE}|{n}",
+                      drain(n)]
+        s += ["inv", "leave", "home", "handin|"]
+    return s
+
+
+def OrderedDictish(pairs):
+    from collections import OrderedDict
+    return OrderedDict(pairs)
+
+
+def cells_ops(F, o, n, item=CELL1K, drive=DRIVE):
+    """n storage cells into the drive (from above: a drive put in from above
+    faces up; its cell slots take items from any side)."""
+    return [fetch({item: n}), SITE, walk(above(drive)), "expect|down|drive", f"dropDown|{item}|{n}",
+            "inv", "leave", "home", "handin|"]
+
+
+def bridgeclick(F, o):
+    """The ME Bridge's floor modem switched on: from the click hole beside it
+    (the ae2 fit dug it), facing the modem. Only after the bridge stands on
+    it: a full modem clicked with nothing beside it stays off and does not
+    pick up what is put there later (CC: Tweaked WiredModemFullBlockEntity)."""
+    hx, hy, hz = BRIDGE_HOLE
+    return [fetch({"minecraft:coal": 4}), SITE, f"hole|{hx}|{hz}", walk((hx, 1, hz)), "expect|down|nothing",
+            walk(BRIDGE_HOLE), f"face|{FACE[(BRIDGE_MODEM[0] - hx, BRIDGE_MODEM[2] - hz)]}",
+            "expect|front|wired_modem", "click", walk((hx, 2, hz)), "leave", "home"]
 
 
 # ================================================================= renewing dead blocks
@@ -570,6 +673,13 @@ def main(argv):
             s = renew(F, o, [int(k) for k in rest[0].split(",")])
         elif cmd == "first":
             s = first(F, o)
+        elif cmd == "chips":
+            nn = (num + [0, 0, 0])[:3]
+            s = chips(F, o, *nn)
+        elif cmd == "cells":
+            s = cells_ops(F, o, num[0] if num else 1, o.get("item", CELL1K))
+        elif cmd == "bridgeclick":
+            s = bridgeclick(F, o)
         else:
             print(__doc__)
             return

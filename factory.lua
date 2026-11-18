@@ -4102,9 +4102,9 @@ local function tryBuild()
   end
   for _, f in ipairs(furnaces) do emptyOutput(f) end
   if not held then
-    if pendingMake then
-      local item, n = pendingMake[1], pendingMake[2]
-      pendingMake = nil
+    if pendingMake and #pendingMake > 0 then
+      local item, n = pendingMake[1][1], pendingMake[1][2]
+      table.remove(pendingMake, 1)
       pcall(function()
         local stock = stockTotals()
         local steps, missing = {}, {}
@@ -4389,7 +4389,9 @@ while true do
       print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
       return true
     elseif c.cmd == "make" and c.item then     -- make crafter1 item=<id> n=<count>: craft into stock
-      pendingMake = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
+      -- (queued: several makes in one order, or one after another, are all made, in turn)
+      pendingMake = pendingMake or {}
+      pendingMake[#pendingMake + 1] = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
       return true
     elseif c.cmd == "rebase" then          -- (for the drones: the factory knows where it is)
       return true

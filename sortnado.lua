@@ -104,7 +104,13 @@ function S.discover()
       if n:find("sophisticatedstorage:controller", 1, true) then controllers[#controllers + 1] = n end
     end
   end
-  if bridge then
+  -- (an ME Bridge on the cable is only the store once told so: "me Sortnado
+  -- on=1". Until the ME system sees the store's barrels (storage buses on the
+  -- controllers), switching to it would hide everything in them, and crafter1
+  -- reads the controllers directly, so what went into the ME system would be
+  -- lost to it.)
+  S.bridge = bridge
+  if bridge and cfg.me then
     -- the ME system is the store: chests on the cable are only In and Out
     S.backend, S.order = "me", { bridge }
     S.chests = { [bridge] = { section = "All", size = 0, used = 0, slots = {} } }
@@ -1114,6 +1120,9 @@ local args = { ... }
 loadConfig()
 if args[1] == "setup" or not (cfg.inbox and cfg.outbox) then setup() end
 local found = S.discover()
+if S.bridge and S.backend ~= "me" then
+  print("ME Bridge " .. S.bridge .. " seen: not the store until the order \"me Sortnado on=1\".")
+end
 if S.backend == "me" then
   print("Sortnado: the ME system (" .. S.order[1] .. ") is the store.")
 elseif S.backend == "controller" then
@@ -1133,6 +1142,7 @@ local function report()
   local used, slots = S.totals()
   local t = { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
     storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote, bay = S.bayNote,
+    me = S.bridge and (S.backend == "me" and ("the store: " .. S.bridge) or ("seen, not the store: " .. S.bridge)) or nil,
     drain = (cfg.drain or S.drainNote) and { left = cfg.drain and #cfg.drain or 0, done = cfg.drained,
       next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil }
   pcall(swarm.report, t)
@@ -1271,6 +1281,13 @@ parallel.waitForAny(
         end
         S.saveConfig()
         report()
+      elseif c.cmd == "me" then
+        -- me Sortnado on=1 : the ME system (its bridge on the cable) is the
+        -- store from now on; on=0 back to the controllers. Starts again on it.
+        cfg.me = (c.on == 1 or c.on == true or c.on == "1") or nil
+        S.saveConfig()
+        report()
+        os.reboot()
       elseif c.cmd == "ping" then
         report()
       end

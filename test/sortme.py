@@ -84,8 +84,17 @@ def books(S, name):
 
 IRON, COAL = "minecraft:iron_ingot", "minecraft:coal"
 
-# ---- 1. the bridge wins over the controller and the chests
+# ---- 0. a bridge on the cable is not the store until told ("me Sortnado on=1")
 lua, g, S = new('{ bridge = true, sides = { ["@east"] = OUT } }')
+check("a bridge alone does not take over: the controller stays the store", S.backend == "controller" and S.bridge == g.BRIDGE, S.backend)
+g.addTo(g.IN, IRON, 10)
+S.sortInbox()
+check("  and nothing goes into the ME system", g.meTotal(IRON) == 0 and g.total(g.CTL) == 10, (g.meTotal(IRON), g.total(g.CTL)))
+
+# ---- 1. told so, the bridge wins over the controller and the chests
+lua, g, S = new('{ bridge = true, sides = { ["@east"] = OUT } }')
+S.cfg(lua.eval('{ inbox = IN, outbox = OUT, me = true }'))
+S.discover(); S.scan()
 check("the ME system is the store", S.backend == "me" and S.order[1] == g.BRIDGE, S.backend)
 g.addTo(g.IN, IRON, 700); g.addTo(g.IN, COAL, 300)
 moved = S.sortInbox()

@@ -1,5 +1,9 @@
 # AE2 bootstrap: from the meteorite haul to a network the swarm can use
 
+(The run that builds the network, with the orders in sequence, the bill of
+materials and the room's final layout: docs/ae2-run.md. Where the two
+differ, ae2-run.md is the newer.)
+
 The step-by-step chain from what came back from the meteorite to:
 
 - **(a)** a working ME network: controller, drive, cells, terminal;

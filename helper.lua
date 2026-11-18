@@ -1940,6 +1940,7 @@ end
 --   pick|name,name  pickUp  pickDown  (dig only a block of these names; never a budding one)
 --   suckDown|n|seconds          (keep trying for that long: a charger's crystal)
 --   hole|x|z                    (floor cell x 0 z is a dug click hole: walk may go into it)
+--   drainDown|seconds           (take a machine's output as it comes until it holds nothing but presses)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -2225,10 +2226,14 @@ local function runLab()
         -- plan's click hole, dug out): walk may go down into it, to click the
         -- floor modem beside it under a machine (click with nothing on it
         -- does not attach what is put there later)
+        -- (and the two cells over it, the way down into it, which the fit
+        -- that dug it stood in: the shell may still show something there
+        -- that a fit has since taken out)
         if not fitMap then res, stop = "no site set", true else
-          local k = ck(tonumber(a[2]), 0, tonumber(a[3]))
+          local x, z = tonumber(a[2]), tonumber(a[3])
           fitMap.dug = fitMap.dug or {}
-          fitMap.dug[k], fitMap.solid[k] = true, nil
+          fitMap.dug[ck(x, 0, z)] = true
+          for y = 0, 2 do fitMap.solid[ck(x, y, z)] = nil end
           res = "open"
         end
       elseif verb == "leave" then
@@ -2416,6 +2421,27 @@ local function runLab()
           if d and d.count > before[s] then got[#got + 1] = d.name .. " x" .. (d.count - before[s]) end
         end
         res = done and table.concat(got, ", ") or ("nothing: " .. tostring(why))
+      elseif vbase == "drain" and SFX[sfx] then
+        -- drain[Up/Down]|seconds : take what the machine there makes as it
+        -- makes it, until it holds nothing but its presses (an inscriber), or
+        -- time runs out. Its inputs count as in it: so the next batch goes
+        -- into an empty one.
+        local side = sfx == "Up" and "top" or sfx == "Down" and "bottom" or "front"
+        local limit, t0, took, left = tonumber(a[2]) or 120, os.clock(), 0, 0
+        repeat
+          while turtle["suck" .. sfx](64) do took = took + 1 end
+          local okL, list = pcall(peripheral.call, side, "list")
+          left = 0
+          if okL and type(list) == "table" then
+            for _, it in pairs(list) do
+              if type(it) == "table" and not tostring(it.name):find("_press$") then left = left + (it.count or 0) end
+            end
+          end
+          if left == 0 then break end
+          sleep(2)
+          tick("lab: waiting for the machine")
+        until os.clock() - t0 > limit
+        res = ("%d lots out, %d left in it, %d s"):format(took, left, math.floor(os.clock() - t0))
       elseif verb == "types" then
         res = table.concat({ peripheral.getType(a[2]) }, ", ")
         if res == "" then res = "no peripheral" end

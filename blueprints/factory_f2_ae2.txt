@@ -1,45 +1,33 @@
 S 22 2 33
-P 9
+P 6
 ae2:controller -
-ae2:drive west
-ae2:crafting_unit -
-ae2:1k_crafting_storage -
+ae2:drive -
 ae2:pattern_provider -
 ae2:molecular_assembler -
-ae2:energy_acceptor -
+ae2:1k_crafting_storage -
 advancedperipherals:me_bridge -
-mekanism:basic_universal_cable -
-O 33
-P 29 1 18 0 0
+O 24
 P 29 1 19 0 0
-P 29 1 20 0 0
-P 30 1 18 0 0
 P 30 1 19 0 0
-P 30 1 20 0 0
-P 31 1 18 0 0
 P 31 1 19 0 0
+P 29 1 18 0 0
+P 30 1 18 0 0
+P 31 1 18 0 0
+P 29 1 20 0 0
+P 30 1 20 0 0
 P 31 1 20 0 0
-P 33 1 18 1 2
-P 33 1 19 1 2
-P 29 1 22 2 0
-P 29 1 23 3 0
-P 30 1 22 2 0
-P 30 1 23 3 0
-P 31 1 22 2 0
-P 31 1 23 3 0
-P 32 1 20 4 0
-P 33 1 20 5 0
-P 32 1 21 4 0
-P 33 1 21 5 0
-P 32 1 22 4 0
-P 33 1 22 5 0
-P 32 1 23 4 0
-P 33 1 23 5 0
-P 34 1 17 6 0
-P 34 1 21 7 0
+P 32 1 19 1 0
+P 32 1 18 1 0
+P 32 1 20 2 0
+P 32 1 21 2 0
+P 32 1 22 2 0
+P 32 1 23 2 0
+P 33 1 21 3 0
+P 33 1 20 3 0
+P 33 1 22 3 0
+P 33 1 23 3 0
+P 29 1 22 4 0
+P 30 1 22 4 0
+P 31 1 22 4 0
+P 34 1 21 5 0
 D 34 0 22 0
-R 34 0 17 8 0
-R 35 0 17 8 0
-R 36 0 17 8 0
-R 37 0 17 8 0
-R 38 0 17 8 0

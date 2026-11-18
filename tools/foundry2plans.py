@@ -280,31 +280,94 @@ def ore():
     return p
 
 
-def ae2():
-    """The AE2 room (with the AE2 work's bench along the west wall, x 28 z 18-23,
-    which it builds itself): controller, drives, crafting CPU, pattern providers
-    and assemblers, the energy acceptor and the ME bridge. Fit when the parts
-    exist; what is not to be had is left and done on a later run."""
-    p = Plan("ae2", "builder1 (or the AE2 work's helper)", 4, "the AE2 room")
-    for x in (29, 30, 31):
-        for z in (18, 19, 20):
-            p.P((x, 1, z), "ae2:controller", 0)
-    for z in (18, 19):
-        p.P((33, 1, z), "ae2:drive west", 2)
-    for x in (29, 30, 31):
-        p.P((x, 1, 22), "ae2:crafting_unit", 0)
-        p.P((x, 1, 23), "ae2:1k_crafting_storage", 0)
-    for z in (20, 21, 22, 23):
-        p.P((32, 1, z), "ae2:pattern_provider", 0)
-        p.P((33, 1, z), "ae2:molecular_assembler", 0)
-    p.P((34, 1, 17), "ae2:energy_acceptor", 0)
-    p.P((34, 1, 21), "advancedperipherals:me_bridge", 0)
-    p.D((34, 0, 22), 0)                                   # the click hole beside the bridge's modem
-    # power: one universal cable across the spine, flush in the floor
-    for x in (34, 35, 36, 37):
-        p.R((x, 0, 17), UC, 0)
-    p.R((38, 0, 17), UC, 0)
+# The AE2 room's layout (building coordinates, all at y 1 unless said). Every
+# AE2 block here passes the network on to its neighbours (AE2: the drive, the
+# pattern provider, the molecular assembler, the crafting blocks, the
+# inscribers and the charger are all grid nodes that carry channels, the
+# inscribers and charger on every side but their front, which faces up when a
+# turtle puts them in from above), so the room needs no ME cable at all: it
+# is one network by touching. The bench (tools/certusfarm.py, x 28 z 18-23)
+# joins it through the controller at 29 19 and the CPU at 29 22.
+#   x 28        bench: silicon, logic, calc, eng inscribers z 18-21, charger 22, mill 23
+#   x 29-31     controller, z 18-20 (the z 19 row first: it touches the bench and the drives)
+#   x 29-31     crafting CPU, z 22 (1k crafting storage; any first few in a row are a whole CPU)
+#   x 32        drives z 19, 18 (put in from above: they face up, cells go in from above);
+#               pattern providers z 20-23
+#   x 33        molecular assemblers z 21, 20, 22, 23 (each beside its provider)
+#   x 34        ME Bridge z 21, on the link's floor modem (34 0 21): the assembler at
+#               33 21 and the provider at 32 21 join it to the rest
+# Power: Mekanism universal cable, never on show: in the floor under the six
+# bench machines (put in from the side, from holes at x 29 that are filled
+# again), under the controller's first block (29 0 19), and a block under the
+# floor along z 23 and onto the power run under the east door's walkway (38-43
+# -1 24, the alloy job's, which reaches the power row at x 43). The
+# controller takes FE itself (no energy acceptor), and the bench draws from
+# the network as well once it is on it.
+AE2_ROOM = OrderedDict([
+    ("ae2:controller", [(29, 1, 19), (30, 1, 19), (31, 1, 19),
+                        (29, 1, 18), (30, 1, 18), (31, 1, 18), (29, 1, 20), (30, 1, 20), (31, 1, 20)]),
+    ("ae2:drive", [(32, 1, 19), (32, 1, 18)]),
+    ("ae2:pattern_provider", [(32, 1, 20), (32, 1, 21), (32, 1, 22), (32, 1, 23)]),
+    ("ae2:molecular_assembler", [(33, 1, 21), (33, 1, 20), (33, 1, 22), (33, 1, 23)]),
+    ("ae2:1k_crafting_storage", [(29, 1, 22), (30, 1, 22), (31, 1, 22)]),
+    ("advancedperipherals:me_bridge", [(34, 1, 21)]),
+])
+AE2_BENCH = [(28, 1, z) for z in range(18, 24)]
+AE2_POWER_TRUNK = [(x, -1, 23) for x in range(28, 38)] + [(37, -1, 24)]
+
+
+def ae2power():
+    """The AE2 room's power (docs/ae2-run.md), before anything else: the
+    bench's six machines stand there already with none (they make the
+    processors the controller needs), so first of all: universal cable in the
+    floor under each of them, under the controller's first cell, and the
+    trunk under the floor to the power run."""
+    p = Plan("ae2power", "builder1", 4, "the AE2 room's power: the bench, the controller's cell, the trunk")
+    # the bench's power, in the floor under its machines (they stand there
+    # already): from a hole beside each, the floor block under it becomes cable
+    for z in range(18, 23):
+        p.D((29, 0, z), 0)
+        p.R((28, 0, z), UC, 2)
+        p.P((29, 0, z), UC if z == 19 else PD, 0)     # (29 0 19: under the controller's first block)
+    # the mill's: and down to the trunk
+    p.D((29, 0, 23), 0)
+    p.D((28, 0, 23), 2)
+    p.P((28, -1, 23), UC, 0)                          # (standing in 28 0 23, under the mill)
+    p.P((28, 0, 23), UC, 2)
+    p.P((29, -1, 23), UC, 0)
+    p.P((29, 0, 23), PD, 0)
+    for x in range(30, 38):                           # the trunk, under the floor along z 23
+        p.under((x, 0, 23), floor_at((x, 0, 23)), UC)
+    # and onto the power run under the east door's walkway (38-43 -1 24, the
+    # alloy job's, joined to the power row at x 43): not through the alloy
+    # cell's riser at 38 -1 23, which the survey of 18 Nov 19:29 did not find
+    p.under((37, 0, 24), floor_at((37, 0, 24)), UC)
     return p
+
+
+def ae2():
+    """The AE2 room's machines (docs/ae2-run.md), after ae2power: the
+    controller, drives, pattern providers, assemblers, the crafting CPU and the
+    ME Bridge, all put in from above, and the click hole beside the bridge's
+    modem. Fit when the parts exist: of each kind the first cells in
+    AE2_ROOM's lists are filled first, and what is not to be had is left for a
+    later run of the same job (what stands already is passed over)."""
+    p = Plan("ae2", "builder1 (or the AE2 work's helper)", 4, "the AE2 room's machines: controller, drives, "
+             "providers and assemblers, CPU, ME Bridge")
+    for item, cells in AE2_ROOM.items():
+        for c in cells:
+            p.P(c, item, 0)
+    p.D((34, 0, 22), 0)                               # the click hole beside the bridge's modem
+    return p
+
+
+def ae2_cables():
+    """Every cable the ae2 job puts in, and where (for the never-on-show check)."""
+    out = []
+    for k, c, it, s in ae2power().ops + ae2().ops:
+        if it and ("cable" in it):
+            out.append(c)
+    return out
 
 
 def close():
@@ -319,7 +382,8 @@ def close():
     return p
 
 
-JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, budding, storelink, clear, power, alloy, ore, ae2, close))
+JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, budding, storelink, clear, power, alloy, ore, ae2power,
+                                              ae2, close))
 
 
 def check():
@@ -354,6 +418,12 @@ def check():
             for y in (1, 2):
                 if (x, y, z) in placed:
                     bad.append(f"spine {x} {y} {z} gets {placed[(x, y, z)]}")
+    # the AE2 room's cables are never on show: a block under the floor, or in
+    # the floor right under one of its machines (which hides it)
+    covered = {c for cells in AE2_ROOM.values() for c in cells} | set(AE2_BENCH)
+    for c in ae2_cables():
+        if not (c[1] < 0 or (c[1] == 0 and (c[0], 1, c[2]) in covered)):
+            bad.append(f"ae2: the cable at {c} would be on show")
     n = sum(len(p.ops) for p in plans.values())
     print("\n".join(bad) if bad else f"ok: {len(plans)} jobs, {n} fit steps; nothing placed twice or in a walkway")
     return not bad
