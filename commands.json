@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795046183,
-      "issued": 1795046183000,
-      "cmd": "rescue",
+      "id": 1795046210,
+      "issued": 1795046210000,
+      "cmd": "me",
       "target": "crafter1",
-      "who": "lava1",
-      "problem": "fuel"
+      "craft": "ae2:engineering_processor",
+      "n": 2
     }
   ]
 }
