@@ -52,3 +52,10 @@ See docs/factory-retrofit.md. Order of orders: `reboot all`, `haul Crafty on=0`,
 - AE2: presses, sky stone, 9 flawed + 4 lesser budding certus in the old base. docs/ae2-bootstrap.md,
   tools/certusfarm.py, docs/certus-build.html. ~100 certus crystals needed in all.
 - Create schematics: tools/schematic.py; the device bridge can write into Kyle's ATM10 schematics folder.
+
+## 01:05 check-in (18 Nov)
+- Found the pad-shaft jam: Crafty called every ready load at once, so 5 helpers dived the one-wide shaft together; Pushy sat on the pad "stuck under turtle", the rest hovered over it. Fix 41b3702: one helper called at a time (oldest ready load), skipped to the back after 2 min if it doesn't land. Crafty rebooted onto it.
+- Dusty took Comparable's foundry-cable share (x 26-34); Dispensable took Sticky's clear-out share (x ≤35).
+- Charcool still stranded at -4463 60 1521; miner TuffLuck is above it in the same shaft, so a feed from above can't reach it. Handed to the rescue work.
+- 01:12: rescue duty and Counter-as-assistant landed (d23b7cc, 1c885d0); everyone restarted onto a4ba0b2. Counter now crafts half of Crafty's loads. Observant took HopTo's cable share (x ≤25). Dispensable kept idle as the standby rescuer. Phase 2 (alloy) waits for the cable + lava wall to finish; the probe needs Kyle's works-computer install first.
+- Known stale test: test/baytest.py rack-board drawing checks (2) fail after the board restyle; the watchdog/pad-queue checks pass.
