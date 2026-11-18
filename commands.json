@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795031612,
-      "issued": 1795031612000,
-      "cmd": "lab",
-      "target": "builder1",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|40|1|17;down;face|2;call|front|getNamesRemote;types|metallurgicInfuser_0;methods|metallurgicInfuser_0;types|metallurgicInfuser_1;up;leave;home"
+      "id": 1795031820,
+      "issued": 1795031820000,
+      "cmd": "make",
+      "target": "crafter1",
+      "item": "mekanismgenerators:heat_generator",
+      "n": 2
     }
   ]
 }
