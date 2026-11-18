@@ -747,6 +747,99 @@ function D.rack(mon, slots, now)
   return show(mon, s)
 end
 
+---------------------------------------------------------------- the rack's live board
+-- One strip of the rack (rack.lua): rows of homes, a panel per home, in
+-- the same palette and style as the store screen. view = {
+--   rows = { { panel, ... (8) }, ... },        -- one band per row of homes
+--   pick = { label, lines } or nil,            -- a tapped drone's own screen
+-- } where panel = { name, job, fill (0-1 fuel), ago, colour = green |
+-- orange | blue | red | grey, word }.
+local TONE = { green = C.green, orange = C.amber, blue = C.cyan, red = C.red, grey = C.line }
+function D.homes(mon, view, frame)
+  frame = frame or 0
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  if view.pick then
+    fillCells(s, 1, 1, W, 1, C.raised)
+    text(s, 2, 1, view.pick.label .. "'s screen", C.text, C.raised)
+    text(s, W - 12, 1, "tap to close", C.dim, C.raised)
+    local lines = view.pick.lines or {}
+    local first = math.max(1, #lines - (H - 2))
+    for i = first, #lines do text(s, 2, 2 + i - first, pad(lines[i], W - 2), C.text) end
+    if #lines == 0 then text(s, 2, 3, "Nothing heard from its screen yet.", C.dim) end
+    return show(mon, s)
+  end
+  local rows = view.rows or {}
+  -- (a cell of night all round: the monitor's own margin takes the colour
+  -- of the cells at its edge)
+  local band = floor((H - 1) / math.max(1, #rows))
+  for r, row in ipairs(rows) do
+    local y0 = (r - 1) * band + 2
+    local tall = band - 1
+    local pw = floor((W - 2) / math.max(1, #row))
+    for c, p in ipairs(row) do
+      local x0 = (c - 1) * pw + 2
+      local tone = TONE[p.colour] or C.dim
+      local free = p.colour == "grey"
+      local back = free and C.panel or C.raised
+      fillCells(s, x0, y0, x0 + pw - 2, y0 + tall - 1, back)
+      fillCells(s, x0, y0, x0, y0 + tall - 1, tone)              -- the state stripe
+      local iw = pw - 4
+      -- four lines, spread out when the band is tall enough
+      local gap = tall >= 8 and 2 or 1
+      local top = y0 + (tall >= 8 and floor((tall - 7) / 2) or 0)
+      local function at(k) return top + (k - 1) * gap end
+      local function fits(k) return at(k) <= y0 + tall - 1 end
+      if free then
+        text(s, x0 + 2, at(1), pad(p.name or "", iw), C.dim, back)
+        if fits(2) then text(s, x0 + 2, at(2), "free", C.line, back) end
+      else
+        -- red blinks, so trouble is seen from across the bay
+        local nameCol = (p.colour == "red" and frame % 2 == 0) and C.red or C.text
+        text(s, x0 + 2, at(1), pad(p.name or "", iw), nameCol, back)
+        if fits(2) then text(s, x0 + 2, at(2), pad(p.job or p.word or "", iw), tone, back) end
+        if fits(3) then
+          local f = p.fill or 0
+          bar(s, x0 + 2, at(3), iw, f, (f < 0.05 and C.red) or (f < 0.2 and C.amber) or C.green, C.line)
+        end
+        if fits(4) then text(s, x0 + 2, at(4), pad(p.ago or "", iw), C.dim, back) end
+      end
+      s.zones[#s.zones + 1] = { x0, y0, x0 + pw - 2, y0 + tall - 1, p.name }
+    end
+  end
+  return show(mon, s)
+end
+
+-- The board over the rack: the factory at a glance. view = {
+--   lines = { "CRAFTY: ...", ... }, alarm = bool, title = "FACTORY" }
+function D.opsBoard(mon, view, frame)
+  frame = frame or 0
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  local hc = canvas(W * 2, 12, C.night)
+  local title = view.title or "FACTORY"
+  big(hc, 4, 1, title, view.alarm and C.red or C.text, 2)
+  put(s, hc, 1, 1)
+  local hx = floor((4 + bigWidth(title, 2)) / 2) + 5
+  local cols = { C.text, C.text, C.text, view.alarm and C.red or C.text, C.text, C.dim }
+  local y = 1
+  for i, l in ipairs(view.lines or {}) do
+    if y > H - 1 then break end
+    local label, rest = tostring(l):match("^(%u[%u ']*:)%s*(.*)$")
+    if label then
+      text(s, hx, y, label, C.dim)
+      text(s, hx + #label + 1, y, pad(rest, W - hx - #label - 1), cols[i] or C.text)
+    else
+      text(s, hx, y, pad(l, W - hx), cols[i] or C.text)
+    end
+    y = y + 1
+  end
+  if H >= 6 then hazard(s, 1, H, W, -frame, view.alarm and C.red or C.copper) end
+  return show(mon, s)
+end
+
 ---------------------------------------------------------------- touch panel
 -- A small touch screen with a few safe buttons (3 x 2 in the tower, 2 x 2
 -- by the launch bay door). Whoever draws it sends what is tapped to the

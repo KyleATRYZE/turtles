@@ -22,6 +22,10 @@
 
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
+-- drawn by dash.lua, in the same palette and style as the other screens
+-- (without it, plain text)
+local okDash, dash = pcall(require, "dash")
+if not okDash or type(dash) ~= "table" or not dash.homes then dash = nil end
 
 local CHANNEL = 4711                                  -- factory.lua K.RACK_CHANNEL
 -- homes by name: the helpers (0-15), the chunk loaders (16-26), then the
@@ -41,7 +45,7 @@ local STALL = 600                                     -- seconds in a waiting st
 local SHOW = 20                                       -- seconds a tapped drone's screen stays up
 local FULL_FUEL = 20000
 
-local R = { units = {}, pick = nil, pickAt = 0, pickMon = nil, factory = nil, store = nil, stalled = {} }
+local R = { units = {}, pick = nil, pickAt = 0, pickMon = nil, factory = nil, store = nil, stalled = {}, frame = 0 }
 
 ---------------------------------------------------------------- homes
 function R.homeOf(u)
@@ -257,6 +261,20 @@ end
 -- a strip: its rows of homes, one band each, a panel per home
 function R.draw(mon, rows, now, name)
   if type(rows) == "number" then rows = { math.floor(rows / RACK.perRow) } end   -- (a first home, as before)
+  R.frame = R.frame + 1
+  if R.dash then
+    local view = { rows = {} }
+    if R.pick and R.pickMon == name and (now or os.clock()) - R.pickAt < SHOW then
+      local u = R.units[R.pick]
+      view.pick = { label = u and u.label or R.pick, lines = u and u.screen or {} }
+    end
+    for _, row in ipairs(rows) do
+      local panels = {}
+      for c = 0, RACK.perRow - 1 do panels[#panels + 1] = R.panel(row * RACK.perRow + c, now) end
+      view.rows[#view.rows + 1] = panels
+    end
+    return R.dash.homes(mon, view, R.frame)
+  end
   mon.setTextScale(0.5)
   local w, h = mon.getSize()
   mon.setBackgroundColour(colours.black)
@@ -294,6 +312,10 @@ end
 
 -- the summary board
 function R.drawSummary(mon, now)
+  if R.dash then
+    local lines, alarm = R.summary(now)
+    return R.dash.opsBoard(mon, { lines = lines, alarm = alarm, title = "FACTORY" }, R.frame)
+  end
   mon.setTextScale(0.5)
   local w, h = mon.getSize()
   local lines, alarm = R.summary(now)
@@ -319,6 +341,7 @@ function R.tap(mon, rows, x, now, name, y)
   if u then R.pick, R.pickAt, R.pickMon = u.label, now or os.clock(), name end
 end
 
+R.dash = dash
 if _G.RACK_TEST then return R end
 
 ---------------------------------------------------------------- running
