@@ -4161,6 +4161,14 @@ local function tryBuild()
     return true
   end
 
+  -- no new turtles unless asked for (build crafter1 on=1): the fleet is big
+  -- enough, and books lost in an outage had it building loaders and helpers
+  -- the swarm already has
+  if not plots.build then
+    report("fleet full")
+    return false
+  end
+
   -- one builder, before any more miners (it needs no diamonds). One that
   -- reports in is the builder, whether or not our books still say so (they
   -- lost it, and crafter1 kept trying to make a second)
@@ -4349,6 +4357,10 @@ while true do
       saveTable(K.PLOTS_FILE, plots)
       print("Lava farm: " .. plots.lavafarm.n .. " cauldrons (" .. plots.lavafarm.how .. ").")
       return true
+    elseif c.cmd == "build" then           -- build crafter1 on=1|0: make new turtles (off unless asked)
+      plots.build = (c.on == "1" or c.on == 1 or c.on == true) or nil
+      saveTable(K.PLOTS_FILE, plots)
+      print("Building new turtles: " .. (plots.build and "on" or "off"))
     elseif c.cmd == "haul" then            -- haul crafter1 on=1|0 [x= y= z= face=]: carry bulk stock to the store
       plots.haul = plots.haul or {}
       if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
