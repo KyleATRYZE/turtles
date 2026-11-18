@@ -336,10 +336,10 @@ put(15, 2, DESK_Z, "minecraft:barrel[facing=north]")           # In
 fill(11, 3, DESK_Z, 15, 5, DESK_Z, "computercraft:monitor_advanced[facing=north]")   # 5 x 3 touch screen
 # launch bay: the pit stop on the back track, against the back wall. Miners
 # come up the in-shaft (x 24), drop their load in the chest, get serviced
-# over Crafty, pass the pad and drop down the out-shaft (x 20).
+# over crafter1, pass the pad and drop down the out-shaft (x 20).
 put(21, 1, 1, "computercraft:disk_drive")                      # under the launch pad
 put(22, 1, 1, "computercraft:wired_modem_full")
-put(22, 2, 1, "computercraft:turtle_advanced")                 # Crafty
+put(22, 2, 1, "computercraft:turtle_advanced")                 # crafter1
 put(23, 1, 1, "minecraft:furnace[facing=south]")
 put(23, 2, 1, "minecraft:chest[facing=south]")                 # drop-off
 B.pop((20, 0, 1), None)                                        # out-shaft

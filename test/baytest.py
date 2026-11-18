@@ -1,12 +1,12 @@
 """The loading bays and the watchdog (docs/factory-retrofit.md 6b).
 
-1. Crafty hands a load to a helper docked in its bay over the cable: hand-ins
+1. crafter1 hands a load to a helper docked in its bay over the cable: hand-ins
    pulled back first, the load and fuel pushed straight in, materials_ready
    sent; no load_ready, no pad. Not on the cable: it waits and tries again.
 2. The watchdog: a helper waiting over 10 minutes has its load announced
    again, 5 minutes later it is told to reboot; it is listed as stalled.
-3. The Counter fallback: a Counter's load left ready 3 minutes is taken
-   over by Crafty (and the Counter told to drop it).
+3. The crafter2 fallback: a crafter2's load left ready 3 minutes is taken
+   over by crafter1 (and the crafter2 told to drop it).
 4. The helper: in its bay it says its name on the cable and what goes back;
    with the bay modem off, it says so.
 5. rack.lua: panels per home, green docked / amber out / grey free; a tap
@@ -55,14 +55,14 @@ check("materials_ready says so (bay=true); no load_ready, no pad",
       [m.msg.type for m in sent])
 L, g = factory(ORDER.replace("turtle_40", "turtle_41"))
 sent = [m for m in g.OUTBOX.values() if m.to == 40]
-check("a bay not on Crafty's cable (Sortnado's, before the move): nothing handed over, nothing sent to the pad",
+check("a bay not on crafter1's cable (Sortnado's, before the move): nothing handed over, nothing sent to the pad",
       not any(m.msg.type in ("materials_ready", "load_ready") for m in sent), [m.msg.type for m in sent])
-check("  and Crafty makes nothing for it (the store serves it; the rest comes back as a pad order)",
+check("  and crafter1 makes nothing for it (the store serves it; the rest comes back as a pad order)",
       not any("Preparing a load" in l for l in g.LOG.values()), list(g.LOG.values())[-3:])
 check("(on its cable but not docked when the load is made: tried again every 15 s)", "o.tried or 0) > 15" in FAC)
 check("a name that is not turtle_<n> is not taken as a bay", 'b:match("^turtle_%d+$")' in FAC)
 
-# ---------------------------------------------------------------- 2-3. watchdog and Counter fallback
+# ---------------------------------------------------------------- 2-3. watchdog and crafter2 fallback
 wd = FAC[FAC.index("-- The pad's queue."):FAC.index("-- what a drone said, passed on over the cable")]
 def watch():
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
@@ -78,14 +78,14 @@ function print() end
     L.execute(wd)
     return L
 L = watch()
-L.execute('''fleet.hopto = { id = 21, label = "HopTo", role = "helper", state = "waiting for materials", since = 0, at = 650 }
-fleet.pushy = { id = 20, label = "Pushy", role = "helper", state = "building", since = 0, at = 650 }
+L.execute('''fleet.hopto = { id = 21, label = "builder1", role = "helper", state = "waiting for materials", since = 0, at = 650 }
+fleet.pushy = { id = 20, label = "lava1", role = "helper", state = "building", since = 0, at = 650 }
 orders[21] = { ready = true, n = 4, items = {} }
 K.watchdog(500)''')
 check("waiting 8 minutes: left alone", L.eval("#SENT") == 0 and L.eval("#K.stalledList") == 0)
 L.execute("K.watchdog(660)")
 check("over 10 minutes: its load announced again, and it is listed as stalled",
-      L.eval("#SENT") == 1 and L.eval("SENT[1][2].type") == "load_ready" and L.eval("K.stalledList[1]") == "HopTo"
+      L.eval("#SENT") == 1 and L.eval("SENT[1][2].type") == "load_ready" and L.eval("K.stalledList[1]") == "builder1"
       and L.eval("#K.stalledList") == 1)
 L.execute("fleet.hopto.at = 900 K.watchdog(900)")
 check("4 minutes on: nothing more yet", L.eval("#DIRECT") == 0 and L.eval("#SENT") == 1)
@@ -94,38 +94,38 @@ check("5 minutes on and still waiting: told to reboot (a direct order)", L.eval(
       and L.eval("DIRECT[1][1]") == 21 and L.eval("DIRECT[1][2]") == "reboot")
 L.execute("fleet.hopto.state = 'building' fleet.hopto.since = 980 K.watchdog(1000)")
 check("working again: off the stalled list", L.eval("#K.stalledList") == 0 and L.eval("K.stall.hopto") is None)
-L.execute('''fleet.dusty = { id = 25, label = "Dusty", role = "helper", state = "stuck under glass", since = 0, at = 2000 }
+L.execute('''fleet.dusty = { id = 25, label = "builder4", role = "helper", state = "stuck under glass", since = 0, at = 2000 }
 K.watchdog(2000)''')
-check("'stuck under ...' counts as waiting", L.eval("K.stalledList[1]") == "Dusty")
+check("'stuck under ...' counts as waiting", L.eval("K.stalledList[1]") == "builder4")
 L.execute('''fleet.dusty.at = 100 K.stall = {} K.watchdog(2000)''')
 check("a drone not heard for 5 minutes is not the watchdog's (it is silent, not waiting)",
       L.eval("#K.stalledList") == 0)
-# the Counter fallback
+# the crafter2 fallback
 L = watch()
 L.execute('''K.foreign[23] = { items = { { "minecraft:stone", 8 } }, fuel = 4, n = 9, at = 0, readyAt = 100 }
 K.watchdog(250)''')
-check("a Counter's load ready 2.5 minutes: still the Counter's", L.eval("orders[23]") is None)
+check("a crafter2's load ready 2.5 minutes: still the crafter2's", L.eval("orders[23]") is None)
 L.execute("K.watchdog(290)")
-check("ready over 3 minutes and not collected: Crafty takes it over", L.eval("orders[23] and orders[23].n") == 9
+check("ready over 3 minutes and not collected: crafter1 takes it over", L.eval("orders[23] and orders[23].n") == 9
       and L.eval("K.adopted[23]") is True and L.eval("K.foreign[23]") is None)
-check("  and tells the Counter to drop it", L.eval("BCAST[1].type") == "counter_drop" and L.eval("BCAST[1].forId") == 23)
+check("  and tells the crafter2 to drop it", L.eval("BCAST[1].type") == "counter_drop" and L.eval("BCAST[1].forId") == 23)
 L = watch()
 L.execute('''K.foreign[23] = { items = {}, fuel = 4, n = 9, at = 0 }
-fleet.dropit = { id = 23, label = "DropIt", role = "helper", state = "waiting for materials", since = 0, at = 700 }
+fleet.dropit = { id = 23, label = "foundry1", role = "helper", state = "waiting for materials", since = 0, at = 700 }
 K.watchdog(700)''')
-check("the watchdog takes over a Counter's load even when no 'ready' was heard (an old Counter)",
+check("the watchdog takes over a crafter2's load even when no 'ready' was heard (an old crafter2)",
       L.eval("K.adopted[23]") is True and L.eval("orders[23].n") == 9)
-split = FAC[FAC.index("do\n  local digits"):FAC.index("return share == 0 or not K.alive(share)\nend") + len("return share == 0 or not K.alive(share)\nend")]
+split = FAC[FAC.index("do\n  local label = (os.getComputerLabel"):FAC.index("return share == 0 or not K.alive(share)\nend") + len("return share == 0 or not K.alive(share)\nend")]
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
-L.execute("CLOCK = 1000 os.clock = function() return CLOCK end K = {} LABEL = 'Crafty' os.getComputerLabel = function() return LABEL end")
+L.execute("CLOCK = 1000 os.clock = function() return CLOCK end K = {} LABEL = 'crafter1' os.getComputerLabel = function() return LABEL end")
 L.execute(split)
 L.execute("K.adopted = {} K.counters[1] = 990")
 a = L.eval("K.mine(23)")
 L.execute("K.adopted[23] = true")
-check("an odd id is the Counter's, until Crafty adopts its load", a is False and L.eval("K.mine(23)") is True)
-check("the Counter says when a load is ready and when it is handed over",
+check("an odd id is the crafter2's, until crafter1 adopts its load", a is False and L.eval("K.mine(23)") is True)
+check("the crafter2 says when a load is ready and when it is handed over",
       'type = "counter_ready"' in FAC and 'type = "counter_handed"' in FAC and 'msg.type == "counter_drop" and K.COUNTER' in FAC)
-check("Crafty's status lists the stalled drones", "stalled = (not K.COUNTER and #K.stalledList > 0)" in FAC)
+check("crafter1's status lists the stalled drones", "stalled = (not K.COUNTER and #K.stalledList > 0)" in FAC)
 
 # ---------------------------------------------------------------- 4. the helper in its bay
 bayfn = HEL[HEL.index("function LN.bay()"):HEL.index("local function hover()")]
@@ -160,33 +160,33 @@ os.clock = function() return 100 end
 peripheral = { getNames = function() return {} end }''')
 R = L.execute("return dofile(%r)" % os.path.join(ROOT, "rack.lua"))
 L.globals().R = R
-L.execute('''R.hear({ label = "HopTo", role = "helper", id = 21, state = "idle", fuel = 1500, pos = { x = -4428, y = 72, z = 1521 },
+L.execute('''R.hear({ label = "builder1", role = "helper", id = 21, state = "idle", fuel = 1500, pos = { x = -4428, y = 72, z = 1521 },
   screen = { "Waiting for jobs.", "line two" } }, 100)
-R.hear({ label = "Pushy", role = "helper", id = 20, state = "building", fuel = 900, pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "NoteWorthy", role = "helper", id = 33, state = "idle", fuel = 500, pos = { x = -4423, y = 74, z = 1521 } }, 100)
-R.hear({ label = "Dusty", role = "helper", id = 34, state = "idle", fuel = 40, pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "Sticky", role = "helper", id = 35, state = "fitting out", fuel = 9000, job = "factory_f2_lava",
+R.hear({ label = "lava1", role = "helper", id = 20, state = "building", fuel = 900, pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "builder11", role = "helper", id = 33, state = "idle", fuel = 500, pos = { x = -4423, y = 74, z = 1521 } }, 100)
+R.hear({ label = "builder4", role = "helper", id = 34, state = "idle", fuel = 40, pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "builder3", role = "helper", id = 35, state = "fitting out", fuel = 9000, job = "factory_f2_lava",
   progress = { kind = "fitting", done = 12, total = 80 }, pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "OnRepeat", role = "helper", id = 36, state = "waiting for materials", fuel = 9000,
+R.hear({ label = "builder2", role = "helper", id = 36, state = "waiting for materials", fuel = 9000,
   fetching = "cable x18", pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "Comparable", role = "helper", id = 37, state = "waiting for materials", fuel = 9000,
+R.hear({ label = "survey1", role = "helper", id = 37, state = "waiting for materials", fuel = 9000,
   pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "Crafty", role = "factory", id = 12, state = "idle", stalled = { "Comparable" },
+R.hear({ label = "crafter1", role = "factory", id = 12, state = "idle", stalled = { "survey1" },
   inv = { ["minecraft:coal"] = 300, ["minecraft:lava_bucket"] = 4 }, storage = { free = 200 } }, 100)
 ''')
 p = lambda i: L.eval("R.panel(%d, 110)" % i)
-check("HopTo docked in home 1 (low row): green", p(1).colour == "green" and p(1).word == "docked" and p(1).name == "HopTo")
-check("Pushy out on a job: amber, with its state", p(0).colour == "orange" and p(0).state == "building")
-check("NoteWorthy docked in home 14 (high row): green", p(14).colour == "green")
+check("builder1 docked in home 1 (low row): green", p(1).colour == "green" and p(1).word == "docked" and p(1).name == "builder1")
+check("lava1 out on a job: amber, with its state", p(0).colour == "orange" and p(0).state == "building")
+check("builder11 docked in home 14 (high row): green", p(14).colour == "green")
 check("a home nobody has: grey, free", p(10).colour == "grey" and p(10).word == "free")
-check("the factory is not on the rack", L.eval("R.units.Crafty") is None)
-check("low on fuel: red", p(5).colour == "red" and p(5).name == "Dusty")
+check("the factory is not on the rack", L.eval("R.units.crafter1") is None)
+check("low on fuel: red", p(5).colour == "red" and p(5).name == "builder4")
 check("working on a fit: amber, the job in words with its progress", p(4).colour == "orange" and p(4).job == "Lava wall 12/80", p(4).job)
 check("fetching: blue, what it is fetching", p(6).colour == "blue" and p(6).job == "Fetching: cable x18", p(6).job)
-check("stalled (Crafty says so): red", p(7).colour == "red" and p(7).name == "Comparable")
+check("stalled (crafter1 says so): red", p(7).colour == "red" and p(7).name == "survey1")
 summ = list(L.eval("R.summary(110)")[0].values())
-check("the board's factory summary: Crafty, fuel stock, the stalled drones", any("CRAFTY: idle" in l for l in summ)
-      and any("coal 300" in l and "lava 4" in l for l in summ) and any("STALLED: Comparable" in l for l in summ), summ)
+check("the board's factory summary: crafter1, fuel stock, the stalled drones", any("CRAFTY: idle" in l for l in summ)
+      and any("coal 300" in l and "lava 4" in l for l in summ) and any("STALLED: survey1" in l for l in summ), summ)
 L.execute("LAY = R.layout({ 'monitor_2', 'monitor_4', 'monitor_9' })")
 check("strips (in the order of their names, as R.monitors gives them) take the rows in order; with fewer strips than rows one shows two",
       list(L.eval("LAY.monitor_2").values()) == [0, 1] and list(L.eval("LAY.monitor_4").values()) == [2, 3]
@@ -204,12 +204,12 @@ function MON.setCursorPos(x, y) cx, cy = x, y end
 function MON.write(t) local r = MON.rows[cy] or (" "):rep(MON.size[1]) MON.rows[cy] = (r:sub(1, cx - 1) .. t .. r:sub(cx + #t)):sub(1, MON.size[1]) cx = cx + #t end
 R.draw(MON, 0, 110, "monitor_4")''')
 row1 = L.eval("MON.rows[1]")
-check("the low strip: eight panels, names along the top", "Pushy" in row1 and "HopTo" in row1, row1)
+check("the low strip: eight panels, names along the top", "lava1" in row1 and "builder1" in row1, row1)
 L.execute('R.tap(MON, 0, 25, 110, "monitor_4") R.draw(MON, 0, 111, "monitor_4")')
-check("a tap on HopTo's panel shows its screen", "HopTo's screen" in L.eval("MON.rows[1]") and "Waiting for jobs." in L.eval("MON.rows[2]"))
+check("a tap on builder1's panel shows its screen", "builder1's screen" in L.eval("MON.rows[1]") and "Waiting for jobs." in L.eval("MON.rows[2]"))
 L.execute('R.tap(MON, 0, 25, 112, "monitor_4") R.draw(MON, 0, 112, "monitor_4")')
-check("a second tap closes it", "Pushy" in L.eval("MON.rows[1]"))
-check("Crafty passes the drones' statuses (and reboot orders) on over the cable",
+check("a second tap closes it", "lava1" in L.eval("MON.rows[1]"))
+check("crafter1 passes the drones' statuses (and reboot orders) on over the cable",
       "K.relay(msg)" in FAC and 'type = "cmd", cmd = cmd' in FAC)
 UPD = open(os.path.join(ROOT, "update.lua")).read()
 check("rack.lua is in the manifest, the rack role runs it, turtles skip it",
@@ -241,7 +241,7 @@ MSG = { type = "materials", id = 40, n = 3, fuel = 8, bay = "turtle_40", back = 
 S.bayHeard(40, MSG, 0)
 S.bayStep(5)
 ''')
-check("before the move: a bay on the store's cable is not served at once (Crafty may take it)",
+check("before the move: a bay on the store's cable is not served at once (crafter1 may take it)",
       L.eval("#SENTJ") == 0 and L.eval("S.bayQueue[40] ~= nil") is True)
 L.execute("S.bayStep(11)")
 t40 = {}
@@ -256,11 +256,11 @@ check("  and the answer says what it lacks, from Sortnado (the helper fetches th
       r is not None and r.by == "Sortnado" and r.bay is True and r.missing["mekanism:basic_control_circuit"] == 4
       and r.given["minecraft:cobblestone"] == 100 and L.eval("SENTJ[1].p") == "swarm_job")
 L.execute('''SENTJ = {} MSG.n = 4 S.bayHeard(40, MSG, 20) S.bayHeard(12, { type = "bay_taken", forId = 40, n = 4 }, 21) S.bayStep(40)''')
-check("Crafty on the same cable says bay_taken: the store leaves it alone", L.eval("#SENTJ") == 0
+check("crafter1 on the same cable says bay_taken: the store leaves it alone", L.eval("#SENTJ") == 0
       and L.eval("S.bayQueue[40]") is None)
 L.execute('''MSG2 = { type = "materials", id = 41, n = 1, bay = "turtle_41", items = {} } S.bayHeard(41, MSG2, 50)''')
 check("a bay that is not on the store's cable is not the store's", L.eval("S.bayQueue[41]") is None)
-check("Crafty records a bay order only when the bay is on its own cable, and says bay_taken",
+check("crafter1 records a bay order only when the bay is on its own cable, and says bay_taken",
       "if bay and not (modem and peripheral.isPresent(bay)) then" in FAC and 'type = "bay_taken"' in FAC)
 check("the helper: what the store lacked comes from the pad straight away; nobody serving the bay in 90 s: the pad",
       'reply.by == "Sortnado" and next(reply.missing or {})' in HEL and "os.clock() - started > 90" in HEL

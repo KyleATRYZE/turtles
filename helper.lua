@@ -1,5 +1,5 @@
 -- helper.lua : a builder's mate. A mining turtle (pickaxe + ender modem, no
--- scanner) that places part of a building plan while BlockParty does the
+-- scanner) that places part of a building plan while mapper1 does the
 -- rest, so a big build goes two or three times as fast.
 --
 -- It never goes into the base room and never tunnels. It lives in the open
@@ -287,8 +287,13 @@ end
 
 -- Each helper has its own waiting spot and flying height (two with the same
 -- id % 4 used to stack up on one spot).
-local SLOTS = { Pushy = 0, HopTo = 1, LeverAlone = 2, DropIt = 3 }
-local function slot() return SLOTS[os.getComputerLabel() or ""] or (os.getComputerID() % 4) end
+local SLOTS = { lava1 = 0, builder1 = 1, builder7 = 2, foundry1 = 3 }
+local function myName()          -- (the new name, even before the label is changed)
+  local label = os.getComputerLabel() or ""
+  if swarm and swarm.newName then return swarm.newName(label, os.getComputerID()) end
+  return label
+end
+local function slot() return SLOTS[myName()] or (os.getComputerID() % 4) end
 local function highway() return (st.job and st.job.oy or base.f.y) + OVER_SITE + 2 * slot() end
 -- where we wait: in the open air beside the hole over the launch pad (12
 -- above the factory; a rebase order can raise that, base.hoverUp, so the
@@ -305,14 +310,14 @@ end
 --   in from the west: down outside the west gate, in on the front track
 --     (eastbound), along it to the pad's x, a step north onto the pad;
 --   in from the east: down outside the east gate, in on the back track
---     (westbound), along it onto the pad (over Crafty's stop, a block
+--     (westbound), along it onto the pad (over crafter1's stop, a block
 --     higher, for a pad beyond it);
 --   off a pad: a step south onto the front track; then east to its home in
 --     the rack (a step south into it, low or high) or out of the east gate.
 -- It waits for a load, and between jobs, in its home rather than hovering.
 -- Homes go by name (the factory's helper names, in order), else by id.
-local HOMES = { "Pushy", "HopTo", "LeverAlone", "DropIt", "Sticky", "Dusty", "OnRepeat", "Comparable",
-  "Observant", "Dispensable", "ButtonUp", "PlateUp", "Tripwired", "LampLit", "NoteWorthy", "TargetLock" }
+local HOMES = { "lava1", "builder1", "builder7", "foundry1", "builder3", "builder4", "builder2", "survey1",
+  "builder6", "rescue1", "builder5", "builder8", "builder9", "builder10", "builder11", "builder12" }
 function LN.on() return type(base) == "table" and type(base.lane) == "table" end
 function LN.inside()
   if not LN.on() then return false end
@@ -335,7 +340,7 @@ function LN.padOnLane(p)
 end
 function LN.home()
   local L = base.lane
-  local label, i = os.getComputerLabel() or "", nil
+  local label, i = myName(), nil
   for k, n in ipairs(HOMES) do if n == label then i = k - 1 end end
   i = i or (os.getComputerID() % (2 * L.perRow))
   local rows = L.rows or { L.low, L.high }
@@ -360,7 +365,7 @@ function LN.toY(y)
   return true
 end
 function LN.east(x) return pos.x >= x or LN.go(0, x - pos.x) end
--- westbound on the back track to x: over Crafty's stop (a block higher)
+-- westbound on the back track to x: over crafter1's stop (a block higher)
 -- when x is beyond it, then down to the lane's height
 function LN.west(x)
   local L = base.lane
@@ -430,7 +435,7 @@ end
 
 -- The loading bay: docked in its home, the helper touches the shelf's
 -- wired modem (above a low home, below a high one) and so is on the cable
--- as turtle_<id>. Crafty pushes its load straight in. Nil if the modem is
+-- as turtle_<id>. crafter1 pushes its load straight in. Nil if the modem is
 -- not there or not switched on.
 function LN.bay()
   for _, side in ipairs({ "top", "bottom" }) do
@@ -757,7 +762,7 @@ local function supplyRun(indices, reason, once)
         ctlNone = os.clock()
       end
       if msg.bay and not onPad and os.clock() - started > 90 then
-        -- nobody on the bay's cable can serve it (Crafty not moved in, no
+        -- nobody on the bay's cable can serve it (crafter1 not moved in, no
         -- Sortnado): the same load from the pad
         print("Nobody served my bay: fetching from the pad.")
         noBay, retryNow = true, true
@@ -816,7 +821,7 @@ local function supplyRun(indices, reason, once)
       goHover()
     end
     if reply and reply.by == "Sortnado" and next(reply.missing or {}) then
-      -- the store gave what it had into the bay: the rest (things Crafty
+      -- the store gave what it had into the bay: the rest (things crafter1
       -- makes) from the pad, straight away
       print("The store gave what it had. The rest from the factory's pad.")
       noBay, retryNow, reply = true, true, nil
@@ -2596,7 +2601,7 @@ local function runFeed()
   riseTo(top)
 end
 
--- rescue: Crafty sends me to a drone that is stuck (factory.lua, "rescue
+-- rescue: crafter1 sends me to a drone that is stuck (factory.lua, "rescue
 -- drones"). I get next to it (from above; or, under the factory's roof,
 -- through the building by its plan) and check by its id that it is the one.
 -- Then, by st.rescue.how: fuel - drop fuel into it and reboot it (it drinks
@@ -2604,7 +2609,7 @@ end
 -- it (it comes out as an item that keeps its id, label, fuel and files, and
 -- what it carried comes with it), carry it into the open air beside my
 -- hover spot, place it, give back what it carried and turn it on. Nothing
--- but that one turtle is ever dug. What I found and did goes back to Crafty
+-- but that one turtle is ever dug. What I found and did goes back to crafter1
 -- (rescue_done), with the id of any other turtle sitting on top of it.
 local function runRescue()
   local r = st.rescue
@@ -3133,7 +3138,7 @@ while true do
     foundry.order(cmd)
     task = guarded(work)
   elseif cmd.cmd == "rescue" and tonumber(cmd.vid) and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
-    -- (from Crafty: a drone that is stuck; see runRescue)
+    -- (from crafter1: a drone that is stuck; see runRescue)
     st.rescue = { who = tostring(cmd.who or cmd.vid), vid = math.floor(tonumber(cmd.vid)),
       x = math.floor(tonumber(cmd.x)), y = math.floor(tonumber(cmd.y)), z = math.floor(tonumber(cmd.z)),
       how = (cmd.how == "fuel" or cmd.how == "trapped") and cmd.how or "reboot", n = cmd.n }

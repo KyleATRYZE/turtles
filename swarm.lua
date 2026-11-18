@@ -5,28 +5,36 @@ local M = {}
 M.PROTOCOL = "swarm"
 
 ---------------------------------------------------------------- names
--- The swarm was renamed (shorter names, Minecraft puns). This is the one
--- place the old names appear: old name -> new name. Every turtle and
--- computer renames itself when this file is loaded (see M.rename, at the
--- end of the file): its label, and every name saved in its state files. A
--- turtle that wakes weeks later does it on its first start.
+-- The swarm has been renamed twice: first to shorter names (Minecraft puns),
+-- then to plain task names (builder1, lava1, crafter1, ...), so it is clear
+-- who does what while many jobs run at once. This is the one place the old
+-- names appear: old name -> new name (a name from the first renaming goes
+-- straight to its newest name). Every turtle and computer renames itself
+-- when this file is loaded (see M.rename, at the end of the file): its
+-- label, and every name saved in its state files. A turtle that wakes weeks
+-- later does it on its first start.
 -- Until all are renamed, a name means the same machine under either name:
 -- orders addressed to an old name are obeyed (M.forMe), and anything filed
 -- by name is filed under M.nameKey, which is the same for both.
 M.RENAMES = {
   -- the base
-  GroundControl = "CommandBlock", ForgeClooney = "Crafty", BrickJagger = "BlockParty",
-  -- builder's mates
-  MortarKombat = "Pushy", WallStreet = "HopTo", TimberLake = "LeverAlone", SteelyDan = "DropIt",
+  GroundControl = "CommandBlock", ForgeClooney = "crafter1", Crafty = "crafter1",
+  Counter = "crafter2", BrickJagger = "mapper1", BlockParty = "mapper1",
+  -- builder's mates (helpers), by duty
+  MortarKombat = "lava1", Pushy = "lava1", SteelyDan = "foundry1", DropIt = "foundry1",
+  WallStreet = "builder1", HopTo = "builder1", OnRepeat = "builder2", Sticky = "builder3",
+  Dusty = "builder4", ButtonUp = "builder5", Observant = "builder6",
+  TimberLake = "builder7", LeverAlone = "builder7",
+  Comparable = "survey1", Dispensable = "rescue1",
   -- chunk loaders (the last six were names waiting for loaders not yet built)
   ChunkNorris = "Ghastly", LoadRunner = "Phantastic", ChunkBerry = "Ablaze",
   ChunkyMonkey = "Vexed", LoadZeppelin = "Beehave", ChunkSinatra = "Batty",
   LoadOfTheRings = "Breezy", ChunkDaddy = "AllayOop", HeavyLoad = "WitherOrNot",
   -- coal hunters
-  CoalPorter = "Coalition", NatKingCoal = "Charcool",
+  CoalPorter = "Coalition", NatKingCoal = "miner3", Charcool = "miner3",
   -- miners
   OreLando = "Oresome", ElvisPitsley = "Pickle", BoulderDash = "Cobbler",
-  NotoriousDIG = "TuffLuck", QuarryStyles = "CleanSlate", ObiWanKenOrebi = "Granted",
+  QuarryStyles = "CleanSlate", ObiWanKenOrebi = "Granted",
   OreSonWelles = "Bedrocker",
   -- names miners used to pick by computer number (none in use; a miner
   -- built before the change-over may carry one)
@@ -38,24 +46,57 @@ M.RENAMES = {
   GraniteDavis = "Smelty", CobbleWobble = "LapisLazy", MoleDiggins = "Dripstoned",
   DeepPurple = "GeodeToGo", StoneCold = "Nuggety",
 }
+-- Old names two machines shared (two miners took the same name from the
+-- list by computer number): which new name by computer number. Only a
+-- machine's own label (and an order addressed to it) can be told apart by
+-- number; elsewhere such a name is left as it is.
+M.RENAMES_BY_ID = {
+  TuffLuck = { [40] = "miner1", [12] = "miner2" },
+  NotoriousDIG = { [40] = "miner1", [12] = "miner2" },
+}
 local OLD_NAMES = {}                  -- old name, lower case -> new name
 for old, new in pairs(M.RENAMES) do OLD_NAMES[old:lower()] = new end
+local OLD_BY_ID = {}                  -- old name, lower case -> { [id] = new name }
+for old, ids in pairs(M.RENAMES_BY_ID) do OLD_BY_ID[old:lower()] = ids end
+-- (a word the programs also use as itself: "counter" is the assistant
+-- crafter's role in its reports. In a state file only the name, spelt
+-- as a name, is renamed.)
+local WORDS = { counter = true }
 
 -- The name a machine goes by now (given its old or its new name, any case
--- for an old one). Anything that is not an old name comes back unchanged.
-function M.newName(name)
+-- for an old one). With the machine's number, a name two machines shared
+-- is told apart too. Anything that is not an old name comes back unchanged.
+function M.newName(name, id)
   if type(name) ~= "string" then return name end
-  return OLD_NAMES[name:lower()] or name
+  local low = name:lower()
+  local ids = OLD_BY_ID[low]
+  if ids and id ~= nil and ids[tonumber(id)] then return ids[tonumber(id)] end
+  return OLD_NAMES[low] or name
 end
 
 -- What a name is filed under: the same for a machine's old and new names,
 -- whatever the case.
-function M.nameKey(name)
-  return tostring(M.newName(name)):lower()
+function M.nameKey(name, id)
+  return tostring(M.newName(name, id)):lower()
 end
 
-function M.sameName(a, b)
-  return type(a) == "string" and type(b) == "string" and M.nameKey(a) == M.nameKey(b)
+-- Do two names mean the same machine? (id: the number of the machine the
+-- second name is, to tell a shared old name apart)
+function M.sameName(a, b, id)
+  if type(a) ~= "string" or type(b) ~= "string" then return false end
+  return M.nameKey(a) == M.nameKey(b) or (id ~= nil and M.nameKey(a, id) == M.nameKey(b, id))
+end
+
+-- Is this name in a list kept by name (a set: name -> true, as the haul and
+-- lava farm skip lists are)? Names saved under an old name still count.
+-- id: the machine's number (for a shared old name).
+function M.listed(set, name, id)
+  if type(set) ~= "table" or type(name) ~= "string" then return false end
+  if set[name] then return true end
+  for k, v in pairs(set) do
+    if v and type(k) == "string" and M.sameName(k, name, id) then return true end
+  end
+  return false
 end
 
 -- Old names -> new names all through a table (a state file): values that
@@ -68,11 +109,11 @@ local function renameDeep(t, seen)
   for k, v in pairs(t) do
     if type(v) == "table" then
       if renameDeep(v, seen) then changed = true end
-    elseif type(v) == "string" and OLD_NAMES[v:lower()] then
+    elseif type(v) == "string" and OLD_NAMES[v:lower()] and not WORDS[v] then
       t[k] = OLD_NAMES[v:lower()]
       changed = true
     end
-    if type(k) == "string" and OLD_NAMES[k:lower()] then
+    if type(k) == "string" and OLD_NAMES[k:lower()] and not WORDS[k] then
       rekey = rekey or {}
       rekey[#rekey + 1] = k
     end
@@ -97,7 +138,7 @@ function M.rename()
   local was
   if os.getComputerLabel and os.setComputerLabel then
     local label = os.getComputerLabel()
-    local new = M.newName(label)
+    local new = M.newName(label, os.getComputerID and os.getComputerID())
     if label and new ~= label then
       os.setComputerLabel(new)
       was = label
@@ -417,7 +458,7 @@ function M.forMe(cmd)
   local t = cmd.target
   if t == "all" or t == os.getComputerID() then return true end
   local label = os.getComputerLabel()
-  return type(t) == "string" and label ~= nil and M.sameName(t, label)
+  return type(t) == "string" and label ~= nil and M.sameName(t, label, os.getComputerID())
 end
 
 -- True the first time an order for this machine is seen; false for repeats.

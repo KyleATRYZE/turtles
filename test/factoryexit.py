@@ -1,6 +1,6 @@
 """A helper that wakes up inside the factory (a restart, a crash) walks out
 by the big door with the real helper.lua in the real building, and never
-goes looking for open sky (which took Observant up into the roof). With a
+goes looking for open sky (which took builder6 up into the roof). With a
 fit-out in hand it carries on from where it stands instead.
 
     cd test && python3 factoryexit.py

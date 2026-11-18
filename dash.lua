@@ -297,7 +297,7 @@ local SPECIAL = { builder = { "B", C.cyan }, loader = { "L", C.violet }, factory
                   helper = { "H", C.pink }, screen = { "S", C.dim }, storage = { "S", C.dim } }
 -- the coal hunters (by name too, when they are not hunting just now; a
 -- report under a hunter's old name counts: see the names in swarm.lua)
-local HUNTER_NAMES = { Coalition = true, Charcool = true }
+local HUNTER_NAMES = { Coalition = true, miner3 = true }
 local okNames, names = pcall(require, "swarm")
 local HUNTERS = setmetatable({}, { __index = function(_, label)
   if okNames and type(names) == "table" and names.newName then label = names.newName(label) end
@@ -334,8 +334,8 @@ end
 ---------------------------------------------------------------- the map wall
 -- data = {
 --   units  = { [id] = unit status, ... },   -- as CommandBlock keeps them
---   maps   = { map, ... },                  -- BlockParty's ground scans
---   base   = { x, y, z },                   -- Crafty (the pit stop)
+--   maps   = { map, ... },                  -- mapper1's ground scans
+--   base   = { x, y, z },                   -- crafter1 (the pit stop)
 --   site   = { x1, z1, x2, z2, progress, layer, layers, done, total },
 --   hut    = { x1, z1, x2, z2 },
 --   plots  = { size, done = { {x, z}, ... }, active = { {x, z}, ... } },

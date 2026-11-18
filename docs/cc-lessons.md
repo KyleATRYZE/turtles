@@ -37,8 +37,8 @@ because the other peripheral is still there.
 https://github.com/cc-tweaked/CC-Tweaked/blob/mc-1.21.x/projects/common/src/main/java/dan200/computercraft/shared/peripheral/modem/wired/WiredModemFullBlockEntity.java
 
 So: put a full-block wired modem under each pad, with a permanent chest (or barrel) on
-one of its other faces, and cable to Crafty's network. A player clicks it once. Every
-turtle that lands on the pad then shows up as `turtle_<n>` on the network. Crafty can
+one of its other faces, and cable to crafter1's network. A player clicks it once. Every
+turtle that lands on the pad then shows up as `turtle_<n>` on the network. crafter1 can
 `pushItems`/`pullItems` straight into and out of its slots, the same way factory.lua
 already moves items to and from its own `selfName`.
 
@@ -52,10 +52,10 @@ already moves items to and from its own `selfName`.
 - `helper.lua` `downToPad`/`upFromPad` and `miner.lua` around line 740: once on the pad,
   just send `{type="on_pad", id=os.getComputerID()}` and wait for "done". The turtle
   moves nothing itself.
-- Keep the 240 s "do not hog the pad" limit in helper.lua, but have Crafty own the pad
+- Keep the 240 s "do not hog the pad" limit in helper.lua, but have crafter1 own the pad
   lease (who is on it, until when) so two turtles are never sent down at once.
 - [unverified] that `pullItems` from a *remote* turtle works on our CC version. It works
-  for Crafty's own name already, which uses the same lookup. Test once with `lua`.
+  for crafter1's own name already, which uses the same lookup. Test once with `lua`.
 
 ---
 
@@ -75,8 +75,8 @@ https://github.com/IntelligenceModding/AdvancedPeripherals/blob/dev/0.8-1.21.1/s
 
 The profile is the turtle's owning player. CC gives a turtle an owner whenever *any*
 `Player` places it (`TurtleBlock.setPlacedBy`), and the turtle's own fake player counts
-as a Player. So a turtle placed by Crafty inherits Crafty's owner profile, or CC's
-`[ComputerCraft]` profile if Crafty has none. Either way it is not AP's default, so
+as a Player. So a turtle placed by crafter1 inherits crafter1's owner profile, or CC's
+`[ComputerCraft]` profile if crafter1 has none. Either way it is not AP's default, so
 any right-click that makes vanilla award a stat (for example using an item on a block)
 crashes on line 93.
 
@@ -290,7 +290,7 @@ allow ntfy.sh.
 - Every dig-to-clear in miner.lua and helper.lua (the "only earth and stone in the
   hole" rule is a good start): never dig a block whose name starts with `computercraft:`.
   On seeing one, wait a random 1 to 4 s and retry, then side-step, then report.
-- Pad and shaft cells: Crafty already hands out loads. Let it hand out short leases
+- Pad and shaft cells: crafter1 already hands out loads. Let it hand out short leases
   for the shared cells too (pad, in-shaft, out-shaft), with a timeout. Turtles ask before
   entering. That is the jobserver idea from SWARM, applied to cells.
 

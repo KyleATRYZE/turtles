@@ -80,7 +80,7 @@ end
 
 
 def hopto_state():
-    """The west wall as HopTo left it running the old plan with xmin=10
+    """The west wall as builder1 left it running the old plan with xmin=10
     xmax=10: its take-outs done (all but the one at 10 1 4 it could not get
     to), the barrels it put in from the front standing right, the ones it put
     in from above dug out again by hand."""
@@ -110,7 +110,7 @@ def run(face_up, empty, right, stock_extra=None, cleared=None):
     g.INSTALL_OK = True
     L.execute(harness)
     L.execute(BARRELS)
-    # the west wall: HopTo's take-outs there were done; then what is left
+    # the west wall: builder1's take-outs there were done; then what is left
     for c in (cleared if cleared is not None else
               [(int(o[1]), int(o[2]), int(o[3])) for o in ops if o[0] == "D" and int(o[1]) == 10]):
         L.execute(f"setSpecial(OX+{c[0]}, OY+{c[1]}, OZ+{c[2]}, false)")

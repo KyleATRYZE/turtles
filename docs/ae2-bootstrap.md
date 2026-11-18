@@ -314,7 +314,7 @@ Lab steps (all `tools/certusfarm.py ... bench=now|v2`):
 | `print silicon/logic/calc/eng N` | N printed circuits |
 | `proc logic/calc/eng N` | N processors in the mill |
 
-Silicon is smelted by Crafty's furnaces (factory recipe `ae2:silicon`, from
+Silicon is smelted by crafter1's furnaces (factory recipe `ae2:silicon`, from
 certus dust).
 
 ## 6. The chain, in order
@@ -339,7 +339,7 @@ Machine-made parts have no recipe, and the factory reports them as short
 charged crystals, dust, printed circuits, processors, fluix crystal and
 fluix dust. The bench steps make them and hand them in.
 
-**What Crafty can make right now** (no certus):
+**What crafter1 can make right now** (no certus):
 
 - ae2:inscriber (5 wanted), ae2:charger (one in stock already), ae2:crank;
 - smooth sky stone (from the 54 sky stone);
@@ -354,12 +354,12 @@ fluix dust. The bench steps make them and hand them in.
    - breaks the cluster for 4 more;
    - puts them in store;
    - gets about 10 glowstone dust.
-2. **Crafty:** `make Crafty item=ae2:inscriber n=5`,
-   `make Crafty item=ae2:smooth_sky_stone_block n=4`,
-   `make Crafty item=advancedperipherals:peripheral_casing n=1`.
+2. **crafter1:** `make crafter1 item=ae2:inscriber n=5`,
+   `make crafter1 item=ae2:smooth_sky_stone_block n=4`,
+   `make crafter1 item=advancedperipherals:peripheral_casing n=1`.
 3. **Bench:** `lab <helper> ... bench bench=now`.
 4. **Prove the chain on the 24 crystals:** `fluix 8 bench=now` makes 16 fluix.
-   `grind certus 8` makes 8 dust, which Crafty smelts to silicon. Then
+   `grind certus 8` makes 8 dust, which crafter1 smelts to silicon. Then
    `print silicon 4`, `print logic 2`, `print eng 2`, `proc logic 2`,
    `proc eng 2`.
 5. **About 3 hours after the farm is placed:** `first bench=now`, the first
@@ -392,7 +392,7 @@ fluix dust. The bench steps make them and hand them in.
    - Kyle writes the first patterns.
 8. **(c) ME Bridge:**
    - `fluix 8` (16 fluix → 4 blocks), 4 interfaces, then
-     `make Crafty item=advancedperipherals:me_bridge`;
+     `make crafter1 item=advancedperipherals:me_bridge`;
    - it goes on the network and on our wired modem network. Sortnado's ME
      backend takes over the store (docs/ae2-plan.md §3).
    - From then on the bench's printing and grinding can become ME patterns,
@@ -404,14 +404,14 @@ fluix dust. The bench steps make them and hand them in.
 ## 7. The first orders
 
 ```
-tools/order.py make Crafty item=ae2:inscriber n=5
-tools/order.py lab Pushy clear=1 "ops=$(python3 tools/certusfarm.py bench bench=now)"
-tools/order.py lab Pushy clear=1 "ops=$(python3 tools/certusfarm.py fluix 8 bench=now)"     # with Kyle's 24 crystals in store
+tools/order.py make crafter1 item=ae2:inscriber n=5
+tools/order.py lab lava1 clear=1 "ops=$(python3 tools/certusfarm.py bench bench=now)"
+tools/order.py lab lava1 clear=1 "ops=$(python3 tools/certusfarm.py fluix 8 bench=now)"     # with Kyle's 24 crystals in store
 # about 3 hours after the farm is placed:
-tools/order.py lab Pushy clear=1 "ops=$(python3 tools/certusfarm.py first bench=now)"
+tools/order.py lab lava1 clear=1 "ops=$(python3 tools/certusfarm.py first bench=now)"
 ```
 
-Pushy is just an idle helper; any helper will do. `first` is the harvest
+lava1 is just an idle helper; any helper will do. `first` is the harvest
 followed by `fluix 8`. Read `labOut` in the helper's status:
 
 - each `pick` line says `picked (n so far)` or `left: <bud>`;

@@ -33,7 +33,7 @@ local function open(x, y, z) OPEN[k(B(x, y, z))] = true end
 local function shut(x, y, z) SOLID[k(B(x, y, z))] = true end
 for x = 0, 44 do for y = 1, 3 do for z = 1, 2 do open(x, y, z) end end end     -- the lane
 for i = 0, 7 do open(19 + i, 1, 3) open(19 + i, 3, 3) end                      -- rack 1
-for _, c in ipairs({ { 2, 2, 1 }, { 5, 2, 1 }, { 6, 2, 1 },                     -- Counter, drop chest, Crafty
+for _, c in ipairs({ { 2, 2, 1 }, { 5, 2, 1 }, { 6, 2, 1 },                     -- crafter2, drop chest, crafter1
   { 2, 1, 1 }, { 3, 1, 1 }, { 5, 1, 1 }, { 6, 1, 1 }, { 7, 1, 1 } }) do         -- modems, drives, block
   shut(c[1], c[2], c[3])
 end
@@ -71,7 +71,7 @@ function fuel() return 10000 end
 function refuel() end
 function report() end
 function tick() end
-LABEL = "HopTo"
+LABEL = "builder1"
 os = { getComputerLabel = function() return LABEL end, getComputerID = function() return 9 end, clock = function() return 0 end }
 '''
 
@@ -96,7 +96,7 @@ L.execute("LANE = {} for k, v in pairs(M.LANE) do LANE[k] = v end")
 api = L.eval("API")
 pos = lambda: tuple(L.eval("{POS()}").values())
 CRAFTY_PAD, COUNTER_PAD = (-4441, 73, 1519), (-4445, 73, 1519)
-HOME = (-4428, 72, 1521)          # HopTo: home 1, low row
+HOME = (-4428, 72, 1521)          # builder1: home 1, low row
 
 
 def path():
@@ -125,14 +125,14 @@ def run(start, fn, *args, lane=True):
 
 # 1. idle: from up in the sky outside, home into the rack by the west gate
 r, at, ps = run((-4420, 140, 1490), api.goHover)
-check("idle: into its home in the rack (HopTo: low row, second home)", r and at == HOME, at)
+check("idle: into its home in the rack (builder1: low row, second home)", r and at == HOME, at)
 check("  in by the west gate, at lane height", any(p["x"] == -4448 and p["z"] == 1520 and p["y"] == 73 for p in ps))
 check("  along the tracks the right way", not tracks_ok(ps), tracks_ok(ps)[:3])
 check("hover() is the home in the rack", tuple(L.eval("{API.hover()}").values()) == HOME)
 
-# 2. a load: from home to Crafty's pad, from the side
+# 2. a load: from home to crafter1's pad, from the side
 r, at, ps = run(HOME, api.downToPad)
-check("load ready: home to Crafty's pad", r and at == CRAFTY_PAD, at)
+check("load ready: home to crafter1's pad", r and at == CRAFTY_PAD, at)
 check("  onto the pad sideways (the last step level, westbound on the back track)",
       ps[-1]["how"] == "f" and ps[-1]["d"] == 2, ps[-3:])
 check("  along the tracks the right way", not tracks_ok(ps), tracks_ok(ps)[:3])
@@ -143,10 +143,10 @@ check("off the pad: a step south onto the front track", r and at == (-4441, 73, 
 r, at, ps = run(at, api.goHover)
 check("then east along the front track to its home", r and at == HOME and not tracks_ok(ps), (at, tracks_ok(ps)[:3]))
 
-# 4. the Counter's pad, beyond Crafty's stop: over it, a block higher
+# 4. the crafter2's pad, beyond crafter1's stop: over it, a block higher
 api.setPadAt(L.eval("{ pad = { x = -4445, y = 73, z = 1519 }, f = { x = -4446, y = 73, z = 1519 } }"))
 r, at, ps = run(HOME, api.downToPad)
-check("the Counter's pad: home to it, over Crafty's stop", r and at == COUNTER_PAD
+check("the crafter2's pad: home to it, over crafter1's stop", r and at == COUNTER_PAD
       and all(p["y"] == 74 for p in ps if p["z"] == 1519 and -4443 <= p["x"] <= -4441 and p["how"] == "f"), at)
 check("  along the tracks the right way", not tracks_ok(ps), tracks_ok(ps)[:3])
 r, at, ps = run(COUNTER_PAD, api.upFromPad)
@@ -178,11 +178,11 @@ r, at, ps = run(HOME, api.overPad)
 check("over the pad (to set a computer down): just above it", r and at == (-4441, 74, 1519), at)
 
 # 9. a second home row; homes by name
-L.execute('LABEL = "NoteWorthy"')
-check("home 14 (NoteWorthy): high row", tuple(L.eval("{API.hover()}").values()) == (-4423, 74, 1521))
+L.execute('LABEL = "builder11"')
+check("home 14 (builder11): high row", tuple(L.eval("{API.hover()}").values()) == (-4423, 74, 1521))
 r, at, ps = run((-4420, 140, 1490), api.goHover)
 check("  and it gets in", r and at == (-4423, 74, 1521), at)
-L.execute('LABEL = "HopTo"')
+L.execute('LABEL = "builder1"')
 
 # 9b. its home blocked: it says what is in the way and where
 L.execute("SOLID[(-4428) .. ',' .. 72 .. ',' .. 1521] = true")

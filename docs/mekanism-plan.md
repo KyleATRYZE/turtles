@@ -164,8 +164,8 @@ passes with coal, then smelting. Stock is from the snapshot of 17 Nov,
 
 ### Stage 0 (now)
 
-The chamber and smelter on the east plinth are fed by DropIt
-(`foundry ore=`). The infuser is coming in from the bench (Pushy). The
+The chamber and smelter on the east plinth are fed by foundry1
+(`foundry ore=`). The infuser is coming in from the bench (lava1). The
 heat generator, cube and cable are merged as `foundry job=power`, but not
 yet laid.
 
@@ -176,7 +176,7 @@ yet laid.
 - **Bill of materials:** a basic cube, 16 cable, 8 pipe, 8 tube and 8
   transporters. That is about iron 19, coal 28, redstone 20, gold 6,
   copper 4, glass 5 and osmium 2 (steel 14, circuit 1, alloy 4).
-- **Jobs:** a test craft (lab fetch), then `foundry DropIt job=power`.
+- **Jobs:** a test craft (lab fetch), then `foundry foundry1 job=power`.
 - **Check:** `foundry.power.ok = true`; the next 48-ore batch burns about 6
   dust, not about 85.
 
@@ -189,7 +189,7 @@ yet laid.
   iron 27, coal 28, redstone 23, osmium 9, glass 10 and copper 2 (steel 14,
   circuits 6).
 - **Job:** one lab run, `tools/mekline.py ops 2`. Before it, the infuser
-  makes steel and circuits: `foundry DropIt make=steel n=32`, then
+  makes steel and circuits: `foundry foundry1 make=steel n=32`, then
   `make=circuit n=12`.
 - **Check:** the run's notes show every `setMode` and `setEjecting` call
   without ERROR. Drop 12 raw iron into the inbox and get 16 ingots in the
@@ -210,7 +210,7 @@ yet laid.
     glass 16, gold 13 and lava 2 (the crusher's two buckets).
   - **Infuser work:** 26 alloys and 8 circuits.
   - **Dusts:** the electrolytic core needs osmium, iron and gold dust, made
-    first with `foundry DropIt enrich=…` (their item names in this pack are
+    first with `foundry foundry1 enrich=…` (their item names in this pack are
     not yet seen: probably `alltheores:*_dust`).
 - **Job:** `tools/mekline.py ops 3`.
 - **Check:** the purifier's chemical tank fills with oxygen, and 12 raw iron

@@ -99,7 +99,7 @@ def link():
     the hatch, into the hall under the north walkway and down the spine (x 35),
     with branches to the certus barrel, the works computer, the ME bridge and the
     alloy cell (whose floor modems it puts in), and on toward the ore line."""
-    p = Plan("link", "HopTo xmax=25, Comparable xmin=26 xmax=34, Dusty xmin=35", 1,
+    p = Plan("link", "builder1 xmax=25, survey1 xmin=26 xmax=34, builder4 xmin=35", 1,
              "the CC cable under the floor, the alloy cell's floor modems, the works computer")
     # down from the link at 18 2 3 (Kyle's) to under the lane floor
     p.D((18, 1, 3), 5)
@@ -137,7 +137,7 @@ def lava():
     """Sixteen dripstone lava units along the south wall, cauldrons at z 29
     (x 28-43), harvested from the walkway at z 28; lava held at y 4 between
     the wall and a row of blocks over the walkway."""
-    p = Plan("lava", "OnRepeat xmax=35, ButtonUp xmin=36", 1, "the lava wall: 16 units")
+    p = Plan("lava", "builder2 xmax=35, builder5 xmin=36", 1, "the lava wall: 16 units")
     xs = range(28, 44)
     for x in xs:
         p.P((x, 3, 29), PD, 0)                            # the block the dripstone hangs from
@@ -158,7 +158,7 @@ def certus():
     places only the budding blocks; the basin's water is a lab step."""
     import certusfarm as C
     F = C.Farm()
-    p = Plan("certus", "Pushy", 1, "the certus farm's pillars and its barrel (Kyle: the budding blocks)")
+    p = Plan("certus", "lava1", 1, "the certus farm's pillars and its barrel (Kyle: the budding blocks)")
     for c in sorted(F.pillars(), key=lambda c: (c[2], c[1])):
         p.P(c, SB, 0)                                     # bottom up, each from above
     p.P((34, 1, 13), BARREL + " north", 5)
@@ -167,9 +167,9 @@ def certus():
 
 
 def clear():
-    """Sticky's piped line (the parts that do not move) and the bench's leftovers.
+    """builder3's piped line (the parts that do not move) and the bench's leftovers.
     A chest or barrel with things in it is left (and said): empty it first."""
-    p = Plan("clear", "Sticky xmax=35, Dispensable xmin=36", 1, "the old piped line's chest, sorter, transporters and cable; the bench's leftovers")
+    p = Plan("clear", "builder3 xmax=35, rescue1 xmin=36", 1, "the old piped line's chest, sorter, transporters and cable; the bench's leftovers")
     import mekline
     keep = {(36, 1, 17), (36, 1, 18), (36, 1, 21)}        # moved by the ore and power jobs
     cells = sorted((c for c in mekline.upto(5) if c not in keep), key=lambda c: (-c[1], c[2], c[0]))
@@ -183,7 +183,7 @@ def clear():
 def power():
     """The power row along the east wall (universal cable, x 43, z 6-23), the
     piped line's heat generator moved into the power block, and room for more."""
-    p = Plan("power", "Observant", 1, "the east wall's power row, the second heat generator")
+    p = Plan("power", "builder6", 1, "the east wall's power row, the second heat generator")
     p.D((36, 1, 21), 0)                                   # the piped line's heat generator (carried)
     p.P((42, 1, 19), "mekanismgenerators:heat_generator east", 2)
     p.P((42, 1, 20), "mekanismgenerators:heat_generator east", 2)
@@ -196,10 +196,10 @@ def power():
 
 
 def alloy():
-    """DropIt's plinth machines into the alloy cell (the foundry stops while
+    """foundry1's plinth machines into the alloy cell (the foundry stops while
     they move: a few minutes), the cell's power row, its link to the east wall,
     and the old plinth cable up."""
-    p = Plan("alloy", "DropIt", 2, "the plinth machines into the alloy cell; the old plinth cable up")
+    p = Plan("alloy", "foundry1", 2, "the plinth machines into the alloy cell; the old plinth cable up")
     for c in ((41, 1, 11), (41, 1, 12), (41, 1, 15)):
         p.D(c, 4)                                         # from the operator lane
     cell = [((39, 1, 17), "mekanism:metallurgic_infuser east"), ((39, 1, 19), "mekanism:energized_smelter east"),
@@ -234,7 +234,7 @@ def ore():
     """The ore line on the east wall: the cable under it with a modem under
     every machine, the piped line's chamber and smelter moved in, the rest as
     they are made."""
-    p = Plan("ore", "Sticky (after alloy)", 3, "the ore line: floor modems, the chamber and smelter moved in")
+    p = Plan("ore", "builder3 (after alloy)", 3, "the ore line: floor modems, the chamber and smelter moved in")
     for z in (16, 15, 14):
         p.under((42, 0, z), DB)
     for z in range(13, 5, -1):
@@ -258,7 +258,7 @@ def ae2():
     which it builds itself): controller, drives, crafting CPU, pattern providers
     and assemblers, the energy acceptor and the ME bridge. Fit when the parts
     exist; what is not to be had is left and done on a later run."""
-    p = Plan("ae2", "HopTo (or the AE2 work's helper)", 4, "the AE2 room")
+    p = Plan("ae2", "builder1 (or the AE2 work's helper)", 4, "the AE2 room")
     for x in (29, 30, 31):
         for z in (18, 19, 20):
             p.P((x, 1, z), "ae2:controller", 0)
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         for item, c in JOBS[a[1]]().bill().items():
             print(f"{c:4d}  {item}")
     elif a[0] == "order":
-        who = a[2] if len(a) > 2 else "HopTo"
+        who = a[2] if len(a) > 2 else "builder1"
         strip = f" xmin={a[3]} xmax={a[4]}" if len(a) > 4 else ""
         print(f"tools/order.py fit {who} ox={R.OX} oy={R.OY} oz={R.OZ} plan=factory_f2_{a[1]} shell={SHELL}{strip}")
     else:

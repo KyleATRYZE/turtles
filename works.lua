@@ -9,13 +9,13 @@
 -- the same face, switched to EXTRA for the moment.
 --
 -- It speaks the factory's foundry protocol (factory.lua "the foundry"), the
--- one DropIt's foundry.lua speaks: it says foundry_ready with its machines,
+-- one foundry1's foundry.lua speaks: it says foundry_ready with its machines,
 -- takes foundry_job (ore, the infuser's makes, enrich, smelt), answers
 -- foundry_ack and foundry_done with what it made. Messages go over the
--- cable (Crafty listens on its wired modem too); reboot orders come from
--- Crafty on the rack channel.
+-- cable (crafter1 listens on its wired modem too); reboot orders come from
+-- crafter1 on the rack channel.
 --
--- If the store cannot push into a Mekanism machine by name (Crafty's
+-- If the store cannot push into a Mekanism machine by name (crafter1's
 -- "probe" order says), this computer is not used: the fallback is the
 -- piped line with its inbox and outbox barrels (docs/mekanism-plan.md).
 
@@ -361,7 +361,8 @@ local function orders()
     local _, _, ch, _, msg = os.pullEvent("modem_message")
     if ch == W.CHANNEL and type(msg) == "table" and msg.type == "cmd" and type(msg.cmd) == "table" and msg.cmd.cmd == "reboot" then
       local t = msg.cmd.target
-      if t == "all" or t == os.getComputerLabel() or t == os.getComputerID() then
+      if t == "all" or t == os.getComputerLabel() or t == os.getComputerID()
+        or (swarm and swarm.forMe and swarm.forMe(msg.cmd)) then
         sleep(1)
         os.reboot()
       end

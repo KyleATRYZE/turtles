@@ -59,18 +59,18 @@ WEST_IN = (-3, FLY, FRONT)        # where a drone comes down outside the west ga
 EAST_IN = (46, FLY, BACK)         # ... and outside the east gate
 EAST_OUT = (46, FLY, FRONT)       # where it leaves (then climbs)
 
-# ---------------------------------------------------------------- Crafty's bench (smelting hall's stretch of the lane)
+# ---------------------------------------------------------------- crafter1's bench (smelting hall's stretch of the lane)
 # Items reach the drones over the cable now (the loading bays in the racks),
-# so there are no pit stops for them and no Counter. Crafty still needs a
+# so there are no pit stops for them and no crafter2. crafter1 still needs a
 # place on the hall's cable (its 12 furnaces) where new turtles can leave and
 # the miners can be served until they have bays of their own: on the back
 # track just inside the west gate, at drone height (y 2), on a block at y 1:
-#   in-shaft (x 4), drop chest (5 2 1), Crafty (6 2 1, modem 6 1 1),
+#   in-shaft (x 4), drop chest (5 2 1), crafter1 (6 2 1, modem 6 1 1),
 #   its pad (7 2 1, drive 7 1 1: new turtles), out-shaft (x 8)
 # Over it, y 3 is the miners' service row (dock 5 3 1, exit1 6 3 1, exit2
 # 7 3 1).
 PITS = {
-    "A": {"who": "Crafty", "disp": (6, 2, 1), "pad": (7, 2, 1), "chest": (5, 2, 1)},
+    "A": {"who": "crafter1", "disp": (6, 2, 1), "pad": (7, 2, 1), "chest": (5, 2, 1)},
 }
 SHAFT_IN, SHAFT_OUT = (4, 1), (8, 1)            # (x, z): holes in the lane floor for the miners
 CHEST_SEAT = (5, 1, 1)                          # a block under the drop chest
@@ -105,7 +105,7 @@ RACK2_PADS = [(x, 0, 3) for x in RACK2_X]                         # (the y 2 she
 RACK2_BARS = [(x, y, 4) for x in RACK2_X for y in (1, 3)]         # (y 2 is the strip)
 
 # ---------------------------------------------------------------- the loading bays
-# Items reach a docked drone over the cable: Crafty (or Sortnado) pushes the
+# Items reach a docked drone over the cable: crafter1 (or Sortnado) pushes the
 # load and fuel straight into it by its network name (turtle_<id>) and pulls
 # hand-ins back. Each rack column's middle shelf, between the low home (y 1)
 # and the high home (y 3), is a full-block wired modem: it touches both
@@ -119,7 +119,7 @@ RACK2_BARS = [(x, y, 4) for x in RACK2_X for y in (1, 3)]         # (y 2 is the 
 # into each other; a connector modem in the x 18 wall (never clicked)
 # touches the west end of the shelf, and Kyle runs cable from it through the
 # wall to the storage room's network (Sortnado's store: it serves the bays
-# until Crafty moves onto the same cable). Everything is flush.
+# until crafter1 moves onto the same cable). Everything is flush.
 WIRED = "computercraft:wired_modem_full"
 MONITOR = "computercraft:monitor_advanced"
 PC = "computercraft:computer_normal"
@@ -141,7 +141,7 @@ RACK2_UNDER = (34, 0, 3)
 TRENCH2 = [(34, -1, 3)] + [(x, -1, 2) for x in range(34, 18, -1)]
 
 
-# rack 3 (stage 6, miners and BlockParty): the foundry's stretch x 28-31,
+# rack 3 (stage 6, miners and mapper1): the foundry's stretch x 28-31,
 # 8 homes, the same design, tied in at x 27; the hatch at x 32 stays open
 RACK3_X = range(28, 32)
 RACK3_CUT = [(x, y, 3) for x in RACK3_X for y in (1, 3)]
@@ -159,7 +159,7 @@ TRENCH3 = [(27, -1, 3)]
 # infuser has a second one on its south face for the infusion items. A
 # cable under the floor ties them to the rack trench (and so the store);
 # the works computer sits in the floor beside the plinth. The piped line's
-# inbox and outbox (build them as barrels, so Crafty never takes them for
+# inbox and outbox (build them as barrels, so crafter1 never takes them for
 # storage) get a modem each under them, for the fallback.
 F_MACHINES = {"smelter": (41, 0, 11), "chamber": (41, 0, 12), "infuser": (41, 0, 15)}
 F_EXTRA = (41, 1, 16)                                 # the infuser's south face (RIGHT): infusion
@@ -304,13 +304,13 @@ def outside():
                     B[(x, y, z)] = "(old hut wall/roof)"
     for x, z in ((-14, 3), (-13, 3), (-12, 3)):            # the roof hole over the old pad
         B.pop((x, 3, z), None)
-    B[(-13, 1, 3)] = "Crafty (old)"
+    B[(-13, 1, 3)] = "crafter1 (old)"
     B[(-13, 0, 3)] = MODEM
     B[(-14, 0, 3)] = DRIVE
     B[(-12, 1, 3)] = CHEST
     B[(-13, 1, 4)] = MODEM
     B[(-13, 1, 5)] = MODEM
-    B[(-13, 2, 5)] = "Counter (old)"                         # world -4461 73 1523
+    B[(-13, 2, 5)] = "crafter2 (old)"                         # world -4461 73 1523
     for x in range(-8, -2):                                 # the yard bench (cobblestone) and
         for z in range(11, 17):                             # the infuser and manager on it
             for y in (0, 1, 2, 3):
@@ -486,13 +486,13 @@ def check():
             bad.append(f"{c} ({why}) has {B[c]}")
         if c in O:
             bad.append(f"{c} ({why}) has {O[c]}")
-    # the pit stops: Crafty's line as its survey will map it
+    # the pit stops: crafter1's line as its survey will map it
     a = PITS["A"]
     dock, exit1, exit2 = [(c[0], c[1] + 1, c[2]) for c in (a["chest"], a["disp"], a["pad"])]
     ins = (2 * dock[0] - exit1[0], 2 * dock[2] - exit1[2])
     outs = (2 * exit2[0] - exit1[0], 2 * exit2[2] - exit1[2])
     if ins != SHAFT_IN or outs != SHAFT_OUT:
-        bad.append(f"Crafty's shafts would be {ins} and {outs}")
+        bad.append(f"crafter1's shafts would be {ins} and {outs}")
     for c in (dock, exit1, exit2):
         if c in B or c in seen:
             bad.append(f"miners' service cell {c} not open")
@@ -633,7 +633,7 @@ def map_lane():
             return {"iron_bars": "|", "cut_copper": "%", "monitor_advanced": "M"}.get(n, "#")
         return " "
     leg = ("< back track (z 1, westbound)  > front track (z 2, eastbound); drones fly at y 2, gates at x 0 and 44\n"
-           "T Crafty  P its pad  c Crafty's drop chest  ^ v miners' in- and out-shaft (in the lane floor)\n"
+           "T crafter1  P its pad  c crafter1's drop chest  ^ v miners' in- and out-shaft (in the lane floor)\n"
            "1 rack 1 (launch bay, built): 16 homes, low and high  2 rack 2 (foundry, stage 6): 16 more\n"
            "W drones come down here, outside the west gate, and go in on the front track (east)\n"
            "E ... outside the east gate, in on the back track (west)  X out by the east gate on the front track\n"
@@ -692,9 +692,9 @@ def map_site():
         if 45 <= x <= 55 and 20 <= z <= 30:
             return "T"
         return " "
-    leg = ("< > the drone lane: back track westbound, front track eastbound  C Crafty  P its pad  c drop chest\n"
+    leg = ("< > the drone lane: back track westbound, front track eastbound  C crafter1  P its pad  c drop chest\n"
            "1 rack 1 (helpers' homes)  2 rack 2 (loaders' homes)  : the lane's screen  , the west gate's apron\n"
-           "s smelting hall (12 furnaces, Crafty's)  A AE2 corner (later)  S storage room (+ a 4th barrel row)\n"
+           "s smelting hall (12 furnaces, crafter1's)  A AE2 corner (later)  S storage room (+ a 4th barrel row)\n"
            "y launch bay (corridor x 21-24 clear)  H old hut  = bridge for the drain (temporary)  ~ lava rows\n"
            "f foundry floor  G power corner  M Mekanism line  g pool, gas plants  Q quartz line  w workshop bench\n"
            "l operator lane  0 stage-0 plinth  E evaporation tower (outside)  T control tower (screens)  # walls")
@@ -731,7 +731,7 @@ def map_net():
             return "#"
         return " "
     leg = ("= new cable low (y 0-6; under the lane floor along the front track)  ~ new cable at y 7  R wall cell replaced\n"
-           "M new full modem (Crafty's, the bays', the foundry's)  d new disk drive  - m f K existing cable, modems, furnaces, controller\n"
+           "M new full modem (crafter1's, the bays', the foundry's)  d new disk drive  - m f K existing cable, modems, furnaces, controller\n"
            "(the bridge from the hut, x -13..-1, comes out again once the old chests are empty)")
     return draw(-14, 44, 0, 30, cell, "The cable network, top down", leg)
 
@@ -873,7 +873,7 @@ def ops(job):
             s += ["expect|down|cable", "digDown"]
             at = (x, z)
     elif job == "minershafts":
-        # Crafty's in- and out-shaft, through the lane floor down to the
+        # crafter1's in- and out-shaft, through the lane floor down to the
         # miners' roads (out road world y 52, in road 56): once mining resumes
         s = ["site|-4448|71|1518|factory_asfit3|factory_storeroom"]
         for (x, z), bottom in ((SHAFT_OUT, 52), (SHAFT_IN, 56)):
@@ -986,12 +986,12 @@ CAT = [  # (code, label, light colour, dark colour)
     ("r", "Rack home (copper pad)", "#c47a4a", "#d08a5a"),
     ("S", "Storage barrels and chests", "#a3753f", "#9c7444"),
     ("d", "Storage desk (modems, In/Out, Sortnado)", "#3d6f8f", "#5a92b4"),
-    ("F", "Furnaces (Crafty's bank)", "#7a4a3a", "#a0624e"),
+    ("F", "Furnaces (crafter1's bank)", "#7a4a3a", "#a0624e"),
     ("c", "Cable, existing", "#7d8794", "#8f99a6"),
     ("n", "New cable (retrofit; under the floor or overhead)", "#2f8a74", "#5cc0a6"),
     ("N", "New cable under the lane floor", "#2f8a74", "#5cc0a6"),
-    ("T", "Crafty", "#16614f", "#7fe0c6"),
-    ("K", "Counter", "#2f5fae", "#7ea8ee"),
+    ("T", "crafter1", "#16614f", "#7fe0c6"),
+    ("K", "crafter2", "#2f5fae", "#7ea8ee"),
     ("P", "Launch pad (drive under it)", "#e5484d", "#ff7b7f"),
     ("h", "Drop chest", "#b98a3a", "#d6a650"),
     ("M", "Mekanism machines", "#4a7fa8", "#6aa2cc"),
@@ -1046,7 +1046,7 @@ def page_grid():
                 if code == "g":
                     for n in low + ([floor] if floor else []):
                         t = n
-                        if t.startswith("(old hut") or t.startswith("Crafty (old)") or t.startswith("Counter (old)"):
+                        if t.startswith("(old hut") or t.startswith("crafter1 (old)") or t.startswith("crafter2 (old)"):
                             code = "H"
                         elif t in ("lava", "cauldron", "dripstone", "cobblestone") and 19 <= z <= 31:
                             code = "v"
@@ -1101,7 +1101,7 @@ def page_grid():
 
 
 ZONES = [  # (label, x0, z0, x1, z1, caption)
-    ("Smelting hall", 1, 4, 8, 29, "Crafty's 12 furnaces on the hall's cable; the AE2 corner in its south-east."),
+    ("Smelting hall", 1, 4, 8, 29, "crafter1's 12 furnaces on the hall's cable; the AE2 corner in its south-east."),
     ("AE2 corner (later)", 5, 18, 8, 28, "ME controller, drives, ME Bridge on the desk link; a storage bus through 9 5 15."),
     ("Storage room", 10, 4, 17, 29, "Sortnado's store: two controllers, 803 slots + a 4th barrel row (stage 3); the desk at the south end."),
     ("Launch bay", 19, 5, 26, 29, "The way in from the big door; rack 1's homes face the lane at its north end."),
@@ -1184,12 +1184,12 @@ code { font: 13px var(--mono); }
     <div class="room"><h3>Lane and gates <span class="size">45 × 2, y 1-3</span></h3>
       <p>Built: the hazard-striped floor, the screen of bars, portholes through the three partitions, a gate in each end wall with its IN/OUT lights. Drones fly it at y 2. The <b>back track</b> (z 1) runs west, the <b>front track</b> (z 2) east, so nobody meets head on.</p>
       <p>In from the west by the west gate on the front track; in from the east by the east gate on the back track; out by the east gate on the front track. The hill's shoulder outside the west gate is dug back (stage 1).</p></div>
-    <div class="room"><h3>Crafty's bench <span class="size">x 4-8, back track</span></h3>
-      <p>Crafty (6 2 1) on the hall's cable with its 12 furnaces, its drop chest 5 2 1 and its pad 7 2 1 (new turtles leave from it; the drive is under it). No Counter, and no pit stop for the helpers: their loads come into their rack homes over the cable.</p>
-      <p>The miners keep the service row over Crafty (y 3) and their shafts at x 4 and x 8 until they have bays of their own in rack 3.</p></div>
+    <div class="room"><h3>crafter1's bench <span class="size">x 4-8, back track</span></h3>
+      <p>crafter1 (6 2 1) on the hall's cable with its 12 furnaces, its drop chest 5 2 1 and its pad 7 2 1 (new turtles leave from it; the drive is under it). No crafter2, and no pit stop for the helpers: their loads come into their rack homes over the cable.</p>
+      <p>The miners keep the service row over crafter1 (y 3) and their shafts at x 4 and x 8 until they have bays of their own in rack 3.</p></div>
     <div class="room"><h3>Racks <span class="size">2 × 16 homes</span></h3>
       <p><b>Rack 1</b> (built, launch bay x 19-26): the helpers' 16 homes, low (y 1) and high (y 3), off the front track. The middle shelf is 8 wired modems: each home is a loading bay (docs/rack-build.html).</p>
-      <p>One rack for every drone: Kyle has made rack 1 eight homes across and four rows high (32 homes: the helpers, the chunk loaders, the miners and BlockParty). No racks 2 and 3.</p></div>
+      <p>One rack for every drone: Kyle has made rack 1 eight homes across and four rows high (32 homes: the helpers, the chunk loaders, the miners and mapper1). No racks 2 and 3.</p></div>
   </div>
 </section>
 
@@ -1201,11 +1201,11 @@ code { font: 13px var(--mono); }
 <section aria-labelledby="stages-h">
   <h2 id="stages-h">Order of work</h2>
   <ol class="phases">
-    <li><div class="ph-head"><span class="ph-num">1</span><h3>Crafty's bench, the bays</h3></div><p>Fit plan <code>pitstop</code> (the old bay pit stop out, Crafty's bench in, cable under the floor to the hall's cable); lab <code>apron</code> digs the west gate clear. Fit <code>desklink</code> joins the hall to the store. Kyle builds rack 1's loading bays (docs/rack-build.html).</p></li>
+    <li><div class="ph-head"><span class="ph-num">1</span><h3>crafter1's bench, the bays</h3></div><p>Fit plan <code>pitstop</code> (the old bay pit stop out, crafter1's bench in, cable under the floor to the hall's cable); lab <code>apron</code> digs the west gate clear. Fit <code>desklink</code> joins the hall to the store. Kyle builds rack 1's loading bays (docs/rack-build.html).</p></li>
     <li><div class="ph-head"><span class="ph-num">2</span><h3>The bridge</h3></div><p>The old base's network joined in under the west gate, so Sortnado can drain it.</p></li>
     <li><div class="ph-head"><span class="ph-num">3</span><h3>A 4th barrel row</h3></div><p>+20 bulk, +72 medium slots in the storage room.</p></li>
     <li><div class="ph-head"><span class="ph-num">4</span><h3>Drain</h3></div><p>The old chests emptied into the store over the cable.</p></li>
-    <li><div class="ph-head"><span class="ph-num">5</span><h3>The move</h3></div><p>Kyle carries Crafty to its bench; every drone is told the new base and its rack home.</p></li>
+    <li><div class="ph-head"><span class="ph-num">5</span><h3>The move</h3></div><p>Kyle carries crafter1 to its bench; every drone is told the new base and its rack home.</p></li>
     <li><div class="ph-head"><span class="ph-num">6</span><h3>Old base out, rack 2</h3></div><p>Empty chests out, the bridge out.</p></li>
     <li><div class="ph-head"><span class="ph-num">7-10</span><h3>The rest</h3></div><p>The foundry hall rebuilt (docs/foundry-v2.md), the Mekanism expansion, the screens, AE2.</p></li>
   </ol>
@@ -1264,7 +1264,7 @@ function draw(v) {
   }
   if (v.close) {                                  // the close-up: names on the stops and racks
     ctx.font = `500 12px IBM Plex Sans, sans-serif`; ctx.fillStyle = css("--ink"); ctx.textAlign = "left"; ctx.textBaseline = "top";
-    const notes = [[3, 4, "Crafty's bench (y 2)"], [19, 4, "Rack 1: every drone (8 x 4)"],
+    const notes = [[3, 4, "crafter1's bench (y 2)"], [19, 4, "Rack 1: every drone (8 x 4)"],
       [-5, -1, "west gate"], [41, -1, "east gate"], [9, -1, "porthole"], [18, -1, "porthole"], [27, -1, "porthole"]];
     for (const [x, z, t] of notes) ctx.fillText(t, px(x) + 2, pz(z) + 2);
   }

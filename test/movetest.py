@@ -1,9 +1,9 @@
-"""The base move (docs/factory-retrofit.md): the code that lets Crafty and its
+"""The base move (docs/factory-retrofit.md): the code that lets crafter1 and its
 pads move into the factory, each piece inert until the move.
 
-1. The pad split: loads go to Crafty, Counter, Counter2 by id % (N + 1),
-   Crafty takes the share of a counter gone quiet; one Counter = odd ids.
-2. Crafty's stores: the store's In and Out barrels, a manager and named
+1. The pad split: loads go to crafter1, crafter2, Counter2 by id % (N + 1),
+   crafter1 takes the share of a counter gone quiet; one crafter2 = odd ids.
+2. crafter1's stores: the store's In and Out barrels, a manager and named
    skips are not storage; the storage room's controllers are put away into
    first.
 3. The factory answers "base_request"; the plot grid stays where it was
@@ -11,7 +11,7 @@ pads move into the factory, each piece inert until the move.
 4. The rebase order (swarm.lua): a drone asks, keeps the new base with the
    heights the order gives, brings a miner's and a builder's saved base
    cells up to date; a machine with no .base takes no notice.
-5. Heights: helpers hover base.hoverUp above Crafty (12 without), loaders
+5. Heights: helpers hover base.hoverUp above crafter1 (12 without), loaders
    hop base.hopUp (14 without); miners keep the plot grid's origin.
 6. Sortnado's drain: old chests on the cable emptied into the store, the
    fullest first; the store's own containers are never drained.
@@ -28,7 +28,7 @@ def check(what, ok, detail=""):
 FAC = open(os.path.join(ROOT, "factory.lua")).read()
 
 # ---------------------------------------------------------------- 1. the pad split
-split = FAC[FAC.index("do\n  local digits"):FAC.index("return share == 0 or not K.alive(share)\nend") + len("return share == 0 or not K.alive(share)\nend")]
+split = FAC[FAC.index("do\n  local label = (os.getComputerLabel"):FAC.index("return share == 0 or not K.alive(share)\nend") + len("return share == 0 or not K.alive(share)\nend")]
 def dispenser(label):
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
     L.execute("CLOCK = 1000 os.clock = function() return CLOCK end K = {} LABEL = %r os.getComputerLabel = function() return LABEL end" % label)
@@ -39,25 +39,25 @@ def mine(L, heard, ids=range(20, 32)):
     for slot, ago in heard.items():
         L.execute("K.counters[%d] = CLOCK - %d" % (slot, ago))
     return [i for i in ids if L.eval("K.mine(%d)" % i)]
-crafty, c1, c2 = dispenser("Crafty"), dispenser("Counter"), dispenser("Counter2")
-check("labels: Crafty is no counter, Counter is 1, Counter2 is 2",
+crafty, c1, c2 = dispenser("crafter1"), dispenser("crafter2"), dispenser("Counter2")
+check("labels: crafter1 is no counter, crafter2 is 1, Counter2 is 2",
       crafty.eval("K.COUNTER") is False and c1.eval("K.SLOT") == 1 and c2.eval("K.SLOT") == 2)
-check("no counter heard: Crafty serves everybody", mine(crafty, {}) == list(range(20, 32)))
-check("one Counter: Crafty the even ids, Counter the odd (as before)",
+check("no counter heard: crafter1 serves everybody", mine(crafty, {}) == list(range(20, 32)))
+check("one crafter2: crafter1 the even ids, crafter2 the odd (as before)",
       mine(crafty, {1: 10}) == list(range(20, 32, 2)) and mine(c1, {}) == list(range(21, 32, 2)))
 three = {k: [i for i in range(20, 32) if i % 3 == k] for k in range(3)}
-check("Counter and Counter2: id % 3, each its own share",
+check("crafter2 and Counter2: id % 3, each its own share",
       mine(crafty, {1: 10, 2: 10}) == three[0] and mine(c1, {2: 10}) == three[1] and mine(c2, {1: 10}) == three[2])
 check("Counter2 quiet for 150 s: back to two shares", mine(crafty, {1: 10, 2: 200}) == list(range(20, 32, 2))
       and mine(c1, {2: 200}) == list(range(21, 32, 2)))
-check("Counter quiet, Counter2 alive: Crafty takes Counter's share as well",
+check("crafter2 quiet, Counter2 alive: crafter1 takes crafter2's share as well",
       mine(crafty, {1: 200, 2: 10}) == sorted(three[0] + three[1]) and mine(c2, {1: 200}) == three[2])
 check("every load has exactly one dispenser",
       sorted(mine(crafty, {1: 10, 2: 10}) + mine(c1, {2: 10}) + mine(c2, {1: 10})) == list(range(20, 32)))
-check("an old Counter says alive with no number: taken as Counter",
+check("an old crafter2 says alive with no number: taken as crafter2",
       'K.counters[math.floor(tonumber(msg.slot) or 1)]' in FAC)
 
-# ---------------------------------------------------------------- 2. Crafty's stores
+# ---------------------------------------------------------------- 2. crafter1's stores
 ns = FAC[FAC.index("function K.notStore(name)"):FAC.index("local function discover()")]
 L = lupa.LuaRuntime(unpack_returned_tuples=True)
 L.execute("K = {} plots = {} TYPES = {['inventoryManager_0'] = 'inventoryManager'} "
@@ -93,7 +93,7 @@ L, g = factory('{["next"]=1,["done"]=0,["byId"]={["9"]=1},["helpers"]={},["loade
 replies = [m for m in g.OUTBOX.values() if m.msg.type == "base"]
 check("the factory answers base_request with its base", len(replies) == 1 and replies[0].to == 31
       and replies[0].msg.base.f.x == 100 and replies[0].msg.base.pad is not None)
-check("the plot grid's origin is written down at Crafty's spot", '["origin"]=' in g.FILES[".plots"]
+check("the plot grid's origin is written down at crafter1's spot", '["origin"]=' in g.FILES[".plots"]
       and L.eval('textutils.unserialize(FILES[".plots"]).origin.x') == 100)
 # a factory that has moved (its base 33 east, 3 south), with the old origin kept
 moved = '{f={x=133,y=64,z=203},pad={x=133,y=64,z=202},padTurns=3,dock={x=133,y=65,z=204},exit1={x=133,y=65,z=203},exit2={x=133,y=65,z=202}}'
@@ -106,7 +106,7 @@ def job_for(origin):
 j_old, j_new = job_for(True), job_for(False)
 check("moved, with the origin kept: plot 1 is where it always was", j_old is not None and j_old.origin.x == 100
       and (j_old.x0 - 100) % 8 == 0 and (j_old.z0 - 200) % 8 == 0, j_old and (j_old.x0, j_old.z0))
-check("(without it the grid would have moved with Crafty)", j_new is not None and (j_new.x0 - 133) % 8 == 0 and (j_new.x0 - 100) % 8 != 0)
+check("(without it the grid would have moved with crafter1)", j_new is not None and (j_new.x0 - 133) % 8 == 0 and (j_new.x0 - 100) % 8 != 0)
 
 # ---------------------------------------------------------------- 4. the rebase order
 ENV = r'''
@@ -143,7 +143,7 @@ def swarm(setup):
     L = lupa.LuaRuntime(unpack_returned_tuples=True); L.execute(ENV); L.execute(setup)
     L.execute('swarm = dofile("%s/swarm.lua")' % ROOT)
     return L, L.globals()
-L, g = swarm('''LABEL = "Pushy" FS[".base"] = textutils.serialize(OLD)
+L, g = swarm('''LABEL = "lava1" FS[".base"] = textutils.serialize(OLD)
 FS["miner.state"] = textutils.serialize({ dock = OLD.dock, exit1 = OLD.exit1, exit2 = OLD.exit2, size = 8, home = { x = 1, y = 50, z = 2 } })
 FS["builder.state"] = textutils.serialize({ roomCells = { "a" }, padKey = "k", door = { x = 1, y = 2, z = 3 }, job = { plan = "p" } })
 ANSWER = { type = "base", base = NEW }''')
@@ -168,13 +168,13 @@ check("a miner's saved dock and exits follow; its grid keeps the old exit1 as or
 bs = L.eval('textutils.unserialize(FS["builder.state"])')
 check("the builder forgets the old room's map and way in, keeps its job", bs.roomCells is None and bs.padKey is None
       and bs.door is None and bs.job.plan == "p")
-L, g = swarm('''LABEL = "Pushy" FS[".base"] = textutils.serialize(OLD) ANSWER = nil''')
+L, g = swarm('''LABEL = "lava1" FS[".base"] = textutils.serialize(OLD) ANSWER = nil''')
 r = L.eval('{swarm.rebase({ cmd = "rebase" }, 1)}')
 check("no answer from the factory: .base untouched", r[1] is False and L.eval('textutils.unserialize(FS[".base"]).f.x') == -4461)
 L, g = swarm('''LABEL = "Sortnado" ANSWER = { type = "base", base = NEW }''')
 r = L.eval('{swarm.rebase({ cmd = "rebase" }, 1)}')
 check("a machine with no .base takes no notice", r[1] is False and not g.FS[".base"] and not list(g.SENT.values()))
-L, g = swarm('''LABEL = "Pushy" FS[".base"] = textutils.serialize(OLD) OLD.hoverUp = nil ANSWER = { type = "base", base = NEW }''')
+L, g = swarm('''LABEL = "lava1" FS[".base"] = textutils.serialize(OLD) OLD.hoverUp = nil ANSWER = { type = "base", base = NEW }''')
 L.eval('swarm.rebase({ cmd = "rebase" }, 1)')
 check("without heights in the order there are none (the old ones stay as they were)",
       L.eval('textutils.unserialize(FS[".base"]).hoverUp') is None)
@@ -192,7 +192,7 @@ L.execute("base = { f = { y = 72 }, exit2 = { x = -4428, z = 1524 } }")
 before = L.eval("{hover()}")
 L.execute("base.hoverUp = 20")
 after = L.eval("{hover()}")
-check("helpers hover 12 above Crafty as before, 20 after a rebase with hover=20",
+check("helpers hover 12 above crafter1 as before, 20 after a rebase with hover=20",
       before[2] == 84 and after[2] == 92 and after[1] == -4419 and after[3] == 1520, (before, after))
 hop = LOA[LOA.index("local function hopUp()"):LOA.index("local function hopHeight()")]
 L = lupa.LuaRuntime(unpack_returned_tuples=True)

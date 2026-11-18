@@ -1,4 +1,4 @@
-"""The works computer (works.lua) and Crafty's probe: the foundry on the cable.
+"""The works computer (works.lua) and crafter1's probe: the foundry on the cable.
 
 A mock cable: a store (a chest and a controller), an Enrichment Chamber
 that turns 3 raw ore into 4 dust and pushes it on into the Energized
@@ -159,9 +159,9 @@ check("a smelt job goes to the alloy cell's smelter bank, not the ore line's sme
 check("its readiness for the factory", L.eval("W.ready().chamber") is True and L.eval("W.ready().infuser") is True
       and L.eval("W.ready().cable") is True)
 
-# ---------------------------------------------------------------- Crafty's probe
+# ---------------------------------------------------------------- crafter1's probe
 FAC = open(os.path.join(ROOT, "factory.lua")).read()
-check("probe Crafty: an order that pushes an item into a machine by name and pulls it back",
+check("probe crafter1: an order that pushes an item into a machine by name and pulls it back",
       'c.cmd == "probe"' in FAC and "function K.probe(name)" in FAC and 'K.pushTo(name, item, 1)' in FAC)
 probe = FAC[FAC.index("K.PROBE_ITEMS = {"):FAC.index("-- Everything in one slot of target back into storage.")]
 for push_ok, want in ((True, "push raw iron in: yes; pull it back out: yes"), (False, "push in: no")):
@@ -176,7 +176,7 @@ function K.pullBack(t, slot) return slot == 1 and 1 or 0 end''' % ("true" if pus
     L.execute(probe)
     r = L.eval("K.probe()")
     check("probe: " + want, want in r and "mekanism:enrichment_chamber_3" in r and "inventory methods: no" in r, r)
-check("Crafty opens rednet on its wired modem too (the works computer has no ender modem)",
+check("crafter1 opens rednet on its wired modem too (the works computer has no ender modem)",
       "pcall(rednet.open, side)" in FAC)
 check("a load short of steel, circuits or alloy becomes a make job for the foundry",
       "K.wantMade[name] = math.max" in FAC and "kind = K.MAKES[item]" in FAC)

@@ -155,9 +155,9 @@ Still to write:
   A second controller further down the room gets its own bus. **(unverified:
   that a Storage Bus works on a Sophisticated controller; it works on any
   block that offers an item handler, and the controller does.)**
-- **The factory's chests** (Crafty's ~918 slots): the quickest move is to put
+- **The factory's chests** (crafter1's ~918 slots): the quickest move is to put
   Storage Buses on them: the ME system sees the factory's stock at once with
-  nothing carried. Then Crafty keeps working as now. Later Crafty itself
+  nothing carried. Then crafter1 keeps working as now. Later crafter1 itself
   works through the bridge (pull what a recipe needs into its own
   inventory with `exportItem`, put results back with `importItem`), and the
   old chests are emptied into ME cells by an Import Bus or by the turtle.
@@ -174,8 +174,8 @@ Still to write:
 The factory must be rebooted onto the branch's code for the new recipes.
 
 ```
-tools/order.py reboot Crafty
-tools/order.py lab Pushy clear=1 "ops=fetch|ae2:charger=1,ae2:crank=1,minecraft:compass=2|dump;inv;handin|"
+tools/order.py reboot crafter1
+tools/order.py lab lava1 clear=1 "ops=fetch|ae2:charger=1,ae2:crank=1,minecraft:compass=2|dump;inv;handin|"
 ```
 
 That proves the three recipes (they show in `inv`) and hands them back into
@@ -184,7 +184,7 @@ stock, where Kyle can take them or ask `$get 1 charger`, `$get 1 crank`,
 `job=power` has run:
 
 ```
-tools/order.py lab DropIt clear=1 "ops=fetch|ae2:charger=1,minecraft:compass=1|dump;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|42|3|13;inspect|down;placeDown|ae2:charger;expect|down|charger;dropDown|minecraft:compass|1;wait|60;suckDown|1;inv;leave;home"
+tools/order.py lab foundry1 clear=1 "ops=fetch|ae2:charger=1,minecraft:compass=1|dump;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|42|3|13;inspect|down;placeDown|ae2:charger;expect|down|charger;dropDown|minecraft:compass|1;wait|60;suckDown|1;inv;leave;home"
 ```
 
 (unverified: walking to (42, 3, 13) depends on the bay's route at that height;

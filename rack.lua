@@ -10,10 +10,10 @@
 --   blue   fetching a load         red    stuck, out of fuel, an error, or
 --   grey   nobody lives here              waiting more than 10 minutes
 -- The board touching the computer (the old name board, the top row) is the
--- factory's summary: Crafty, the store, fuel stock, jobs, stalled drones.
+-- factory's summary: crafter1, the store, fuel stock, jobs, stalled drones.
 -- Tap a panel for that drone's own screen for 20 seconds.
 --
--- It hears the drones through Crafty (and Sortnado before the move) over
+-- It hears the drones through crafter1 (and Sortnado before the move) over
 -- the cable, and on an ender modem if it has one. Which strip shows which
 -- row: by default the strips in the order of their names, each taking as
 -- many rows as it must so every row is shown; a file .rack can say
@@ -29,9 +29,9 @@ if not okDash or type(dash) ~= "table" or not dash.homes then dash = nil end
 
 local CHANNEL = 4711                                  -- factory.lua K.RACK_CHANNEL
 -- homes by name: the helpers (0-15), the chunk loaders (16-26), then the
--- miners by id and BlockParty in the last home
-local HELPERS = { "Pushy", "HopTo", "LeverAlone", "DropIt", "Sticky", "Dusty", "OnRepeat", "Comparable",
-  "Observant", "Dispensable", "ButtonUp", "PlateUp", "Tripwired", "LampLit", "NoteWorthy", "TargetLock" }
+-- miners by id and mapper1 in the last home
+local HELPERS = { "lava1", "builder1", "builder7", "foundry1", "builder3", "builder4", "builder2", "survey1",
+  "builder6", "rescue1", "builder5", "builder8", "builder9", "builder10", "builder11", "builder12" }
 local LOADERS = { "Phantastic", "Ablaze", "Vexed", "Beehave", "Batty", "Breezy", "AllayOop", "WitherOrNot",
   "Shulky", "Squawk", "Ghastly" }
 local HOMES = {}
@@ -48,9 +48,15 @@ local FULL_FUEL = 20000
 local R = { units = {}, pick = nil, pickAt = 0, pickMon = nil, factory = nil, store = nil, stalled = {}, frame = 0 }
 
 ---------------------------------------------------------------- homes
+-- (a drone still reporting under its old name is the same drone: see the
+-- names in swarm.lua)
+local function same(name, u)
+  if name == u.label then return true end
+  return swarm and swarm.sameName and swarm.sameName(name, u.label, u.id) or false
+end
 function R.homeOf(u)
-  for i, n in ipairs(HOMES) do if n == u.label then return i - 1 end end
-  if u.role == "builder" or u.label == "BlockParty" then return BUILDER_HOME end
+  for i, n in ipairs(HOMES) do if same(n, u) then return i - 1 end end
+  if u.role == "builder" or same("mapper1", u) then return BUILDER_HOME end
   local id = tonumber(u.id)
   if not id then return nil end
   if u.role == "helper" then return id % #HELPERS end
@@ -72,7 +78,8 @@ function R.resident(i)
   local best
   for _, u in pairs(R.units) do
     if R.homeOf(u) == i then
-      if not best or u.label == HOMES[i + 1] or (best.label ~= HOMES[i + 1] and (u.seen or 0) > (best.seen or 0)) then
+      local named = HOMES[i + 1] and same(HOMES[i + 1], u)
+      if not best or named or (not (HOMES[i + 1] and same(HOMES[i + 1], best)) and (u.seen or 0) > (best.seen or 0)) then
         best = u
       end
     end
@@ -114,7 +121,7 @@ end
 local PLANS = { factory_f2_lava = "Lava wall", factory_f2_link = "Cable", factory_f2_certus = "Certus farm",
   factory_f2_clear = "Clearing", factory_f2_power = "Power row", factory_f2_alloy = "Alloy cell",
   factory_f2_ore = "Ore line", factory_f2_ae2 = "AE2 room", factory_f2_close = "Floor back",
-  factory_screens = "Screens", factory_pitstop = "Crafty's bench", factory_desklink = "Desk link",
+  factory_screens = "Screens", factory_pitstop = "crafter1's bench", factory_desklink = "Desk link",
   factory_walls = "Store walls" }
 local function plainName(s) return (tostring(s):gsub("^.*:", ""):gsub("_", " ")) end
 
@@ -158,7 +165,7 @@ function R.panel(i, now)
   now = now or os.clock()
   local u = R.resident(i)
   if not u then
-    return { name = HOMES[i + 1] or (i == BUILDER_HOME and "BlockParty") or "-", word = "free", state = "", fuel = "",
+    return { name = HOMES[i + 1] or (i == BUILDER_HOME and "mapper1") or "-", word = "free", state = "", fuel = "",
       colour = "grey", job = "", fill = 0, ago = "" }
   end
   local silent = now - (u.seen or 0) > QUIET
@@ -189,7 +196,7 @@ function R.summary(now)
   table.sort(stalled)
   local fy = type(f.foundry) == "table" and f.foundry or {}
   lines[1] = ("CRAFTY: %s   (%s)"):format(tostring(f.state), ago(now - (R.factoryAt or now)))
-  lines[2] = ("STORE: %s slots free%s   Crafty's chests: %s free"):format(st and tostring(st.free) or "?",
+  lines[2] = ("STORE: %s slots free%s   crafter1's chests: %s free"):format(st and tostring(st.free) or "?",
     st and (" of " .. tostring(st.slots)) or "", tostring(s.free or "?"))
   lines[3] = ("FUEL: coal %d  charcoal %d  lava %d"):format(n("minecraft:coal"), n("minecraft:charcoal"),
     n("minecraft:lava_bucket"))
@@ -379,7 +386,8 @@ local function listener()
     if ev == "modem_message" and b == CHANNEL and type(d) == "table" then
       if d.type == "cmd" and type(d.cmd) == "table" then
         local t = d.cmd.target
-        if d.cmd.cmd == "reboot" and (t == "all" or t == os.getComputerLabel() or t == os.getComputerID()) then
+        if d.cmd.cmd == "reboot" and (t == "all" or t == os.getComputerLabel() or t == os.getComputerID()
+          or (swarm and swarm.forMe and swarm.forMe(d.cmd))) then
           print("Rebooting (passed on over the cable).")
           sleep(1)
           os.reboot()

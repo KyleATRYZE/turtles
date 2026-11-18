@@ -95,8 +95,8 @@ units = {}
 for k, u in status["units"].items():
     u = dict(u); u.pop("inv", None)
     units[k] = u
-forge = next(u for u in units.values() if u.get("label") == "Crafty")
-brick = next(u for u in units.values() if u.get("label") == "BlockParty")
+forge = next(u for u in units.values() if u.get("label") == "crafter1")
+brick = next(u for u in units.values() if u.get("label") == "mapper1")
 f = forge["base"]["f"]
 PLOT, KEEP = 8, 24
 def plot_origin(index):
@@ -121,7 +121,7 @@ for name in ("factory_site", "meadow", "ground"):
     maps.append({"origin": m["origin"], "size": m["size"], "heights": m["heights"],
                  "names": m["names"], "palette": m["palette"]})
 pr = brick.get("progress") or {}
-COL = {"Crafty": 8, "BlockParty": 6, "Coalition": 11, "Ghastly": 7}
+COL = {"crafter1": 8, "mapper1": 6, "Coalition": 11, "Ghastly": 7}
 events = []
 for u in sorted(units.values(), key=lambda u: -u.get("seen", 0)):
     if u.get("log"):

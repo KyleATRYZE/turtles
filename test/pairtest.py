@@ -48,7 +48,7 @@ check("two ask, two far miners, two loaders: only one is sent", len(out) == 1)
 
 # 4. nobody needs one: miners near the base, parked far away, already escorted, or carrying their own
 out, log, r = run(PARKED + ', ST(9, "Oresome", "miner", "mining", %s), ST(10, "CleanSlate", "miner", "parked", %s), ' % (NEARBY, FAR)
-    + 'ST(11, "Charcool", "miner", "hunting coal", %s), ST(53, "Ablaze", "loader", "escorting", %s, { job = { mode = "escort", who = "Charcool" } }), ' % (FAR, FAR)
+    + 'ST(11, "miner3", "miner", "hunting coal", %s), ST(53, "Ablaze", "loader", "escorting", %s, { job = { mode = "escort", who = "miner3" } }), ' % (FAR, FAR)
     + 'ST(12, "Cobbler", "miner", "mining", %s, { chunky = "carried" })' % FAR, ASK)
 check("near, resting, escorted and self-loading turtles need no loader", out == [])
 
@@ -72,12 +72,12 @@ out, log, r = run('ST(9, "Coalition", "miner", "hunting coal", 600, 200, { chunk
 check("the silent one first", len(out) == 1 and out[0][1]["who"] == "Coalition")
 
 # 8. fuel for a stranded loader: the idle mate with most fuel is sent, once
-HELPERS = 'ST(21, "Pushy", "helper", "idle", 104, 205, { fuel = 484 }), ST(22, "HopTo", "helper", "idle", 106, 205, { fuel = 237 }), ST(23, "DropIt", "helper", "building", 150, 205, { fuel = 5000 })'
+HELPERS = 'ST(21, "lava1", "helper", "idle", 104, 205, { fuel = 484 }), ST(22, "builder1", "helper", "idle", 106, 205, { fuel = 237 }), ST(23, "foundry1", "helper", "building", 150, 205, { fuel = 5000 })'
 FEED = '{ id = 52, wait = true, msg = { type = "feed_request", id = 52, label = "Phantastic", x = 104, y = 70, z = 199, fuel = 78 } }'
 out, log, r = run(HELPERS, FEED + ', ' + FEED)
 check("an idle mate takes fuel there (once)", len(out) == 1 and out[0][0] == 21 and out[0][1]["cmd"] == "feed"
       and (out[0][1]["x"], out[0][1]["y"], out[0][1]["z"]) == (104, 70, 199))
-out, log, r = run('ST(23, "DropIt", "helper", "building", 150, 205, { fuel = 5000 })', FEED)
+out, log, r = run('ST(23, "foundry1", "helper", "building", 150, 205, { fuel = 5000 })', FEED)
 check("no mate free: nobody is pulled off a job", out == [] and any("No builder's mate free" in l for l in log))
 
 # 9. three loaders already out: no fourth
@@ -85,7 +85,7 @@ THREE_OUT = ', '.join('ST(%d, "L%d", "loader", "escorting", 900, %d, { job = { m
 out, log, r = run(PARKED + ', ST(9, "Oresome", "miner", "mining", %s), ' % FAR + THREE_OUT, ASK)
 check("never more than three loaders out at once", out == [])
 # 10. a helper working far away gets no loader; a miner 60 blocks out is not far
-out, log, r = run(PARKED + ', ST(21, "Pushy", "helper", "flying", %s), ST(9, "Oresome", "miner", "mining", 160, 200)' % FAR, ASK)
+out, log, r = run(PARKED + ', ST(21, "lava1", "helper", "flying", %s), ST(9, "Oresome", "miner", "mining", 160, 200)' % FAR, ASK)
 check("helpers and turtles within 64 blocks get no loader", out == [])
 
 # 11. storage nearly full: a miner asking for a plot is given none; with room again, it is
@@ -111,7 +111,7 @@ def haulRun(on, fill, helper_state="idle"):
     L.execute('''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42,43,44},["byId"]={},["haul"]={["on"]=%s}}'
 MAX_IDLES=4
 local function st(id, label, role, state, x, z) return { id = id, msg = { label = label, role = role, state = state, pos = { x = x, y = 80, z = z }, fuel = 900 } } end
-STATUSQ = { st(21, "Pushy", "helper", "%s", 104, 199) }
+STATUSQ = { st(21, "lava1", "helper", "%s", 104, 199) }
 INBOX = {}''' % ("true" if on else "false", helper_state))
     L.eval('{runFactory()}')
     g = L.globals()
@@ -134,7 +134,7 @@ def farmRun(lava, buckets, n=6, state="idle"):
     if buckets: L.execute('put("minecraft:chest_1", "minecraft:bucket", %d)' % buckets)
     L.execute('''FILES[".plots"]='{["next"]=7,["done"]=0,["hunter"]=true,["builderId"]=14,["helpers"]={21,22,23,24},["loaders"]={41,42,43,44},["byId"]={},["lavafarm"]={["n"]=%d,["how"]="place"}}'
 MAX_IDLES=4
-STATUSQ = { { id = 21, msg = { label = "Pushy", role = "helper", state = "%s", pos = { x = 104, y = 80, z = 199 }, fuel = 900 } } }
+STATUSQ = { { id = 21, msg = { label = "lava1", role = "helper", state = "%s", pos = { x = 104, y = 80, z = 199 }, fuel = 900 } } }
 INBOX = {}''' % (n, state))
     L.eval('{runFactory()}')
     g = L.globals()

@@ -288,7 +288,7 @@ def after():
                 put(x, z, "aisle", "Harvest corridor", 0)
     wcell, _ = F.basin()
     put(wcell[0], wcell[2], "water", "The farm's basin (one floor block of water)", 0)
-    put(34, 13, "a_out", "Barrel on the cable: certus crystals and dust (Crafty and the ME bridge take them)")
+    put(34, 13, "a_out", "Barrel on the cable: certus crystals and dust (crafter1 and the ME bridge take them)")
     # the AE2 room
     for x in (29, 30, 31):
         for z in (18, 19, 20):
@@ -495,12 +495,12 @@ drawAll();
 """
 
 MOVES = [
-    ("Energized Smelter (DropIt's plinth)", "41 1 11", "the alloy cell's smelter bank, 39 1 19"),
+    ("Energized Smelter (foundry1's plinth)", "41 1 11", "the alloy cell's smelter bank, 39 1 19"),
     ("Energy Cube, Heat Generator (plinth)", "42 1 17, 42 1 18", "stay where they are, turned to face the power row (x 43)"),
     ("Enrichment Chamber (plinth)", "41 1 12", "the alloy cell, 39 1 23 (redstone, carbon, diamond)"),
     ("Metallurgic Infuser (plinth)", "41 1 15", "the alloy cell, 39 1 17 (steel)"),
     ("Universal cable along the plinth", "42 1 7..16", "taken up: power runs under the floor"),
-    ("Sticky's piped line: inbox chest (in the walkway)", "36 1 9", "emptied into the store, taken up"),
+    ("builder3's piped line: inbox chest (in the walkway)", "36 1 9", "emptied into the store, taken up"),
     ("Logistical sorter and transporters", "36 1 10..16", "taken up (the works computer feeds by cable)"),
     ("Enrichment Chamber, Energized Smelter (piped line)", "36 1 17, 36 1 18", "the ore line, 42 1 12 and 42 1 13"),
     ("Outbox chest, cable, heat generator (piped line)", "36 1 19..21", "chest emptied and up; the generator to the power block, 42 1 19"),
@@ -513,7 +513,7 @@ MOVES = [
 ]
 
 REST = """<div class="rooms">
-<div class="room"><h3>Smelting hall <span class="size">x 1-8</span></h3><p>Crafty's bench and 12 furnaces stay. With AE2 moved into the foundry, the planned AE2 corner (x 5-8, z 18-28) is free: room for an induction smelter or more furnaces later.</p></div>
+<div class="room"><h3>Smelting hall <span class="size">x 1-8</span></h3><p>crafter1's bench and 12 furnaces stay. With AE2 moved into the foundry, the planned AE2 corner (x 5-8, z 18-28) is free: room for an induction smelter or more furnaces later.</p></div>
 <div class="room"><h3>Launch bay <span class="size">x 19-26</span></h3><p>Now the pads are gone it is the way in from the big door and rack 1's room. Kept clear; the bay panel and the rack's panels are its screens.</p></div>
 <div class="room"><h3>Storage room <span class="size">x 10-17</span></h3><p>Unchanged (the 4th barrel row of stage 3).</p></div>
 <div class="room"><h3>East yard <span class="size">x 46-49</span></h3><p>The evaporation tower for brine, piped in through the east wall high (y 4) straight to the gas plant's brine tank.</p></div>

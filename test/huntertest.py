@@ -76,7 +76,7 @@ print("   lava buckets home:", dict(g.DOCKCHEST).get('minecraft:lava_bucket'), "
 # F) a miner told to hunt by remote order: no scanner on board, own name; fetches a scanner from the factory, then hunts
 L=fresh(2500, -4442, 26, 1540, coal=8)
 L.execute('''T.inv[2]=nil
-local st = textutils.unserialize(FS["miner.state"]) st.huntName = "Charcool" FS["miner.state"] = textutils.serialize(st)
+local st = textutils.unserialize(FS["miner.state"]) st.huntName = "miner3" FS["miner.state"] = textutils.serialize(st)
 setSpecial(-4470, 20, 1560, "minecraft:coal") setSpecial(-4471, 20, 1560, "minecraft:coal")
 KILL_AT=900''')
 print(list(L.eval('{runMiner("resume")}').values())); show(L,"new hunter")

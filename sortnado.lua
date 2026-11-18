@@ -992,10 +992,10 @@ end
 
 ---------------------------------------------------------------- the loading bays
 -- A helper docked in its rack home is on the store's cable (turtle_<id>):
--- before Crafty moves in, the store serves its load from what it has, and
--- the helper fetches the rest from Crafty's pad. Once Crafty is on the same
+-- before crafter1 moves in, the store serves its load from what it has, and
+-- the helper fetches the rest from crafter1's pad. Once crafter1 is on the same
 -- cable it takes the order (bay_taken) and the store leaves it alone.
-S.BAY_WAIT = 10                      -- seconds for Crafty to say it takes a bay order
+S.BAY_WAIT = 10                      -- seconds for crafter1 to say it takes a bay order
 S.bayQueue = {}                      -- helper id -> { msg, at }
 S.RACK_CHANNEL = 4711                -- the rack's panels hear the drones through us (factory.lua K.RACK_CHANNEL)
 

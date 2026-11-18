@@ -22,7 +22,7 @@ def check(what, ok, detail=""):
         fails.append(what)
 
 
-def run(order, stock, label="DropIt", fuel=3000, extra=""):
+def run(order, stock, label="foundry1", fuel=3000, extra=""):
     L = lupa.LuaRuntime(unpack_returned_tuples=True)
     L.execute(f"START_D=3; START_FUEL={fuel}")
     src = open(os.path.join(HERE, "harness.lua")).read().replace("/home/claude/turtles", ROOT)

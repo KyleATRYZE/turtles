@@ -1,7 +1,7 @@
 -- foundry.lua : the Mekanism line in the foundry bay, run by a helper.
 --
 -- helper.lua loads this and hands it its own tools (walking, fetching,
--- reporting) as `env`. The operator (DropIt) then works here whenever it
+-- reporting) as `env`. The operator (foundry1) then works here whenever it
 -- has no other job: it takes jobs from the factory over rednet, or from a
 -- remote order, fetches what a job needs with the ordinary materials
 -- request, feeds the machines, powers them with redstone dust, waits, and

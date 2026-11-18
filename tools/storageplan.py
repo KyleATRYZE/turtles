@@ -26,7 +26,7 @@ CATS = [  # (name, colour, what goes there, match rules) - first match wins
      ["cobblestone", "cobbled_deepslate", "=minecraft:stone", "andesite", "granite", "diorite", "tuff",
       "basalt", "obsidian", "gravel", "sand", "dirt", "darkstone", "kivi", "marble", "volcanic_ash",
       "magma", "supplementaries:ash", "allthecompressed:", "flint", "ash_vent"]),
-    ("Building blocks", "#5b6270", "Bricks, tiles, stairs, glass: what BlockParty builds with",
+    ("Building blocks", "#5b6270", "Bricks, tiles, stairs, glass: what mapper1 builds with",
      ["polished", "brick", "tiles", "stairs", "slab", "glass", "pane", "cut_copper", "copper_block", "sign"]),
     ("Ingots & dusts", "#d4a43a", "Smelted metals, nuggets, dusts",
      ["ingot", "nugget", "dust", "sulfur", "cinnabar", "saltpeter"]),
@@ -201,7 +201,7 @@ def wall_svg(wall, ds, title):
     def Yr(r): return 34 + (3 - r) * cw
     # the cable run along the top
     p.append(f'<rect x="40" y="{Yr(3)-12}" width="{len(zs)*cw}" height="6" rx="3" fill="var(--modem)"/>')
-    p.append(f'<text x="40" y="{Yr(3)-18}" class="lbl small">modem strip behind, joined under the floor to the desk and Crafty</text>')
+    p.append(f'<text x="40" y="{Yr(3)-18}" class="lbl small">modem strip behind, joined under the floor to the desk and crafter1</text>')
     for (za, zb) in ds:
         for row in (1, 2, 3):
             c = assign.get((wall, za, zb, row), "Overflow")

@@ -4,7 +4,7 @@
     tools/order.py reboot all
     tools/order.py stop miner-1
     tools/order.py reboot all resume Coalition          (several orders, in order)
-    tools/order.py survey BlockParty x=-4430 z=1530 size=64 name=factory_site
+    tools/order.py survey mapper1 x=-4430 z=1530 size=64 name=factory_site
 
 Then commit and push; the controller picks them up within about 20 seconds.
 Targets: "all", a name ("Coalition", any case) or a computer id (5).

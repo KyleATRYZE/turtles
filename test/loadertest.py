@@ -174,8 +174,8 @@ check("G: tells the factory who it gave up on", any(m.gaveUp == "Coalition" for 
 
 # H) a long way out on little fuel: it fetches enough for there and back before going, and does not shuttle
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 700
-FS["loader.state"] = textutils.serialize({ mode = "escort", who = "Charcool", stay = true, x = -6000, z = 1521 })
-OTHERS.Charcool = function(c)
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "miner3", stay = true, x = -6000, z = 1521 })
+OTHERS.miner3 = function(c)
   if T.x == -6000 and T.z == 1521 then OVER = (OVER or 0) + 1 end
   return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } }
 end
@@ -195,8 +195,8 @@ check("H: got there and stayed", (g.OVER or 0) > 5 and g.T.fuel > 1500 + 130)
 # I) the factory has no coal: it does not fly out on fuel that will not bring it home
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 700
 NO_COAL = true
-FS["loader.state"] = textutils.serialize({ mode = "escort", who = "Charcool", stay = true, x = -6000, z = 1521 })
-OTHERS.Charcool = function(c) return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } } end''', limit=2500)
+FS["loader.state"] = textutils.serialize({ mode = "escort", who = "miner3", stay = true, x = -6000, z = 1521 })
+OTHERS.miner3 = function(c) return { role = "miner", state = "hunting coal", pos = { x = -6000, y = 30, z = 1521 } } end''', limit=2500)
 check("I: no coal to be had: stays near the base and says it needs fuel", abs(g.T.x + 4461) < 20 and "needs fuel" in states(g))
 # J) nearly dry, and another turtle is sitting on the pad: wait a minute, then out of its way, and ask for a feed
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 78
@@ -216,7 +216,7 @@ OTHERS.hunter = function(c)
   local renamed = c > 300
   local x = renamed and -4900 or -4700
   if renamed and T.x == -4900 and T.z == 1600 then OVER_NEW = (OVER_NEW or 0) + 1 end
-  return { role = "miner", state = "hunting coal", pos = { x = x, y = 30, z = 1600 }, name = renamed and "Charcool" or ("NatKing" .. "Coal") }
+  return { role = "miner", state = "hunting coal", pos = { x = x, y = 30, z = 1600 }, name = renamed and "miner3" or ("NatKing" .. "Coal") }
 end
 -- (OTHERS reports under its key: give this one the name it carries)
 local receive = rednet.receive
@@ -226,8 +226,8 @@ rednet.receive = function(proto, timeout)
   return id, msg
 end''', limit=1500)
 check("K: the loader took its new name, and its state names the hunter's new name",
-      g.LABEL == "Ablaze" and 'who="Charcool"' in L.eval('FS["loader.state"]').replace(" ", ""))
-check("K: it followed the hunter after he was renamed", (g.OVER_NEW or 0) > 10 and "looking for Charcool" not in states(g))
+      g.LABEL == "Ablaze" and 'who="miner3"' in L.eval('FS["loader.state"]').replace(" ", ""))
+check("K: it followed the hunter after he was renamed", (g.OVER_NEW or 0) > 10 and "looking for miner3" not in states(g))
 
 # L) orders by hand under the old names: to the loader's old name, naming the miner's old name
 L, g, r = run('''T.x, T.y, T.z, T.fuel = -4457, 20, 1520, 5000

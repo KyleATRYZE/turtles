@@ -21,17 +21,17 @@ reads `getDirection` rather than assume it.
 
 ## Orders
 
-    tools/order.py foundry DropIt job=setup                 find the machines in the bay and set their sides
-    tools/order.py foundry DropIt ore=minecraft:raw_iron n=48   ore -> chamber -> smelter -> ingots (3 raw make 4)
-    tools/order.py foundry DropIt enrich=minecraft:redstone n=16   chamber only
-    tools/order.py foundry DropIt make=steel n=16           infuser: steel dust (also circuit, alloy)
-    tools/order.py foundry DropIt enrich=minecraft:diamond n=8   enriched diamond (80 mB of diamond infusion each)
-    tools/order.py foundry DropIt make=reinforced n=16      infuser: infused alloy + 20 mB diamond
-    tools/order.py foundry DropIt make=refined n=16         infuser: obsidian dust (a Crusher's) + 10 mB diamond
-    tools/order.py foundry DropIt make=atomic n=8           infuser: reinforced alloy + 40 mB refined obsidian
-    tools/order.py foundry DropIt job=move_infuser          bring the infuser in from the bench outside
-    tools/order.py foundry DropIt on=0                      back to an ordinary helper
-    tools/order.py foundry DropIt clear=1 / reset=1         drop the jobs in hand / forget what is set up
+    tools/order.py foundry foundry1 job=setup                 find the machines in the bay and set their sides
+    tools/order.py foundry foundry1 ore=minecraft:raw_iron n=48   ore -> chamber -> smelter -> ingots (3 raw make 4)
+    tools/order.py foundry foundry1 enrich=minecraft:redstone n=16   chamber only
+    tools/order.py foundry foundry1 make=steel n=16           infuser: steel dust (also circuit, alloy)
+    tools/order.py foundry foundry1 enrich=minecraft:diamond n=8   enriched diamond (80 mB of diamond infusion each)
+    tools/order.py foundry foundry1 make=reinforced n=16      infuser: infused alloy + 20 mB diamond
+    tools/order.py foundry foundry1 make=refined n=16         infuser: obsidian dust (a Crusher's) + 10 mB diamond
+    tools/order.py foundry foundry1 make=atomic n=8           infuser: reinforced alloy + 40 mB refined obsidian
+    tools/order.py foundry foundry1 job=move_infuser          bring the infuser in from the bench outside
+    tools/order.py foundry foundry1 on=0                      back to an ordinary helper
+    tools/order.py foundry foundry1 clear=1 / reset=1         drop the jobs in hand / forget what is set up
 
 Any job puts the helper "on the foundry": between jobs it waits over the base
 and takes jobs from the factory. Building, fit-out and lab orders still come
@@ -83,11 +83,11 @@ outside.
 
 ## Power (job=power)
 
-    tools/order.py foundry DropIt job=power            generator, cube (if one can be had), cable; fuel; check
-    tools/order.py foundry DropIt job=power cube=0     no cube: cable in its place
-    tools/order.py foundry DropIt job=fuel [fuel=lava] more fuel for the generator
-    tools/order.py foundry DropIt job=bank [n=3]       more Energized Smelters at z 9, 8, 7, on the cable
-    tools/order.py foundry DropIt smelt=minecraft:sand n=128   anything a furnace cooks, through every smelter
+    tools/order.py foundry foundry1 job=power            generator, cube (if one can be had), cable; fuel; check
+    tools/order.py foundry foundry1 job=power cube=0     no cube: cable in its place
+    tools/order.py foundry foundry1 job=fuel [fuel=lava] more fuel for the generator
+    tools/order.py foundry foundry1 job=bank [n=3]       more Energized Smelters at z 9, 8, 7, on the cable
+    tools/order.py foundry foundry1 smelt=minecraft:sand n=128   anything a furnace cooks, through every smelter
 
 All on the plinth behind the machines (x 42), in the building's coordinates:
 

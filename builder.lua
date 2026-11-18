@@ -1,4 +1,4 @@
--- builder.lua : BlockParty, the swarm's builder.
+-- builder.lua : mapper1, the swarm's builder.
 --
 -- For now it surveys, without breaking anything. It carries a Geo Scanner
 -- (Advanced Peripherals) and maps by scanning; without one it walks instead.
@@ -14,7 +14,7 @@
 local okSwarm, swarm = pcall(require, "swarm")
 if not okSwarm then swarm = nil end
 
-local NAME         = "BlockParty"
+local NAME         = "mapper1"
 local STATE_FILE   = "builder.state"
 local BASE_FILE    = ".base"
 local MAP_PROTOCOL = "swarm_map"

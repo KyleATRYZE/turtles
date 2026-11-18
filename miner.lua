@@ -42,17 +42,10 @@ local HUNT_MAX    = 128     -- the hunting area grows each round, up to this (Gh
 local RESCUE_PROTOCOL = "swarm_rescue"
 local RESCUE_COAL = 16     -- coal handed to a stranded miner
 
--- Names for miners, picked by computer number. (Each stands where the name
--- it replaced stood, so a miner gets the same name whether it took the old
--- one before the renaming or starts fresh: see swarm.lua.)
-local NAMES = {
-  "Ironic", "InVein", "Coalition", "MotherLode", "Oresome",
-  "NetherMind", "DigIt", "Dioright", "Cobbler", "CleanSlate",
-  "Andesight", "TuffLuck", "Calcited", "Gravelly",
-  "Bedrocker", "Granted", "Flinty", "CopperTop",
-  "GoldRush", "Basalty", "RockSolid", "Quartzy", "Smelty",
-  "LapisLazy", "Dripstoned", "GeodeToGo", "Nuggety", "Pickle",
-}
+-- A new miner's name: "miner" and its computer number (miner45), so no two
+-- are ever the same. (The first three were named by hand: miner1, miner2,
+-- miner3; the names they had before are in swarm.lua.)
+local function newMinerName(id) return "miner" .. tostring(id) end
 
 -- Thrown away when the inventory fills up
 local JUNK = {
@@ -1489,7 +1482,7 @@ end
 local function hunt()
   -- (a second hunter, made by remote order while the first is missing, has its own name)
   local name = st.huntName or "Coalition"
-  if swarm.newName then name = swarm.newName(name) end
+  if swarm.newName then name = swarm.newName(name, os.getComputerID()) end
   if os.getComputerLabel() ~= name then os.setComputerLabel(name) end
   print("Hunting coal.")
   report("hunting coal")
@@ -1889,7 +1882,7 @@ local function main(args)
     h.close()
     local label = os.getComputerLabel()
     if not label or label:match("^miner%-%d+$") then
-      os.setComputerLabel(NAMES[(os.getComputerID() - 1) % #NAMES + 1])
+      os.setComputerLabel(newMinerName(os.getComputerID()))
     end
   end
 
@@ -2016,7 +2009,7 @@ local function main(args)
       if st or loadState() then
         st.hunt, st.paused = true, nil
         st.huntName = type(cmd.name) == "string" and cmd.name:match("^[%w_]+$") or st.huntName
-        if st.huntName and swarm.newName then st.huntName = swarm.newName(st.huntName) end
+        if st.huntName and swarm.newName then st.huntName = swarm.newName(st.huntName, os.getComputerID()) end
         st.phase, st.back = nil, nil
         save()
         located = false

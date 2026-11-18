@@ -59,13 +59,21 @@ miner, and to any older miner that asks on its next visit. Rubble is dumped befo
 
 ## Names
 
-Machines remember their job in a `.role` file, so they can be renamed freely. Miners name
-themselves from a list of puns; the factory is Crafty and the controller CommandBlock.
+Machines remember their job in a `.role` file, so they can be renamed freely. Drones go by plain
+task names, so it is clear who does what while many jobs run at once: the factory is crafter1 and
+its crafting assistant crafter2, the controller CommandBlock, the builder mapper1, the builder's
+mates builder1-builder7 (by duty: lava1 does the lava runs, foundry1 works the foundry, survey1
+surveys with the Geo Scanner, rescue1 is the named rescuer), the miners miner1-miner3. A new miner
+names itself `miner<computer id>`; new mates get the next names in the factory's list. The station
+computers (Sortnado, RackBoard) keep their names.
 
-The whole swarm was renamed once (shorter names, Minecraft puns). The table of old name -> new
-name is in `swarm.lua` (`RENAMES`), the only place the old names are kept. Each machine renames
-itself when it starts: its label and every name in its state files, so a turtle that wakes weeks
-later comes up under its new name. Orders may be addressed to either name.
+The swarm has been renamed twice (first to Minecraft puns, then to these task names). The table of
+old name -> new name is in `swarm.lua` (`RENAMES`, and `RENAMES_BY_ID` for an old name two
+machines shared, told apart by computer number), the only place the old names are kept. Each
+machine renames itself when it starts: its label and every name in its state files, so a turtle
+that wakes weeks later comes up under its new name. Orders may be addressed to either name, and
+names kept in lists (the haul and lava farm skip lists, the named rescuer) still count under an
+old name.
 
 ## Coal hunting
 
@@ -82,7 +90,7 @@ hunter digs down to it and drops 16 coal on it.
 
 ## Builder
 
-`builder.lua` (BlockParty). The factory builds one (a turtle with an ender modem, no tool needed),
+`builder.lua` (mapper1). The factory builds one (a turtle with an ender modem, no tool needed),
 hands it the spare Geo Scanner and the Weak Automata Core, and tells it its role when it first asks
 for work. It maps the base room with one scan, then climbs out through the hole above the launch
 pad and scans the ground 40 x 40 around the base from a grid of points, recording the ground and

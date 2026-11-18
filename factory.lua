@@ -847,8 +847,8 @@ end
 
 local base = loadTable(K.BASE_FILE)                 -- where everything is
 local plots = loadTable(K.PLOTS_FILE) or { next = 1, byId = {}, done = 0 }
--- The plot grid stays where it was first laid out (round Crafty's spot at
--- the time), so moving Crafty does not move anybody's plots.
+-- The plot grid stays where it was first laid out (round crafter1's spot at
+-- the time), so moving crafter1 does not move anybody's plots.
 if base and base.f and not plots.origin and not K.COUNTER then
   plots.origin = { x = base.f.x, y = base.f.y, z = base.f.z }
   saveTable(K.PLOTS_FILE, plots)
@@ -862,23 +862,26 @@ K.CTL_PER_TURTLE = 2 -- (ever: one, and one more if it loses the first)
 K.FUEL_RESERVE = 256 -- coal never handed out to miners
 K.LOGS_KEPT = 160    -- logs of each wood the furnaces leave alone: chests, barrels and the
                          -- storage room are made of wood (whatever wood there is)
--- More dispensing turtles ("Counter", "Counter2", ... by label), each on a
--- launch pad of its own: they only serve helpers' loads, so several can be
--- served at once. Each says it is alive (counter_alive, with its number)
--- every 30 s; with the highest number heard in the last 150 s being N,
--- a load from turtle id goes to dispenser id % (N + 1): 0 is Crafty, k is
--- Counter k. Crafty serves any share whose counter has gone quiet. (With
--- one Counter that is the odd ids, as before.)
+-- More dispensing turtles ("crafter2", "crafter3", ... by label; the old
+-- labels were counter, counter2, ...), each on a launch pad of its own: they only
+-- serve helpers' loads, so several can be served at once. Each says it is
+-- alive (counter_alive, with its number) every 30 s; with the highest number
+-- heard in the last 150 s being N, a load from turtle id goes to dispenser
+-- id % (N + 1): 0 is crafter1, k is crafter<k+1>. crafter1 serves any share
+-- whose counter has gone quiet. (With one counter, crafter2, that is the odd
+-- ids, as before.)
 do
-  local digits = (os.getComputerLabel() or ""):lower():match("^counter(%d*)")
-  K.COUNTER = digits ~= nil
-  K.SLOT = K.COUNTER and (tonumber(digits) or 1) or 0
+  local label = (os.getComputerLabel() or ""):lower()
+  local n = tonumber(label:match("^crafter(%d+)$"))
+  local digits = label:match("^counter(%d*)")             -- (the old labels)
+  K.COUNTER = (n ~= nil and n >= 2) or digits ~= nil
+  K.SLOT = (n and n >= 2 and n - 1) or (digits and (tonumber(digits) or 1)) or 0
 end
 K.counters = {}          -- counter number -> when last heard (os.clock)
-K.adopted = {}           -- helper id -> true: a Counter's load Crafty took over
-K.foreign = {}           -- helper id -> the order a Counter has (items, fuel, n, at, readyAt)
--- The Counter fallback: a load left ready at a Counter's pad this long without
--- being collected is made and served by Crafty instead.
+K.adopted = {}           -- helper id -> true: a crafter2's load crafter1 took over
+K.foreign = {}           -- helper id -> the order a crafter2 has (items, fuel, n, at, readyAt)
+-- The crafter2 fallback: a load left ready at a crafter2's pad this long without
+-- being collected is made and served by crafter1 instead.
 K.COUNTER_GIVE_UP = 180
 -- The watchdog: a helper in a waiting state this long gets its load
 -- announced again; still waiting this much later, it is told to reboot.
@@ -886,7 +889,7 @@ K.STALL_AFTER = 600
 K.STALL_REBOOT = 300
 K.stall = {}             -- fleet key -> { step = 1|2, at = os.clock() }
 K.stalledList = {}       -- labels, for the status report
--- the rack's screens hear the drones through Crafty, over the cable
+-- the rack's screens hear the drones through crafter1, over the cable
 K.RACK_CHANNEL = 4711
 K.counterBeat = -1000
 function K.alive(slot)
@@ -901,7 +904,7 @@ function K.shareOf(id)
 end
 -- Is turtle id's load mine to serve?
 function K.mine(id)
-  if K.adopted[id] then return not K.COUNTER end    -- (a Counter's load it never handed over)
+  if K.adopted[id] then return not K.COUNTER end    -- (a crafter2's load it never handed over)
   local share = K.shareOf(id)
   if K.COUNTER then return share == K.SLOT end
   return share == 0 or not K.alive(share)
@@ -909,9 +912,9 @@ end
 K.HELPERS      = 4   -- builder's mates to make (mining turtles running helper.lua);
                          -- the third is the lumberjack
 -- (the fourth runs the Mekanism machines; the rest are names for mates made later)
-local HELPER_NAMES = { "Pushy", "HopTo", "LeverAlone", "DropIt",
-  "Sticky", "Dusty", "OnRepeat", "Comparable", "Observant", "Dispensable",
-  "ButtonUp", "PlateUp", "Tripwired", "LampLit", "NoteWorthy", "TargetLock" }
+local HELPER_NAMES = { "lava1", "builder1", "builder7", "foundry1",
+  "builder3", "builder4", "builder2", "survey1", "builder6", "rescue1",
+  "builder5", "builder8", "builder9", "builder10", "builder11", "builder12" }
 local launchingHelper = false
 -- Chunk loaders (turtles with a Chunk Controller, running loader.lua): one
 -- is built whenever there is a controller in stock and an ender modem to be
@@ -1024,7 +1027,7 @@ end
 -- Not storage, though it is an inventory on the cable: Sortnado's In and
 -- Out barrels (the store's door: Sortnado empties one and the player takes
 -- from the other), an Inventory Manager, and names (or name* prefixes) the
--- order "stores Crafty skip=a,b" gives (the Mekanism line's chests, say).
+-- order "stores crafter1 skip=a,b" gives (the Mekanism line's chests, say).
 -- a helper's name on the cable, as it says it (turtle_<n> only)
 function K.bayName(b)
   return type(b) == "string" and b:match("^turtle_%d+$") and b or nil
@@ -1067,7 +1070,7 @@ local function discover()
         -- other machines and computers are not storage
       elseif K.notStore(name) then
         -- the store's In and Out barrels (Sortnado's, and the player's), a
-        -- manager, and whatever the order "stores Crafty skip=..." names
+        -- manager, and whatever the order "stores crafter1 skip=..." names
       else
         stores[#stores + 1] = name
       end
@@ -2481,7 +2484,7 @@ function K.pushTo(target, wanted, count)
   return count - need
 end
 
--- The foundry test (order "probe Crafty"): can the store push an item into
+-- The foundry test (order "probe crafter1"): can the store push an item into
 -- a Mekanism machine by its network name, and pull it back out? Tells the
 -- works computer's design (yes) from the barrels-and-sorter fallback (no).
 K.PROBE_ITEMS = { "minecraft:raw_iron", "minecraft:iron_ingot", "minecraft:redstone", "minecraft:cobblestone",
@@ -2584,24 +2587,24 @@ function K.deliverBay(id, order)
 end
 
 ---------------------------------------------------------------- the crafting assistant
--- A second crafty turtle on the same cable as the storage (Counter, turtle
--- 38: the orders "assist Counter on=1", then "resume Counter") takes
--- crafting off Crafty, so a load is not stuck behind another one being
--- made. Crafty plans the load and hands the crafting of whole lines of it
+-- A second crafty turtle on the same cable as the storage (crafter2, turtle
+-- 38: the orders "assist crafter2 on=1", then "resume crafter2") takes
+-- crafting off crafter1, so a load is not stuck behind another one being
+-- made. crafter1 plans the load and hands the crafting of whole lines of it
 -- to the assistant over rednet (assist_job: the plan's steps), and crafts
 -- the other lines itself at the same time. With other loads waiting, the
--- assistant gets every line it can take of this one and Crafty goes on to
+-- assistant gets every line it can take of this one and crafter1 goes on to
 -- the next load. The assistant pulls what it needs from the same storage
 -- over the cable and puts what it makes back there; when it says it is done
--- (assist_done), Crafty plans the load again (it finds what both made in
+-- (assist_done), crafter1 plans the load again (it finds what both made in
 -- stock, makes whatever is still short) and hands it over as usual.
--- Smelting stays with Crafty (one set of furnaces), and so do the orders:
+-- Smelting stays with crafter1 (one set of furnaces), and so do the orders:
 -- the assistant only crafts what it is sent. While a job is out, what it
--- will use and the load itself are held back from Crafty's own planning
+-- will use and the load itself are held back from crafter1's own planning
 -- (K.reserve), so the two never plan on the same stock.
 K.ASSIST_FILE = ".assist"
 K.ASSIST = K.COUNTER and fs.exists(K.ASSIST_FILE)     -- (this turtle is the assistant)
-K.ASSIST_TIMEOUT = 900   -- a job not done in 15 min: Crafty makes the rest of the load itself
+K.ASSIST_TIMEOUT = 900   -- a job not done in 15 min: crafter1 makes the rest of the load itself
 K.ASSIST_QUIET = 90      -- an assistant not heard this long is not sent anything
 K.assistants = {}        -- assistant id -> { at, label, busy (its word), job (mine in flight), sentAt }
 K.reserve = {}           -- order id -> { order =, items = { name = n } } held back while it is out
@@ -2636,8 +2639,8 @@ end
 -- A load's lines shared out: each line (or half line) planned on its own, on what the lines
 -- before it leave (so no line counts on what another makes), then the
 -- biggest first to whichever side has less to do. Lines that smelt stay
--- with Crafty. whole: every line the assistant can take goes to it.
--- Returns the assistant's part { lines, steps, used, work } and Crafty's
+-- with crafter1. whole: every line the assistant can take goes to it.
+-- Returns the assistant's part { lines, steps, used, work } and crafter1's
 -- { steps, work }, or nil (nothing worth handing out, or no clean split).
 function K.splitLoad(lines, stock, whole)
   if not whole then
@@ -2714,7 +2717,7 @@ function K.assistFree(now)
   return nil
 end
 
--- Hand (part of) a load to the assistant. Returns Crafty's own part ({ steps,
+-- Hand (part of) a load to the assistant. Returns crafter1's own part ({ steps,
 -- work }: possibly nothing), or nil when nothing was handed out.
 function K.farmOut(id, order, whole, now)
   local aid = K.assistFree(now)
@@ -2773,7 +2776,7 @@ function K.assistHeard(id, msg, now)
   end
 end
 
--- (every 30 s) a job out too long, or an assistant gone quiet: Crafty
+-- (every 30 s) a job out too long, or an assistant gone quiet: crafter1
 -- finishes the load itself.
 function K.assistWatch(now)
   for _, o in pairs(orders) do
@@ -2812,7 +2815,7 @@ function K.assistTurn()
     report("assist: open")
     return false
   end
-  print("Crafting for Crafty: " .. tostring(j.what or (#j.steps .. " steps")))
+  print("Crafting for crafter1: " .. tostring(j.what or (#j.steps .. " steps")))
   report("assist: crafting")
   local t0, errs = os.clock(), {}
   stashAll()
@@ -2915,7 +2918,7 @@ local function serveOrders(onlyReady)
       if K.padNext() == id then
         K.padCall(id, order)
       end
-      if K.COUNTER then          -- (Crafty takes it over if it is not collected)
+      if K.COUNTER then          -- (crafter1 takes it over if it is not collected)
         rednet.broadcast({ type = "counter_ready", forId = id, n = order.n }, K.JOB_PROTOCOL)
       end
       print("Load ready. Waiting for the builder.")
@@ -3220,6 +3223,14 @@ local function nameKey(name)
   return tostring(name):lower()
 end
 
+-- Is this drone on a skip list (the haul's, the lava farm's: label -> true,
+-- kept in .plots)? A name saved under the drone's old name still counts.
+function K.skipped(set, u)
+  if type(set) ~= "table" or type(u) ~= "table" or type(u.label) ~= "string" then return false end
+  if swarm and swarm.listed then return swarm.listed(set, u.label, u.id) end
+  return set[u.label] and true or false
+end
+
 local function noteStatus(id, msg)
   if type(msg) ~= "table" or type(msg.label) ~= "string" or msg.role == "factory" then return end
   local key = nameKey(msg.label)
@@ -3315,7 +3326,7 @@ end
 -- Hauling: when the factory's own chests fill up, a builder's mate with
 -- nothing to do is given full stacks of what there is plenty of, and drops
 -- them into the storage room's Sophisticated Storage controller, which puts
--- them away in its barrels. Switched on by the order "haul Crafty on=1" once
+-- them away in its barrels. Switched on by the order "haul crafter1 on=1" once
 -- the controller stands where HAUL.at says (tools/ctlmove.py puts it there).
 local HAUL = {
   at = { x = 11, y = 5, z = 15, face = 2 },   -- standing in the room, the controller to the west
@@ -3368,7 +3379,7 @@ local function haulOps(lines)
 end
 
 -- The dripstone lava farm (tools/lavafarm.py): a row of cauldrons that fill
--- with lava on their own. Once built, the order "lavafarm Crafty n=<units>
+-- with lava on their own. Once built, the order "lavafarm crafter1 n=<units>
 -- how=place|use" tells the factory about it, and while lava runs low it
 -- sends a mate with nothing to do round with empty buckets.
 local FARM = { x = -4453, y = 76, z = 1538, face = 2, every = 1200, low = 48 }
@@ -3388,7 +3399,7 @@ local function lavaFarmDuty(stock)
     -- (a foundry operator between jobs will do; one given a job by hand
     -- in the last few minutes is left to it)
     if u.role == "helper" and (u.state == "idle" or u.state == "foundry: idle") and now - u.at < 200
-      and not (farm.skip and farm.skip[u.label])
+      and not K.skipped(farm.skip, u)
       and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
   end
   if not best then return end
@@ -3430,7 +3441,7 @@ local function haulDuty(stock)
   local best
   for _, u in pairs(fleet) do
     if u.role == "helper" and u.state == "idle" and now - u.at < 200
-      and not (plots.haul.skip and plots.haul.skip[u.label])     -- (builders between steps)
+      and not K.skipped(plots.haul.skip, u)     -- (builders between steps)
       and (not best or (u.fuel or 0) > (best.fuel or 0)) then best = u end
   end
   if not best then return end
@@ -3466,9 +3477,9 @@ local function feedFor(id, msg)
 end
 
 -- Listens to everyone's status reports (for the pairing above).
--- A helper waiting for a load that never comes (a Counter's load left on a
+-- A helper waiting for a load that never comes (a crafter2's load left on a
 -- pad nobody landed on, a lost message): its load is announced again, a
--- Counter's is taken over, and if it still waits it is told to reboot.
+-- crafter2's is taken over, and if it still waits it is told to reboot.
 -- The pad's queue. Every ready load used to be announced at once, so
 -- several helpers dived down the one-wide shaft together and jammed it
 -- (the one on the pad "stuck under turtle", the rest queued above). Now
@@ -3502,13 +3513,13 @@ function K.adopt(id)
   K.adopted[id] = true
   orders[id] = { items = f.items, fuel = f.fuel, n = f.n, bay = f.bay, back = f.back }
   rednet.broadcast({ type = "counter_drop", forId = id, n = f.n }, K.JOB_PROTOCOL)
-  print("Taking over turtle " .. tostring(id) .. "'s load from the Counter.")
+  print("Taking over turtle " .. tostring(id) .. "'s load from the counter.")
   return true
 end
 function K.watchdog(now)
   now = now or os.clock()
   if K.COUNTER then return end
-  -- the Counter fallback: ready at a Counter's pad and not collected
+  -- the crafter2 fallback: ready at a crafter2's pad and not collected
   for id, f in pairs(K.foreign) do
     if f.readyAt and now - f.readyAt > K.COUNTER_GIVE_UP then K.adopt(id)
     elseif now - (f.at or now) > 3600 then K.foreign[id] = nil end
@@ -3553,13 +3564,13 @@ function K.relay(msg)
 end
 
 ---------------------------------------------------------------- rescue drones
--- A drone that is stuck is fetched. Crafty looks every 30 s for one that is
+-- A drone that is stuck is fetched. crafter1 looks every 30 s for one that is
 -- out of fuel (needs fuel, stranded), crashed (error), trapped (stuck ...,
 -- lost, cannot move), still waiting 20 minutes after the watchdog's reboot
 -- (stalled), or silent for 10 minutes, with a known last place. A crash is
 -- first told to reboot over the air; only a drone that crashes again (or
 -- does not hear) is visited. The rescuer is the builder's mate named by the
--- order "rescuer Crafty name=<helper>" when it is idle, else the nearest
+-- order "rescuer crafter1 name=<helper>" when it is idle, else the nearest
 -- idle one (only=1: that one or nobody). It flies next to the drone and,
 -- by the problem (how): fuel - drops coal or lava into it and reboots it,
 -- so it drinks on the way up; reboot - reboots it or turns it on; trapped -
@@ -3571,8 +3582,8 @@ end
 -- its last screen lines, what was done, the result, what it said three
 -- minutes on) goes into the status (rescues), so the cause can be fixed;
 -- a drone rescued 3 times in an hour is reported instead of rescued again.
--- "rescue Crafty who=<drone> [problem=fuel|reboot|trapped]" asks for one;
--- "rescuer Crafty on=0" stops them.
+-- "rescue crafter1 who=<drone> [problem=fuel|reboot|trapped]" asks for one;
+-- "rescuer crafter1 on=0" stops them.
 K.RESCUE_SILENT = 600      -- not heard this long (from a known place): fetched
 K.RESCUE_GONE = 3 * 3600   -- not heard this long: taken away, not stuck
 K.RESCUE_PER_HOUR = 3      -- rescues of one drone in an hour; past that it is reported instead
@@ -3678,8 +3689,8 @@ function K.rescuer(v, now)
   local want = cfg.name and nameKey(cfg.name)
   local best, bestD
   for key, u in pairs(fleet) do
-    local kept = (plots.haul and plots.haul.skip and plots.haul.skip[u.label])
-      or (plots.lavafarm and plots.lavafarm.skip and plots.lavafarm.skip[u.label])
+    local kept = K.skipped(plots.haul and plots.haul.skip, u)
+      or K.skipped(plots.lavafarm and plots.lavafarm.skip, u)
     if u.role == "helper" and u.id ~= v.id and (u.state == "idle" or u.state == "foundry: idle")
       and now - (u.at or -1e9) < 200 and (u.fuel or 0) >= 600 and u.x and u.y and u.z
       and not (u.x == v.x and u.z == v.z)                  -- (in its column: part of the jam)
@@ -3824,9 +3835,9 @@ local function responder()
   while true do
     local id, msg = rednet.receive(K.JOB_PROTOCOL)
     if type(msg) == "table" and id and msg.type == "assist_job" then
-      -- (the assistant) crafting sent by Crafty: done in the build loop
+      -- (the assistant) crafting sent by crafter1: done in the build loop
       if K.ASSIST and msg.forId == os.getComputerID() and type(msg.steps) == "table" and not K.job then
-        if type(msg.skip) == "table" then         -- (Crafty's list of inventories that are not storage)
+        if type(msg.skip) == "table" then         -- (crafter1's list of inventories that are not storage)
           plots.stores = { skip = msg.skip }
           saveTable(K.PLOTS_FILE, plots)
         end
@@ -3846,7 +3857,7 @@ local function responder()
       elseif msg.type == "counter_handed" and f then
         K.foreign[f] = nil
       elseif msg.type == "counter_drop" and K.COUNTER and f and orders[f] and orders[f].n == msg.n then
-        orders[f] = nil                       -- (Crafty took it over)
+        orders[f] = nil                       -- (crafter1 took it over)
         served[f] = msg.n
       end
     elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and not K.mine(id))) then
@@ -3855,7 +3866,7 @@ local function responder()
           and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
       elseif not K.COUNTER and msg.type == "materials" and type(msg.items) == "table" then
-        -- a Counter's share: kept, in case it is never collected
+        -- a crafter2's share: kept, in case it is never collected
         local f = K.foreign[id]
         if not f or f.n ~= msg.n then
           K.foreign[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n, at = os.clock(),
@@ -4036,7 +4047,7 @@ local function tryBuild()
     -- (no drop-off chest to face: turns count from wherever it faced at start,
     -- and it always turns back there)
     if facing == nil then facing = 0 end
-    if K.ASSIST then return K.assistTurn() end        -- (crafting for Crafty: no pad of its own)
+    if K.ASSIST then return K.assistTurn() end        -- (crafting for crafter1: no pad of its own)
     if os.clock() - K.counterBeat > 30 then
       K.counterBeat = os.clock()
       rednet.broadcast({ type = "counter_alive", slot = K.SLOT }, K.JOB_PROTOCOL)
@@ -4288,7 +4299,7 @@ do
   h.write("factory")
   h.close()
   local label = os.getComputerLabel()
-  if not label or label == "factory" then os.setComputerLabel("Crafty") end
+  if not label or label == "factory" then os.setComputerLabel("crafter1") end
 end
 
 local task = fs.exists(K.PAUSE_FILE) and paused or work
@@ -4303,7 +4314,7 @@ while true do
     if c.cmd == "ping" then
       report(lastState)
       return true
-    elseif c.cmd == "lavafarm" then        -- lavafarm Crafty n=<units built> how=place|use
+    elseif c.cmd == "lavafarm" then        -- lavafarm crafter1 n=<units built> how=place|use
       plots.lavafarm = { n = tonumber(c.n) or 0,
         how = (c.how == "use" or c.how == "hut") and c.how or "place" }
       if type(c.row) == "string" then        -- row=x,y,z,n[,face]: the dripstone row's stand and length
@@ -4318,7 +4329,7 @@ while true do
       saveTable(K.PLOTS_FILE, plots)
       print("Lava farm: " .. plots.lavafarm.n .. " cauldrons (" .. plots.lavafarm.how .. ").")
       return true
-    elseif c.cmd == "haul" then            -- haul Crafty on=1|0 [x= y= z= face=]: carry bulk stock to the store
+    elseif c.cmd == "haul" then            -- haul crafter1 on=1|0 [x= y= z= face=]: carry bulk stock to the store
       plots.haul = plots.haul or {}
       if c.on ~= nil then plots.haul.on = (c.on == "1" or c.on == 1 or c.on == true) end
       if type(c.skip) == "string" then
@@ -4328,25 +4339,25 @@ while true do
       saveTable(K.PLOTS_FILE, plots)
       print("Hauling to the store: " .. (plots.haul.on and "on" or "off") .. ".")
       return true
-    elseif c.cmd == "make" and c.item then     -- make Crafty item=<id> n=<count>: craft into stock
+    elseif c.cmd == "make" and c.item then     -- make crafter1 item=<id> n=<count>: craft into stock
       pendingMake = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
       return true
     elseif c.cmd == "rebase" then          -- (for the drones: the factory knows where it is)
       return true
-    elseif c.cmd == "probe" then           -- probe Crafty [name=<machine>]: can the store push into a machine?
+    elseif c.cmd == "probe" then           -- probe crafter1 [name=<machine>]: can the store push into a machine?
       local ok, res = pcall(K.probe, c.name)
       plots.probe = ok and res or ("probe failed: " .. tostring(res))
       saveTable(K.PLOTS_FILE, plots)
       print(plots.probe)
       report(lastState)
       return true
-    elseif c.cmd == "stores" then          -- stores Crafty skip=a,b*: inventories on the cable that are not storage
+    elseif c.cmd == "stores" then          -- stores crafter1 skip=a,b*: inventories on the cable that are not storage
       plots.stores = { skip = {} }
       for name in tostring(c.skip or ""):gmatch("[^,]+") do table.insert(plots.stores.skip, name) end
       saveTable(K.PLOTS_FILE, plots)
       print("Not storage: " .. (#plots.stores.skip > 0 and table.concat(plots.stores.skip, ", ") or "nothing named"))
       return true
-    elseif c.cmd == "assist" then          -- assist Counter on=1|0 (be the crafting assistant) / assist Crafty on=0|1
+    elseif c.cmd == "assist" then          -- assist crafter2 on=1|0 (be the crafting assistant) / assist crafter1 on=0|1
       local on = not (c.on == 0 or c.on == "0" or c.on == false or c.on == "false" or c.on == "off")
       if K.COUNTER then
         if on then
@@ -4355,7 +4366,7 @@ while true do
           h.close()
         elseif fs.exists(K.ASSIST_FILE) then fs.delete(K.ASSIST_FILE) end
         K.ASSIST = on
-        print(on and "Crafting assistant to Crafty (no pad of my own)." or "Not crafting for Crafty.")
+        print(on and "Crafting assistant to crafter1 (no pad of my own)." or "Not crafting for crafter1.")
       else
         plots.assist = (not on) and false or nil
         saveTable(K.PLOTS_FILE, plots)
@@ -4363,7 +4374,7 @@ while true do
       end
       report(lastState)
       return true
-    elseif c.cmd == "rescuer" then         -- rescuer Crafty name=<helper> [only=1] [on=0|1]
+    elseif c.cmd == "rescuer" then         -- rescuer crafter1 name=<helper> [only=1] [on=0|1]
       plots.rescue = plots.rescue or {}
       if type(c.name) == "string" then plots.rescue.name = c.name ~= "" and c.name or nil end
       if c.only ~= nil then plots.rescue.only = (c.only == 1 or c.only == "1" or c.only == true) or nil end
@@ -4372,15 +4383,15 @@ while true do
       print(("Rescues: %s; rescuer: %s%s."):format(plots.rescue.on == false and "off" or "on",
         tostring(plots.rescue.name or "nearest idle mate"), plots.rescue.only and " only" or ""))
       return true
-    elseif c.cmd == "rescue" and type(c.who) == "string" then   -- rescue Crafty who=<drone> [problem=fuel|reboot|trapped]
+    elseif c.cmd == "rescue" and type(c.who) == "string" then   -- rescue crafter1 who=<drone> [problem=fuel|reboot|trapped]
       K.rescueAsk = { who = c.who, problem = c.problem }
       print("Rescue asked for: " .. c.who .. ".")
       return true
-    elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
+    elseif c.cmd == "wood" then            -- wood crafter1 first=<wood>: no need to stop work
       setFirstWood(c.first)
       return true
     elseif c.cmd == "draft" and tonumber(c.turtle) then   -- (not id=: every order has its own id)
-      -- draft Crafty id=<n>: an existing turtle (a parked miner) becomes a
+      -- draft crafter1 id=<n>: an existing turtle (a parked miner) becomes a
       -- builder's mate; it is told so the next time it asks for a job
       local id = math.floor(tonumber(c.turtle))
       plots.helpers = plots.helpers or {}

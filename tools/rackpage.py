@@ -454,7 +454,7 @@ def write(G):
 RACK1 = {
     "out": "rack-build.html", "title": "Rack 1 loading bays: build guide", "h1": "Rack 1: loading bays",
     "lede": "What you build by hand so loads reach a docked drone over the cable instead of on a launch pad. The store "
-            "(and Crafty, once it is on the same cable) pushes each load and its fuel straight into the drone in its "
+            "(and crafter1, once it is on the same cable) pushes each load and its fuel straight into the drone in its "
             "home, and takes hand-ins back the same way. "
             "Nothing sticks out: every modem is a full block that is part of the shelf or the wall, and every cable is "
             "under the floor or inside the wall.",
@@ -471,9 +471,9 @@ RACK1 = {
     "clickbottom": "<p class=\"cap\">If the server ever adds the <code>computercraft:turtle_can_use</code> tag for modems, a "
                    "drone holding a stick can do these clicks too (docs/cc-lessons.md, 3). It is optional: by hand is the "
                    "plan.</p><p>Then the computer in the wall (world " + " ".join(map(str, R.W(*R.RACK_PC)))
-                   + "): <code>label set RackBoard</code> and the installer. Until Crafty moves in, the store (Sortnado) "
+                   + "): <code>label set RackBoard</code> and the installer. Until crafter1 moves in, the store (Sortnado) "
                    "fills a docked helper's bay with what it has and tells the rack's panels who is home; the rest of a "
-                   "load still comes from Crafty's pad.</p>",
+                   "load still comes from crafter1's pad.</p>",
     "serveshead": "Serves homes", "clicks": [(c, serves_homes(c)) for c in R.BAYS1],
 }
 
@@ -510,7 +510,7 @@ RACKS23_STEPS = [
 RACKS23 = {
     "out": "racks23-build.html", "title": "Racks 2 and 3 loading bays: build guide", "h1": "Racks 2 and 3",
     "lede": "Homes for every other drone, built the same way as rack 1: rack 2 (x 35-42, 16 homes) for the 11 chunk "
-            "loaders, with 5 spare for more helpers; rack 3 (x 28-31, 8 homes) for the miners and BlockParty. Each "
+            "loaders, with 5 spare for more helpers; rack 3 (x 28-31, 8 homes) for the miners and mapper1. Each "
             "middle shelf is a row of full-block wired modems; a monitor strip behind it keeps them switched on and "
             "shows who is home. Cable only under the lane floor and inside the posts.",
     "region": (18, 44, -1, 5, 1, 5), "near": (26, 44), "steps": RACKS23_STEPS, "isoh": "Racks 2 and 3 in 3D",
@@ -521,7 +521,7 @@ RACKS23 = {
     "clicktop": "<p>Only the shelf modems are clicked, once each, after the strip behind them is up: 8 in rack 2 and 4 in "
                 "rack 3. Each serves the home under it and the home on it. Connectors are never clicked.</p>",
     "clickbottom": "<p class=\"cap\">Homes: rack 2 low row x 35-42 (homes 0-7), high row (8-15), loaders by name "
-                   "(the factory's loader names, then Ghastly); rack 3 the miners by id, BlockParty in the last home.</p>",
+                   "(the factory's loader names, then Ghastly); rack 3 the miners by id, mapper1 in the last home.</p>",
     "serveshead": "Serves homes", "clicks": [(c, serves_homes(c)) for c in R.BAYS2 + R.BAYS3],
 }
 
@@ -534,7 +534,7 @@ FOUNDRY_STEPS = [
     ("The chamber first, then the test",
      "Swap the plinth block under the Enrichment Chamber for a full-block wired modem (lift the operator lane's tile "
      "in front of it to reach it) and right-click it: chat says the chamber was connected. Then send the order "
-     "<code>probe Crafty</code>. Crafty pushes one item into the chamber over the cable and pulls it back, and says "
+     "<code>probe crafter1</code>. crafter1 pushes one item into the chamber over the cable and pulls it back, and says "
      "which worked (in its status and log). Yes: carry on. No: stop here and use the fallback below.",
      [("bay", [R.F_MACHINES["chamber"]])]),
     ("The smelter and the infuser",
@@ -547,7 +547,7 @@ FOUNDRY_STEPS = [
      [("conn", [R.F_PC_MODEM]), ("pc", [R.F_PC])]),
     ("The piped line's inbox and outbox (fallback, and later)",
      "Under the line's inbox (z 9) and outbox (z 19): a wired modem each. Build the inbox and outbox as barrels, not "
-     "chests, so Crafty never takes them for storage.",
+     "chests, so crafter1 never takes them for storage.",
      [("bay", list(R.F_LINE.values()))]),
     ("Switch on",
      "Right-click the four machine modems and the two under the line's barrels once each (the chamber's is already "
@@ -565,11 +565,11 @@ FOUNDRY = {
     "isocap": "Seen from the south-west: the plinth with its machines on the right, the piped line on the left.",
     "layercap": "x 33-44, z 1-20: the lane at the top, the piped line (x 36) and the plinth (x 39-42) below it.",
     "clicktop": "<p>Each machine modem is clicked once; the machine on it keeps it switched on. The modem under the "
-                "works computer is never clicked. Do the chamber's first and send <code>probe Crafty</code>: it tells "
+                "works computer is never clicked. Do the chamber's first and send <code>probe crafter1</code>: it tells "
                 "whether the store can push into a Mekanism machine by name (docs/cc-lessons.md: it may not).</p>",
     "clickbottom": "<p><b>If the probe says no</b>, the machines are fed the way the piped line is: the inbox barrel "
                    "(on the cable) is emptied by a logistical sorter into the first machine, the machines push their "
-                   "results on (side config, ejecting) and the last one into the outbox barrel (on the cable). Crafty "
+                   "results on (side config, ejecting) and the last one into the outbox barrel (on the cable). crafter1 "
                    "fills the inbox and empties the outbox. Only steps 1 and 5 are needed then.</p>",
     "serveshead": "Touches",
     "clicks": [(R.F_MACHINES["chamber"], "the Enrichment Chamber above it (click first, then probe)"),

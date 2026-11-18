@@ -84,9 +84,9 @@ code { font-family: var(--mono); font-size: 0.92em; }
     <p>The storage room is the middle room of the ground floor, with the smelting hall to the west and the launch bay to the east. Doorways in the middle of both long walls stay clear. The drone lane runs along the north end behind its screen, so no drone ever comes into the room, and the ladder to the upper floor is in the south-east corner.</p>
     <ul class="points">
       <li><b>Double chests down both long walls, three high.</b> Each colour is one section, so everything of a kind is in one place and easy to find by eye too.</li>
-      <li><b>Wired modems hidden behind the chests,</b> one per double chest, in a strip against each wall. Cable under the floor joins both walls, the desk and Crafty. Every chest is on the network, but you only ever see the chests.</li>
+      <li><b>Wired modems hidden behind the chests,</b> one per double chest, in a strip against each wall. Cable under the floor joins both walls, the desk and crafter1. Every chest is on the network, but you only ever see the chests.</li>
       <li><b>The front desk at the south end:</b> an In chest, an Out chest, and the sorting computer (Sortnado) between them, with a 5 × 3 touch screen on the wall above.</li>
-      <li>The same network joins Crafty's. The factory and BlockParty take from, and put into, these chests through the same sorting rules, so nothing gets scattered.</li>
+      <li>The same network joins crafter1's. The factory and mapper1 take from, and put into, these chests through the same sorting rules, so nothing gets scattered.</li>
     </ul>
     <ul class="legend" aria-label="Sections">
       {{LEGEND}}
@@ -110,7 +110,7 @@ code { font-family: var(--mono); font-size: 0.92em; }
       <li>Drop anything in the <b>In chest</b>. Miners' loads and the factory's leftovers arrive the same way.</li>
       <li>Sortnado looks at each stack, works out its section (from the item's name and tags) and tops up a chest that already holds that item. Failing that, it uses the first chest in that section with room.</li>
       <li>A full section spills into <b>Overflow</b>, and the screen says which section wants more room. Anything it has never seen before also goes to Overflow until it's given a home.</li>
-      <li>Big piles are packed into storage blocks when space gets tight: redstone, raw ores, lapis, compressed cobble and dirt. Crafty already does this, and unpacks them again when it needs the items.</li>
+      <li>Big piles are packed into storage blocks when space gets tight: redstone, raw ores, lapis, compressed cobble and dirt. crafter1 already does this, and unpacks them again when it needs the items.</li>
     </ol>
     <h3>Getting things out</h3>
     <ul class="points">
@@ -134,11 +134,11 @@ code { font-family: var(--mono); font-size: 0.92em; }
     <ol class="steps">
       <li><b>The index.</b> On start-up it reads every chest once with <code>list()</code> and builds a table: for each item, which chest and slot holds it and how many. It also counts free slots per chest.</li>
       <li><b>Sorting.</b> Once a second it checks the In chest. Each stack is matched to a section by name (plus item tags, looked up once per new item and cached). It goes to a part-filled stack of the same item in that section first, then to an empty slot there, then to Overflow. The index is updated as it goes.</li>
-      <li><b>Requests.</b> A tap on the screen, <code>$get</code> in chat (through the Chat Box), or a rednet message from Crafty or BlockParty. The index says where the item is, and <code>pushItems</code> sends it to the Out chest or the drone's loading chest.</li>
+      <li><b>Requests.</b> A tap on the screen, <code>$get</code> in chat (through the Chat Box), or a rednet message from crafter1 or mapper1. The index says where the item is, and <code>pushItems</code> sends it to the Out chest or the drone's loading chest.</li>
       <li><b>Keeping honest.</b> Everything normally goes through Sortnado, so the index stays right. A slow re-check of a few chests every minute catches anything a person put in by hand.</li>
     </ol>
     <p><b>Speed.</b> Each move takes one game tick, and Sortnado sends several at once. A full In chest is put away in about two seconds, and a request arrives in about one.</p>
-    <p><b>Crafty</b> stops scanning every chest itself. It asks Sortnado for what a recipe needs and hands its products back through the same rules, so the store and the factory never disagree.</p>
+    <p><b>crafter1</b> stops scanning every chest itself. It asks Sortnado for what a recipe needs and hands its products back through the same rules, so the store and the factory never disagree.</p>
   </div>
   <div>
     <h3>The core of it</h3>
@@ -214,9 +214,9 @@ end</code></pre>
   <div>
     <h3>Order</h3>
     <ol class="steps">
-      <li>Fit-out: BlockParty places the modem strips, cable runs and front desk, then the chests a section at a time as logs allow.</li>
+      <li>Fit-out: mapper1 places the modem strips, cable runs and front desk, then the chests a section at a time as logs allow.</li>
       <li>Sortnado's program: sorting, the index, the screen, <code>$get</code>.</li>
-      <li>Crafty switches to the same rules, so the factory and the store agree.</li>
+      <li>crafter1 switches to the same rules, so the factory and the store agree.</li>
       <li>The chests by the hut are emptied through the In chest, then join the walls.</li>
     </ol>
   </div>
@@ -229,7 +229,7 @@ end</code></pre>
   <li class="q">Front desk at the south end, or right by a doorway?</li>
   <li class="q">Is Tom's Simple Storage in the pack? I can't confirm it from here. If it is, its Inventory Connector would join every chest into one big inventory and replace most of the modems.</li>
 </ul>
-<div class="callout">One catch: a wired modem only connects the chest beside it once it's been right-clicked (its ring turns red). I'll try having BlockParty do it as it builds; if a turtle can't, it's a quick walk along each wall for one of you.</div>
+<div class="callout">One catch: a wired modem only connects the chest beside it once it's been right-clicked (its ring turns red). I'll try having mapper1 do it as it builds; if a turtle can't, it's a quick walk along each wall for one of you.</div>
 </main>
 </body>
 </html>

@@ -6,7 +6,7 @@
     tools/mek.py alloy 4             infused alloy (copper + redstone)
     tools/mek.py steel 10 circuit 2  several in one run
 
-Prints the ops for a helper's lab bench:  tools/order.py lab DropIt "ops=$(tools/mek.py steel 10)"
+Prints the ops for a helper's lab bench:  tools/order.py lab foundry1 "ops=$(tools/mek.py steel 10)"
 
 The infuser stands at -4452 74 1533 facing south. From the turtle's side:
 the west face takes the infusion item, the top takes the item to work on,

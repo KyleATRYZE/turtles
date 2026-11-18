@@ -152,7 +152,8 @@ if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "b
     role = "works"                        -- the foundry on the cable (docs/foundry-build.html)
   elseif not turtle then
     role = "controller"
-  elseif (os.getComputerLabel() or ""):match("^factory") or (os.getComputerLabel() or ""):lower():match("^counter") then
+  elseif (os.getComputerLabel() or ""):match("^factory") or (os.getComputerLabel() or ""):lower():match("^counter")
+    or (os.getComputerLabel() or ""):lower():match("^crafter%d") then
     role = "factory"
   elseif (os.getComputerLabel() or ""):lower():match("^loader") then
     role = "loader"
