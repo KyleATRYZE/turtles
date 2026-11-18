@@ -1,14 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794964829,
-      "issued": 1794964829000,
-      "cmd": "survey",
-      "target": "BlockParty",
-      "x": -4462,
-      "z": 1524,
-      "size": 32,
-      "name": "oldbase"
+      "id": 1794965629,
+      "issued": 1794965629000,
+      "cmd": "reboot",
+      "target": "all"
     }
   ]
 }
