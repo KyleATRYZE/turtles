@@ -1,35 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795023169,
-      "issued": 1795023169000,
-      "cmd": "lavafarm",
-      "target": "crafter1",
-      "n": 7,
-      "how": "hut",
-      "row": "-4453,76,1538,11,2",
-      "skip": "builder1,builder2,builder3,builder4,builder5,builder6,foundry1,survey1,rescue1"
-    },
-    {
-      "id": 1795023170,
-      "issued": 1795023169000,
-      "cmd": "haul",
-      "target": "crafter1",
-      "on": 0
-    },
-    {
-      "id": 1795023171,
-      "issued": 1795023169000,
-      "cmd": "rescuer",
-      "target": "crafter1",
-      "name": "rescue1"
-    },
-    {
-      "id": 1795023172,
-      "issued": 1795023169000,
-      "cmd": "assist",
-      "target": "crafter2",
-      "on": 1
+      "id": 1795023212,
+      "issued": 1795023212000,
+      "cmd": "lab",
+      "target": "builder1",
+      "clear": 1,
+      "ops": "fetch|minecraft:cobblestone=16;inv"
     }
   ]
 }
