@@ -29,7 +29,7 @@ M.PROTOCOL = "swarm_job" -- (the factory's own channel)
 
 -- the building the line stands in (its corner in the world, and the plans
 -- the helper finds its way by)
-M.SITE = { ox = -4448, oy = 71, oz = 1518, shell = "factory_asfit2", plan = "factory_foundryfloor" }
+M.SITE = { ox = -4448, oy = 71, oz = 1518, shell = "factory_asfit3", plan = "factory_foundryfloor" }
 
 -- the first infuser, on the bench outside: stand here, facing this way, to
 -- take it down (it stands at -4452 74 1533)
@@ -46,24 +46,29 @@ M.BENCH = { x = -4453, y = 74, z = 1533, face = 0, item = "mekanism:metallurgic_
 -- gave 12 ingots): both facing west, redstone in by the front (the lane),
 -- ore in by the chamber's top, ingots out by the smelter's north side.
 M.ORDER = { "chamber", "smelter", "infuser" }
+-- Foundry v2 (18 Nov evening): the store cannot push into a Mekanism machine
+-- over the cable (probe: its own peripheral hides the inventory), so the
+-- operator carries again, to the new places. The ore line on the east wall
+-- faces WEST (lane x 41): the chamber pushes its dust south into the smelter,
+-- results out of the smelter's south face. The alloy cell faces EAST (lane
+-- x 40) and is powered from its cable row (the heat generator at 38 1 16):
+-- the first infuser takes the infusion items by its north face, results out
+-- of its front; the bank smelters in at the top, out at the front.
+M.LAYOUT = "v2"
 M.MACHINES = {
-  chamber = { item = "mekanism:enrichment_chamber", x = 41, y = 1, z = 12, lane = "west",
+  chamber = { item = "mekanism:enrichment_chamber", x = 42, y = 1, z = 12, lane = "west",
+    use = { energy = "west", input = "top", output = "south" }, eject = true, perOp = 1.1 },
+  smelter = { item = "mekanism:energized_smelter", x = 42, y = 1, z = 13, lane = "west",
     use = { energy = "west", input = "top", output = "south" },
-    also = { north = "OUTPUT" }, eject = true, perOp = 1.1 },
-  smelter = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 11, lane = "west",
-    use = { energy = "west", input = "top", output = "north" },
-    also = { south = "INPUT" }, perOp = 1.1 },
-  infuser = { item = "mekanism:metallurgic_infuser", x = 41, y = 1, z = 15, lane = "west",
-    use = { energy = "west", input = "top", extra = "south", output = "north" }, perOp = 1.1 },
-  -- the smelter bank (job=bank): more Energized Smelters north of the first,
-  -- for big batches of anything a furnace cooks (job smelt=...). They run on
-  -- the cable only: in at the top, out at the front (the lane).
-  bank1 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 9, lane = "west", bank = true,
-    use = { input = "top", output = "west" }, perOp = 0 },
-  bank2 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 8, lane = "west", bank = true,
-    use = { input = "top", output = "west" }, perOp = 0 },
-  bank3 = { item = "mekanism:energized_smelter", x = 41, y = 1, z = 7, lane = "west", bank = true,
-    use = { input = "top", output = "west" }, perOp = 0 },
+    also = { north = "INPUT" }, perOp = 1.1 },
+  infuser = { item = "mekanism:metallurgic_infuser", x = 39, y = 1, z = 17, lane = "east",
+    use = { input = "top", extra = "north", output = "east" }, perOp = 0 },
+  bank1 = { item = "mekanism:energized_smelter", x = 39, y = 1, z = 19, lane = "east", bank = true,
+    use = { input = "top", output = "east" }, perOp = 0 },
+  bank2 = { item = "mekanism:energized_smelter", x = 39, y = 1, z = 20, lane = "east", bank = true,
+    use = { input = "top", output = "east" }, perOp = 0 },
+  bank3 = { item = "mekanism:energized_smelter", x = 39, y = 1, z = 21, lane = "east", bank = true,
+    use = { input = "top", output = "east" }, perOp = 0 },
 }
 M.BANK = { "bank1", "bank2", "bank3" }
 
@@ -134,6 +139,9 @@ function M.load()
   end
   if type(s) ~= "table" then s = {} end
   s.queue, s.m, s.notes = s.queue or {}, s.m or {}, s.notes or {}
+  if s.layout ~= M.LAYOUT then          -- the machines have moved: found and set up again
+    s.m, s.layout, s.bench, s.ready = {}, M.LAYOUT, true, nil
+  end
   return s
 end
 
