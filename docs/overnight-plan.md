@@ -130,3 +130,14 @@ Rescan done 19:30 (13 scans). Plan vs world (`python3 /tmp/plancheck.py`-style c
 0. **Most important:** join rack 1's cable to the storage controllers' cable (one piece). This unlocks loading at the rack, so no more pad queue
 0b. survey1 is out of fuel under the roof at -4441 75 1520: pick it up and place it in its rack home (or give it 2 lava buckets) if the rescue drone hasn't got it
 4. Optional server config: `computercraft:turtle_can_use` tag for modems/cable; Advanced Peripherals `chunkyTurtleRadius=1`
+
+## AE2 build log (18 Nov, by command; plan: docs/ae2-factory.html, tools/ae2plan.py)
+Rule (Kyle): place by command only what we could feasibly make. Nothing needing nether stars (no Nitro tier).
+- Power bay BUILT: 7 niotic thermo gens (42 1 17-23) on lava (42 0 17-23), 300 FE/t each measured (basic 40, nitro 1750). Tank NBT: `{tank:{amount:4000,id:"minecraft:water"}}` (lasts ~2 h at nitro rate; refill by command until the sink feed is in). Universal cable chase (43 1 17-23) capped with slabs; power to the controller along y -2, z 23.
+- Core BUILT: controller line (31 0 19-23) + tower (31 1-4 21), online. Vault: 4 ex_drives (29-32 1 17) + 4 dense cells above; cells in drive 1 (`inv:{itemN:{id,count}}`). Terminals at desk 33 1 18-20 (cable_bus NBT: `{cable:{id:..},east:{id:"ae2:crafting_terminal"}}`).
+- Trunks: N blue (31 -1 15-19, bridge branch 32-34 -1 15), W green (31..33 -1 20; 33 0 18-20), A orange (31-34 -1 21, dips to y -2 under the CC spine at x 35, 36-38 -1 21, then 38 0 17-22).
+- Storage link BUILT: storage bus + ExtendedAE wireless connector at each storeroom controller (cable at 10 5 14 and 17 5 14, connectors at 10 5 13 / 17 5 13), paired by NBT `freq` (4242, 4243) with connectors on the vault (30 3 17, 31 3 17). Remote ends show powered.
+- ME Bridge at 34 0 15 beside Works (Works is still switched off; its code must stop announcing foundry_ready before it is turned on).
+- Induction card: provider placed behind infuser C (38 1 17); the card can't be set by NBT (no `upgrades` key). Card dropped at 37 1 17 for Kyle to insert and test.
+- To check in game (Kyle): crafting terminal shows the barrels; provider has an upgrade slot for the card.
+- Removed and not yet replaced: Nether pump + entangloporter (-623 32/33 373 in the Nether, 96x96 lava sheet; chunk no longer force-loaded).
