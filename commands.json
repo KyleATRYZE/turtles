@@ -1,20 +1,10 @@
 {
   "commands": [
     {
-      "id": 1794968506,
-      "issued": 1794968506000,
-      "cmd": "lab",
-      "target": "builder6",
-      "clear": 1,
-      "ops": "fetch|minecraft:lava_bucket=2;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|7|3|2;look;dropUp|minecraft:lava_bucket|2;leave;home"
-    },
-    {
-      "id": 1794968507,
-      "issued": 1794968506000,
-      "cmd": "lab",
-      "target": "builder1",
-      "clear": 1,
-      "ops": "fetch|minecraft:cobblestone=8;inv;home"
+      "id": 1794968699,
+      "issued": 1794968699000,
+      "cmd": "reboot",
+      "target": "builder1"
     }
   ]
 }
