@@ -1,19 +1,14 @@
 {
   "commands": [
     {
-      "id": 1794964709,
-      "issued": 1794964709000,
-      "cmd": "rescuer",
-      "target": "Crafty",
-      "name": "Dispensable"
-    },
-    {
-      "id": 1794964710,
-      "issued": 1794964709000,
-      "cmd": "rescue",
-      "target": "Crafty",
-      "who": "Charcool",
-      "problem": "fuel"
+      "id": 1794964829,
+      "issued": 1794964829000,
+      "cmd": "survey",
+      "target": "BlockParty",
+      "x": -4462,
+      "z": 1524,
+      "size": 32,
+      "name": "oldbase"
     }
   ]
 }
