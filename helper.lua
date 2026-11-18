@@ -3137,7 +3137,11 @@ local function work()
     turtle.select(1)
   end
   -- (on the drone lane, in a home or on a track: in its place, not lost)
-  local laneOk = LN.inside() and (pos.x ~= base.pad.x or pos.z ~= base.pad.z)
+  -- (in the lane, or docked in any of the rack's homes, upper rows too: not
+  -- "lost in the factory", whatever roof is overhead)
+  local L = LN.on() and base.lane
+  local docked = L and pos.z == L.rackZ and pos.x >= L.west and pos.x <= L.east
+  local laneOk = (LN.inside() or docked) and (pos.x ~= base.pad.x or pos.z ~= base.pad.z)
   -- inside the factory: a fit-out in hand carries on from where we stand (it
   -- knows the building); anything else walks out by the door. Never the sky.
   local inside, shellMap = false, nil
