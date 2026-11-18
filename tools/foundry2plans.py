@@ -179,6 +179,18 @@ def budding():
     return p
 
 
+def storelink():
+    """Rack 1's network onto the store's (they were two networks, so the
+    store could not load drones in their rack homes). Rack 1's link has a
+    modem in the storage room's east wall at 18 6 3; the store's network has
+    a modem at 17 5 16. One run of cable along the top of the room's east
+    wall, x 17 y 6 z 3..16, placed from below (found by survey1's scans)."""
+    p = Plan("storelink", "builder1", 1, "rack 1's cable joined to the store's network")
+    for z in range(3, 17):
+        p.P((17, 6, z), CC, 1)
+    return p
+
+
 def clear():
     """builder3's piped line (the parts that do not move) and the bench's leftovers.
     A chest or barrel with things in it is left (and said): empty it first."""
@@ -305,7 +317,7 @@ def close():
     return p
 
 
-JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, budding, clear, power, alloy, ore, ae2, close))
+JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, budding, storelink, clear, power, alloy, ore, ae2, close))
 
 
 def check():
