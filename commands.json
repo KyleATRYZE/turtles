@@ -1,8 +1,8 @@
 {
   "commands": [
     {
-      "id": 1795022957,
-      "issued": 1795022957000,
+      "id": 1795023049,
+      "issued": 1795023049000,
       "cmd": "reboot",
       "target": "crafter1"
     }
