@@ -187,7 +187,9 @@ def storelink():
     wall, x 17 y 6 z 3..16, placed from below (found by survey1's scans)."""
     p = Plan("storelink", "builder1", 1, "rack 1's cable joined to the store's network")
     for z in range(3, 17):
-        p.P((17, 6, z), CC, 1)
+        # (the ends from the room side: under them are the wall's bricks and
+        # the controller, so they could not be reached from below)
+        p.P((17, 6, z), CC, 4 if z in (3, 15, 16) else 1)
     return p
 
 
