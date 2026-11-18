@@ -166,6 +166,19 @@ def certus():
     return p
 
 
+def budding():
+    """The certus farm's budding blocks, by drone (Kyle: placing does not
+    degrade them): the 9 flawed budding certus against the pillars, bottom
+    tier first, each placed from above. Never dug again: harvests use the
+    pick verb, which takes only full-grown clusters."""
+    import certusfarm as C
+    F = C.Farm()
+    p = Plan("budding", "builder4", 1, "the 9 flawed budding certus on the farm's pillars")
+    for _, i, t, sd in F.filled():                       # (bottom tier first)
+        p.P(F.slot_cell(i, t, sd), "ae2:flawed_budding_quartz", 0)
+    return p
+
+
 def clear():
     """builder3's piped line (the parts that do not move) and the bench's leftovers.
     A chest or barrel with things in it is left (and said): empty it first."""
@@ -292,7 +305,7 @@ def close():
     return p
 
 
-JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, clear, power, alloy, ore, ae2, close))
+JOBS = OrderedDict((f.__name__, f) for f in (link, lava, certus, budding, clear, power, alloy, ore, ae2, close))
 
 
 def check():
