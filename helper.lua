@@ -1807,6 +1807,7 @@ end
 --   equip|left/right|item       (swap the tool on that side for an item on board)
 --   site|ox|oy|oz|shell|plan   walk|x|y|z   leave   (inside a building, by its plan)
 --   handin|keep,keep            (everything else on board back to the factory)
+--   pick|name,name  pickUp  pickDown  (dig only a block of these names; never a budding one)
 -- Only machines, chests and computers are ever dug. Results are kept in
 -- st.labOut and sent with every status report.
 local LAB_DIG = { "mekanism", "computercraft:", "advancedperipherals:", "sophisticatedstorage:",
@@ -1970,6 +1971,20 @@ local function runLab()
             local seen, data = turtle["inspect" .. sfx]()
             if seen and data.name == a[2] then res, stop = "already there", false end
           end
+        end
+      elseif base == "pick" and SFX[sfx] then
+        -- pick[Up/Down]|name,name : dig the block that way only if it is one
+        -- of these (a full-grown certus cluster: tools/certusfarm.py), else
+        -- leave it and go on. A budding block is never dug, whatever is asked.
+        local seen, data = turtle["inspect" .. sfx]()
+        local name, want = seen and data.name or "nothing", false
+        for w in (a[2] or ""):gmatch("[^,]+") do if name == w then want = true end end
+        if want and not name:find("budding", 1, true) then
+          local got = turtle["dig" .. sfx]()
+          if got then lab.picked = (lab.picked or 0) + 1 end
+          res = name .. (got and (" picked (" .. lab.picked .. " so far)") or " would not come out")
+        else
+          res = "left: " .. name
         end
       elseif base == "dig" and SFX[sfx] then
         local seen, data = turtle["inspect" .. sfx]()
