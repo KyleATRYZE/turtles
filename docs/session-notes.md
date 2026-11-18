@@ -1,5 +1,7 @@
 # Where things stand (18 Nov, 00:20)
 
+**Master to-do list: docs/overnight-plan.md (read it first).**
+
 Working notes so the next session can pick up. Newest first.
 
 ## Decided with Kyle
