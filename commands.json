@@ -1,10 +1,40 @@
 {
   "commands": [
     {
-      "id": 1794961715,
-      "issued": 1794961715000,
-      "cmd": "reboot",
-      "target": "Dispensable"
+      "id": 1794961827,
+      "issued": 1794961827000,
+      "cmd": "fit",
+      "target": "Dusty",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_f2_link",
+      "xmin": 35
+    },
+    {
+      "id": 1794961828,
+      "issued": 1794961827000,
+      "cmd": "fit",
+      "target": "OnRepeat",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_f2_lava",
+      "xmax": 35
+    },
+    {
+      "id": 1794961829,
+      "issued": 1794961827000,
+      "cmd": "fit",
+      "target": "Dispensable",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_f2_clear",
+      "xmin": 36
     }
   ]
 }
