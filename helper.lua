@@ -80,7 +80,7 @@ local function report(state)
     local d = turtle.getItemDetail(s)
     local level = turtle.getFuelLevel()
     if d and d.name == "minecraft:lava_bucket" and type(level) == "number" and level < 2000
-      and not (st and (st.feed or st.lab)) then
+      and not (st and (st.feed or st.lab or st.rescue)) then
       turtle.select(s)
       turtle.refuel(1)
       turtle.select(1)
@@ -2596,6 +2596,274 @@ local function runFeed()
   riseTo(top)
 end
 
+-- rescue: Crafty sends me to a drone that is stuck (factory.lua, "rescue
+-- drones"). I get next to it (from above; or, under the factory's roof,
+-- through the building by its plan) and check by its id that it is the one.
+-- Then, by st.rescue.how: fuel - drop fuel into it and reboot it (it drinks
+-- on the way up); reboot - reboot it (that also turns it on); trapped - dig
+-- it (it comes out as an item that keeps its id, label, fuel and files, and
+-- what it carried comes with it), carry it into the open air beside my
+-- hover spot, place it, give back what it carried and turn it on. Nothing
+-- but that one turtle is ever dug. What I found and did goes back to Crafty
+-- (rescue_done), with the id of any other turtle sitting on top of it.
+local function runRescue()
+  local r = st.rescue
+  local notes, blocker = {}, nil
+  local function note(text)
+    notes[#notes + 1] = tostring(text)
+    print("Rescue: " .. tostring(text))
+  end
+  local function finish(did, result)
+    note(result)
+    rednet.broadcast({ type = "rescue_done", n = r.n, vid = r.vid, who = r.who, did = did, result = result,
+      notes = notes, blocker = blocker }, JOB_PROTOCOL)
+    st.rescue = nil
+    save()
+  end
+  local saved, savedMap, inside, inBase = st.job, fitMap, nil, nil
+  local ok, err = pcall(function()
+    print(("Rescuing %s at %d %d %d (%s)."):format(tostring(r.who), r.x, r.y, r.z, r.how))
+    report("rescue: " .. r.how .. " " .. tostring(r.who))
+    -- 1. what it takes: fuel to give, or room on board to carry it and its load
+    if r.how == "fuel" then
+      local coal, lava = 0, false
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it and it.name == "minecraft:lava_bucket" then lava = true
+        elseif it and isCoal(it.name) then coal = coal + it.count end
+      end
+      if not lava and coal < 12 then
+        st.feed = { x = r.x, y = r.y, z = r.z }       -- (supplyRun: fuel to carry out, not to burn)
+        save()
+        supplyRun(function() return {} end, "fuel for " .. tostring(r.who), true)
+        st.feed = nil
+        save()
+      end
+    elseif r.how == "trapped" then
+      local free = 0
+      for s = 1, 16 do if turtle.getItemCount(s) == 0 then free = free + 1 end end
+      if free < 8 then
+        st.fdy = { handin = true, keep = { ["minecraft:coal"] = true, ["minecraft:charcoal"] = true } }
+        save()
+        supplyRun(function() return {} end, "room on board to carry a turtle", true)
+        st.fdy = nil
+        save()
+      end
+    end
+    report("rescue: going to " .. tostring(r.who))
+    -- 2. next to it: from above first
+    local side, why
+    local function idAt(s)
+      if peripheral.getType(s) ~= "turtle" then return nil end
+      local okId, id = pcall(peripheral.call, s, "getID")
+      return okId and tonumber(id) or nil
+    end
+    -- straight down its column onto it: what is below when I stop
+    local function downOnto()
+      while pos.y > r.y + 1 and step("d") do end
+      local id = idAt("bottom")
+      if id == r.vid then side, why, blocker = "bottom", nil, nil
+      elseif id and pos.y - 1 > r.y then                  -- (a jammed shaft: one on top of it)
+        blocker = id
+        why = ("turtle %d (%s) is on top of it, at height %d"):format(id,
+          tostring(select(2, pcall(peripheral.call, "bottom", "getLabel"))), pos.y - 1)
+      else
+        local seen, data = turtle.inspectDown()
+        if id then data = { name = "turtle " .. id } end
+        why = pos.y == r.y + 1 and ("it is not there (below me: %s)"):format((seen or id) and data.name or "nothing")
+          or ("from above: stopped at height %d over %s"):format(pos.y, seen and data.name or "nothing")
+      end
+    end
+    local top = math.max(highway(), r.y + 4)
+    riseTo(math.max(pos.y, top))
+    if across(r.x, r.z, top + 12) then downOnto() else why = "could not fly over it" end
+    -- a shaft at the base with a roof over it (a miner's shaft under the
+    -- hut): down the hole over the launch pad, across the base room just
+    -- above the pad, then down its shaft (nothing dug on the way)
+    local pad = base.pad
+    if not side and not blocker and pad and math.abs(r.x - pad.x) <= 4 and math.abs(r.z - pad.z) <= 4
+      and r.y <= pad.y + 1 then
+      note("roofed over: going in by the pad's hole and the base room")
+      riseTo(math.max(pos.y, top))
+      if across(pad.x, pad.z, top + 12) then
+        while pos.y > pad.y + 1 and step("d") do end
+        local ok2 = pos.y == pad.y + 1
+        if ok2 and pos.x ~= r.x then face(r.x > pos.x and 0 or 2) end
+        while ok2 and pos.x ~= r.x do ok2 = step("f") end
+        if ok2 and pos.z ~= r.z then face(r.z > pos.z and 1 or 3) end
+        while ok2 and pos.z ~= r.z do ok2 = step("f") end
+        if ok2 then downOnto()
+        else why = tostring(why) .. ("; through the base room: stopped at %d %d %d"):format(pos.x, pos.y, pos.z) end
+      end
+      inBase = true
+    end
+    -- under the factory's roof: through the building, to a cell beside it
+    if not side and not blocker then
+      local vx, vy, vz = r.x - FACTORY.ox, r.y - FACTORY.oy, r.z - FACTORY.oz
+      local m
+      if vx >= 0 and vx <= 56 and vz >= 0 and vz <= 31 and vy >= 0 and vy <= 31 then
+        local okShell, shell = pcall(loadShell, FACTORY)
+        if okShell then
+          for yy = vy + 1, shell.y2 do if shell.solid[ck(vx, yy, vz)] then m = shell end end
+        end
+      end
+      if m then
+        note("under the factory's roof: going in by the door")
+        st.job = { ox = FACTORY.ox, oy = FACTORY.oy, oz = FACTORY.oz }
+        m.start = FACTORY.door
+        fitMap, inside = m, true
+        m.solid[ck(vx, vy, vz)] = true                -- (its own cell: never a way through)
+        riseTo(math.max(pos.y, highway()))
+        intoBuilding()
+        for _, c in ipairs({ { 0, 1, 0, "bottom" }, { -1, 0, 0, 0 }, { 1, 0, 0, 2 }, { 0, 0, -1, 1 }, { 0, 0, 1, 3 } }) do
+          if goTo(vx + c[1], vy + c[2], vz + c[3]) then
+            if c[4] ~= "bottom" then face(c[4]) end
+            local s = c[4] == "bottom" and "bottom" or "front"
+            if idAt(s) == r.vid then side = s break end
+          end
+        end
+        if not side then why = tostring(why) .. "; no way to it inside the factory" end
+      end
+    end
+    local function away()
+      if inside then outOfBuilding() end
+      if inBase and pad then                       -- (back the way I came: up the shaft, across, up the pad's hole)
+        while pos.y < pad.y + 1 and step("u") do end
+        if pos.x ~= pad.x then face(pad.x > pos.x and 0 or 2) end
+        while pos.x ~= pad.x and step("f") do end
+        if pos.z ~= pad.z then face(pad.z > pos.z and 1 or 3) end
+        while pos.z ~= pad.z and step("f") do end
+        inBase = nil
+      end
+      st.job, fitMap = saved, savedMap
+      inside = nil
+      riseTo(math.max(pos.y, highway()))
+    end
+    if not side then
+      away()
+      finish("nothing", "could not reach it: " .. tostring(why))
+      return
+    end
+    local okL, label = pcall(peripheral.call, side, "getLabel")
+    local okO, wasOn = pcall(peripheral.call, side, "isOn")
+    note(("found %s (id %d) at %d %d %d, %s"):format(okL and tostring(label) or "?", r.vid, r.x, r.y, r.z,
+      okO and (wasOn and "on" or "off") or "?"))
+    local sfx = side == "bottom" and "Down" or ""
+    -- 3. by the problem
+    if r.how == "fuel" then
+      local given = 0
+      for pass = 1, 2 do
+        for s = 1, 16 do
+          local it = turtle.getItemDetail(s)
+          if it and (it.name == "minecraft:lava_bucket" or isCoal(it.name)) then
+            turtle.select(s)
+            turtle["drop" .. sfx]()
+            given = given + it.count - turtle.getItemCount(s)
+          end
+        end
+        if given > 0 then break end
+        for s = 1, 16 do                             -- its inventory is full: take a stack off it
+          if pass == 1 and turtle.getItemCount(s) == 0 then
+            turtle.select(s)
+            turtle["suck" .. sfx]()
+            break
+          end
+        end
+      end
+      turtle.select(1)
+      local okR = pcall(peripheral.call, side, "reboot")
+      sleep(3)
+      local _, on = pcall(peripheral.call, side, "isOn")
+      away()
+      finish(("gave %d fuel, rebooted it"):format(given),
+        given == 0 and "it would not take fuel" or (okR and on) and "fuelled and running" or "fuelled, but it is off")
+    elseif r.how == "trapped" then
+      local before = {}
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it then before[it.name] = (before[it.name] or 0) + it.count end
+      end
+      if idAt(side) ~= r.vid then away() finish("nothing", "it moved off before I dug") return end
+      local dug, whyNot = turtle["dig" .. sfx]()
+      if not dug then
+        away()
+        finish("nothing", "it would not come out: " .. tostring(whyNot))
+        return
+      end
+      local carried, slot = {}, nil
+      for s = 1, 16 do
+        local it = turtle.getItemDetail(s)
+        if it then carried[it.name] = (carried[it.name] or 0) + it.count end
+        if it and it.name:find("^computercraft:turtle") and not slot then slot = s end
+      end
+      for name, n in pairs(carried) do
+        carried[name] = n - (before[name] or 0)
+        if carried[name] <= 0 then carried[name] = nil end
+      end
+      if not slot or not carried[turtle.getItemDetail(slot).name] then
+        away()
+        finish("dug it", "dug, but it is not on board (dropped?)")
+        return
+      end
+      local tname = turtle.getItemDetail(slot).name
+      carried[tname] = carried[tname] - 1
+      if carried[tname] <= 0 then carried[tname] = nil end
+      note("dug out; carrying it into the open")
+      report("rescue: carrying " .. tostring(r.who))
+      away()
+      -- into the open air between two hover spots, and down onto it
+      local hx, hy, hz = hoverAir()
+      local px, pz = hx + 1, hz
+      across(px, pz, math.max(highway(), pos.y) + 12)
+      while pos.y > hy + 1 and step("d") do end
+      local placedAt
+      turtle.select(slot)
+      if pos.x == px and pos.z == pz and not turtle.detectDown() and turtle.placeDown() then placedAt = "bottom"
+      elseif not turtle.detect() and turtle.place() then placedAt = "front"
+      elseif not turtle.detectUp() and turtle.placeUp() then placedAt = "top" end
+      turtle.select(1)
+      if not placedAt then
+        finish("dug it out", "could not set it down: I am carrying it")
+        return
+      end
+      local back = 0
+      local psfx = placedAt == "bottom" and "Down" or placedAt == "top" and "Up" or ""
+      for name, n in pairs(carried) do               -- what it carried, back into it
+        for s = 1, 16 do
+          local it = turtle.getItemDetail(s)
+          if n > 0 and it and it.name == name then
+            turtle.select(s)
+            local c0 = turtle.getItemCount(s)
+            turtle["drop" .. psfx](math.min(n, c0))
+            local went = c0 - turtle.getItemCount(s)
+            n, back = n - went, back + went
+          end
+        end
+      end
+      turtle.select(1)
+      pcall(peripheral.call, placedAt, "turnOn")
+      sleep(3)
+      local _, on = pcall(peripheral.call, placedAt, "isOn")
+      riseTo(math.max(pos.y, highway()))
+      finish(("dug it out, set it down at %d %d %d, gave back %d items, turned it on"):format(px, hy, pz, back),
+        on and "out and running" or "out, but it did not start")
+    else
+      local okR = pcall(peripheral.call, side, okO and wasOn and "reboot" or "turnOn")
+      sleep(3)
+      local _, on = pcall(peripheral.call, side, "isOn")
+      away()
+      finish((okO and wasOn) and "rebooted it" or "turned it on", (okR and on) and "running" or "it did not start")
+    end
+  end)
+  st.job, fitMap = saved, savedMap
+  if not ok then
+    if err == "Terminated" then error(err, 0) end
+    if st.rescue then finish("nothing", "rescuer error: " .. tostring(err)) end
+  end
+  st.feed, st.fdy = nil, nil
+  save()
+end
+
 -- The foundry: this helper works the Mekanism machines (foundry.lua) for as
 -- long as it is told to, between its other jobs. It is handed the helper's
 -- own ways of getting about and of fetching and handing in.
@@ -2746,6 +3014,7 @@ local function work()
     riseTo(pos.y + 3)
     if not findHeading() then error("I am boxed in.", 0) end
   end
+  if st.rescue then runRescue() end
   if st.feed then runFeed() end
   if st.lab then runLab() end
   if st.job and not st.done and not st.paused then
@@ -2862,6 +3131,13 @@ while true do
     -- foundry ore=minecraft:raw_iron n=48 | make=steel n=16 | job=setup |
     -- job=move_infuser | on=0 (see foundry.lua)
     foundry.order(cmd)
+    task = guarded(work)
+  elseif cmd.cmd == "rescue" and tonumber(cmd.vid) and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
+    -- (from Crafty: a drone that is stuck; see runRescue)
+    st.rescue = { who = tostring(cmd.who or cmd.vid), vid = math.floor(tonumber(cmd.vid)),
+      x = math.floor(tonumber(cmd.x)), y = math.floor(tonumber(cmd.y)), z = math.floor(tonumber(cmd.z)),
+      how = (cmd.how == "fuel" or cmd.how == "trapped") and cmd.how or "reboot", n = cmd.n }
+    save()
     task = guarded(work)
   elseif cmd.cmd == "feed" and tonumber(cmd.x) and tonumber(cmd.y) and tonumber(cmd.z) then
     st.feed = { x = math.floor(tonumber(cmd.x)), y = math.floor(tonumber(cmd.y)), z = math.floor(tonumber(cmd.z)) }
