@@ -4157,7 +4157,18 @@ local function tryBuild()
     return true
   end
 
-  -- one builder, before any more miners (it needs no diamonds)
+  -- one builder, before any more miners (it needs no diamonds). One that
+  -- reports in is the builder, whether or not our books still say so (they
+  -- lost it, and crafter1 kept trying to make a second)
+  if not plots.builderId then
+    for _, u in pairs(fleet) do
+      if u.role == "builder" and u.id then
+        plots.builderId = u.id
+        saveTable(K.PLOTS_FILE, plots)
+        break
+      end
+    end
+  end
   if not plots.builderId then
     local pretend = {}
     for name, c in pairs(lastStock) do pretend[name] = c end
