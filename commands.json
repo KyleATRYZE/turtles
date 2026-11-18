@@ -1,10 +1,12 @@
 {
   "commands": [
     {
-      "id": 1794962502,
-      "issued": 1794962502000,
-      "cmd": "reboot",
-      "target": "all"
+      "id": 1794962624,
+      "issued": 1794962624000,
+      "cmd": "make",
+      "target": "Crafty",
+      "item": "advancedperipherals:geo_scanner",
+      "n": 1
     }
   ]
 }
