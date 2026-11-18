@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795044695,
-      "issued": 1795044695000,
+      "id": 1795045583,
+      "issued": 1795045583000,
       "cmd": "lab",
-      "target": "survey1",
+      "target": "builder1",
       "clear": 1,
-      "ops": "fetch|advancedperipherals:geo_scanner=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|7|2|7;survey|8|factory;walk|21|2|7;survey|8|factory;walk|37|2|7;survey|8|factory;walk|7|2|21;survey|8|factory;walk|21|2|21;survey|8|factory;walk|37|2|21;survey|8|factory;walk|10|2|2;survey|8|factory;walk|25|2|2;survey|8|factory;walk|40|2|2;survey|8|factory;walk|7|2|27;survey|8|factory;walk|21|2|27;survey|8|factory;walk|36|2|27;survey|8|factory;leave;goto|-4451|75|1530;survey|8|factory;goto|-4398|75|1526;survey|8|factory;home"
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|34|1|22;face|2;dig;walk|34|2|22;face|2;dig;walk|35|1|13;face|2;dig;walk|36|1|10;digUp|charger;walk|28|1|16;face|1;dig;walk|30|1|25;face|1;dig;walk|29|1|25;face|1;dig;inv;leave;home;handin|"
     }
   ]
 }
