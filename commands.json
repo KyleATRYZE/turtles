@@ -1,12 +1,13 @@
 {
   "commands": [
     {
-      "id": 1795029500,
-      "issued": 1795029500000,
-      "cmd": "lab",
-      "target": "builder5",
-      "clear": 1,
-      "ops": "fetch|ae2:inscriber=2,ae2:charger=1,ae2:engineering_processor_press=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|21;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;dropDown|ae2:engineering_processor_press|1;walk|28|2|22;inspect|down;placeDown|ae2:charger;expect|down|charger;walk|28|2|23;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;inv;leave;home;handin|"
+      "id": 1795029608,
+      "issued": 1795029608000,
+      "cmd": "lavafarm",
+      "target": "crafter1",
+      "n": 16,
+      "how": "wall",
+      "skip": "builder1,builder2,builder3,builder4,builder5,builder6,foundry1,survey1,rescue1"
     }
   ]
 }
