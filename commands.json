@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795002578,
-      "issued": 1795002578000,
+      "id": 1795002693,
+      "issued": 1795002693000,
       "cmd": "lab",
-      "target": "builder1",
+      "target": "survey1",
       "clear": 1,
-      "ops": "net"
+      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|20|2|9;survey|8|link;leave;home"
     }
   ]
 }
