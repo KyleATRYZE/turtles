@@ -32,7 +32,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] TuffLuck (40) at -4463 61 1521 "path blocked" by Charcool: should clear once Charcool is fuelled
 - [ ] DropIt (foundry1): it was "stuck under turtle"; check it is clear now the jam is fixed
 - [ ] Fuel self-sufficiency: lava rounds keep running (Pushy/lava1); watch the fuel line on the board (coal / charcoal / lava)
-- [~] Rename everything to task names (agent running): builder1-6, lava1, foundry1, survey1, rescue1, mapper1, crafter1/2, miner1-3. Applied with `reboot all`
+- [x] Renamed to task names (3770163) and applied by reboot (01:36): builder1-7, lava1, foundry1, survey1, rescue1, mapper1, crafter1/2, miner1-3; new miners name themselves miner<id>. Old names still work as order targets
+- [x] Watchdog no longer reboots drones that are only waiting their turn in the pad queue (ec45358). It was rebooting builders and costing them their place
 
 ## B. Crafting throughput
 - [x] Counter back as Crafty's crafting assistant: splits each load's crafting, about half the crafting time (`assist Counter on=1`)
@@ -41,7 +42,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 
 ## C. Survey (Geo Scanner mapping the base)
 - [~] Comparable (survey1) has its lab queued: fetch the scanner, then 14 scans over the factory. It was stuck in the pad jam; it was next down at 01:19
-- [~] BlockParty (mapper1) maps the old base (`survey ... name=oldbase`, 01:21)
+- [x] mapper1 mapped the old base: maps/oldbase.json on the status branch
+- [~] mapper1 maps the factory from outside (`factory_now`, 01:41)
 - [ ] When the maps land: `python3 tools/survey.py pull`, `survey.py rack`, then fix rack rows 3-4 (M.LANE, LN.home, rack.lua)
 - [ ] After each build phase: rescan the area just built
 
@@ -51,7 +53,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
       It reports what blocks home -4428 72 1521 (HopTo stopped one block short)
 - [ ] Fix whatever blocks it. Then test 2 drones, then turn lane mode on fleet-wide
 - [ ] Docked drones load over the cable (Sortnado pushes into `turtle_<id>`); no more pad trips
-- [ ] Top FACTORY monitor says "not heard yet" while the one under it works (Kyle's screenshot, 01:19): find out why rack.lua has two factory boards
+- [x] Top FACTORY monitor stuck on "not heard yet": only the first monitor touching the computer was ever drawn; now every one is (eabaaae, RackBoard rebooted)
 - [ ] Kyle: rack rows 3-4 modems/monitors, once the survey confirms the rows
 
 ## E. Foundry v2 (docs/foundry-v2.md)
@@ -92,7 +94,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 
 ## I. Screens: cohesive look
 - [x] Rack board restyled to match the store and map screens
-- [ ] Fix the top "not heard yet" board (D)
+- [x] Fixed the top "not heard yet" board (D)
 - [ ] Rack homes show the new task names once the rename lands
 
 ## J. Older threads from today (checked against git log 17-18 Nov; none dropped)
