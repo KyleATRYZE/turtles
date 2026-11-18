@@ -980,6 +980,7 @@ local function report(state)
       job = plots.foundry.job and (plots.foundry.job.item or plots.foundry.job.kind), fails = plots.foundry.fails,
       last = plots.foundry.last, power = plots.foundry.power } or nil,
     probe = plots and plots.probe or nil,
+    me = K.meReport,
     assist = (not K.COUNTER and K.assistInfo) and K.assistInfo(os.clock()) or nil,
     rescues = (not K.COUNTER and plots.rescues and #plots.rescues > 0) and plots.rescues or nil,
     rescuing = K.rescueNow and { who = K.rescueNow.who, problem = K.rescueNow.problem,
@@ -3945,6 +3946,9 @@ local function responder()
             bay = bay, back = type(msg.back) == "table" and msg.back or nil }
           if bay then rednet.broadcast({ type = "bay_taken", forId = id, n = msg.n }, K.JOB_PROTOCOL) end
         end
+      elseif msg.type == "me_report" and type(msg.me) == "table" then
+        K.meReport = msg.me                       -- (the ME desk: what ME holds, the last order)
+        K.meReport.at = os.clock()
       elseif msg.type == "foundry_ready" or msg.type == "foundry_ack" or msg.type == "foundry_done" then
         pcall(foundryHeard, id, msg)
       elseif msg.type == "release" then
@@ -4394,6 +4398,10 @@ while true do
       pendingMake[#pendingMake + 1] = { c.item, math.max(1, math.floor(tonumber(c.n) or 1)) }
       return true
     elseif c.cmd == "rebase" then          -- (for the drones: the factory knows where it is)
+      return true
+    elseif c.cmd == "me" then              -- me crafter1 craft=<id> n=<n> | ask=<id>: passed to the ME desk
+      rednet.broadcast({ type = "me_order", craft = c.craft, n = tonumber(c.n), ask = c.ask }, K.JOB_PROTOCOL)
+      print("ME order passed on: " .. tostring(c.craft or c.ask))
       return true
     elseif c.cmd == "probe" then           -- probe crafter1 [name=<machine>]: can the store push into a machine?
       local ok, res = pcall(K.probe, c.name)

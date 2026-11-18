@@ -327,10 +327,16 @@ for _, name in ipairs(peripheral.getNames()) do
 end
 if not wired then error("No wired modem next to me: I work the machines over the cable.", 0) end
 wired.open(W.CHANNEL)
-W.scan(wired.getNamesRemote())
-W.setup()
-note(("Machines: chamber %s, smelter %s, infuser %s, bank %d, stores %d."):format(
-  tostring(W.m.chamber), tostring(W.m.smelter), tostring(W.m.infuser), #W.m.bank, #W.stores))
+local hasBridge = false
+for _, name in ipairs(peripheral.getNames()) do
+  if tostring(peripheral.getType(name) or ""):lower():find("bridge", 1, true) then hasBridge = true end
+end
+if not hasBridge then              -- (with ME in charge, the machines' sides are ME's: left alone)
+  W.scan(wired.getNamesRemote())
+  W.setup()
+  note(("Machines: chamber %s, smelter %s, infuser %s, bank %d, stores %d."):format(
+    tostring(W.m.chamber), tostring(W.m.smelter), tostring(W.m.infuser), #W.m.bank, #W.stores))
+end
 
 local state, last = "idle", nil
 local function report()
@@ -382,5 +388,85 @@ local function orders()
   end
 end
 
+-- The ME desk (docs/ae2-factory.html): with an ME Bridge beside this computer,
+-- the foundry is ME's (pattern providers behind every machine), so this
+-- computer no longer takes foundry jobs. It tells the factory what ME holds
+-- and starts crafts ordered from outside (order: me crafter1 craft=<id> n=<n>,
+-- or ask=<id> to add an item to the watch list).
+local bridge
+for _, name in ipairs(peripheral.getNames()) do
+  local t = tostring(peripheral.getType(name) or ""):lower()
+  if t:find("bridge", 1, true) then bridge = peripheral.wrap(name) end
+end
+local function meDesk()
+  local watch = { "alltheores:steel_ingot", "minecraft:iron_ingot", "ae2:certus_quartz_crystal",
+    "ae2:charged_certus_quartz_crystal", "ae2:fluix_crystal", "ae2:silicon", "ae2:logic_processor",
+    "ae2:calculation_processor", "ae2:engineering_processor", "mekanism:basic_control_circuit",
+    "mekanism:alloy_infused", "mekanism:alloy_reinforced", "mekanism:alloy_atomic",
+    "mekanism:ingot_refined_obsidian", "minecraft:lava_bucket" }
+  local lastOrder, log = nil, {}
+  local function call(m, ...)
+    if type(bridge[m]) ~= "function" then return nil, "no " .. m end
+    local r = table.pack(pcall(bridge[m], ...))
+    if not r[1] then return nil, tostring(r[2]) end
+    return r[2], r[3]
+  end
+  local function count(id)
+    local it = call("getItem", { name = id })
+    if type(it) ~= "table" then return nil end
+    return tonumber(it.count or it.amount) or 0
+  end
+  local function tell()
+    local stock = {}
+    for _, id in ipairs(watch) do stock[id] = count(id) end
+    local cpus = call("getCraftingCPUs")
+    local busy = 0
+    for _, c in ipairs(type(cpus) == "table" and cpus or {}) do if c.isBusy then busy = busy + 1 end end
+    local methods = {}
+    for k in pairs(bridge) do methods[#methods + 1] = k end
+    table.sort(methods)
+    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log,
+      energy = call("getEnergyStorage") or call("getStoredEnergy"), usage = call("getEnergyUsage"),
+      cpus = type(cpus) == "table" and #cpus or nil, busy = busy,
+      methods = #log == 0 and table.concat(methods, " ") or nil } }, W.JOB)
+  end
+  note("ME desk: bridge found. Reporting to the factory.")
+  tell()
+  local lastTell = os.clock()
+  while true do
+    local _, msg = rednet.receive(W.JOB, 20)
+    if type(msg) == "table" and msg.type == "me_order" then
+      local line
+      if type(msg.ask) == "string" then
+        watch[#watch + 1] = msg.ask
+        line = "watching " .. msg.ask
+      elseif type(msg.craft) == "string" then
+        local n = math.max(1, math.floor(tonumber(msg.n) or 1))
+        local before = count(msg.craft)
+        local can = call("isItemCraftable", { name = msg.craft })
+        local ok, err = call("craftItem", { name = msg.craft, count = n })
+        line = ("craft %d %s: %s%s (craftable: %s, had %s)"):format(n, msg.craft, ok and "started" or "refused",
+          err and (" " .. tostring(err)) or "", tostring(can), tostring(before))
+        local seen = false
+        for _, id in ipairs(watch) do if id == msg.craft then seen = true end end
+        if not seen then watch[#watch + 1] = msg.craft end
+      end
+      if line then
+        local okD, clock = pcall(os.date, "!%H:%M")
+        lastOrder = (okD and clock .. " " or "") .. line
+        log[#log + 1] = lastOrder
+        while #log > 8 do table.remove(log, 1) end
+        note(line)
+        tell()
+        lastTell = os.clock()
+      end
+    end
+    if os.clock() - lastTell > 60 then
+      lastTell = os.clock()
+      tell()
+    end
+  end
+end
+
 if not os.getComputerLabel() then os.setComputerLabel("Works") end
-parallel.waitForAny(jobs, orders)
+if bridge then parallel.waitForAny(meDesk, orders) else parallel.waitForAny(jobs, orders) end
