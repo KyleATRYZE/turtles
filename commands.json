@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795029953,
-      "issued": 1795029953000,
-      "cmd": "make",
-      "target": "crafter1",
-      "item": "ae2:inscriber",
-      "n": 2
+      "id": 1795030131,
+      "issued": 1795030131000,
+      "cmd": "lab",
+      "target": "builder5",
+      "clear": 1,
+      "ops": "fetch|ae2:inscriber=2,ae2:charger=1,ae2:engineering_processor_press=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|28|2|21;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;dropDown|ae2:engineering_processor_press|1;walk|28|2|22;inspect|down;placeDown|ae2:charger;expect|down|charger;walk|28|2|23;inspect|down;placeDown|ae2:inscriber;expect|down|inscriber;inv;leave;home;handin|"
     }
   ]
 }
