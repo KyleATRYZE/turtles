@@ -1,23 +1,13 @@
 {
   "commands": [
     {
-      "id": 1795025393,
-      "issued": 1795025393000,
-      "cmd": "lab",
-      "target": "builder6",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|39|1|17;clickDown;walk|39|1|19;clickDown;walk|39|1|23;clickDown;walk|42|1|12;clickDown;walk|42|1|13;clickDown;leave;home"
-    },
-    {
-      "id": 1795025394,
-      "issued": 1795025393000,
-      "cmd": "fit",
-      "target": "foundry1",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_f2_alloy",
-      "shell": "factory_asfit3"
+      "id": 1795025540,
+      "issued": 1795025540000,
+      "cmd": "feed",
+      "target": "rescue1",
+      "x": -4462,
+      "y": 80,
+      "z": 1521
     }
   ]
 }
