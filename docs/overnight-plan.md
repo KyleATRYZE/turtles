@@ -75,7 +75,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 ## F. AE2 (docs/ae2-bootstrap.md)
 - [x] Certus farm: builder4 placed 8 of 9 flawed budding certus (about 03:40). Only 8 were in reach; the 9th slot -4419 78 1525 is empty (Kyle can add one). **First harvest from about 06:45** (`python3 tools/certusfarm.py first bench=v2`)
 - [K] Kyle clicks the certus barrel: -4414 71 1531
-- [~] AE2 bench: 3 inscribers placed with the silicon, logic and calc presses (03:26). builder5 is finishing it: 2 more inscribers, the engineering press, the charger. Then the `fluix 8` lab
+- [ ] AE2 bench: 3 of 5 inscribers placed (silicon, logic and calc presses in). Blocked: **crafter1 is out of raw iron** ("short of 3 raw iron"). The store probably has iron, but crafter1 is on a separate network in the old base and can't reach it. builder5 holds the charger and the engineering press. Fix: Kyle puts ~16 iron into crafter1's chests, or crafter1 moves into the factory (section G). Then re-run builder5 with /tmp-style ops: fetch inscriber=2 + charger + eng press, site, walk 28 2 21 …
 - [ ] Harvest with the `pick` verb (first crop about 3 h after placing)
 - [ ] ME controller, drives and crafting CPU (phase 4 `ae2`); ME bridge at -4414 71 1539 (Kyle clicks it)
 
@@ -108,6 +108,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Server tweaks to offer Kyle: the turtle_can_use tag and chunkyTurtleRadius
 
 ## Kyle's to-do for the morning (one list)
+- **Status went silent at 04:28** (every machine at once: server restart?). If the screens are frozen when you log in, restart the controller computer (CommandBlock)
+- crafter1 is out of raw iron: drop ~16 iron ingots or raw iron into its chests in the old base (AE2 bench needs 2 more inscribers)
 1. Works computer: `label set Works` + installer at -4413 71 1533
 2. Right-click modems: alloy cell -4409 71 1535/1537/1541 · ore line -4406 71 1530/1531 · certus barrel -4414 71 1531 · later the ME bridge -4414 71 1539
 3. Rack rows 3-4 parts (after the survey)
