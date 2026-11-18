@@ -48,10 +48,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] After each build phase: rescan the area just built
 
 ## D. Docks (rack 1, 8 × 4)
-- [ ] One-drone docking test (needs an idle drone on the latest code):
-      `tools/order.py lab <drone> clear=1 "ops=dock|in;peripherals;look;dock|out;home"`
-      It reports what blocks home -4428 72 1521 (HopTo stopped one block short)
-- [ ] Fix whatever blocks it. Then test 2 drones, then turn lane mode on fleet-wide
+- [x] One-drone docking test: builder1 docks in its home -4428 72 1521 fine. The real fault was a lab bug: the verb's name shadowed `base`, fixed in ac40669. The network names a docked turtle turtle_<n>, where n is the network's counter, not the computer id; the fallback is in LN.bay
+- [~] builder1 alone on lane mode (01:47) to test loading over the cable: Sortnado did NOT serve its bay in 90 s and it fell back to the pad. Sortnado now reports `bay` in its status (c566396): either "not on my cable (turtles I see …)" or "heard". Fix that, then turn lane mode on for the other helpers a few at a time
 - [ ] Docked drones load over the cable (Sortnado pushes into `turtle_<id>`); no more pad trips
 - [x] Top FACTORY monitor stuck on "not heard yet": only the first monitor touching the computer was ever drawn; now every one is (eabaaae, RackBoard rebooted)
 - [ ] Kyle: rack rows 3-4 modems/monitors, once the survey confirms the rows
