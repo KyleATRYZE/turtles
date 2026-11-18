@@ -1,21 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795000848,
-      "issued": 1795000848000,
-      "cmd": "fit",
-      "target": "builder4",
-      "ox": -4448,
-      "oy": 71,
-      "oz": 1518,
-      "plan": "factory_f2_storelink",
-      "shell": "factory_asfit3"
-    },
-    {
-      "id": 1795000849,
-      "issued": 1795000848000,
-      "cmd": "reboot",
-      "target": "survey1"
+      "id": 1795001197,
+      "issued": 1795001197000,
+      "cmd": "lab",
+      "target": "survey1",
+      "clear": 1,
+      "ops": "fetch|advancedperipherals:geo_scanner=1;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|7|2|7;survey|8|factory;walk|21|2|7;survey|8|factory;walk|37|2|7;survey|8|factory;walk|7|2|21;survey|8|factory;walk|21|2|21;survey|8|factory;walk|37|2|21;survey|8|factory;walk|10|2|2;survey|8|factory;walk|25|2|2;survey|8|factory;walk|40|2|2;survey|8|factory;walk|7|2|27;survey|8|factory;walk|21|2|27;survey|8|factory;walk|36|2|27;survey|8|factory;leave;goto|-4451|75|1530;survey|8|factory;goto|-4398|75|1526;survey|8|factory;home"
     }
   ]
 }
