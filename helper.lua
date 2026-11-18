@@ -344,7 +344,12 @@ end
 function LN.go(dir, n)
   face(dir)
   for _ = 1, n do
-    if not step("f") then return false end
+    local ok, why = step("f")
+    if not ok then
+      -- (what was in the way, and where: said when getting home fails)
+      LN.why = ("%s at %d %d %d"):format(tostring(why or "nothing seen"), pos.x + DIRS[dir].x, pos.y, pos.z + DIRS[dir].z)
+      return false
+    end
     tick()
   end
   return true
@@ -448,8 +453,10 @@ local escape     -- defined further down (a way out of a place with no way strai
 
 local function goHover()
   if LN.on() then
+    LN.why = nil
     if LN.toHome() then return true end
-    print("Could not get into my home in the rack: waiting outside.")
+    print("Could not get into my home in the rack (" .. tostring(LN.why or "?") .. "): waiting outside.")
+    report("home blocked: " .. tostring(LN.why or "?"))
     if LN.inside() then LN.exit() end
   end
   local x, y, z = hoverAir()
@@ -1897,6 +1904,8 @@ end
 --   inv   fuel   wait|seconds   home   note|text
 --   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
 --   survey|radius|tag   every block within radius (Geo Scanner) to the status branch
+--   dock|in / dock|out   into the rack home by the lane and out again (lane mode or not)
+--   peripherals   what touches the turtle (a modem: wired? its name)   look   every side's block
 --   expect|front/up/down|text   (stop unless the block that way has text in its name)
 --   until|side|method|n|seconds (wait for a machine's count to reach n)
 --   equip|left/right|item       (swap the tool on that side for an item on board)
@@ -2430,6 +2439,63 @@ local function runLab()
           made = made + 1
         end
         res = made .. " of " .. n .. (res and (": " .. res) or "")
+      elseif verb == "dock" then
+        -- dock|in : into this helper's rack home by the lane (as lane mode
+        -- would), whether or not lane mode is on; dock|out : back out of the
+        -- rack and the lane by the east gate. Says what stopped it.
+        local had = base.lane
+        if not had and swarm and swarm.LANE then
+          base.lane = {}
+          for k, v in pairs(swarm.LANE) do base.lane[k] = v end
+        end
+        if not LN.on() then res, stop = "no lane known", true else
+          LN.why = nil
+          local hx, hy, hz = LN.home()
+          local ok
+          if a[2] == "out" then ok = LN.exit() and riseTo(math.max(pos.y, highway()))
+          else ok = LN.toHome() end
+          res = ("%s: %s; home %d %d %d; at %d %d %d%s"):format(a[2] or "in", ok and "done" or "FAILED", hx, hy, hz,
+            pos.x, pos.y, pos.z, LN.why and ("; blocked by " .. LN.why) or "")
+          stop = not ok and a[2] == "out"
+        end
+        base.lane = had
+      elseif verb == "peripherals" then
+        -- peripherals : what this turtle touches, side by side; for a modem,
+        -- whether it is wireless and the turtle's own name on its network
+        local parts = {}
+        for _, side in ipairs({ "top", "bottom", "front", "back", "left", "right" }) do
+          local t = peripheral.getType(side)
+          if t then
+            local extra = ""
+            if t == "modem" then
+              local okW, wl = pcall(peripheral.call, side, "isWireless")
+              local okN, nm = pcall(peripheral.call, side, "getNameLocal")
+              extra = (" (%s, name %s)"):format(okW and (wl and "wireless" or "wired") or "?", okN and tostring(nm) or "error")
+            end
+            parts[#parts + 1] = side .. "=" .. t .. extra
+          end
+        end
+        local seen = {}
+        for _, dir in ipairs({ "", "Up", "Down" }) do
+          local ok, data = turtle["inspect" .. dir]()
+          seen[#seen + 1] = (dir == "" and "front" or dir:lower()) .. ":" .. (ok and data.name:gsub("^.*:", "") or "-")
+        end
+        res = (#parts > 0 and table.concat(parts, " ") or "no peripherals") .. " | " .. table.concat(seen, " ")
+          .. (" | bay %s"):format(tostring(LN.bay()))
+      elseif verb == "look" then
+        -- look : what is on each of the four sides (turning round), up and down
+        local seen, h0 = {}, heading
+        for d = 0, 3 do
+          face(d)
+          local ok, data = turtle.inspect()
+          seen[#seen + 1] = ({ [0] = "E", "S", "W", "N" })[d] .. ":" .. (ok and data.name:gsub("^.*:", "") or "-")
+        end
+        face(h0)
+        for _, dir in ipairs({ "Up", "Down" }) do
+          local ok, data = turtle["inspect" .. dir]()
+          seen[#seen + 1] = dir:sub(1, 1) .. ":" .. (ok and data.name:gsub("^.*:", "") or "-")
+        end
+        res = ("at %d %d %d: "):format(pos.x, pos.y, pos.z) .. table.concat(seen, " ")
       elseif verb == "inspect" then
         local s = a[2] == "up" and "Up" or a[2] == "down" and "Down" or ""
         local seen, data = turtle["inspect" .. s]()

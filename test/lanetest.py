@@ -184,6 +184,14 @@ r, at, ps = run((-4420, 140, 1490), api.goHover)
 check("  and it gets in", r and at == (-4423, 74, 1521), at)
 L.execute('LABEL = "HopTo"')
 
+# 9b. its home blocked: it says what is in the way and where
+L.execute("SOLID[(-4428) .. ',' .. 72 .. ',' .. 1521] = true")
+L.execute("SET(%s, -4420, 140, 1490)" % BASE)
+ok = L.eval("API.LN.toHome()")
+check("a blocked home: not docked, and LN.why says what and where", ok is False
+      and "-4428 72 1521" in str(L.eval("API.LN.why")), L.eval("API.LN.why"))
+L.execute("SOLID[(-4428) .. ',' .. 72 .. ',' .. 1521] = nil")
+
 # 10. inert: no lane in .base, the old hover in the sky
 L.execute("SET(%s, 0, 0, 0)" % BASE.replace("lane = LANE", "lane = nil"))
 check("no lane (before the rebase): hover in the air as before",
