@@ -71,3 +71,4 @@ See docs/factory-retrofit.md. Order of orders: `reboot all`, `haul Crafty on=0`,
 - 05:30 check-in: status still silent since 04:28 (over an hour). No orders sent, since nothing would hear them. Kyle: restart CommandBlock if the screens are frozen. builder5's bench finish ops saved in tools/ops_bench_rest.txt.
 - 06:16 check-in: status still silent (since 04:28). Holding all orders.
 - 07:00: status back at 07:00 (silent 04:28-07:00, probably a server restart). Everyone rebooted onto 6c6bb13; survey1 walked out by the door (escape fix works). rescue1 is dry in the roof at -4434 77 1539, so builder6 is the rescuer now. builder2 is doing the first certus harvest.
+- 07:36 final check-in: first certus harvest gave 80 crystals; rescue1 rescued from the roof (07:19); survey1 re-sent. Morning summary written to Kyle.
