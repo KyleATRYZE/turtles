@@ -1069,6 +1069,12 @@ end
 local function applyOp(op)
   local k = ck(op.x, op.y, op.z)
   if op.k == "D" then fitMap.solid[k] = nil else fitMap.solid[k] = true end
+  -- a floor block the plan dug out is a hole the walker may stand in (to
+  -- put a cable a block under the floor); filled again, it is floor
+  if op.y == 0 then
+    fitMap.dug = fitMap.dug or {}
+    fitMap.dug[k] = op.k == "D" or nil
+  end
 end
 
 local function lx() return pos.x - st.job.ox end
@@ -1077,7 +1083,8 @@ local function lz() return pos.z - st.job.oz end
 
 local function open(x, y, z)
   local m = fitMap
-  if x < m.x1 or x > m.x2 or z < m.z1 or z > m.z2 or y < 1 or y > m.y2 then return false end
+  if x < m.x1 or x > m.x2 or z < m.z1 or z > m.z2 or y < 0 or y > m.y2 then return false end
+  if y == 0 and not (m.dug and m.dug[ck(x, y, z)]) then return false end
   return not m.solid[ck(x, y, z)]
 end
 

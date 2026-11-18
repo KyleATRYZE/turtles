@@ -72,6 +72,9 @@ LOOK = {
     "a_out": ("Barrel on the cable (certus out)", "#9a6b3e", "#7a5230"),
     # the rest
     "cc_pc": ("Works computer (flush in the floor)", "#c9c9c9", "#3fbf6a"),
+    "lava": ("Lava unit: cauldron, pointed dripstone, block, lava (y 1-4)", "#3a3a40", "#ff7a1a"),
+    "pillar": ("Certus pillar (stone bricks; growth accelerators later)", "#7c7c7c", "#9be36b"),
+    "uc": ("Universal cable (power row)", "#5b5f66", "#c0392b"),
     "quartz": ("Quartz line (Create: wheel, fan wash, soul sand)", "#8b6b44", "#5aa9e6"),
     "water": ("Water", "#3f76e4", "#5a8cf0"),
     "bench": ("Workshop bench", "#9a6b3e", "#7a5230"),
@@ -159,15 +162,17 @@ ZONES = [  # (key, label, x0, z0, x1, z1, colour, blurb)
     ("gas", "Gas plant", 37, 6, 38, 13, "#5aa0e0",
      "Facing the ore line across a 3-wide service walkway: two separators, oxidizer, three chemical infusers, condensentrator, pump on its pool; tanks behind. Gases cross under the walkway floor."),
     ("power", "Power", 42, 17, 43, 23, "#e0602e",
-     "All the generators and cubes in one block on the east wall: the heat generators (both of today's), a gas-burning one on spare hydrogen, the cubes; one universal cable trunk under the floor to every machine."),
+     "All the generators and cubes in one block on the east wall: four heat generators (both of today's; they burn lava too), a gas-burning one on spare hydrogen, two cubes. A power row of universal cable runs along the wall behind the ore line and the power block (x 43); the alloy cell has its own row behind it (x 38), joined under the east door's walkway."),
+    ("lava", "Lava wall", 28, 28, 43, 29, "#ff7a1a",
+     "Sixteen dripstone lava units along the south wall (cauldrons at z 29, the lava held at y 4 between the wall and a row of blocks over the walkway), harvested from the walkway at z 28 by a drone with empty buckets: fuel for the drones and the heat generators."),
     ("alloy", "Alloy cell", 38, 17, 40, 23, "#8b5fbf",
      "Two metallurgic infusers (steel, alloys, circuits), a bank of three smelters, a crusher, a second chamber: the works computer's make, smelt and enrich jobs."),
-    ("certus", "Certus farm", 28, 6, 34, 13, "#9ad1f0",
-     "Nine flawed budding certus in a 3 x 3 grid, growth accelerators beside each, harvest rows between. The harvester docks in rack 3 and comes in by the hatch; buds go into a barrel on the cable."),
+    ("certus", "Certus farm", 28, 5, 34, 13, "#9ad1f0",
+     "The AE2 work's farm (tools/certusfarm.py): two stone pillars (x 30, z 7 and z 10, y 1-7) with budding certus against both sides in three tiers (9 of 12 slots), corridors at x 28 and x 32, the basin at 30 0 13. The harvester docks in rack 3 and comes in by the hatch; crystals go into a barrel on the cable at 34 1 13."),
     ("ae2", "AE2 room", 28, 17, 34, 23, "#7f9cff",
      "Controller, drives, crafting CPU, assemblers with pattern providers, four inscribers and the charger, next to the certus farm and the Mekanism power. Joins the store through the ME bridge."),
-    ("quartz", "Quartz line", 28, 24, 34, 29, "#5aa9e6", "Today's sand to soul sand to quartz line, squared up in its own bay."),
-    ("bench", "Workshop bench", 37, 27, 43, 29, "#9a6b3e", "Machine trials, by the east door."),
+    ("quartz", "Quartz line", 28, 24, 34, 27, "#5aa9e6", "Today's sand to soul sand to quartz line, squared up in its own bay."),
+    ("bench", "Workshop bench", 37, 27, 43, 27, "#9a6b3e", "Machine trials, by the east door."),
     ("aisles", "Walkways", 35, 5, 36, 29, "#9c9ca3",
      "A 2-wide spine from the racks to the south wall, a 3-wide cross aisle from the west door, and one to the east door. Nothing stands in them; the works computer sits flush in the floor where they cross."),
 ]
@@ -213,11 +218,14 @@ def after():
     # walkways
     for x in range(28, 44):
         put(x, 5, "aisle", "North walkway (along the racks)", 0)
-        for z in (14, 15, 16):
-            put(x, z, "aisle", "Cross aisle (from the west door)", 0)
-    for z in range(5, 30):
+        put(x, 28, "aisle", "South walkway: the lava wall's harvest walkway (the lava's wall overhead at y 4)", 0)
+        put(x, 29, "lava", "Lava unit (one of 16)")
+        if x < 43:
+            for z in (14, 15, 16):
+                put(x, z, "aisle", "Cross aisle (from the west door)", 0)
+    for z in range(5, 29):
         for x in (35, 36):
-            put(x, z, "aisle", "The spine (racks to the south wall)", 0)
+            put(x, z, "aisle", "The spine (racks to the south walkway)", 0)
     for x in range(37, 44):
         for z in (24, 25, 26):
             put(x, z, "aisle", "Aisle to the east door", 0)
@@ -228,13 +236,12 @@ def after():
         put(41, z, "aisle", "Service walkway", 0)
     for x in (35, 36):
         put(x, 4, "aisle", "Walkway", 0)
-    put(36, 15, "cc_pc", "Works computer, flush in the floor where the walkways cross (cable under the floor)", 0)
+    put(35, 15, "cc_pc", "Works computer, flush in the floor where the walkways cross (cable under the floor)", 0)
     # the ore line (east wall, facing west), tanks behind it
     ore = ["m_dissolve", "m_washer", "m_crystal", "m_inject", "m_purify", "m_crush", "m_enrich", "m_smelt"]
     for i, k in enumerate(ore):
         put(42, 6 + i, k, LOOK[k][0] + (" (ore in here)" if i == 0 else " (ingots out here)" if i == 7 else ""))
-        put(43, 6 + i, "m_tank", ["Sulfuric acid tank", "Water (washer)", "Slurry buffer", "Hydrogen chloride tank",
-                                  "Oxygen tank", "Fluid / spare", "Fluid / spare", "Fluid / spare"][i])
+        put(43, 6 + i, "uc", "Power row (universal cable) behind the ore line; gases come in from above, later")
     # the gas plant (facing east), tanks behind
     gas = [("m_separ", "Electrolytic Separator (brine: chlorine, hydrogen)"),
            ("m_separ", "Electrolytic Separator (water: oxygen, hydrogen)"), ("m_oxid", None),
@@ -247,14 +254,13 @@ def after():
                                   "Sulfur dioxide", "Sulfur trioxide", "Water vapour", "Chlorine", "Water"][i])
     put(37, 13, "water", "The pump's 2 x 2 pool (in the floor, under it and beside it)", 0)
     # power (east wall)
-    put(42, 17, "m_cube", "Energy Cube (today's, stays)")
+    put(42, 17, "m_cube", "Energy Cube (today's, turned to face the power row)")
     for z in (18, 19, 20, 21):
         put(42, z, "m_heat", "Heat Generator" + (" (today's, stays)" if z == 18 else " (from the piped line)" if z == 19 else ""))
     put(42, 22, "m_gasgen", None)
     put(42, 23, "m_cube", "Energy Cube (second)")
-    for z in range(17, 24):
-        put(43, z, "m_cube" if z in (17, 23) else "bed", "Induction matrix later (3 x 3 x 3 fits behind)" if z not in (17, 23)
-            else "Energy Cube", 1 if z in (17, 23) else 0)
+    for z in range(14, 24):
+        put(43, z, "uc", "Power row (universal cable)")
     # the alloy cell: one row of machines on a bed, facing the service walkway (x 41)
     cell = [("m_infuse", "Metallurgic Infuser (today's, from the plinth): steel"),
             ("m_infuse", "Metallurgic Infuser: alloys, circuits"),
@@ -263,23 +269,24 @@ def after():
             ("m_enrich", "Enrichment Chamber (today's from the plinth): redstone, carbon, diamond")]
     for i, (k, lab) in enumerate(cell):
         put(39, 17 + i, k, lab)
-        put(38, 17 + i, "bed", "Machine bed (floor modems under the machines)", 0)
+        put(38, 17 + i, "uc", "The alloy cell's power row (universal cable)")
         put(40, 17 + i, "bed", "Machine bed", 0)
-    # the certus farm: 9 budding at x 29/31/33 z 7/9/11, accelerators beside, harvest rows between
-    for x in (29, 31, 33):
-        for z in (7, 9, 11):
-            put(x, z, "a_bud", "Flawed budding certus quartz (one of nine)")
-        for z in (8, 10):
-            put(x, z, "aisle", "Harvest row (the drone's)", 0)
-    for x in (30, 32):
-        for z in (7, 9, 11):
-            put(x, z, "a_accel", None)
-    for z in range(6, 14):
-        put(28, z, "aisle", "Harvest row", 0)
-        put(34, z, "aisle", "Harvest row", 0)
-    for x in range(29, 34):
-        put(x, 6, "aisle", "Harvest row", 0)
-        put(x, 12, "aisle", "Harvest row", 0)
+    # the certus farm (the AE2 work's: tools/certusfarm.py)
+    import certusfarm as CF
+    F = CF.Farm()
+    for (x, y, z) in F.pillars():
+        if y == 1:
+            put(x, z, "pillar", None)
+    for (_, i, t, sd) in F.filled():
+        x, y, z = F.slot_cell(i, t, sd)
+        if t == 0:
+            put(x, z, "a_bud", "Flawed budding certus (Kyle places these: tiers at y 1, 4, 7)")
+    for z in range(5, 14):
+        for x in (28, 32):
+            if (x, z) not in out or out[(x, z)][0] == "floor":
+                put(x, z, "aisle", "Harvest corridor", 0)
+    wcell, _ = F.basin()
+    put(wcell[0], wcell[2], "water", "The farm's basin (one floor block of water)", 0)
     put(34, 13, "a_out", "Barrel on the cable: certus crystals and dust (Crafty and the ME bridge take them)")
     # the AE2 room
     for x in (29, 30, 31):
@@ -298,13 +305,12 @@ def after():
     put(34, 21, "a_term", "ME Bridge (CC sees AE2) and the terminal Kyle uses")
     # the quartz line (squared up) and the bench
     for x in range(29, 34):
-        for z in range(25, 29):
-            put(x, z, "quartz", "Quartz line (as built, moved into this 5 x 4 bay)")
-    for z in (26, 27):
+        for z in range(24, 28):
+            put(x, z, "quartz", "Quartz line (as built, squared up in this 5 x 4 bay)")
+    for z in (25, 26):
         put(31, z, "water", "Quartz line: the wash", 1)
     for x in range(38, 43):
-        put(x, 28, "bench", "Workshop bench (machine trials)")
-    put(43, 28, "chest", "The bench's barrel (on the cable)")
+        put(x, 27, "bench", "Workshop bench (machine trials)")
     return out
 
 
@@ -317,7 +323,7 @@ def check():
     for z in (24, 25, 26):
         if A.get((43, z), ("",))[0] != "aisle":
             bad.append(f"the east door's way in is not open at z {z}")
-    for z in range(5, 30):
+    for z in range(5, 29):
         for x in (35, 36):
             if A[(x, z)][0] not in ("aisle", "cc_pc", "inlay"):
                 bad.append(f"the spine is blocked at {x} {z}")
@@ -489,18 +495,18 @@ drawAll();
 
 MOVES = [
     ("Energized Smelter (DropIt's plinth)", "41 1 11", "the alloy cell's smelter bank, 39 1 19"),
+    ("Energy Cube, Heat Generator (plinth)", "42 1 17, 42 1 18", "stay where they are, turned to face the power row (x 43)"),
     ("Enrichment Chamber (plinth)", "41 1 12", "the alloy cell, 39 1 23 (redstone, carbon, diamond)"),
     ("Metallurgic Infuser (plinth)", "41 1 15", "the alloy cell, 39 1 17 (steel)"),
     ("Universal cable along the plinth", "42 1 7..16", "taken up: power runs under the floor"),
-    ("Energy Cube, Heat Generator", "42 1 17, 42 1 18", "stay: they are the start of the power block"),
     ("Sticky's piped line: inbox chest (in the walkway)", "36 1 9", "emptied into the store, taken up"),
     ("Logistical sorter and transporters", "36 1 10..16", "taken up (the works computer feeds by cable)"),
     ("Enrichment Chamber, Energized Smelter (piped line)", "36 1 17, 36 1 18", "the ore line, 42 1 12 and 42 1 13"),
     ("Outbox chest, cable, heat generator (piped line)", "36 1 19..21", "chest emptied and up; the generator to the power block, 42 1 19"),
     ("Planned stages 3-5 of the piped line (injection, purification, crusher, separator, pool, gas plants)", "x 29-37 z 11-21",
      "not built there: the ore line and gas plant instead"),
-    ("Bench leftovers, coal generator, kept chests", "x 32-35 z 22-26", "emptied into the store; the bench goes to 38-43 28"),
-    ("Quartz line", "x 28-35 z 22-27", "the same machines, squared up in x 29-33 z 25-28"),
+    ("Bench leftovers, coal generator, kept chests", "x 32-35 z 22-26", "emptied into the store; the bench goes to 38-42 27"),
+    ("Quartz line", "x 28-35 z 22-27", "the same machines, squared up in x 29-33 z 24-27"),
     ("Power corner (planned)", "x 29-33 z 5-7", "not built: the certus farm is there; power on the east wall"),
     ("AE2 corner (planned, smelting hall)", "x 5-8 z 18-28", "moves here, next to the certus farm and the power: the hall's corner stays free"),
 ]

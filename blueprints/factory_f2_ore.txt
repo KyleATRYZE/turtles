@@ -1,0 +1,65 @@
+S 22 2 33
+P 11
+computercraft:cable -
+minecraft:deepslate_bricks -
+computercraft:wired_modem_full -
+mekanism:enrichment_chamber west
+mekanism:energized_smelter west
+mekanism:crusher west
+mekanism:purification_chamber west
+mekanism:chemical_injection_chamber west
+mekanism:chemical_crystallizer west
+mekanism:chemical_washer west
+mekanism:chemical_dissolution_chamber west
+O 51
+D 42 0 16 0
+R 42 -1 16 0 0
+P 42 0 16 1 0
+D 42 0 15 0
+R 42 -1 15 0 0
+P 42 0 15 1 0
+D 42 0 14 0
+R 42 -1 14 0 0
+P 42 0 14 1 0
+D 42 0 13 0
+R 42 -1 13 0 0
+P 42 0 13 2 0
+D 42 0 12 0
+R 42 -1 12 0 0
+P 42 0 12 2 0
+D 42 0 11 0
+R 42 -1 11 0 0
+P 42 0 11 2 0
+D 42 0 10 0
+R 42 -1 10 0 0
+P 42 0 10 2 0
+D 42 0 9 0
+R 42 -1 9 0 0
+P 42 0 9 2 0
+D 42 0 8 0
+R 42 -1 8 0 0
+P 42 0 8 2 0
+D 42 0 7 0
+R 42 -1 7 0 0
+P 42 0 7 2 0
+D 42 0 6 0
+R 42 -1 6 0 0
+P 42 0 6 2 0
+D 36 1 17 0
+D 36 1 18 0
+P 42 1 12 3 4
+P 42 1 13 4 4
+P 42 1 11 5 4
+P 42 1 10 6 4
+P 42 1 9 7 4
+P 42 1 8 8 4
+P 42 1 7 9 4
+P 42 1 6 10 4
+D 41 0 6 0
+D 41 0 7 0
+D 41 0 8 0
+D 41 0 9 0
+D 41 0 10 0
+D 41 0 11 0
+D 41 0 12 0
+D 41 0 13 0
