@@ -69,3 +69,4 @@ See docs/factory-retrofit.md. Order of orders: `reboot all`, `haul Crafty on=0`,
 - 04:05 check-in: 8 budding certus placed by drones; AE2 bench 3/5 inscribers in; scanner method fix (scanBlocks); survey re-sent. miner1 parked; miner3 blocked by stone on its way home at -4448 56 1604.
 - 04:50 check-in: STATUS STALE since 04:28 (all units at once; looks like a server restart or the controller stopped pushing). Found before that: survey1 got through 16 of 32 survey steps, then failed to re-equip the scanner and climbed into the roof; fixed (door escape + scanner retry). crafter1 out of raw iron, so the AE2 bench stalled at 3 of 5 inscribers.
 - 05:30 check-in: status still silent since 04:28 (over an hour). No orders sent, since nothing would hear them. Kyle: restart CommandBlock if the screens are frozen. builder5's bench finish ops saved in tools/ops_bench_rest.txt.
+- 06:16 check-in: status still silent (since 04:28). Holding all orders.
