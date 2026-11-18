@@ -3298,6 +3298,10 @@ while true do
     st.paused = true
     save()
     task = guarded(work)
+  elseif cmd.cmd == "forget" then        -- drop the job in hand (a fit made out of date) and be idle
+    st = { turn = st.turn, orderSeq = st.orderSeq }
+    save()
+    task = guarded(work)
   elseif cmd.cmd == "resume" then
     st.paused = nil
     save()
