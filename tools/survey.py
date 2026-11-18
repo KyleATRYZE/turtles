@@ -12,6 +12,7 @@ which writes it to the status branch as maps/survey_<tag>_<x>_<y>_<z>_<part>.jso
     python3 tools/survey.py ops factory|oldbase [r=8] [tag=...]
                                                     lab ops: walk a grid of scan points and survey
     python3 tools/survey.py points factory|oldbase  the scan points
+    python3 tools/survey.py rack                    rack 1 as surveyed: home rows, shelves, strips
 
 The ops are printed for
     tools/order.py lab <helper> clear=1 "ops=..."
@@ -178,6 +179,30 @@ def diff(box=FACTORY_BOX):
     out("there, in no plan", extra, lambda r: f"{r[0]} {r[1]}" + (f" (a plan has {r[2]})" if r[2] else ""))
 
 
+# ================================================================= rack 1 from the survey
+def rack(w=None, xs=range(19, 27), z=3):
+    """Rack 1 as surveyed: the shelf rows (wired modems at z 3), the monitor
+    strips behind (z 4), and the home rows (each a block above or below a
+    shelf, open, in every column). Returns (homes y list, shelves, strips),
+    building coordinates."""
+    w = w or load()
+    inside = covered(w)
+    at = lambda x, y, zz: w["blocks"].get("%d,%d,%d" % (OX + x, OY + y, OZ + zz))
+    shelves, strips, homes = [], [], []
+    for y in range(0, 12):
+        row = [at(x, y, z) or "" for x in xs]
+        if sum("wired_modem" in n for n in row) >= len(row) - 1:
+            shelves.append(y)
+        back = [at(x, y, z + 1) or "" for x in xs]
+        if sum("monitor" in n for n in back) >= len(back) - 1:
+            strips.append(y)
+    for y in sorted({y + d for y in shelves for d in (-1, 1)}):
+        cells = [(x, y, z) for x in xs]
+        if all(inside(OX + c[0], OY + c[1], OZ + c[2]) and not at(*c) for c in cells):
+            homes.append(y)
+    return homes, shelves, strips
+
+
 # ================================================================= where to scan
 def points(where, r=8):
     """scan points every 2r - 1 blocks: inside the factory at floor level by
@@ -230,6 +255,10 @@ if __name__ == "__main__":
         diff()
     elif a[0] == "ops":
         print(ops(a[1], int(kv.get("r", 8)), kv.get("tag")))
+    elif a[0] == "rack":
+        homes, shelves, strips = rack()
+        print("rack 1 (building y): home rows", homes, "shelves (wired modems)", shelves, "monitor strips", strips)
+        print("world y of the home rows:", [OY + y for y in homes])
     elif a[0] == "points":
         for how, c in points(a[1], int(kv.get("r", 8))):
             print(how, *c, "world", OX + c[0], OY + c[1], OZ + c[2])
