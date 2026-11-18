@@ -189,7 +189,7 @@ def storelink():
     for z in range(3, 17):
         # (the ends from the room side: under them are the wall's bricks and
         # the controller, so they could not be reached from below)
-        p.P((17, 6, z), CC, 4 if z in (3, 15, 16) else 1)
+        p.P((17, 6, z), CC, 3 if z == 16 else 4 if z in (3, 15) else 1)
     return p
 
 
