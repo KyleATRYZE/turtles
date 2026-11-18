@@ -108,7 +108,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Server tweaks to offer Kyle: the turtle_can_use tag and chunkyTurtleRadius
 
 ## Kyle's to-do for the morning (one list)
-- **Status went silent at 04:28** (every machine at once: server restart?). If the screens are frozen when you log in, restart the controller computer (CommandBlock)
+- Status was silent 04:28-07:00 (server restart?); it came back by itself at 07:00
+- rescue1 is out of fuel in the roof at -4434 77 1539: if builder6 can't reach it, pick it up and set it down outside
 - crafter1 is out of raw iron: drop ~16 iron ingots or raw iron into its chests in the old base (AE2 bench needs 2 more inscribers)
 1. Works computer: `label set Works` + installer at -4413 71 1533
 2. Right-click modems: alloy cell -4409 71 1535/1537/1541 · ore line -4406 71 1530/1531 · certus barrel -4414 71 1531 · later the ME bridge -4414 71 1539
