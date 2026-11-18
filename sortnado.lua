@@ -1005,7 +1005,15 @@ function S.bayHeard(id, msg, now)
     local q = S.bayQueue[tonumber(msg.forId)]
     if q and q.msg.n == msg.n then S.bayQueue[tonumber(msg.forId)] = nil end
   elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
+      and msg.bay:match("^turtle_%d+$") and not peripheral.isPresent(msg.bay) then
+    local seen = {}                                -- (say so: a bay we cannot reach is the thing to fix)
+    for _, n in ipairs(peripheral.getNames()) do if n:match("^turtle_") then seen[#seen + 1] = n end end
+    S.bayNote = ("%s asked from bay %s: not on my cable (turtles I see: %s)"):format(tostring(msg.label or id),
+      msg.bay, #seen > 0 and table.concat(seen, ",") or "none")
+    print(S.bayNote)
+  elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
       and msg.bay:match("^turtle_%d+$") and peripheral.isPresent(msg.bay) then
+    S.bayNote = "heard " .. tostring(msg.label or id) .. " at " .. msg.bay
     local q = S.bayQueue[id]
     if not (q and q.msg.n == msg.n) and S.bayDone ~= tostring(id) .. ":" .. tostring(msg.n) then
       S.bayQueue[id] = { msg = msg, at = (now or os.clock()) + S.BAY_WAIT }
@@ -1094,7 +1102,7 @@ local function report()
   if not swarm then return end
   local used, slots = S.totals()
   local t = { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
-    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote,
+    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote, bay = S.bayNote,
     drain = (cfg.drain or S.drainNote) and { left = cfg.drain and #cfg.drain or 0, done = cfg.drained,
       next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil }
   pcall(swarm.report, t)
