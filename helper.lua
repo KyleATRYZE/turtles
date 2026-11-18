@@ -2180,6 +2180,8 @@ local function runLab()
         local name, allowed = seen and data.name or "nothing", false
         for _, p in ipairs(LAB_DIG) do if name:find(p, 1, true) then allowed = true end end
         if seen and isClutter(name) then allowed = true end      -- grass and flowers in the way
+        -- dig|<name>: this block may come out too (a floor tile over a cable run)
+        if seen and a[2] and a[2] ~= "" and name:find(a[2], 1, true) then allowed = true end
         if allowed then
           res = name .. (turtle["dig" .. sfx]() and " taken" or " would not come out")
         else
