@@ -2271,6 +2271,19 @@ local function runLab()
           end
           res = ("%d of %d cauldrons gave lava (%s)"):format(got, tried, how)
         end
+      elseif verb == "click" or verb == "clickUp" or verb == "clickDown" then
+        -- click[Up/Down] : right-click the block there with an empty hand (a
+        -- wired modem switched on): works for blocks in the
+        -- computercraft:turtle_can_use tag (tools/turtle_clicks.zip)
+        local empty
+        for sl = 1, 16 do if turtle.getItemCount(sl) == 0 then empty = sl break end end
+        if not empty then res, stop = "no empty slot to click with", true else
+          turtle.select(empty)
+          local f = verb == "clickUp" and turtle.placeUp or verb == "clickDown" and turtle.placeDown or turtle.place
+          local ok, why = f()
+          turtle.select(1)
+          res = ok and "clicked" or ("did not click: " .. tostring(why))
+        end
       elseif verb == "use" then
         -- use[|item] : right-click the block in front, as a player would, with
         -- the Weak Automata Core (Advanced Peripherals) worn on the pickaxe
