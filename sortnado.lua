@@ -999,11 +999,28 @@ S.BAY_WAIT = 10                      -- seconds for crafter1 to say it takes a b
 S.bayQueue = {}                      -- helper id -> { msg, at }
 S.RACK_CHANNEL = 4711                -- the rack's panels hear the drones through us (factory.lua K.RACK_CHANNEL)
 
+-- The name we see a docked turtle by, found by its computer id (a turtle
+-- touching two modems on the cable has a different name on each).
+function S.bayById(id)
+  for _, n in ipairs(peripheral.getNames()) do
+    if n:match("^turtle_%d+$") then
+      local ok, tid = pcall(peripheral.call, n, "getID")
+      if ok and tid == id then return n end
+    end
+  end
+end
+
 function S.bayHeard(id, msg, now)
   if type(msg) ~= "table" then return end
   if msg.type == "bay_taken" then
     local q = S.bayQueue[tonumber(msg.forId)]
     if q and q.msg.n == msg.n then S.bayQueue[tonumber(msg.forId)] = nil end
+  elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
+      and msg.bay:match("^turtle_%d+$") and not peripheral.isPresent(msg.bay) and S.bayById(id) then
+    -- (one turtle touching two modems has a name on each; the one it told
+    -- us is not the one we see it by: find it by its computer id)
+    msg.bay = S.bayById(id)
+    return S.bayHeard(id, msg, now)
   elseif msg.type == "materials" and type(msg.items) == "table" and type(msg.bay) == "string"
       and msg.bay:match("^turtle_%d+$") and not peripheral.isPresent(msg.bay) then
     local seen = {}                                -- (say so: a bay we cannot reach is the thing to fix)
