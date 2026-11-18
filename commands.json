@@ -1,8 +1,17 @@
 {
   "commands": [
     {
-      "id": 1794959563,
-      "issued": 1794959563000,
+      "id": 1794960369,
+      "issued": 1794960369000,
+      "cmd": "feed",
+      "target": "Dusty",
+      "x": -4402,
+      "y": 95,
+      "z": 1520
+    },
+    {
+      "id": 1794960370,
+      "issued": 1794960369000,
       "cmd": "fit",
       "target": "Sticky",
       "ox": -4448,
@@ -10,6 +19,39 @@
       "oz": 1518,
       "shell": "factory_asfit3",
       "plan": "factory_rack2"
+    },
+    {
+      "id": 1794960371,
+      "issued": 1794960369000,
+      "cmd": "fit",
+      "target": "Observant",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_rack2"
+    },
+    {
+      "id": 1794960372,
+      "issued": 1794960369000,
+      "cmd": "fit",
+      "target": "Dispensable",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_rack2"
+    },
+    {
+      "id": 1794960373,
+      "issued": 1794960369000,
+      "cmd": "fit",
+      "target": "ButtonUp",
+      "ox": -4448,
+      "oy": 71,
+      "oz": 1518,
+      "shell": "factory_asfit3",
+      "plan": "factory_gatelink"
     }
   ]
 }
