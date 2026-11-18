@@ -1,10 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795022897,
-      "issued": 1795022897000,
+      "id": 1795022957,
+      "issued": 1795022957000,
       "cmd": "reboot",
-      "target": "Sortnado"
+      "target": "crafter1"
     }
   ]
 }
