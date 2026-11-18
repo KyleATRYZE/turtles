@@ -9,6 +9,20 @@ stuck; rescue drones that save broken ones and report what went wrong.
 
 Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 
+## NOW (19:45, Kyle back): the factory pass
+Rescan done 19:30 (13 scans). Plan vs world (`python3 /tmp/plancheck.py`-style check of tools/foundry2plans.py against data/world.json):
+- [x] lava wall: 16 cauldrons filling (lava_cauldron). Lava rounds now `how=wall` (crafter1), lava1
+- [ ] hut cauldrons out and the hut down, once a wall round has worked
+- [ ] link: cable missing at 35 -1 22 = the alloy cell is cut off from Works (builder1 fixing, lab dig|<name>). Certus barrel modem 34 0 13 + cable missing
+- [ ] steel is the bottleneck: no steel dust. Infusers (2) are placed; Works sees none (the cut cable). Then steel -> smelter #3, crusher, energy cube
+- [ ] budding: all 9 flawed budding quartz have decayed to quartz blocks/damaged. Needs new flawed budding (AE2: quartz block + charged certus in water) or a different certus source
+- [ ] power: east-wall universal cable row (43 1 6-16) and the gas-burning generator not placed
+- [ ] ore: modem 42 0 13 and cables 42 -1 13..16 not in; purification/injection/crystallizer/washer/dissolution not made (refined obsidian, alloys, ultimate circuits)
+- [ ] ae2 phase: 0 of 33 (controllers etc.). AE2 agent working the chain; bench: builder5 (inscribers made 19:29)
+- [ ] close: click holes still open (wanted until the cell's modems see their machines)
+- [ ] old-base bridge cable (y73 z1521) to bury; racks 2-3 with screens after
+- Known: order.py REPLACES commands.json: space orders >= 30 s apart
+
 ## Every check-in (about every 45 min until 08:00)
 1. `python3 /tmp/st.py`, then go through every unit's state, its last log line and how long since it was heard.
 2. Anything stuck, stranded, silent or idle: fix it, rescue it or give it work. Look for the cause, not only the symptom.
