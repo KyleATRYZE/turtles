@@ -1961,12 +1961,25 @@ end
 -- it on the right blindly took a modem or a chunk loader off and scanned
 -- with that), waiting until it shows as a peripheral. Returns the side.
 local function geoOn(slot)
-  for _, sd in ipairs({ "left", "right" }) do           -- (already on from a step before)
-    local t = peripheral.getType(sd)
-    if t and tostring(t):lower():find("geo", 1, true) then return sd end
+  -- (what is worn on each side, by the turtle's own upgrades: with a tool on
+  -- a side, peripheral.getType of that side is the BLOCK next to it, so a
+  -- cable modem beside the turtle looked like our own modem and the scanner
+  -- "would not go on")
+  local worn = {}
+  for _, sd in ipairs({ "left", "right" }) do
+    local f = sd == "left" and turtle.getEquippedLeft or turtle.getEquippedRight
+    local ok, d = pcall(f or function() return nil end)
+    worn[sd] = ok and type(d) == "table" and d.name or nil
+    if worn[sd] and worn[sd]:find("geo_scanner", 1, true) then return sd end
   end
-  local side = peripheral.getType("right") == "modem" and "left" or "right"
-  if peripheral.getType(side) == "modem" then return nil end
+  local side
+  if turtle.getEquippedLeft then
+    side = (worn.right and worn.right:find("modem", 1, true)) and "left" or "right"
+    if worn[side] and worn[side]:find("modem", 1, true) then return nil end
+  else
+    side = peripheral.getType("right") == "modem" and "left" or "right"
+    if peripheral.getType(side) == "modem" then return nil end
+  end
   local ok
   for _ = 1, 3 do
     turtle.select(slot)
