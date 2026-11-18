@@ -141,3 +141,7 @@ Rule (Kyle): place by command only what we could feasibly make. Nothing needing 
 - Induction card: provider placed behind infuser C (38 1 17); the card can't be set by NBT (no `upgrades` key). Spawning the card as an item was refused; Kyle to get one (give) and try it in the provider.
 - To check in game (Kyle): crafting terminal shows the barrels; provider has an upgrade slot for the card.
 - Removed and not yet replaced: Nether pump + entangloporter (-623 32/33 373 in the Nether, 96x96 lava sheet; chunk no longer force-loaded).
+- 22:15 Storage link confirmed by Kyle (terminal shows the barrels). Terminals placed by NBT need `enabledKeyTypes:["ae2:i","ae2:f"]` or they show fluids only.
+- 22:20 Induction card WORKS: provider NBT `upgrades:[{count:1,Slot:0,id:"appflux:induction_card"}]`; an infuser and a smelter set to 0 energy refilled in seconds with no cable touching them. A provider with the card also takes FE in from a cable beside it.
+- Alloy row: providers + cards behind z 17-22 (38 1 17-22); flux accessor at 38 1 23 on the old riser (FE from the generators into ME; 64k FE cell in drive 2). Enrichment chamber (39 1 23) has the accessor behind it, no provider yet. Old wired modems still under the machines (39 0 17-23).
+- Still to do on the row: infusion feeds (export bus under infusers), the 4 new machines, patterns, trunk O and the ore line providers; then retire the universal cable under the ore line.
