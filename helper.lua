@@ -59,6 +59,7 @@ local DIRS = {
 local pos, heading = { x = 0, y = 0, z = 0 }, 0
 local st, base, list
 local lastState, progress = "starting", nil
+local fetchingNow                      -- what a supply run is after, in words (for the status)
 
 local logLines = {}
 local rawPrint = print
@@ -100,7 +101,8 @@ local function report(state)
     foundry = foundry and select(2, pcall(foundry.info)) or nil,
     pos = { x = pos.x, y = pos.y, z = pos.z },
     fuel = f == "unlimited" and -1 or f,
-    progress = progress, log = logLines,
+    progress = progress, log = logLines, fetching = fetchingNow,
+    job = st and st.job and not st.done and (st.job.plan or (st.job.area and "forage") or (st.job.trees and "chop")) or nil,
     chunky = chunky and chunky.have() and (chunky.isWorn() and "on" or "carried") or nil,
   })
 end
@@ -336,7 +338,8 @@ function LN.home()
   local label, i = os.getComputerLabel() or "", nil
   for k, n in ipairs(HOMES) do if n == label then i = k - 1 end end
   i = i or (os.getComputerID() % (2 * L.perRow))
-  return L.rackX + i % L.perRow, i < L.perRow and L.low or L.high, L.rackZ
+  local rows = L.rows or { L.low, L.high }
+  return L.rackX + i % L.perRow, rows[math.floor(i / L.perRow) + 1] or L.high, L.rackZ
 end
 function LN.go(dir, n)
   face(dir)
@@ -698,6 +701,15 @@ local function supplyRun(indices, reason, once)
     st.orderSeq = (st.orderSeq or (os.epoch("utc") % 1000000000)) + 1
     save()
     local msg = { type = "materials", id = me, n = st.orderSeq, items = items, fuel = coal }
+    do
+      local words = {}
+      for k, l in ipairs(items) do
+        if k <= 2 then words[#words + 1] = tostring(l[1]):gsub("^.*:", ""):gsub("_", " ") .. " x" .. tostring(l[2]) end
+      end
+      if #items > 2 then words[#words + 1] = "+" .. (#items - 2) end
+      if #words == 0 and coal > 0 then words[1] = "fuel" end
+      fetchingNow = table.concat(words, ", ")
+    end
     -- docked in a loading bay: the load comes in over the cable, and what
     -- goes back (emptied buckets, a bench's spare parts) is taken from us
     local bay = LN.on() and not noBay and LN.bay() or nil
@@ -828,6 +840,16 @@ local function supplyRun(indices, reason, once)
       report("waiting for materials")
       sleep(240)
     end
+  end
+end
+-- (while it runs, the status says what it is fetching: the rack's board shows it)
+do
+  local inner = supplyRun
+  supplyRun = function(...)
+    local r = table.pack(pcall(inner, ...))
+    fetchingNow = nil
+    if not r[1] then error(r[2], 0) end
+    return table.unpack(r, 2, r.n)
   end
 end
 
@@ -1928,6 +1950,7 @@ local function runLab()
     local verb = a[1]
     local base, sfx = verb:match("^(%l+)(%u?%l*)$")
     local res, stop
+    progress = { kind = "lab", done = lab.i - 1, total = #steps, step = verb }
     report("lab: " .. verb)
     local ok, err = pcall(function()
       if verb == "fetch" then

@@ -163,14 +163,36 @@ L.globals().R = R
 L.execute('''R.hear({ label = "HopTo", role = "helper", id = 21, state = "idle", fuel = 1500, pos = { x = -4428, y = 72, z = 1521 },
   screen = { "Waiting for jobs.", "line two" } }, 100)
 R.hear({ label = "Pushy", role = "helper", id = 20, state = "building", fuel = 900, pos = { x = 0, y = 90, z = 0 } }, 100)
-R.hear({ label = "NoteWorthy", role = "helper", id = 33, state = "idle", fuel = 50, pos = { x = -4423, y = 74, z = 1521 } }, 100)
-R.hear({ label = "Crafty", role = "factory", id = 12, state = "x" }, 100)''')
+R.hear({ label = "NoteWorthy", role = "helper", id = 33, state = "idle", fuel = 500, pos = { x = -4423, y = 74, z = 1521 } }, 100)
+R.hear({ label = "Dusty", role = "helper", id = 34, state = "idle", fuel = 40, pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "Sticky", role = "helper", id = 35, state = "fitting out", fuel = 9000, job = "factory_f2_lava",
+  progress = { kind = "fitting", done = 12, total = 80 }, pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "OnRepeat", role = "helper", id = 36, state = "waiting for materials", fuel = 9000,
+  fetching = "cable x18", pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "Comparable", role = "helper", id = 37, state = "waiting for materials", fuel = 9000,
+  pos = { x = 0, y = 90, z = 0 } }, 100)
+R.hear({ label = "Crafty", role = "factory", id = 12, state = "idle", stalled = { "Comparable" },
+  inv = { ["minecraft:coal"] = 300, ["minecraft:lava_bucket"] = 4 }, storage = { free = 200 } }, 100)
+''')
 p = lambda i: L.eval("R.panel(%d, 110)" % i)
 check("HopTo docked in home 1 (low row): green", p(1).colour == "green" and p(1).word == "docked" and p(1).name == "HopTo")
 check("Pushy out on a job: amber, with its state", p(0).colour == "orange" and p(0).state == "building")
 check("NoteWorthy docked in home 14 (high row): green", p(14).colour == "green")
-check("a home nobody has: grey, free", p(5).colour == "grey" and p(5).word == "free")
+check("a home nobody has: grey, free", p(10).colour == "grey" and p(10).word == "free")
 check("the factory is not on the rack", L.eval("R.units.Crafty") is None)
+check("low on fuel: red", p(5).colour == "red" and p(5).name == "Dusty")
+check("working on a fit: amber, the job in words with its progress", p(4).colour == "orange" and p(4).job == "Lava wall 12/80", p(4).job)
+check("fetching: blue, what it is fetching", p(6).colour == "blue" and p(6).job == "Fetching: cable x18", p(6).job)
+check("stalled (Crafty says so): red", p(7).colour == "red" and p(7).name == "Comparable")
+summ = list(L.eval("R.summary(110)")[0].values())
+check("the board's factory summary: Crafty, fuel stock, the stalled drones", any("CRAFTY: idle" in l for l in summ)
+      and any("coal 300" in l and "lava 4" in l for l in summ) and any("STALLED: Comparable" in l for l in summ), summ)
+L.execute("LAY = R.layout({ 'monitor_2', 'monitor_4', 'monitor_9' })")
+check("strips (in the order of their names, as R.monitors gives them) take the rows in order; with fewer strips than rows one shows two",
+      list(L.eval("LAY.monitor_2").values()) == [0, 1] and list(L.eval("LAY.monitor_4").values()) == [2, 3]
+      and L.eval("LAY.monitor_9") is None)
+L.execute("LAY = R.layout({ 'monitor_2', 'monitor_4', 'monitor_7', 'monitor_9' })")
+check("four strips: a row each", list(L.eval("LAY.monitor_9").values()) == [3])
 check("not heard for 5 minutes: silent (red)", L.eval("R.panel(1, 500)").colour == "red")
 L.execute('''MON = { size = { 164, 10 }, rows = {} }
 local cx, cy = 1, 1

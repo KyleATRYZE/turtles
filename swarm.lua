@@ -510,7 +510,8 @@ local BASE_CELLS = { "dock", "exit1", "exit2" }
 -- it out again.
 M.LANE = { y = 73, back = 1519, front = 1520, west = -4448, east = -4404,
   westIn = { x = -4451, z = 1520 }, eastIn = { x = -4402, z = 1519 }, eastOut = { x = -4402, z = 1520 },
-  rackX = -4429, rackZ = 1521, low = 72, high = 74, perRow = 8 }
+  rackX = -4429, rackZ = 1521, low = 72, high = 74, perRow = 8,
+  rows = { 72, 74 } }   -- (rack 1 is 4 rows of 8 now: rows 3 and 4 go in once the surveyor has placed them)
 local STATE_FILES = { "miner.state", "helper.state", "loader.state", "builder.state" }
 
 local function readTable(file)

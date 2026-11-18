@@ -620,6 +620,13 @@ local RECIPES = {
   ["advancedperipherals:peripheral_casing"] = {
     grid = { "I", "B", "I", "B", "R", "B", "I", "B", "I" },
     key = { I = "minecraft:iron_ingot", B = "minecraft:iron_bars", R = "minecraft:redstone_block" } },
+  ["advancedperipherals:geo_scanner"] = {                -- (AP 1.21.1: the surveyor's scanner)
+    grid = { "D", "M", "D", "D", "C", "D", "R", "O", "R" },
+    key = { D = "minecraft:diamond", M = "computercraft:wired_modem_full", C = "advancedperipherals:peripheral_casing",
+      O = "minecraft:observer", R = "minecraft:redstone_block" } },
+  ["minecraft:observer"] = {
+    grid = { "C", "C", "C", "R", "R", "Q", "C", "C", "C" },
+    key = { C = "minecraft:cobblestone", R = "minecraft:redstone", Q = "minecraft:quartz" } },
   ["advancedperipherals:me_bridge"] = {
     grid = { "F", "N", "F", "N", "A", "N", "F", "N", "F" },
     key = { F = "ae2:fluix_block", N = "ae2:interface", A = "advancedperipherals:peripheral_casing" } },
@@ -953,7 +960,7 @@ end
 local function report(state)
   lastState = state
   if not swarm then return end
-  pcall(swarm.report, {
+  local t = {
     role = K.COUNTER and "counter" or "factory",
     state = state,
     stalled = (not K.COUNTER and #K.stalledList > 0) and K.stalledList or nil,
@@ -971,7 +978,10 @@ local function report(state)
       last = plots.foundry.last, power = plots.foundry.power } or nil,
     probe = plots and plots.probe or nil,
     log = logLines,
-  })
+  }
+  pcall(swarm.report, t)
+  -- (and to the rack's board, over the cable: the factory's summary)
+  if K.relay then pcall(K.relay, t) end
 end
 
 ---------------------------------------------------------------- network
@@ -3214,7 +3224,8 @@ end
 -- what a drone said, passed on over the cable to the rack's screens
 function K.relay(msg)
   if K.COUNTER or not modem or type(msg) ~= "table" then return end
-  if msg.role ~= "helper" and msg.role ~= "miner" and msg.role ~= "loader" then return end
+  if msg.role ~= "helper" and msg.role ~= "miner" and msg.role ~= "loader" and msg.role ~= "builder"
+    and msg.role ~= "factory" and msg.role ~= "storage" then return end
   pcall(modem.transmit, K.RACK_CHANNEL, K.RACK_CHANNEL, msg)
 end
 

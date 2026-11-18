@@ -1093,10 +1093,12 @@ if swarm then swarm.open() end
 local function report()
   if not swarm then return end
   local used, slots = S.totals()
-  pcall(swarm.report, { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
+  local t = { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
     storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote,
     drain = (cfg.drain or S.drainNote) and { left = cfg.drain and #cfg.drain or 0, done = cfg.drained,
-      next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil })
+      next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil }
+  pcall(swarm.report, t)
+  if S.relay then pcall(S.relay, { role = "storage", label = t.label, state = t.state, storage = t.storage }) end
 end
 
 -- survey Sortnado: what every slot of the store can hold and what is in it,
@@ -1221,7 +1223,8 @@ parallel.waitForAny(
       if ev == "rednet_message" and proto == "swarm_job" then
         pcall(S.bayHeard, id, msg)
       elseif ev == "rednet_message" and proto == "swarm" and type(msg) == "table"
-          and (msg.role == "helper" or msg.role == "miner" or msg.role == "loader") then
+          and (msg.role == "helper" or msg.role == "miner" or msg.role == "loader" or msg.role == "builder"
+            or msg.role == "factory") then
         S.relay(msg)
       end
       pcall(S.bayStep)
