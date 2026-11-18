@@ -2534,6 +2534,29 @@ local function runLab()
         end
         res = (#parts > 0 and table.concat(parts, " ") or "no peripherals") .. " | " .. table.concat(seen, " ")
           .. (" | bay %s"):format(tostring(LN.bay()))
+      elseif verb == "net" then
+        -- net : what is on the wired network of each cable modem touching me
+        -- (names only, by type): is the store on the same cable as my bay?
+        local parts = {}
+        for _, side in ipairs({ "top", "bottom", "front", "back" }) do
+          if peripheral.getType(side) == "modem" then
+            local okW, wl = pcall(peripheral.call, side, "isWireless")
+            if okW and not wl then
+              local okN, names = pcall(peripheral.call, side, "getNamesRemote")
+              local count = {}
+              for _, n in ipairs(okN and names or {}) do
+                local t = n:gsub("_%d+$", "")
+                count[t] = (count[t] or 0) + 1
+              end
+              local words = {}
+              for t, c in pairs(count) do words[#words + 1] = t .. "x" .. c end
+              table.sort(words)
+              local okL, me = pcall(peripheral.call, side, "getNameLocal")
+              parts[#parts + 1] = side .. " (me " .. tostring(okL and me) .. "): " .. table.concat(words, " ")
+            end
+          end
+        end
+        res = #parts > 0 and table.concat(parts, " | ") or "no cable modem"
       elseif verb == "look" then
         -- look : what is on each of the four sides (turning round), up and down
         local seen, h0 = {}, heading
