@@ -41,7 +41,7 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 - [ ] Longer term: AE2 autocrafting (see E)
 
 ## C. Survey (Geo Scanner mapping the base)
-- [ ] survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
+- [ ] survey1 dry under the roof at -4441 75 1520. builder6 tried to walk in with lava (02:25) and its walk failed at 21 6 5. Left to rescue duty (the route through the door); else Kyle picks it up and puts it in its home. Also fixed: the scan had used the wrong tool side (geoOn). ORIGINAL NOTE: survey1 got the scanner and started, then ran out of fuel at -4441 75 1520 (01:53): it set out on 776 because labs didn't top up fuel. Fixed in 9b05162: a lab refuels first when under 1,500. survey1 is in the rescue queue after miner3; once refuelled, rerun its survey lab
 - [x] mapper1 mapped the old base: maps/oldbase.json on the status branch
 - [~] mapper1 maps the factory from outside (`factory_now`, 01:41)
 - [ ] When the maps land: `python3 tools/survey.py pull`, `survey.py rack`, then fix rack rows 3-4 (M.LANE, LN.home, rack.lua)
@@ -49,7 +49,8 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 
 ## D. Docks (rack 1, 8 × 4)
 - [x] One-drone docking test: builder1 docks in its home -4428 72 1521 fine. The real fault was a lab bug: the verb's name shadowed `base`, fixed in ac40669. The network names a docked turtle turtle_<n>, where n is the network's counter, not the computer id; the fallback is in LN.bay
-- [~] builder1 alone on lane mode (01:47) to test loading over the cable: Sortnado did NOT serve its bay in 90 s and it fell back to the pad. Sortnado now reports `bay` in its status (c566396): either "not on my cable (turtles I see …)" or "heard". Fix that, then turn lane mode on for the other helpers a few at a time
+- [x] Found why cable loading fails (02:28, lab verb `net`): rack 1's cable is NOT on the storage controllers' network. From builder1's bay it reaches only RackBoard, 17 monitors, 3 Sophisticated chests and 3 limited barrels (the "router" area). Sortnado sees no turtles at all. **Kyle: join the rack link cable to the cable that reaches the storage controllers / Sortnado's computer** (one cable piece between the two). After that, bay loads work with no code change
+- [ ] Then turn lane mode on for every helper (`rebase <h> lane=1`, a few at a time) so idle drones sit docked in rack 1. builder1 is already docked on lane mode
 - [ ] Docked drones load over the cable (Sortnado pushes into `turtle_<id>`); no more pad trips
 - [x] Top FACTORY monitor stuck on "not heard yet": only the first monitor touching the computer was ever drawn; now every one is (eabaaae, RackBoard rebooted)
 - [ ] Kyle: rack rows 3-4 modems/monitors, once the survey confirms the rows
@@ -110,4 +111,6 @@ Status key: [x] done · [~] under way · [ ] not started · [K] waiting on Kyle
 1. Works computer: `label set Works` + installer at -4413 71 1533
 2. Right-click modems: alloy cell -4409 71 1535/1537/1541 · ore line -4406 71 1530/1531 · certus barrel -4414 71 1531 · later the ME bridge -4414 71 1539
 3. Rack rows 3-4 parts (after the survey)
+0. **Most important:** join rack 1's cable to the storage controllers' cable (one piece). This unlocks loading at the rack, so no more pad queue
+0b. survey1 is out of fuel under the roof at -4441 75 1520: pick it up and place it in its rack home (or give it 2 lava buckets) if the rescue drone hasn't got it
 4. Optional server config: `computercraft:turtle_can_use` tag for modems/cable; Advanced Peripherals `chunkyTurtleRadius=1`
