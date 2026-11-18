@@ -191,7 +191,7 @@ check("working on a fit: amber, the job in words with its progress", p(4).colour
 check("fetching: blue, what it is fetching", p(6).colour == "blue" and p(6).job == "Fetching: cable x18", p(6).job)
 check("stalled (crafter1 says so): red", p(7).colour == "red" and p(7).name == "survey1")
 summ = list(L.eval("R.summary(110)")[0].values())
-check("the board's factory summary: crafter1, fuel stock, the stalled drones", any("CRAFTY: idle" in l for l in summ)
+check("the board's factory summary: crafter1, fuel stock, the stalled drones", any("CRAFTER1: idle" in l for l in summ)
       and any("coal 300" in l and "lava 4" in l for l in summ) and any("STALLED: survey1" in l for l in summ), summ)
 L.execute("LAY = R.layout({ 'monitor_2', 'monitor_4', 'monitor_9' })")
 check("strips (in the order of their names, as R.monitors gives them) take the rows in order; with fewer strips than rows one shows two",
