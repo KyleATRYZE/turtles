@@ -977,10 +977,6 @@ local function report(state)
       job = plots.foundry.job and (plots.foundry.job.item or plots.foundry.job.kind), fails = plots.foundry.fails,
       last = plots.foundry.last, power = plots.foundry.power } or nil,
     probe = plots and plots.probe or nil,
-    assist = (not K.COUNTER and K.assistInfo) and K.assistInfo(os.clock()) or nil,
-    rescues = (not K.COUNTER and plots.rescues and #plots.rescues > 0) and plots.rescues or nil,
-    rescuing = K.rescueNow and { who = K.rescueNow.who, problem = K.rescueNow.problem,
-      rescuer = K.rescueNow.rescuer } or nil,
     log = logLines,
   }
   pcall(swarm.report, t)
@@ -1107,7 +1103,6 @@ local function stockTotals()
   for _, s in ipairs(listStorage()) do
     totals[s.name] = (totals[s.name] or 0) + s.count
   end
-  if K.reserved then K.reserved(totals) end   -- (what the crafting assistant is working on)
   return totals
 end
 
@@ -2583,238 +2578,10 @@ function K.deliverBay(id, order)
   return true
 end
 
----------------------------------------------------------------- the crafting assistant
--- A second crafty turtle on the same cable as the storage (Counter, turtle
--- 38: the orders "assist Counter on=1", then "resume Counter") takes
--- crafting off Crafty, so a load is not stuck behind another one being
--- made. Crafty plans the load and hands the crafting of whole lines of it
--- to the assistant over rednet (assist_job: the plan's steps), and crafts
--- the other lines itself at the same time. With other loads waiting, the
--- assistant gets every line it can take of this one and Crafty goes on to
--- the next load. The assistant pulls what it needs from the same storage
--- over the cable and puts what it makes back there; when it says it is done
--- (assist_done), Crafty plans the load again (it finds what both made in
--- stock, makes whatever is still short) and hands it over as usual.
--- Smelting stays with Crafty (one set of furnaces), and so do the orders:
--- the assistant only crafts what it is sent. While a job is out, what it
--- will use and the load itself are held back from Crafty's own planning
--- (K.reserve), so the two never plan on the same stock.
-K.ASSIST_FILE = ".assist"
-K.ASSIST = K.COUNTER and fs.exists(K.ASSIST_FILE)     -- (this turtle is the assistant)
-K.ASSIST_TIMEOUT = 900   -- a job not done in 15 min: Crafty makes the rest of the load itself
-K.ASSIST_QUIET = 90      -- an assistant not heard this long is not sent anything
-K.assistants = {}        -- assistant id -> { at, label, busy (its word), job (mine in flight), sentAt }
-K.reserve = {}           -- order id -> { order =, items = { name = n } } held back while it is out
-K.assistSeq = 0
-
--- (stockTotals) less what is held back for loads out with the assistant
-function K.reserved(totals)
-  for id, r in pairs(K.reserve) do
-    if orders[id] ~= r.order then
-      K.reserve[id] = nil
-    else
-      for name, n in pairs(r.items) do
-        if totals[name] then totals[name] = math.max(0, totals[name] - n) end
-      end
-    end
-  end
-end
-
--- How many turtle.craft calls the steps take: the work in them.
-function K.crafts(steps)
-  local n = 0
-  for _, s in ipairs(steps) do
-    local r = s.recipe or recipeFor(s.name)
-    if r and not r.smelt then
-      local per = canBulk(r) and math.max(1, math.floor(64 / (r.yield or 1))) or 1
-      n = n + math.ceil(s.batches / per)
-    end
-  end
-  return n
-end
-
--- A load's lines shared out: each line planned on its own, on what the lines
--- before it leave (so no line counts on what another makes), then the
--- biggest first to whichever side has less to do. Lines that smelt stay
--- with Crafty. whole: every line the assistant can take goes to it.
--- Returns the assistant's part { lines, steps, used, work } and Crafty's
--- { steps, work }, or nil (nothing worth handing out, or no clean split).
-function K.splitLoad(lines, stock, whole)
-  local left, parts = {}, {}
-  for k, v in pairs(stock) do left[k] = v end
-  for i, l in ipairs(lines) do
-    local pretend = {}
-    for k, v in pairs(left) do pretend[k] = v end
-    local steps, missing = {}, {}
-    plan(pretend, l[1], l[2], steps, missing)
-    if next(missing) then return nil end
-    local p = { i = i, line = l, steps = steps, work = K.crafts(steps), used = {} }
-    for _, s in ipairs(steps) do
-      local r = s.recipe or recipeFor(s.name)
-      if r and r.smelt then p.smelts = true end
-    end
-    for k, v in pairs(left) do
-      local now = pretend[k] or 0
-      if now < v then p.used[k], left[k] = v - now, now end
-    end
-    parts[#parts + 1] = p
-  end
-  table.sort(parts, function(a, b)
-    if a.work ~= b.work then return a.work > b.work end
-    return a.i < b.i
-  end)
-  local a = { lines = {}, steps = {}, used = {}, work = 0 }
-  local b = { steps = {}, work = 0 }
-  for _, p in ipairs(parts) do
-    local side = b
-    if p.work > 0 and not p.smelts and (whole or a.work <= b.work) then side = a end
-    side.work = side.work + p.work
-    for _, s in ipairs(p.steps) do side.steps[#side.steps + 1] = s end
-    if side == a then
-      a.lines[#a.lines + 1] = p.line
-      for k, v in pairs(p.used) do a.used[k] = (a.used[k] or 0) + v end
-    end
-  end
-  if a.work == 0 then return nil end
-  return a, b
-end
-
--- An assistant heard from lately with nothing of mine in hand.
-function K.assistFree(now)
-  if plots.assist == false then return nil end
-  for aid, a in pairs(K.assistants) do
-    if now - a.at < K.ASSIST_QUIET and not a.job and not a.busy then return aid end
-  end
-  return nil
-end
-
--- Hand (part of) a load to the assistant. Returns Crafty's own part ({ steps,
--- work }: possibly nothing), or nil when nothing was handed out.
-function K.farmOut(id, order, whole, now)
-  local aid = K.assistFree(now)
-  if not aid then return nil end
-  local lines = fitLoad(order.items)
-  local a, b = K.splitLoad(lines, stockTotals(), whole)
-  if not a then return nil end
-  K.assistSeq = K.assistSeq + 1
-  for _, s in ipairs(a.steps) do s.recipe = s.recipe or recipeFor(s.name) end
-  local held = {}
-  for k, v in pairs(a.used) do held[k] = v end
-  for _, l in ipairs(lines) do held[l[1]] = (held[l[1]] or 0) + l[2] end
-  K.reserve[id] = { order = order, items = held }
-  order.farm = { job = K.assistSeq, aid = aid, at = now, work = a.work, mine = b.work }
-  local as = K.assistants[aid]
-  as.job, as.sentAt = K.assistSeq, now
-  local words = {}
-  for _, l in ipairs(a.lines) do words[#words + 1] = shortName(l[1]) .. " " .. l[2] end
-  rednet.send(aid, { type = "assist_job", forId = aid, job = K.assistSeq, steps = a.steps,
-    skip = plots.stores and plots.stores.skip or {}, what = table.concat(words, ", ") }, K.JOB_PROTOCOL)
-  print(("%s crafts %s for turtle %s (%d crafts; mine: %d)."):format(tostring(as.label or aid),
-    table.concat(words, ", "), tostring(id), a.work, b.work))
-  return b
-end
-
--- An assistant says it is alive (assist_alive) or done (assist_done).
-function K.assistHeard(id, msg, now)
-  local a = K.assistants[id] or {}
-  K.assistants[id] = a
-  a.at, a.label = now, type(msg.label) == "string" and msg.label or a.label
-  local lost = msg.type == "assist_alive" and msg.busy == nil and a.job and now - (a.sentAt or now) > 30
-  if msg.type == "assist_alive" and not lost then
-    a.busy = msg.busy
-    return
-  end
-  local job = lost and a.job or msg.job
-  a.job, a.busy = nil, nil
-  for oid, o in pairs(orders) do
-    if o.farm and o.farm.job == job and not o.farm.done then
-      o.farm.done = true
-      local errs = type(msg.errors) == "table" and msg.errors or {}
-      plots.assistLog = plots.assistLog or { jobs = 0, crafts = 0, seconds = 0, fails = 0 }
-      local log = plots.assistLog
-      log.jobs, log.crafts = log.jobs + 1, log.crafts + (o.farm.work or 0)
-      log.seconds = log.seconds + (tonumber(msg.took) or math.floor(now - o.farm.at))
-      if lost or #errs > 0 then log.fails = log.fails + 1 end
-      log.last = lost and "lost the job (restarted?)" or (#errs > 0 and tostring(errs[1]):sub(1, 120))
-        or ("done in " .. tostring(msg.took) .. " s")
-      saveTable(K.PLOTS_FILE, plots)
-      print(("%s: its part of turtle %s's load %s."):format(tostring(a.label or id), tostring(oid),
-        lost and "was lost: I make the rest" or (#errs > 0 and ("done, with problems: " .. tostring(errs[1])) or "done")))
-    end
-  end
-end
-
--- (every 30 s) a job out too long, or an assistant gone quiet: Crafty
--- finishes the load itself.
-function K.assistWatch(now)
-  for _, o in pairs(orders) do
-    local f = o.farm
-    if f and not f.done then
-      local a = K.assistants[f.aid]
-      if now - f.at > K.ASSIST_TIMEOUT or not a or now - a.at > 2 * K.ASSIST_QUIET then
-        f.done = true
-        if a and a.job == f.job then a.job = nil end
-        print("The assistant's part of a load is overdue: I make the rest.")
-      end
-    end
-  end
-end
-
--- What the status says about the assistant(s).
-function K.assistInfo(now)
-  local list = {}
-  for aid, a in pairs(K.assistants) do
-    list[#list + 1] = { id = aid, label = a.label, heard = math.floor(now - a.at), job = a.job or a.busy }
-  end
-  if #list == 0 and not plots.assistLog then return nil end
-  return { on = plots.assist ~= false, assistants = list, log = plots.assistLog }
-end
-
--- The assistant's side: one pass of its loop (instead of serving a pad).
-function K.assistTurn()
-  local now = os.clock()
-  if now - K.counterBeat > 20 then
-    K.counterBeat = now
-    rednet.broadcast({ type = "assist_alive", busy = K.job and K.job.job or nil, label = os.getComputerLabel() },
-      K.JOB_PROTOCOL)
-  end
-  local j = K.job
-  if not j then
-    report("assist: open")
-    return false
-  end
-  print("Crafting for Crafty: " .. tostring(j.what or (#j.steps .. " steps")))
-  report("assist: crafting")
-  local t0, errs = os.clock(), {}
-  stashAll()
-  for _, step in ipairs(j.steps) do
-    local okRun, err = pcall(runSteps, { step })
-    if not okRun then
-      if err == "Terminated" then error(err, 0) end
-      errs[#errs + 1] = tostring(err)
-      print("Problem: " .. tostring(err))
-    end
-  end
-  pcall(stashAll)
-  K.job = nil
-  rednet.send(j.from, { type = "assist_done", job = j.job, errors = errs, took = math.floor(os.clock() - t0),
-    label = os.getComputerLabel() }, K.JOB_PROTOCOL)
-  print(("Done in %d s%s."):format(math.floor(os.clock() - t0), #errs > 0 and (", " .. #errs .. " problems") or ""))
-  report("assist: open")
-  return true
-end
-
 local function serveOrders(onlyReady)
   -- onlyReady: just hand a finished load to the turtle on the pad (safe with
   -- a new turtle in hand: nothing is stashed or crafted)
   -- a builder already on the pad with its load made goes first
-  -- a load the assistant has done its part of: finished here (planned again)
-  for oid, o in pairs(orders) do
-    if o.farm and o.farm.done then
-      K.reserve[oid] = nil
-      o.farm, o.assisted = nil, true
-    end
-  end
   local waiting = false
   for _, o in pairs(orders) do if o.ready then waiting = true end end
   if waiting then
@@ -2832,35 +2599,10 @@ local function serveOrders(onlyReady)
     for _, l in ipairs(o.items or {}) do n = n + (tonumber(l[2]) or 0) end
     return n
   end
-  table.sort(queue, function(p, q)
-    local pa, qa = p.order.assisted == true, q.order.assisted == true      -- (all but made: first)
-    if pa ~= qa then return pa end
-    return size(p.order) < size(q.order)
-  end)
+  table.sort(queue, function(p, q) return size(p.order) < size(q.order) end)
   for _, entry in ipairs(queue) do
     local id, order = entry.id, entry.order
-    local mine = nil                 -- my part of a load shared with the assistant
-    if not waiting and not order.ready and not onlyReady and not order.farm and not order.assisted then
-      served[id] = order.n
-      local others = 0               -- (more loads waiting: the assistant takes all it can of this one)
-      for oid, o in pairs(orders) do
-        if oid ~= id and not o.ready and not o.farm then others = others + 1 end
-      end
-      if K.assistFree(os.clock()) then
-        stashAll()
-        mine = K.farmOut(id, order, others > 0, os.clock())
-      end
-      if mine and #mine.steps > 0 then
-        print("Making my part of the load (the assistant has the rest).")
-        report("preparing materials")
-        for _, step in ipairs(mine.steps) do
-          local okRun, err = pcall(runSteps, { step })
-          if not okRun then print("Problem: " .. tostring(err)) end
-        end
-        return true
-      end
-    end
-    if not waiting and not order.ready and not onlyReady and not order.farm and not mine then
+    if not waiting and not order.ready and not onlyReady then
       served[id] = order.n
       print("Preparing a load for the builder.")
       report("preparing materials")
@@ -3209,9 +2951,7 @@ local function noteStatus(id, msg)
     since = (old.state == state and old.since) or os.clock(),
     x = x, y = y, z = z, at = os.clock(), fuel = tonumber(msg.fuel), chunky = msg.chunky,
     mode = loader and job.mode or nil,
-    who = loader and type(job.who) == "string" and nameKey(job.who) or nil,
-    -- (its last screen lines: kept for a rescue report)
-    screen = K.lastLines(type(msg.screen) == "table" and msg.screen or msg.log) or old.screen }
+    who = loader and type(job.who) == "string" and nameKey(job.who) or nil }
 end
 
 local function isFar(u)
@@ -3520,237 +3260,6 @@ function K.relay(msg)
   pcall(modem.transmit, K.RACK_CHANNEL, K.RACK_CHANNEL, msg)
 end
 
----------------------------------------------------------------- rescue drones
--- A drone that is stuck is fetched. Crafty looks every 30 s for one that is
--- out of fuel (needs fuel, stranded), crashed (error), trapped (stuck ...,
--- lost, cannot move), still waiting 20 minutes after the watchdog's reboot
--- (stalled), or silent for 10 minutes, with a known last place. A crash is
--- first told to reboot over the air; only a drone that crashes again (or
--- does not hear) is visited. The rescuer is the builder's mate named by the
--- order "rescuer Crafty name=<helper>" when it is idle, else the nearest
--- idle one (only=1: that one or nobody). It flies next to the drone and,
--- by the problem (how): fuel - drops coal or lava into it and reboots it,
--- so it drinks on the way up; reboot - reboots it or turns it on; trapped -
--- digs it (a broken turtle keeps its id, label, fuel and files; its load
--- comes along too), carries it into the open air by the hover row, places
--- it, gives back what it carried and turns it on. A rescuer never breaks
--- anything but the turtle it came for, and a drone deep underground with
--- no shaft to it is reported, not visited. Each rescue (who, the problem,
--- its last screen lines, what was done, the result, what it said three
--- minutes on) goes into the status (rescues), so the cause can be fixed;
--- a drone rescued 3 times in an hour is reported instead of rescued again.
--- "rescue Crafty who=<drone> [problem=fuel|reboot|trapped]" asks for one;
--- "rescuer Crafty on=0" stops them.
-K.RESCUE_SILENT = 600      -- not heard this long (from a known place): fetched
-K.RESCUE_GONE = 3 * 3600   -- not heard this long: taken away, not stuck
-K.RESCUE_PER_HOUR = 3      -- rescues of one drone in an hour; past that it is reported instead
-K.RESCUE_TIMEOUT = 1500    -- a rescuer not heard back from in 25 min: that rescue failed
-K.RESCUE_DEEP = 10         -- this far below the factory, out of the pad's shaft: no way to it
-K.RESCUE_KEEP = 12         -- rescue reports kept in the status
-K.rescueNow = nil          -- the rescue under way
-K.rescueTold = {}          -- drone key -> when it was last reported (not rescued): once in 30 min
-K.rebootTold = {}          -- drone key -> when it was told to reboot over the air
-K.rescueFollow = {}        -- { e = report, key =, at = }: what the drone says three minutes on
-K.rescueSeq = 0
-
-function K.lastLines(t)
-  if type(t) ~= "table" or #t == 0 then return nil end
-  local out = {}
-  for i = math.max(1, #t - 5), #t do out[#out + 1] = tostring(t[i]):sub(1, 80) end
-  return out
-end
-
--- What is wrong with a drone, if it is worth a trip: "fuel", "error",
--- "trapped", "stalled" or "silent", and its state in words.
-function K.rescueProblem(u, now)
-  if u.role ~= "helper" and u.role ~= "miner" and u.role ~= "loader" and u.role ~= "builder" then return nil end
-  if not (u.x and u.y and u.z) then return nil end
-  local age, s, long = now - (u.at or now), tostring(u.state), now - (u.since or now)
-  if age > K.RESCUE_SILENT then
-    if age > K.RESCUE_GONE then return nil end
-    return "silent", ("silent %d min (last said: %s)"):format(math.floor(age / 60), s)
-  end
-  if age > 300 then return nil end
-  if s == "needs fuel" or s == "stranded" or s == "out of fuel" or (u.fuel == 0 and not RESTING[s]) then
-    if long > 300 then return "fuel", s end
-  elseif s == "error" then
-    if long > 180 then return "error", s end
-  elseif s:find("^stuck") or s == "lost" or s:find("^cannot move") or s == "boxed in" then
-    if long > 300 then return "trapped", s end
-  elseif K.waiting(s) and long > K.STALL_AFTER + K.STALL_REBOOT + 300 then
-    return "stalled", s
-  end
-  return nil
-end
-
--- What the rescuer does about it: fuel, reboot or trapped (dig it out).
-function K.rescueHow(problem, u)
-  if problem == "fuel" or problem == "trapped" or problem == "reboot" then return problem end
-  if problem ~= "error" and base and base.pad and u.x == base.pad.x and u.z == base.pad.z
-    and u.y < base.f.y + 12 then
-    return "trapped"                    -- (in the queue down the pad's shaft)
-  end
-  return "reboot"
-end
-
--- Deep underground, and not in the pad's shaft: no way down to it.
-function K.rescueDeep(u)
-  if not (base and base.f) then return false end
-  local shaft = base.pad and u.x == base.pad.x and u.z == base.pad.z
-  return u.y < base.f.y - K.RESCUE_DEEP and not shaft
-end
-
--- Rescues of a drone in the last hour (old ones forgotten).
-function K.rescueCount(key, nowS)
-  plots.rescueTimes = plots.rescueTimes or {}
-  local kept = {}
-  for _, t in ipairs(plots.rescueTimes[key] or {}) do
-    if nowS - t < 3600 then kept[#kept + 1] = t end
-  end
-  plots.rescueTimes[key] = #kept > 0 and kept or nil
-  return #kept
-end
-
-function K.rescueEntry(u, problem, why, did, result)
-  local okT, t = pcall(os.date, "!%d %b %H:%M")
-  local e = { who = u.label, id = u.id, role = u.role, problem = problem, state = why, at = okT and t or nil,
-    pos = { u.x, u.y, u.z }, fuel = u.fuel, did = did, result = result, screen = u.screen }
-  plots.rescues = plots.rescues or {}
-  table.insert(plots.rescues, e)
-  while #plots.rescues > K.RESCUE_KEEP do table.remove(plots.rescues, 1) end
-  saveTable(K.PLOTS_FILE, plots)
-  return e
-end
-
--- Not rescued but reported (once in 30 minutes for each drone).
-function K.rescueReport(key, u, problem, why, result, now)
-  if K.rescueTold[key] and now - K.rescueTold[key] < 1800 then return end
-  K.rescueTold[key] = now
-  K.rescueEntry(u, problem, why, "nothing", result)
-  print(("%s (%s): %s"):format(tostring(u.label), tostring(why), result))
-end
-
--- Who goes: the named rescuer when it is idle; else the nearest idle mate
--- with fuel that no duty keeps back (unless only the named one may go).
-function K.rescuer(v, now)
-  local cfg = plots.rescue or {}
-  local want = cfg.name and nameKey(cfg.name)
-  local best, bestD
-  for key, u in pairs(fleet) do
-    local kept = (plots.haul and plots.haul.skip and plots.haul.skip[u.label])
-      or (plots.lavafarm and plots.lavafarm.skip and plots.lavafarm.skip[u.label])
-    if u.role == "helper" and u.id ~= v.id and (u.state == "idle" or u.state == "foundry: idle")
-      and now - (u.at or -1e9) < 200 and (u.fuel or 0) >= 600 and u.x and u.y and u.z
-      and not (u.x == v.x and u.z == v.z)                  -- (in its column: part of the jam)
-      and (key == want or (not kept and not cfg.only)) then
-      if key == want then return u end
-      local d = math.abs(u.x - v.x) + math.abs(u.y - v.y) + math.abs(u.z - v.z)
-      if not best or d < bestD or (d == bestD and u.label < best.label) then best, bestD = u, d end
-    end
-  end
-  return best
-end
-
--- (every 30 s, from the status listener)
-function K.rescueDuty(now)
-  if K.COUNTER or not base or not swarm then return end
-  local nowS = math.floor(os.epoch("utc") / 1000)
-  for i = #K.rescueFollow, 1, -1 do                -- what the drones rescued say now
-    local f = K.rescueFollow[i]
-    if now - f.at > 180 then
-      local u = fleet[f.key]
-      f.e.after = (u and now - u.at < 120) and u.state or "not heard since"
-      table.remove(K.rescueFollow, i)
-      saveTable(K.PLOTS_FILE, plots)
-    end
-  end
-  local r = K.rescueNow
-  if r and now - r.at < K.RESCUE_TIMEOUT then return end
-  if r then
-    r.e.result = ("no word from %s in %d min"):format(r.rescuer, math.floor(K.RESCUE_TIMEOUT / 60))
-    saveTable(K.PLOTS_FILE, plots)
-    print("Rescue of " .. r.who .. ": " .. r.e.result .. ".")
-    K.rescueNow = nil
-  end
-  local ask = K.rescueAsk
-  K.rescueAsk = nil
-  if plots.rescue and plots.rescue.on == false and not ask then return end
-  local list = {}
-  for key, u in pairs(fleet) do
-    local problem, why = K.rescueProblem(u, now)
-    local asked = ask ~= nil and ((ask.who and nameKey(ask.who) == key) or (ask.id and ask.id == u.id))
-    if asked and u.x and u.y and u.z then
-      problem = problem or "asked"
-      why = (ask.why and (ask.why .. ": ") or "asked for: ") .. tostring(u.state)
-    end
-    if problem then
-      list[#list + 1] = { key = key, u = u, problem = problem, why = why, asked = asked and true or false,
-        how = asked and ask.problem and K.rescueHow(ask.problem, u) or K.rescueHow(problem, u) }
-    end
-  end
-  table.sort(list, function(a, b)
-    if a.asked ~= b.asked then return a.asked end
-    if a.u.x ~= b.u.x then return a.u.x < b.u.x end
-    if a.u.z ~= b.u.z then return a.u.z < b.u.z end
-    if a.u.y ~= b.u.y then return a.u.y > b.u.y end     -- (a jammed shaft: the top one first)
-    return a.key < b.key
-  end)
-  for _, c in ipairs(list) do
-    local u, key = c.u, c.key
-    if c.problem == "error" and not (K.rebootTold[key] and now - K.rebootTold[key] < 1800) then
-      K.rebootTold[key] = now                            -- (a drone that still hears orders needs no trip)
-      direct(u.id, { cmd = "reboot" })
-      print(u.label .. " crashed: told to reboot.")
-    elseif c.problem == "silent" and u.role == "miner" and isFar(u) and not c.asked then
-      -- (far away and quiet: a chunk loader goes out with it, see escortFor)
-    elseif K.rescueDeep(u) then
-      K.rescueReport(key, u, c.problem, c.why, "deep underground with no shaft down to it: not rescued", now)
-    elseif K.rescueCount(key, nowS) >= K.RESCUE_PER_HOUR then
-      K.rescueReport(key, u, c.problem, c.why, ("rescued %d times this hour: it needs a fix, not another rescue")
-        :format(K.RESCUE_PER_HOUR), now)
-    else
-      local h = K.rescuer(u, now)
-      if not h then
-        if not K.noRescuerAt or now - K.noRescuerAt > 600 then
-          K.noRescuerAt = now
-          print("No builder's mate free to rescue " .. u.label .. ".")
-        end
-        return
-      end
-      K.rescueSeq = K.rescueSeq + 1
-      plots.rescueTimes[key] = plots.rescueTimes[key] or {}
-      table.insert(plots.rescueTimes[key], nowS)
-      local e = K.rescueEntry(u, c.problem, c.why, c.how .. " by " .. h.label, "under way")
-      K.rescueNow = { n = K.rescueSeq, key = key, who = u.label, vid = u.id, rescuer = h.label, rid = h.id,
-        at = now, problem = c.problem, e = e }
-      h.state = "sent to rescue"            -- (not sent anywhere else before it says what it is doing)
-      direct(h.id, { cmd = "rescue", who = u.label, vid = u.id, x = u.x, y = u.y, z = u.z, how = c.how,
-        n = K.rescueSeq })
-      print(("%s goes to rescue %s (%s: %s)."):format(h.label, u.label, c.how, tostring(c.why)))
-      return
-    end
-  end
-end
-
--- The rescuer's word: what it found and did.
-function K.rescueHeard(id, msg)
-  local r = K.rescueNow
-  if not r or r.rid ~= id or msg.n ~= r.n then return end
-  K.rescueNow = nil
-  local e = r.e
-  e.did = tostring(msg.did or e.did)
-  e.result = tostring(msg.result or "?")
-  if type(msg.notes) == "table" then e.notes = K.lastLines(msg.notes) end
-  if type(msg.label) == "string" then e.label = msg.label end
-  K.rescueFollow[#K.rescueFollow + 1] = { e = e, key = r.key, at = os.clock() }
-  saveTable(K.PLOTS_FILE, plots)
-  print(("Rescue of %s by %s: %s (%s)."):format(r.who, r.rescuer, e.result, e.did))
-  -- another drone on top of it (a jammed shaft): that one is dug out next
-  if tonumber(msg.blocker) and tonumber(msg.blocker) ~= r.vid then
-    K.rescueAsk = { id = tonumber(msg.blocker), problem = "trapped", why = "on top of " .. r.who }
-  end
-end
-
 local function statusListener()
   if not swarm then while true do sleep(3600) end end
   swarm.open()
@@ -3765,12 +3274,6 @@ local function statusListener()
       lastWatch = os.clock()
       local ok, err = pcall(K.watchdog)
       if not ok then print("watchdog: " .. tostring(err)) end
-      if not K.COUNTER then
-        ok, err = pcall(K.assistWatch, os.clock())
-        if not ok then print("assistant: " .. tostring(err)) end
-        ok, err = pcall(K.rescueDuty, os.clock())
-        if not ok then print("rescue: " .. tostring(err)) end
-      end
     end
   end
 end
@@ -3780,20 +3283,7 @@ local function responder()
   if swarm then swarm.open() end
   while true do
     local id, msg = rednet.receive(K.JOB_PROTOCOL)
-    if type(msg) == "table" and id and msg.type == "assist_job" then
-      -- (the assistant) crafting sent by Crafty: done in the build loop
-      if K.ASSIST and msg.forId == os.getComputerID() and type(msg.steps) == "table" and not K.job then
-        if type(msg.skip) == "table" then         -- (Crafty's list of inventories that are not storage)
-          plots.stores = { skip = msg.skip }
-          saveTable(K.PLOTS_FILE, plots)
-        end
-        K.job = { job = msg.job, steps = msg.steps, from = id, what = msg.what }
-      end
-    elseif type(msg) == "table" and id and (msg.type == "assist_alive" or msg.type == "assist_done") then
-      if not K.COUNTER then K.assistHeard(id, msg, os.clock()) end
-    elseif type(msg) == "table" and id and msg.type == "rescue_done" then
-      if not K.COUNTER then pcall(K.rescueHeard, id, msg) end
-    elseif type(msg) == "table" and id and msg.type == "counter_alive" then
+    if type(msg) == "table" and id and msg.type == "counter_alive" then
       K.counters[math.floor(tonumber(msg.slot) or 1)] = os.clock()
     elseif type(msg) == "table" and id and (msg.type == "counter_ready" or msg.type == "counter_handed"
         or msg.type == "counter_drop") then
@@ -3808,7 +3298,7 @@ local function responder()
       end
     elseif type(msg) == "table" and id and (K.COUNTER or (msg.type == "materials" and not K.mine(id))) then
       -- a counter's share, or not a counter's business at all
-      if K.COUNTER and not K.ASSIST and K.mine(id) and msg.type == "materials" and type(msg.items) == "table"
+      if K.COUNTER and K.mine(id) and msg.type == "materials" and type(msg.items) == "table"
           and (msg.n == nil or served[id] ~= msg.n) then
         orders[id] = { items = msg.items, fuel = tonumber(msg.fuel) or 0, n = msg.n }
       elseif not K.COUNTER and msg.type == "materials" and type(msg.items) == "table" then
@@ -3993,7 +3483,6 @@ local function tryBuild()
     -- (no drop-off chest to face: turns count from wherever it faced at start,
     -- and it always turns back there)
     if facing == nil then facing = 0 end
-    if K.ASSIST then return K.assistTurn() end        -- (crafting for Crafty: no pad of its own)
     if os.clock() - K.counterBeat > 30 then
       K.counterBeat = os.clock()
       rednet.broadcast({ type = "counter_alive", slot = K.SLOT }, K.JOB_PROTOCOL)
@@ -4302,36 +3791,6 @@ while true do
       for name in tostring(c.skip or ""):gmatch("[^,]+") do table.insert(plots.stores.skip, name) end
       saveTable(K.PLOTS_FILE, plots)
       print("Not storage: " .. (#plots.stores.skip > 0 and table.concat(plots.stores.skip, ", ") or "nothing named"))
-      return true
-    elseif c.cmd == "assist" then          -- assist Counter on=1|0 (be the crafting assistant) / assist Crafty on=0|1
-      local on = not (c.on == 0 or c.on == "0" or c.on == false or c.on == "false" or c.on == "off")
-      if K.COUNTER then
-        if on then
-          local h = fs.open(K.ASSIST_FILE, "w")
-          h.write("on")
-          h.close()
-        elseif fs.exists(K.ASSIST_FILE) then fs.delete(K.ASSIST_FILE) end
-        K.ASSIST = on
-        print(on and "Crafting assistant to Crafty (no pad of my own)." or "Not crafting for Crafty.")
-      else
-        plots.assist = (not on) and false or nil
-        saveTable(K.PLOTS_FILE, plots)
-        print("Handing crafting to an assistant: " .. (on and "yes" or "no") .. ".")
-      end
-      report(lastState)
-      return true
-    elseif c.cmd == "rescuer" then         -- rescuer Crafty name=<helper> [only=1] [on=0|1]
-      plots.rescue = plots.rescue or {}
-      if type(c.name) == "string" then plots.rescue.name = c.name ~= "" and c.name or nil end
-      if c.only ~= nil then plots.rescue.only = (c.only == 1 or c.only == "1" or c.only == true) or nil end
-      if c.on ~= nil then plots.rescue.on = not (c.on == 0 or c.on == "0" or c.on == false or c.on == "off") end
-      saveTable(K.PLOTS_FILE, plots)
-      print(("Rescues: %s; rescuer: %s%s."):format(plots.rescue.on == false and "off" or "on",
-        tostring(plots.rescue.name or "nearest idle mate"), plots.rescue.only and " only" or ""))
-      return true
-    elseif c.cmd == "rescue" and type(c.who) == "string" then   -- rescue Crafty who=<drone> [problem=fuel|reboot|trapped]
-      K.rescueAsk = { who = c.who, problem = c.problem }
-      print("Rescue asked for: " .. c.who .. ".")
       return true
     elseif c.cmd == "wood" then            -- wood Crafty first=<wood>: no need to stop work
       setFirstWood(c.first)
