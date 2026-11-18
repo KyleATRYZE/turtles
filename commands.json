@@ -1,11 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795032870,
-      "issued": 1795032870000,
-      "cmd": "probe",
-      "target": "crafter1",
-      "name": "energizedSmelter_0"
+      "id": 1795033046,
+      "issued": 1795033046000,
+      "cmd": "lab",
+      "target": "builder2",
+      "clear": 1,
+      "ops": "fetch|minecraft:coal=16;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|38|2|16;face|3;inspect|down;digDown|heat_generator;placeDown|mekanismgenerators:heat_generator;expect|down|heat_generator;dropDown|minecraft:coal|16;inv;leave;home;handin|"
     }
   ]
 }
