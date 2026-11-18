@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795029657,
-      "issued": 1795029657000,
+      "id": 1795029755,
+      "issued": 1795029755000,
       "cmd": "make",
       "target": "crafter1",
-      "item": "mekanism:energized_smelter",
+      "item": "mekanism:metallurgic_infuser",
       "n": 1
     }
   ]
