@@ -1,60 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795028698,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "foundry1",
-      "lane": 1
-    },
-    {
-      "id": 1795028699,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "lava1",
-      "lane": 1
-    },
-    {
-      "id": 1795028700,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "builder1",
-      "lane": 1
-    },
-    {
-      "id": 1795028701,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "builder2",
-      "lane": 1
-    },
-    {
-      "id": 1795028702,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "builder5",
-      "lane": 1
-    },
-    {
-      "id": 1795028703,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "builder6",
-      "lane": 1
-    },
-    {
-      "id": 1795028704,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "survey1",
-      "lane": 1
-    },
-    {
-      "id": 1795028705,
-      "issued": 1795028698000,
-      "cmd": "rebase",
-      "target": "rescue1",
-      "lane": 1
+      "id": 1795028978,
+      "issued": 1795028978000,
+      "cmd": "drain",
+      "target": "Sortnado",
+      "from": "minecraft:chest_*"
     }
   ]
 }
