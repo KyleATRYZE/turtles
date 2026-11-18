@@ -420,12 +420,19 @@ end
 function LN.toHome()
   local hx, hy, hz = LN.home()
   if pos.x == hx and pos.y == hy and pos.z == hz then return true end
-  if not LN.onTrack() and not LN.enter(false) then return false end   -- (homes are reached eastbound)
-  if not LN.toFront() then return false end
-  if pos.x > hx then                                   -- behind it: round by the back track
-    if not (LN.go(3, 1) and LN.west(hx) and LN.go(1, 1)) then return false end
+  local function no(stage)
+    LN.why = LN.why or (stage .. (" (at %d %d %d)"):format(pos.x, pos.y, pos.z))
+    return false
   end
-  return LN.east(hx) and LN.toY(hy) and LN.go(1, 1) and pos.z == hz
+  if not LN.onTrack() and not LN.enter(false) then return no("no way down to the west gate") end   -- (homes are reached eastbound)
+  if not LN.toFront() then return no("could not get onto the front track") end
+  if pos.x > hx then                                   -- behind it: round by the back track
+    if not (LN.go(3, 1) and LN.west(hx) and LN.go(1, 1)) then return no("could not get round by the back track") end
+  end
+  if not LN.east(hx) then return no("the front track is blocked") end
+  if not LN.toY(hy) then return no("could not get to my row") end
+  if not (LN.go(1, 1) and pos.z == hz) then return no("my home is taken or shut") end
+  return true
 end
 -- out of the lane by the east gate (to climb outside)
 function LN.exit()
@@ -469,11 +476,21 @@ local escape     -- defined further down (a way out of a place with no way strai
 
 local function goHover()
   if LN.on() then
-    LN.why = nil
-    if LN.toHome() then return true end
-    print("Could not get into my home in the rack (" .. tostring(LN.why or "?") .. "): waiting outside.")
-    report("home blocked: " .. tostring(LN.why or "?"))
-    if LN.inside() then LN.exit() end
+    -- (three goes, a little apart: the lane is one drone wide, and whoever
+    -- was in the way has usually gone by the next try. No hovering overhead
+    -- while there is still a way home.)
+    for try = 1, 3 do
+      LN.why = nil
+      if LN.toHome() then return true end
+      print("Could not get into my home in the rack (" .. tostring(LN.why or "?") .. "): "
+        .. (try < 3 and "trying again." or "waiting outside."))
+      report("home blocked: " .. tostring(LN.why or "?"))
+      if LN.inside() then LN.exit() end
+      if try < 3 then
+        riseTo(math.max(pos.y, highway()))
+        sleep(6 * try + (os.getComputerID() % 5))
+      end
+    end
   end
   local x, y, z = hoverAir()
   if pos.y < y then riseTo(y) end
