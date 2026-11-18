@@ -181,7 +181,7 @@ end
 function R.summary(now)
   now = now or os.clock()
   local f, lines = R.factory, {}
-  if not f then return { "FACTORY: not heard yet" }, false end
+  if not f then return { "FACTORY: not heard yet", R.diag }, false end
   local inv = type(f.inv) == "table" and f.inv or {}
   local n = function(k) return tonumber(inv[k]) or 0 end
   local s = type(f.storage) == "table" and f.storage or {}
@@ -195,7 +195,7 @@ function R.summary(now)
   for k in pairs(R.stalled) do stalled[#stalled + 1] = k end
   table.sort(stalled)
   local fy = type(f.foundry) == "table" and f.foundry or {}
-  lines[1] = ("CRAFTY: %s   (%s)"):format(tostring(f.state), ago(now - (R.factoryAt or now)))
+  lines[1] = ("CRAFTER1: %s   (%s)"):format(tostring(f.state), ago(now - (R.factoryAt or now)))
   lines[2] = ("STORE: %s slots free%s   crafter1's chests: %s free"):format(st and tostring(st.free) or "?",
     st and (" of " .. tostring(st.slots)) or "", tostring(s.free or "?"))
   lines[3] = ("FUEL: coal %d  charcoal %d  lava %d"):format(n("minecraft:coal"), n("minecraft:charcoal"),
@@ -205,6 +205,7 @@ function R.summary(now)
   lines[5] = ("FOUNDRY: %s"):format(fy.job and plainName(fy.job)
     or (type(fy.last) == "table" and fy.last.made and ("last made " .. tostring(fy.last.made))) or "idle")
   if type(f.probe) == "string" then lines[6] = f.probe end
+  if R.diag then lines[#lines + 1] = R.diag end
   return lines, #stalled > 0
 end
 
@@ -233,6 +234,8 @@ function R.monitors()
       local okS, r, g, bl = pcall(peripheral.call, strips[i], "getPaletteColour", slot)
       if okS and r and math.floor(r * 255 + 0.5) == 0x0b and math.floor(g * 255 + 0.5) == 0x0c
         and math.floor(bl * 255 + 0.5) == 0x0d then
+        R.dups = R.dups or {}
+        R.dups[strips[i]] = b
         table.remove(strips, i)
       end
     end
@@ -392,8 +395,14 @@ print("Rack board. Over the cable: " .. (wired and "yes" or "no") .. ".")
 
 local function painter()
   while true do
+    R.dups = {}
     local board, strips = R.monitors()
     local lay = R.layout(strips, cfg)
+    -- (which monitor shows what, on the board: so a screenshot tells us)
+    local parts = {}
+    for _, st in ipairs(strips) do parts[#parts + 1] = st:gsub("monitor_", "m") .. "=" .. (lay[st] and table.concat(lay[st], ",") or "-") end
+    for d in pairs(R.dups) do parts[#parts + 1] = d:gsub("monitor_", "m") .. "=board" end
+    R.diag = "SCREENS: " .. table.concat(parts, " ")
     for _, b in ipairs(R.boards or { board }) do pcall(R.drawSummary, peripheral.wrap(b), os.clock()) end
     for _, s in ipairs(strips) do
       if lay[s] then pcall(R.draw, peripheral.wrap(s), lay[s], os.clock(), s)
@@ -401,7 +410,9 @@ local function painter()
         local m = peripheral.wrap(s)            -- (a strip with no rows: blank, not a frozen old frame)
         if m then pcall(function()                 -- (the board's palette made black pink: back to plain)
           for i = 0, 15 do m.setPaletteColour(2 ^ i, term.nativePaletteColour(2 ^ i)) end
-          m.setBackgroundColour(colours.black) m.clear() end) end
+          m.setBackgroundColour(colours.black) m.clear()
+          m.setTextScale(1) m.setTextColour(colours.grey) m.setCursorPos(2, 1)
+          m.write(s .. ": no rows (" .. R.diag .. ")") end) end
       end
     end
     sleep(1)
