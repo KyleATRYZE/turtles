@@ -657,7 +657,7 @@ local function maps()
       if okJson then
         local ok, why = putFile("maps/" .. m.name .. ".json", json, "map " .. m.name)
         mapNote[m.name] = ok and os.date("!%H:%M") or ("failed: " .. tostring(why))
-        if ok then say("New map uploaded: " .. m.name) end
+        if ok and not m.name:find("^survey_") then say("New map uploaded: " .. m.name) end   -- (a survey sends many)
       else
         mapNote[m.name] = "could not convert: " .. tostring(json)
       end

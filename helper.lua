@@ -1847,6 +1847,11 @@ escape = function(limit)
   return out, moves
 end
 
+-- What a survey leaves out: air and plain ground (everything else is kept).
+SURVEY_SKIP = {}
+for _, n in ipairs({ "air", "cave_air", "void_air", "stone", "dirt", "deepslate", "tuff", "granite", "diorite",
+  "andesite" }) do SURVEY_SKIP["minecraft:" .. n] = true end
+
 -- Blocks that are just ground: a rescue may dig straight down through these.
 local GROUND = { "stone", "deepslate", "dirt", "grass_block", "gravel", "sand", "clay", "andesite",
   "diorite", "granite", "tuff", "cobblestone", "sandstone", "mud", "_ore", "calcite", "podzol" }
@@ -1869,6 +1874,7 @@ end
 --   types|side   methods|side   call|side|method|arg|...   inspect|front/up/down
 --   inv   fuel   wait|seconds   home   note|text
 --   face|0..3 (east south west north)   escape|moves   digdown|y (plain ground only)
+--   survey|radius|tag   every block within radius (Geo Scanner) to the status branch
 --   expect|front/up/down|text   (stop unless the block that way has text in its name)
 --   until|side|method|n|seconds (wait for a machine's count to reach n)
 --   equip|left/right|item       (swap the tool on that side for an item on board)
@@ -2298,6 +2304,60 @@ local function runLab()
               end
             end
             res = #hits .. " found: " .. table.concat(hits, " "):sub(1, 400)
+          end
+        end
+      elseif verb == "survey" then
+        -- survey|radius|tag : the Geo Scanner (worn on the tool side for the
+        -- moment) lists every block within radius; all but air and plain
+        -- ground go to the controller in parts (swarm_map), which writes each
+        -- to the status branch as maps/survey_<tag>_<x>_<y>_<z>_<part>.json
+        -- (tools/survey.py pulls them). The last scan is kept in survey.txt.
+        local r = math.min(16, tonumber(a[2]) or 8)
+        local tag = (a[3] or "s"):gsub("[^%w]", "")
+        local slot = findSlot("advancedperipherals:geo_scanner")
+        if not slot then res, stop = "no geo scanner on board", true else
+          local blocks, why
+          for _ = 1, 4 do                                  -- (the scanner has a cool-down)
+            turtle.select(slot)
+            turtle.equipRight()
+            local geo = peripheral.wrap("right")
+            local ok, b, w = pcall(function() return geo.scan(r) end)
+            turtle.select(slot)
+            turtle.equipRight()
+            turtle.select(1)
+            if ok and type(b) == "table" then blocks = b break end
+            why = ok and w or b
+            sleep(3)
+          end
+          if not blocks then res, stop = "scan failed: " .. tostring(why), true else
+            local kept, pal, idx = {}, {}, {}
+            for _, b in ipairs(blocks) do
+              if not SURVEY_SKIP[b.name] then
+                if not idx[b.name] then pal[#pal + 1] = b.name idx[b.name] = #pal end
+                kept[#kept + 1] = { b.x, b.y, b.z, idx[b.name] }
+              end
+            end
+            local h = fs.open("survey.txt", "w")
+            h.write(("%s %d %d %d %d\n"):format(tag, pos.x, pos.y, pos.z, r))
+            for _, k in ipairs(kept) do
+              h.write(("%d %d %d %s\n"):format(pos.x + k[1], pos.y + k[2], pos.z + k[3], pal[k[4]]))
+            end
+            h.close()
+            local per = 700
+            local parts = math.max(1, math.ceil(#kept / per))
+            for part = 1, parts do
+              local flat = {}
+              for i = (part - 1) * per + 1, math.min(#kept, part * per) do
+                local k = kept[i]
+                flat[#flat + 1] = k[1] flat[#flat + 1] = k[2] flat[#flat + 1] = k[3] flat[#flat + 1] = k[4]
+              end
+              local name = ("survey_%s_%d_%d_%d_%d"):format(tag, pos.x, pos.y, pos.z, part)
+              rednet.broadcast({ type = "map", name = name, data = { kind = "survey", tag = tag,
+                at = { pos.x, pos.y, pos.z }, r = r, part = part, parts = parts, pal = pal, b = flat,
+                time = os.epoch and os.epoch("utc") or 0 } }, "swarm_map")
+              sleep(1)
+            end
+            res = ("%d blocks kept of %d (r %d), sent in %d parts"):format(#kept, #blocks, r, parts)
           end
         end
       elseif verb == "seek" then
