@@ -72,6 +72,8 @@ t("cond", "Matter Condenser (junk void)", "ae2:condenser", "ae", "#3f414b", "#b3
 t("wap", "Wireless Access Point", "ae2:wireless_access_point", "ae", "#8d8f99", "#b37bff", "flat", "post")
 t("wcon", "ME Wireless Connector (to the storeroom)", "extendedae:wireless_connect", "ae", "#5b5d68", "#57e3c2", "machine")
 t("bridge", "ME Bridge (the swarm's door into ME)", "advancedperipherals:me_bridge", "ae", "#6a6c76", "#c0392b", "machine")
+t("iface", "ME Interface (lava in)", "ae2:interface", "ae", "#6b6d77", "#e8731c", "provider")
+t("caner", "ME Canner (fills lava buckets)", "extendedae:caner", "ae", "#70727c", "#e8731c", "machine")
 t("feed", "Export Bus feed (in the floor, faces up)", "ae2:export_bus", "ae", "#8d8f99", "#ffd76b", "flat", "plane")
 
 # Mekanism
@@ -95,6 +97,7 @@ mek("prc", "Pressurized Reaction Chamber", "mekanism:pressurized_reaction_chambe
 t("ctank", "Chemical Tank (oxygen buffer)", "mekanism:basic_chemical_tank", "mek", "#b9bbc2", "#8fe0ff", "tank")
 t("sink", "Kitchen sink (endless water)", "cookingforblockheads:sink", "mek", "#d9d9d9", "#3f76e4", "machine")
 t("evap", "Thermal Evaporation tower (brine)", "mekanism:thermal_evaporation_block", "mek", "#8a6a3a", "#c9a35a", "frame")
+t("qe", "Quantum Entangloporter (lava from the Nether)", "mekanism:quantum_entangloporter", "mek", "#5b5d68", "#b37bff", "cell")
 t("ghost", "Reserved: reactor pad", "bigreactors:basic_reactorcasing", "power", "#d9c24a", "#b39b2e", "frame", a=0.35)
 
 # power
@@ -188,27 +191,21 @@ def plan():
             19: ("term_p", "Pattern Encoding Terminal: write patterns straight from JEI"),
             20: ("term_a", "Pattern Access Terminal: every provider's patterns from one screen"),
             22: ("req", "ME Requester: keeps set amounts in stock (steel, circuits, cable, turtles)"),
-            23: ("req", "ME Requester: keeps set amounts in stock"),
+            23: ("req", "ME Requester: keeps lava buckets and charcoal in the barrels, so the docks always have fuel"),
             24: ("cond", "Matter Condenser: the void for junk (darkstone, kivi), by an export bus")}
     for z, (ty, note) in desk.items():
         put(33, 1, z, ty, E, 5 if ty == "req" else 1, note)
         put(33, 0, z, "me_w", 0, 1)
-    # the processor press (the bench that is there), providers in the floor under it
-    press = {18: ("insc", "Inscriber: silicon press"), 19: ("insc", "Inscriber: logic press"),
-             20: ("insc", "Inscriber: calculation press"), 21: ("insc", "Inscriber: engineering press"),
-             22: ("chg", "Charger: charged certus"), 23: ("insc", "Inscriber: assembles the processors")}
-    for z, (ty, note) in press.items():
-        put(28, 1, z, ty, E, 0, note + " (already placed)")
-        put(28, 0, z, "prov", 0, 4, "Pattern provider in the floor under the machine: pushes up, the machine exports back down")
-    # crafting CPUs on the west wall, over the press
+    # crafting CPUs against the west wall (the old bench is taken out: the lab's extended inscribers do its work)
     for z in range(18, 21):
-        for y in range(2, 5):
-            ty = "cpu_m" if (z, y) == (19, 3) else ("cpu_s" if y == 2 else "cpu_a")
+        for y in range(1, 4):
+            ty = "cpu_m" if (z, y) == (19, 2) else ("cpu_s" if y == 1 else "cpu_a")
             put(28, y, z, ty, E, 5, "CPU A (3x3): the big jobs. 3 x 64k storage, 5 co-processors")
     for z in range(22, 24):
-        for y in range(2, 5):
-            ty = "cpu_m" if (z, y) == (22, 3) else ("cpu_s" if y == 2 else "cpu_a")
+        for y in range(1, 4):
+            ty = "cpu_m" if (z, y) == (22, 2) else ("cpu_s" if y == 1 else "cpu_a")
             put(28, y, z, ty, E, 5, "CPU B (2x3): small jobs run beside the big one")
+    put(28, 0, 19, "me_w", 0, 5); put(28, 0, 22, "me_w", 0, 5)
     # the assembler matrix
     for x in range(29, 34):
         for y in range(1, 6):
@@ -250,7 +247,7 @@ def plan():
            8: ("cryasm", "Crystal Assembler: fluix and pure crystals without water puddles"),
            9: ("react", "Reaction Chamber: bulk fluix, quantum alloy, flawless budding recipes"),
            10: ("cutter", "Circuit Cutter: a block of gold, diamond or silicon into 9 printed circuits"),
-           11: ("exinsc", "Extended Inscriber: 4 presses in one block (replaces the bench later)"),
+           11: ("exinsc", "Extended Inscriber: the four presses in one block (the old bench comes out)"),
            12: ("exinsc", "Extended Inscriber: 4 assembly lines for processors")}
     for z, (ty, note) in lab.items():
         put(33, 1, z, ty, E, 4, note)
@@ -326,6 +323,12 @@ def plan():
     put(43, 1, 23, "sink", W, 2, "A second sink, in the chase's end: the generators' coolant")
     link((43, 1, 22), (43, 1, 23))
 
+    # ---- the fuel station (south-east corner): Nether lava into buckets
+    put(43, 1, 26, "qe", W, 2, "Quantum Entangloporter: twin of the one over the Nether lava sea (-623 33 373). Lava comes through, the pump's power goes back")
+    put(43, 1, 27, "iface", W, 2, "ME Interface: the lava flows into the ME network's fluid cell")
+    put(42, 1, 27, "caner", W, 2, "ME Canner: empty bucket + 1000 mB of lava = a lava bucket (1,000 moves of drone fuel). Empties come back through the store")
+    put(43, 0, 26, "pw", 0, 2); put(43, 0, 27, "me_o", 0, 2)
+
     # ---- the swarm's door: the ME Bridge beside the Works computer, flush in the floor
     put(35, 0, 15, "pc", 0, 0, "Works computer (there now): becomes the ME desk for the swarm, asking ME to craft and reading stock")
     put(34, 0, 15, "bridge", 0, 1, "ME Bridge: crafter1 and Sortnado ask ME for anything, and see everything, through this")
@@ -363,11 +366,14 @@ def services():
     o = "Trunk O: 32 channels (8 providers, the flux accessor)"
     run("me_o", [(31, -1, 22), (43, -1, 22), (43, -1, 13)], 2, o); link((31, -1, 22), (31, 0, 22))
     link((43, -1, 13), (43, 0, 13)); put(43, 0, 17, "me_o", 0, 2); link((43, 0, 17), (43, 1, 17))
+    run("me_o", [(42, -1, 23), (42, -1, 27), (43, -1, 27)], 2, o); link((43, -1, 27), (43, 0, 27)); link((42, -1, 27), (42, 1, 27))
+    link((43, 0, 27), (43, 1, 27)); link((43, 0, 26), (43, 1, 26))
     # ---- power (y -2)
     p = "Power main, two blocks under the floor"
     put(43, 0, 23, "pw", 0, 2, "Under the sink: draws the coolant water, and carries the power down")
     link((43, 0, 23), (43, 1, 23))
     run("pw", [(43, -1, 23), (43, -2, 23), (31, -2, 23), (31, -1, 23)], 2, p); link((31, -1, 23), (31, 0, 23))
+    run("pw", [(43, -1, 24), (43, -1, 26)], 2, p)
     run("pw", [(40, -2, 22), (40, -2, 13), (40, -1, 13), (39, -1, 13)], 6, p); link((39, -1, 13), (39, 0, 13))
     # ---- water, brine, gases
     wtr = "Water main, two blocks under the floor"
@@ -389,7 +395,7 @@ def services():
 
 ZONES = [
  dict(id="core", name="The Core", box=[28, 17, 33, 27], ph="1, 4, 5", cam=[30.5, 2, 22],
-      text="The controller is a line of five blocks set flush in the floor with a four-block tower over its middle. Each block of the line gives one dense trunk from its underside, so every cable leaves the room below your feet. North wall: the vault (4 extended drives, 80 cell slots, and 6.4M AE of energy cells). West wall: the processor press that is there now, with the crafting CPUs stacked above it. South: the assembler matrix. Along the aisle: the desk, with a gap to walk in."),
+      text="The controller is a line of five blocks set flush in the floor with a four-block tower over its middle. Each block of the line gives one dense trunk from its underside, so every cable leaves the room below your feet. North wall: the vault (4 extended drives, 80 cell slots, and 6.4M AE of energy cells). West wall: the two crafting CPUs, where the old inscriber bench stood. South: the assembler matrix. Along the aisle: the desk, with a gap to walk in."),
  dict(id="garden", name="Crystal garden", box=[28, 4, 30, 12], ph="4", cam=[29, 2, 8],
       text="Three budding blocks in a glass case on the west wall, four growth accelerators between them. Annihilation planes in the floor and in the lintel take only full clusters. A Crystal Fixer behind each budding block stops it wearing down to plain quartz, which is what killed the farm today."),
  dict(id="lab", name="Crystal lab", box=[32, 7, 33, 12], ph="4", cam=[33, 1, 9.5],
@@ -402,6 +408,8 @@ ZONES = [
       text="Nine machines in a row, ordered so each hands its gas straight to the neighbour that needs it. What must travel goes down a closed chase behind the row and under the lane in colour-coded tubes: oxygen, hydrogen chloride, sulfuric acid, with water and brine in mechanical pipes. Nothing shows above the floor."),
  dict(id="power", name="Power bay", box=[42, 17, 43, 23], ph="2", cam=[42, 1, 20],
       text="Seven thermo generators, each on a lava block set in the floor. They take heat from lava without using it up, so nothing is refuelled. Water and power share one pipe in a closed chase behind them. A flux accessor puts the power into the ME network; a main two blocks down feeds the controller and the gas plant."),
+ dict(id="fuel", name="Fuel station", box=[42, 26, 43, 27], ph="2", cam=[43, 1, 26.5],
+      text="A pump sits on the Nether lava sea at -623 31 373, a 96 by 96 sheet of open lava, in a chunk that stays loaded. Its lava arrives here through a pair of quantum entangloporters, goes into the ME network, and the canner fills buckets with it. A requester keeps a stock of full buckets in the barrels for the docks. No drone walks the dripstone wall any more; the wall stays as the backup."),
  dict(id="yard", name="East yard", box=[46, 9, 50, 21], ph="7, 8", cam=[48, 2, 15],
       text="Outside the east wall: the brine tower for chlorine (4x ore and up), and a reserved pad for one big generator once the thermo row's real output is known."),
 ]
@@ -438,9 +446,9 @@ def bom(B):
 PHASES = [
  (0, "Bench tests", "Five one-block tests before anything is built: induction card powers a Mekanism machine; a provider's items come back by auto-eject; Crystal Fixer holds a flawed budding block; one thermo generator's real FE/t on lava with water; wireless connector range to the storeroom."),
  (1, "Core online", "Controller, vault, desk, ME Bridge, and the storage link. From here ME sees every barrel and you can search and craft at the desk."),
- (2, "Power bay", "Thermo row, chase, flux accessor, the power main. The four heat generators and the cable strip behind them come out."),
+ (2, "Power bay", "Thermo row, chase, flux accessor, the power main, and the fuel station (Nether lava into buckets). The four heat generators and the cable strip behind them come out."),
  (3, "Alloy row and ore line on ME", "Providers behind the machines that stand there now, the four new machines, the infusion feeds. Steel, circuits and alloys by one click. foundry1 retires from carrying."),
- (4, "Crystals and processors", "Garden rebuilt with fixers and planes, the crystal lab, providers under the press. Certus never runs out again."),
+ (4, "Crystals and processors", "Garden rebuilt with fixers and planes, and the crystal lab; the old inscriber bench comes out. Certus never runs out again."),
  (5, "Autocrafting at scale", "Two CPUs, the assembler matrix, requesters, the wireless access point. Stock levels hold themselves."),
  (6, "3x ore", "Sink, separator, oxygen tank and main, purification chamber, the gas plant's power."),
  (7, "4x and 5x ore", "The rest of the gas plant, the brine tower, injection and the three slurry machines."),
