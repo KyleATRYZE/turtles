@@ -39,7 +39,15 @@ end
 local function send(msg)
   msg = tostring(msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
   if msg == "" then return end
-  local function try() return pcall(box.sendMessage, msg, cfg.name, "<>") end
+  -- (newer Advanced Peripherals take the options as a table; older ones as
+  -- plain arguments: try the table first)
+  local function try()
+    local ok, res, why = pcall(box.sendMessage, msg, { prefix = cfg.name, brackets = "<>" })
+    if not ok and tostring(res):find("bad argument", 1, true) then
+      ok, res, why = pcall(box.sendMessage, msg, cfg.name, "<>")
+    end
+    return ok, res, why
+  end
   local ok, res, why = try()
   if not ok or not res then
     sleep(1.2)                                 -- (the Chat Box has a short cool-down)
