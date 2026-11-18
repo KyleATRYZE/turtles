@@ -1,12 +1,16 @@
 {
   "commands": [
     {
-      "id": 1795033046,
-      "issued": 1795033046000,
-      "cmd": "lab",
-      "target": "builder2",
-      "clear": 1,
-      "ops": "fetch|minecraft:coal=16;site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|38|2|16;face|3;inspect|down;digDown|heat_generator;placeDown|mekanismgenerators:heat_generator;expect|down|heat_generator;dropDown|minecraft:coal|16;inv;leave;home;handin|"
+      "id": 1795033446,
+      "issued": 1795033446000,
+      "cmd": "stop",
+      "target": "foundry1"
+    },
+    {
+      "id": 1795033447,
+      "issued": 1795033446000,
+      "cmd": "stop",
+      "target": "builder6"
     }
   ]
 }
