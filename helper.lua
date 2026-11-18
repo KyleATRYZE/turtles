@@ -1180,6 +1180,64 @@ local function outOfBuilding()
   riseTo(highway())
 end
 
+-- The factory building: a helper that wakes up inside it (a restart, a
+-- crash) walks out by the big door, the way the fit walker does, instead of
+-- looking for open sky (which only took it up into the roof). Inside = under
+-- the building's roof, by the as-fitted shell.
+local FACTORY = { ox = -4448, oy = 71, oz = 1518, shell = "factory_asfit3", door = { 22, 2, 33 } }
+local function loadShell(job)
+  local m = { solid = {}, ops = {}, pal = {} }
+  local x1, z1, x2, y2, z2 = 0, 0, 0, 0, 0
+  local f = fetchPlan(job.shell)
+  local mode
+  while true do
+    local line = f.readLine()
+    if not line then break end
+    local tag = line:match("^([PB]) %d+$")
+    if tag then
+      mode = tag
+    elseif mode == "B" then
+      local x, y, z = line:match("^(-?%d+) (-?%d+) (-?%d+) ")
+      x, y, z = tonumber(x), tonumber(y), tonumber(z)
+      if x and y >= 0 then
+        m.solid[ck(x, y, z)] = true
+        x1, z1 = math.min(x1, x), math.min(z1, z)
+        x2, y2, z2 = math.max(x2, x), math.max(y2, y), math.max(z2, z)
+      end
+    end
+  end
+  f.close()
+  m.x1, m.z1, m.x2, m.y2, m.z2 = x1 - 4, z1 - 4, x2 + 4, y2 + 4, z2 + 4
+  return m
+end
+
+-- True (and the building's map) when we stand under the factory's roof.
+local function inFactory()
+  local x, y, z = pos.x - FACTORY.ox, pos.y - FACTORY.oy, pos.z - FACTORY.oz
+  if x < 0 or x > 56 or z < 0 or z > 31 or y < 0 or y > 31 then return false end
+  local ok, m = pcall(loadShell, FACTORY)
+  if not ok then return false end
+  for yy = y + 1, m.y2 do
+    if m.solid[ck(x, yy, z)] then return true, m end
+  end
+  return false
+end
+
+-- Out by the big door, through the open space the shell knows of (anything
+-- in the way that it does not know is gone round), then up to flying height.
+local function leaveFactory(m)
+  local saved, savedMap = st.job, fitMap
+  st.job = { ox = FACTORY.ox, oy = FACTORY.oy, oz = FACTORY.oz }
+  m.start = FACTORY.door
+  fitMap = m
+  print("Inside the factory: walking out by the big door.")
+  report("leaving the factory")
+  local ok = goTo(m.start[1], m.start[2], m.start[3])
+  st.job, fitMap = saved, savedMap
+  if ok then riseTo(math.max(pos.y, highway())) end
+  return ok
+end
+
 local function runFit()
   local job = st.job
   fitMap = loadFit(job)
@@ -2487,6 +2545,20 @@ local function work()
   end
   -- (on the drone lane, in a home or on a track: in its place, not lost)
   local laneOk = LN.inside() and (pos.x ~= base.pad.x or pos.z ~= base.pad.z)
+  -- inside the factory: a fit-out in hand carries on from where we stand (it
+  -- knows the building); anything else walks out by the door. Never the sky.
+  local inside, shellMap = false, nil
+  if not laneOk then inside, shellMap = inFactory() end
+  local fitting = st.job and st.job.fit and not st.done and not st.paused
+  if inside and not fitting and not st.lab then
+    findHeading()
+    if not leaveFactory(shellMap) then
+      report("stuck in the factory")
+      error("I am inside the factory and cannot find the way to the door.", 0)
+    end
+    locate()
+    inside = false
+  end
   if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and st.lab and not laneOk then
     -- stopped inside a building: a lab run (site, leave, home) walks out by
     -- the door, so run it before giving up
@@ -2494,14 +2566,26 @@ local function work()
     runLab()
     locate()
   end
-  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and not laneOk then
+  if inside and not fitting then                       -- (a lab run that ended still inside)
+    inside, shellMap = inFactory()
+    if inside then
+      findHeading()
+      if not leaveFactory(shellMap) then
+        report("stuck in the factory")
+        error("I am inside the factory and cannot find the way to the door.", 0)
+      end
+      locate()
+      inside = false
+    end
+  end
+  if pos.y <= base.f.y + 6 and (pos.x ~= base.pad.x or pos.z ~= base.pad.z) and not laneOk and not inside then
     -- a miner drafted as a builder's mate wakes in its own shaft: find the
     -- way out through open space, digging nothing
     findHeading()
     pcall(escape, 800)
     locate()
   end
-  if pos.y <= base.f.y + 6 and not laneOk then
+  if pos.y <= base.f.y + 6 and not laneOk and not inside then
     if pos.x ~= base.pad.x or pos.z ~= base.pad.z then
       report("lost")
       error("I am down in the base and not on the launch pad.", 0)
