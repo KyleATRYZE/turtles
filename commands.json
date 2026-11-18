@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795029940,
-      "issued": 1795029940000,
-      "cmd": "lab",
-      "target": "builder1",
-      "clear": 1,
-      "ops": "site|-4448|71|1518|factory_asfit3|factory_foundryfloor;walk|40|1|17;walk|40|0|17;face|2;net;click;net;click;net;walk|40|1|18;walk|40|0|18;face|2;net;walk|40|1|19;walk|40|0|19;face|2;net;walk|40|1|20;walk|40|0|20;face|2;net;walk|40|1|21;walk|40|0|21;face|2;net;walk|40|1|22;walk|40|0|22;face|2;net;walk|40|1|23;walk|40|0|23;face|2;net;walk|40|1|23;leave;home"
+      "id": 1795029953,
+      "issued": 1795029953000,
+      "cmd": "make",
+      "target": "crafter1",
+      "item": "ae2:inscriber",
+      "n": 2
     }
   ]
 }
