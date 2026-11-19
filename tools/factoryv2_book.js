@@ -28,6 +28,7 @@ order:()=>`<h2>Build order</h2>
   <div class="ph"><h3>B. Launch bay and the Bridge</h3><p>Smelting moved to ME, furnaces out, bays, lights, hangar door, intake and fuel counter, departures board; then the drones' code learns the bays. Upstairs: map wall and its renderer, consoles, levers, glass floor. The code is most of the work.</p></div>
   <div class="ph"><h3>C. Hall and lane dressing</h3><p>Glass floor, light strips, bay lights, the ore belt, restyled screens everywhere.</p></div>
   <div class="ph"><h3>D. Guards</h3><p>Patrol ring, guard program, alarm. Needs four more turtles with swords.</p></div>
+  <div class="ph"><h3>F. The outside</h3><p>Re-clad the outer walls in bands (plating, light seam, tinted glass, parapet), steel ribs, the glass roof over the hall, vents, the mast, floodlights, path lights. Done a wall at a time from the outside, so nothing inside stops. The biggest single job: drones carry the stone brick to the store as it comes off.</p></div>
   <div class="ph"><h3>E. Old base, old rack and grounds</h3><p>Drones take the old base apart into the store and lay the apron outside the hangar door; the old rack comes out; the land round the building is tidied to match.</p></div>
   <p>Alongside all of it, the function work carries on: crystal lab, assembler matrix, stock rules, the gas plant and 3x to 5x ore.</p>`,
 you:()=>`<h2>Your calls</h2><ul>
@@ -35,7 +36,8 @@ you:()=>`<h2>Your calls</h2><ul>
   <li><b>Where is the Bridge?</b> Drawn upstairs over the launch bay, with a glass floor onto it. If you would rather have it in the tower, say so.</li>
   <li><b>Gate size and place.</b> Drawn at the south entrance, four wide and three high. It can be bigger.</li>
   <li><b>Guards near friends.</b> They patrol outside the walls only and never swing near a player. If you would rather not have armed turtles on a shared server at all, they can be lights-and-alarm only.</li>
-  <li><b>Outer walls.</b> The stone brick no longer matches the inside. Re-skin the outside in the same dark plating and cyan seams, or keep it.</li>
+  <li><b>The outside.</b> Drawn as dark plating, a light seam and a tinted glass ribbon with steel ribs, plus a glass roof over the hall. Press Outside to see it. Too much glass? The ribbon can be plating with slot windows instead.</li>
+  <li><b>The tower.</b> Not drawn: the survey does not reach it. I would make it a control spire to match once it is scanned.</li>
   <li><b>Conveyors.</b> One showpiece belt is drawn. More belts look good but each is another thing to keep running; ME already moves everything.</li></ul>
   <h3>What I could not see</h3><p>The survey covers the building up to the upper floor and not the tower, so the tower is not drawn. A scan of it comes first if the Bridge moves there.</p>`
 };

@@ -33,6 +33,17 @@ t("baylamp", "Bay light (copper bulb on a relay: green docked, amber out, red tr
 t("shelf", "Bay shelf (industrial iron slab)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "tiles", "slab")
 t("fuel", "Fuel port (ME interface: lava buckets out, drone loads in)", "ae2:interface", "v2", "#2c2f38", "#ffb84a", "frame")
 t("hatch", "Hangar door leaf (Create sliding door)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "stripe")
+# the new outside (cat "skin": shown with the Outside button, in place of the old wall face)
+t("sk_base", "Cladding: industrial iron plating", "create:industrial_iron_block", "skin", "#33363c", "#26282d", "tiles")
+t("sk_seam", "Light seam (sea lantern band)", "minecraft:sea_lantern", "skin", "#bff3ee", "#ffffff", "lava")
+t("sk_glass", "Ribbon window (tinted glass): the lit hall shows through at night", "minecraft:tinted_glass", "skin", "#16141c", "#3a6e78", "glass", a=0.8)
+t("sk_cap", "Parapet (polished deepslate)", "minecraft:polished_deepslate", "skin", "#222327", "#1a1b1e", "tiles")
+t("sk_rib", "Steel rib (Create metal girder)", "create:metal_girder", "skin", "#5a5f66", "#2e3136", "bricks")
+t("sk_fan", "Roof vent (Create encased fan)", "create:encased_fan", "skin", "#5b5d68", "#2b2b2f", "machine")
+t("sk_beacon", "Mast light (redstone lamp, blinks)", "minecraft:redstone_lamp", "skin", "#ff5a4a", "#ffd0c8", "lava")
+t("sk_flood", "Floodlight (end rod)", "minecraft:end_rod", "skin", "#f6f2ff", "#ffffff", "flat", "post")
+t("sk_post", "Path light (lantern on a post)", "minecraft:lantern", "skin", "#e8b04a", "#fff0c0", "flat", "post")
+t("sk_roof", "Glass roof over the hall (quartz glass): the machines lit from above, the crystal garden in daylight", "ae2:quartz_glass", "skin", "#cfe8ee", "#ffffff", "glass", a=0.32)
 
 SURVEY = dict(A.SURVEY)
 SURVEY.update({"sophisticatedstorage:limited_barrel_1": "barrel", "sophisticatedstorage:limited_barrel_4": "barrel",
@@ -91,8 +102,6 @@ def v2():
     for x in range(3, 7):
         for z in range(11, 20):
             put(x, 8, z, "gfloor", 0, 8, "Glass floor in the Bridge: look straight down onto the launch bay and the drones in their bays")
-    for z in (4, 26):
-        for x in range(2, 8): put(x, 12, z, "cyan", 0, 8, "Ceiling light strip")
     # 4. the hall: glass over the trench, light strips, the ore conveyor
     for z in range(6, 23):
         if z != 15: put(35, 0, z, "gfloor", 0, 8, "Tinted glass floor down the spine: the cables and pipes show under your feet")
@@ -141,6 +150,59 @@ def v2():
     for (x, z) in ((-9, 10), (-9, 22)):
         put(x, 1, z, "cyan", 0, 8, "Apron beacon")
 
+SKIN = {}
+def skin():
+    """The new outside: every outermost wall block re-clad in bands (plating base, light seam,
+    ribbon glass, parapet), steel ribs every 5, roof vents, a mast, floodlights, path lights."""
+    SKIN.clear()
+    WALL = ("sb", "pd", "gl", "dt", "db", "cob", "cap")
+    pts = [k for k, v in A.B.items() if v[0] in WALL and k[1] >= 1 and -1 <= k[0] <= 46 and 0 <= k[2] <= 30]
+    face = set()
+    rows, colz = {}, {}
+    for (x, y, z) in pts:
+        r = rows.setdefault((y, z), [x, x]); r[0] = min(r[0], x); r[1] = max(r[1], x)
+        c = colz.setdefault((y, x), [z, z]); c[0] = min(c[0], z); c[1] = max(c[1], z)
+    for (y, z), (a, b) in rows.items(): face.add((a, y, z)); face.add((b, y, z))
+    for (y, x), (a, b) in colz.items(): face.add((x, y, a)); face.add((x, y, b))
+    top = {}
+    for (x, y, z) in face: top[(x, z)] = max(top.get((x, z), 0), y)
+    def opening(x, y, z): return (z == 30 and 21 <= x <= 24 and y <= 3) or (x == 0 and 12 <= z <= 20 and y <= 7)
+    def edge(x, z): return x in (0, 44, 45) or z in (0, 30)
+    for (x, y, z) in face:
+        if opening(x, y, z) or not edge(x, z): continue
+        tp = top[(x, z)]
+        rib = (z in (0, 30) and x % 5 == 0) or (x in (0, 44, 45) and z % 5 == 0)
+        if rib: ty = "sk_rib"
+        elif y == tp: ty = "sk_cap"
+        elif y <= 3: ty = "sk_base"
+        elif y == 4: ty = "sk_seam"
+        else: ty = "sk_glass"
+        SKIN[(x, y, z)] = ty
+    for (x, z), tp in top.items():
+        if edge(x, z) and ((z in (0, 30) and x % 5 == 0) or (x in (0, 44, 45) and z % 5 == 0)):
+            SKIN[(x, tp + 1, z)] = "sk_rib"
+    for x in range(-1, 47):                      # hangar and gate frames
+        pass
+    for z in (12, 20):
+        for y in range(1, 9): SKIN[(0, y, z)] = "sk_rib"
+    for z in range(12, 21): SKIN[(0, 8, z)] = "sk_rib"
+    for x in (20, 25):
+        for y in range(1, 5): SKIN[(x, y, 30)] = "sk_rib"
+    for (x, y, z) in ((-1, 8, 11), (-1, 8, 21), (19, 5, 31), (26, 5, 31)): SKIN[(x, y, z)] = "sk_flood"
+    for x in range(12, 27, 4):                   # roof vents over the storerooms
+        for z in (7, 23): SKIN[(x, 9, z)] = "sk_fan"
+    for (x, y, z) in pts:                       # inner walls that stand above the roofs: dark to match
+        if y >= 9 and (x, y, z) not in SKIN and not opening(x, y, z): SKIN[(x, y, z)] = "sk_cap"
+    for x in range(29, 44):                      # the hall gets a glass roof on girder purlins
+        for z in range(1, 30):
+            if (x, 10, z) not in A.B: SKIN[(x, 10, z)] = "sk_rib" if x % 5 == 0 else "sk_roof"
+    for y in range(11, 19): SKIN[(44, y, 0)] = "sk_rib"   # the mast, NE corner
+    SKIN[(44, 19, 0)] = "sk_beacon"
+    for x in range(-3, 48, 8):                   # path lights round the patrol ring
+        SKIN[(x, 1, -3)] = "sk_post"; SKIN[(x, 1, 33)] = "sk_post"
+    for z in range(5, 30, 8):
+        SKIN[(-3, 1, z)] = "sk_post"; SKIN[(47, 1, z)] = "sk_post"
+
 ZONES = [
  dict(id="gate", name="Blast gate", cam=[22.5, 2, 31], h=5.5, ph="A",
       text="A four-wide sliding gate at the south entrance, built as a Create contraption on a gantry with an electric motor. A computer with the Player Detector opens it for people on the list and says so on a screen; LOCKDOWN shuts it. Two guard turtles stand either side."),
@@ -154,6 +216,8 @@ ZONES = [
       text="The barrel rooms stay, now read and filled by ME. v2 adds category lighting over each zone and a requisition screen at each end."),
  dict(id="lane", name="Old rack", cam=[22, 1, 2], h=4.5, ph="E",
       text="The old lane and rack retire once the launch bay is running. The lane stays as a corridor; the rack comes out."),
+ dict(id="outside", name="The outside", cam=[22, 4, 15], h=4, ph="F",
+      text="Same footprint, new skin. Every outer wall is re-clad in three bands: dark industrial iron to head height, a band of light, then a ribbon of tinted glass so the lit hall glows through at night. Steel ribs every five blocks stand proud of the roofline. Parapet, roof vents over the storerooms, a comms mast with a blinking light on the north-east corner, floodlights on the hangar door and the gate, lights round the patrol ring. Press Outside to see it."),
  dict(id="guards", name="Guards", cam=[46, 1, 32], h=3.5, ph="D",
       text="Four melee turtles walk a ring round the building at night and two hold the gate. They strike hostile mobs only, stand down near players, and raise the alarm and the gate lights."),
  dict(id="yard", name="Apron", cam=[-5, 1, 16], h=3.5, ph="E",
@@ -164,6 +228,7 @@ def page():
     A.B.clear(); A.LINKS.clear(); del A.NOTES[:]
     shell(); A.plan(); A.services(); v2()
     for k in [k for k, v in A.B.items() if v[0] in ("evap", "ghost")]: del A.B[k]
+    skin()
     keys = list(T)
     blocks = []
     for (x, y, z), (ty, f, ph, ni) in A.B.items():
@@ -173,6 +238,8 @@ def page():
                 nb = (x + dx, y + dy, z + dz)
                 if (nb in A.B and A.B[nb][0] == ty) or ((x, y, z), nb) in A.LINKS: m |= 1 << i
         blocks.append([x, y, z, keys.index(ty), f, min(ph, 8), ni, m])
+    for (x, y, z), ty in SKIN.items():
+        blocks.append([x, y, z, keys.index(ty), 0, 8, -1, 0])
     data = dict(types=[dict(k=k, **T[k]) for k in keys], blocks=blocks, notes=A.NOTES, zones=ZONES, phases=[], bom={})
     tpl = open(os.path.join(ROOT, "tools", "ae2plan_page.html")).read()
     book = open(os.path.join(ROOT, "tools", "factoryv2_book.js")).read()
@@ -183,14 +250,16 @@ def page():
            ("The foundry hall as it would stand: your real walls and floor from tonight's scan, with the whole AE2 and Mekanism factory in it. The two walls nearest you are cut away. Drag to move, scroll to zoom, hover any block.",
             "The whole factory from the survey, with the redesign drawn in. A proposal to react to: nothing on this page is built until you say. Drag to move, scroll to zoom, hover any block."),
            ('<div class="grp"><label for="ph">Build phase</label><input id="ph" type="range" min="0" max="8" value="8"><label id="phv">8 of 8</label></div>',
-            '<div class="grp"><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
-           ('press("t_floor","floor");', 'press("t_up","upper");press("t_floor","floor");'),
-           ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.upper&&b[1]>=6)continue;"),
+            '<div class="grp"><button id="t_out" aria-pressed="false">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
+           ('press("t_floor","floor");', 'press("t_up","upper");press("t_out","out");press("t_floor","floor");'),
+           ("    const cat=t.cat;\n", "    const cat=t.cat;\n    if(cat==\"skin\"&&!O.out)continue;if(O.out&&cat!=\"skin\"&&SK.has(b[0]+\",\"+b[1]+\",\"+b[2]))continue;\n"),
+           ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={"),
+           ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.upper&&!O.out&&b[1]>=6)continue;"),
            ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:20,cz:15,rot:0,zoom:1,px:0,py:0};"),
            ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(62*HW*1.1),H/(62*HH*1.5))"),
            ('zn.id=="core"?6.4:(zn.id=="garden"?5.4:(zn.id=="fuel"?2.4:3.3))', "(zn.h||3.3)"),
            ("const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=27:b[2]<=3,n=nr(XDIR[r])||nr(ZDIR[r]);",
-            "const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=0:b[2]<=0,n=(nr(XDIR[r])||nr(ZDIR[r]))&&b[0]>=0&&b[0]<=44&&b[2]>=0&&b[2]<=30&&TY[b[3]].cat!=\"v2\";"),
+            "const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=0:b[2]<=0,n=(nr(XDIR[r])||nr(ZDIR[r]))&&b[0]>=0&&b[0]<=44&&b[2]>=0&&b[2]<=30&&TY[b[3]].cat!=\"v2\"&&!O.out;"),
            ("if(n&&b[0]>=45&&b[1]>=1)a*=.3}", "}"),
            ('if(!O.mach&&(cat=="ae"||cat=="mek"||cat=="power"||cat=="lava")&&!(cat=="lava"))continue;',
             'if(!O.mach&&(cat=="ae"||cat=="mek"||cat=="power"||cat=="v2"))continue;'),
@@ -198,7 +267,7 @@ def page():
            ("V.px=0;V.py=40;V.zoom=Math.max(HOME.zoom*2.2,2);", "V.px=0;V.zoom=Math.max(HOME.zoom*2.2,2);V.py=40+(zn.cam[1]-1)*BH*V.zoom;"),
            ('<button id="home">Whole hall</button>', '<button id="home">Whole factory</button>'),
            ('function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;',
-            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}')]
+            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=id=="outside";document.getElementById("t_out").setAttribute("aria-pressed",O.out);')]
     for x, y in rep:
         assert tpl.count(x) == 1, x[:60]
         tpl = tpl.replace(x, y)
