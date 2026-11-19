@@ -1,48 +1,26 @@
 {
   "commands": [
     {
-      "id": 1795059941,
-      "issued": 1795059941000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "ae2:interface",
-      "n": 1
-    },
-    {
-      "id": 1795059942,
-      "issued": 1795059941000,
+      "id": 1795060165,
+      "issued": 1795060165000,
       "cmd": "me",
       "target": "crafter1",
       "craft": "mekanism:energized_smelter",
       "n": 1
     },
     {
-      "id": 1795059943,
-      "issued": 1795059941000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "ae2:interface"
-    },
-    {
-      "id": 1795059944,
-      "issued": 1795059941000,
+      "id": 1795060166,
+      "issued": 1795060165000,
       "cmd": "me",
       "target": "crafter1",
       "ask": "mekanism:energized_smelter"
     },
     {
-      "id": 1795059945,
-      "issued": 1795059941000,
+      "id": 1795060167,
+      "issued": 1795060165000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "ae2:fluix_dust"
-    },
-    {
-      "id": 1795059946,
-      "issued": 1795059941000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "ae2:fluix_crystal"
+      "ask": "mekanism:steel_casing"
     }
   ]
 }
