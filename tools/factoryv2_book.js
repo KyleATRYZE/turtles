@@ -1,7 +1,7 @@
 const TABS=[["tour","Tour"],["works","How it works"],["look","The look"],["order","Build order"],["you","Your calls"]];
 const book=document.getElementById("book"),tabs=document.getElementById("tabs");
 const PAGES={
-tour:()=>`<h2>The redo, piece by piece</h2><p>Same building, same footprint. The redesign changes what it feels like to walk through: a gate that opens for you, a launch bay where the drones live and leave from, a control room over it that runs the swarm, machines you can watch working, and guards on the wall at night. One look throughout, inside and out: Create industrial in deepslate brick, andesite and copper, with the machinery moving on the outside: a windmill, smoking stacks, a train at the station, a glass lookout over the hangar.</p>`+
+tour:()=>`<h2>The redo, piece by piece</h2><p>Same building, same footprint. The redesign changes what it feels like to walk through: a gate that opens for you, a launch bay where the drones live and leave from, a control room over it that runs the swarm, machines you can watch working, and guards on the wall at night. Outside, after your picture: a four-storey concrete block with a strong grid, a green-roofed podium over the hall, red steel towers and bridges, twin banded chimneys, a forecourt, road and trees.</p>`+
   D.zones.map(z=>`<button class="zone" data-id="${z.id}" aria-pressed="false"><b>${z.name} <span class="tag">stage ${z.ph}</span></b><p>${z.text}</p></button>`).join("")+
   `<p>Running now and shown as built: the ME core, power bay, alloy row, ore line, crystal garden and lab, assembler matrix, processor press, fuel line from the Nether.</p>`,
 works:()=>`<h2>Computers, ME and levers</h2>
@@ -14,31 +14,27 @@ works:()=>`<h2>Computers, ME and levers</h2>
   <h3>The gate</h3><p>Two leaves of industrial iron on a Create gantry, turned by an electric motor on the foundry's power. The Player Detector tells the gate computer who is there. Known players: gate opens, chime, name on the screen. Lockdown: shut.</p>
   <h3>The guards</h3><p>Turtles with swords. Four walk the patrol ring at night and two hold the gate. A turtle hits whatever is in front of it, so the rule is strict: no swing while any player is within 6 blocks, and they only patrol outside the walls. When one fights, the alarm sounds and the gate lights go red.</p>
   <h3>Things you can watch</h3><ul><li>An overhead belt in the hall carrying incoming ore into ME.</li><li>A tinted glass floor down the hall's spine with the cables and pipes under it.</li><li>The crystal garden growing behind glass.</li><li>The launch bay through the Bridge's glass floor: drones landing, docking, lights changing.</li></ul>`,
-look:()=>`<h2>The look: Create industrial</h2><p>A dark working factory that has grown up: deepslate brick and pale andesite, copper roofs, warm windows, and its machinery moving on the outside: a windmill turning, stacks smoking, a train at the station, drones going in and out under a glass lookout.</p>
-  <table><tr><td><b>Walls</b></td><td>Deepslate brick, with andesite-casing piers every five blocks standing a block proud of the wall, a cut-andesite plinth at the foot and an overhanging cornice at the top. That is the depth: no flat wall anywhere</td></tr>
-  <tr><td><b>Windows</b></td><td>Tall factory windows in Create framed glass between the piers</td></tr>
-  <tr><td><b>Roofs</b></td><td>The hall gets a sawtooth roof: copper shingle slopes with north-facing glass, the classic factory skyline. Flat roofs behind brick parapets elsewhere, with vents</td></tr>
-  <tr><td><b>Machinery outside</b></td><td>A Create windmill on the hall gable that drives the gate and belts; two deepslate smokestacks with copper bands that smoke, two Create fluid tanks piped into the wall, a conveyor over the roof from the launch bay to the hall, a large cogwheel turning by the gate, a steam whistle on the roof</td></tr>
-  <tr><td><b>Light</b></td><td>Lanterns and copper bulbs, warm, not neon. Lanterns on posts round the path</td></tr>
-  <tr><td><b>Markings</b></td><td>Your striped yellow concrete on drone paths, the apron and the gate</td></tr>
-  <tr><td><b>Screens</b></td><td>Dark ground, amber and copper text, moving bars, so they sit with the brick</td></tr></table>
-  <p>Every block named here is in your pack; I checked each against the server.</p>
-  <h3>Shape changes</h3><p>The hall rises three blocks with the sawtooth roof, the stacks and tanks add a skyline on the east side, and the roof conveyor links the two halves. The footprint and everything inside stay where they are.</p>`,
+look:()=>`<h2>The look: after your picture</h2><p>A modern works: a pale concrete block with a strong grid, a low green-roofed podium, and red steel industry rising out of it.</p>
+  <table><tr><td><b>Main block</b></td><td>The west half rises to four storeys (to y 21). Light grey concrete pilasters every three blocks and a smooth-stone band at every floor, both standing a block proud; grey glass set back between them, a few windows lit. Red trim on the parapet</td></tr>
+  <tr><td><b>Podium</b></td><td>The hall stays one tall storey: an arcade of deep piers on the south and east with a red band, a projecting roof edge, and a green moss roof with rows of skylights over the machines</td></tr>
+  <tr><td><b>Red steel</b></td><td>A red lattice tower on the east over a dark furnace shaft (red concrete, iron-bar bracing, polished deepslate), a red skip-bridge dropping onto the podium roof, a high red truss to the main block, a red frame with twin red stacks on the roof</td></tr>
+  <tr><td><b>Chimneys</b></td><td>Two tall grey and white banded stacks on a concrete plinth, 45 high</td></tr>
+  <tr><td><b>Grounds</b></td><td>Paved forecourt at the gate, a road with lines along the south and east, street lights, hedges along the front, trees along the road</td></tr></table>
+  <p>Every block is in your pack. The picture you sent is AI-made, so the towers here are a buildable version of it, not a copy.</p>`,
 order:()=>`<h2>Build order</h2>
   <div class="ph"><h3>A. Gate</h3><p>The gate, its computer and detector, the apron. One evening. First, because you walk through it every time.</p></div>
   <div class="ph"><h3>B. Launch bay and the Bridge</h3><p>Smelting moved to ME, furnaces out, bays, lights, hangar door, intake and fuel counter, departures board; then the drones' code learns the bays. Upstairs: map wall and its renderer, consoles, levers, glass floor. The code is most of the work.</p></div>
   <div class="ph"><h3>C. Hall and lane dressing</h3><p>Glass floor, light strips, bay lights, the ore belt, restyled screens everywhere.</p></div>
   <div class="ph"><h3>D. Guards</h3><p>Patrol ring, guard program, alarm. Needs four more turtles with swords.</p></div>
-  <div class="ph"><h3>F. The outside</h3><p>Brick and andesite piers, factory windows, plinth and cornice, a wall at a time from the outside so nothing inside stops; the sawtooth roof on the hall; stacks, tanks and pipes; the roof conveyor. The biggest single job: drones carry the old stone brick to the store as it comes off.</p></div>
-  <div class="ph"><h3>G. Rail spur</h3><p>Track to the mine, the station and its canopy, the ore train, the vault yard. Last, because it needs the mine end built too.</p></div>
-  <div class="ph"><h3>E. Old base, old rack and grounds</h3><p>Drones take the old base apart into the store and lay the apron outside the hangar door; the old rack comes out; the land round the building is tidied to match.</p></div>
+  <div class="ph"><h3>F. The outside</h3><p>The main block's three new floors and its grid, the podium arcade and green roof, the red steel tower, bridges and roof frame, the banded chimneys. A wall at a time from the outside so nothing inside stops; drones carry the old stone brick to the store as it comes off. The biggest single job.</p></div>
+    <div class="ph"><h3>E. Old base, old rack and grounds</h3><p>Drones take the old base apart into the store and lay the apron outside the hangar door; the old rack comes out; the land round the building is tidied to match.</p></div>
   <p>Alongside all of it, the function work carries on: crystal lab, assembler matrix, stock rules, the gas plant and 3x to 5x ore.</p>`,
 you:()=>`<h2>Your calls</h2><ul>
   <li><b>The launch bay.</b> Drawn with the hangar door in the west wall, onto the old base's ground. Bays on both walls, two rows. Fewer bays or one row is easy.</li>
   <li><b>Where is the Bridge?</b> Drawn upstairs over the launch bay, with a glass floor onto it. If you would rather have it in the tower, say so.</li>
   <li><b>Gate size and place.</b> Drawn at the south entrance, four wide and three high. It can be bigger.</li>
   <li><b>Guards near friends.</b> They patrol outside the walls only and never swing near a player. If you would rather not have armed turtles on a shared server at all, they can be lights-and-alarm only.</li>
-  <li><b>The outside.</b> Create industrial: brick, andesite piers, factory windows, a sawtooth hall roof, smokestacks and tanks. Press Outside to see it. Red brick, or a darker brick (deepslate or nether brick) for a grimier look?</li>
+  <li><b>The outside.</b> Drawn after your picture: concrete grid block, green-roofed podium, red steel, banded chimneys. Light grey like the picture, or the same shapes in deepslate?</li>
   <li><b>The tower.</b> Not drawn: the survey does not reach it. I would make it a control spire to match once it is scanned.</li>
   <li><b>Conveyors.</b> One showpiece belt is drawn. More belts look good but each is another thing to keep running; ME already moves everything.</li></ul>
   <h3>What I could not see</h3><p>The survey covers the building up to the upper floor and not the tower, so the tower is not drawn. A scan of it comes first if the Bridge moves there.</p>`

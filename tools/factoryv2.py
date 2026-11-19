@@ -33,37 +33,28 @@ t("baylamp", "Bay light (copper bulb on a relay: green docked, amber out, red tr
 t("shelf", "Bay shelf (industrial iron slab)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "tiles", "slab")
 t("fuel", "Fuel port (ME interface: lava buckets out, drone loads in)", "ae2:interface", "v2", "#2c2f38", "#ffb84a", "frame")
 t("hatch", "Hangar door leaf (Create sliding door)", "create:industrial_iron_block", "v2", "#3d4147", "#e8b04a", "stripe")
-# the new outside, Create industrial (cat "skin": shown with the Outside button, in place of the old wall face)
-t("sk_brick", "Deepslate brick wall", "minecraft:deepslate_bricks", "skin", "#47474d", "#2f2f34", "bricks")
-t("sk_plinth", "Plinth (cut andesite bricks)", "create:cut_andesite_bricks", "skin", "#8c8c84", "#6e6e66", "bricks")
-t("sk_pier", "Pier (andesite casing), stands out of the wall", "create:andesite_casing", "skin", "#a3a091", "#6c5a3e", "frame")
-t("sk_win", "Factory window (Create framed glass), lit warm from inside", "create:framed_glass", "skin", "#f2c27a", "#5d4a33", "glass", a=0.7)
-t("sk_cornice", "Cornice (cut andesite bricks), overhangs the wall", "create:cut_andesite_bricks", "skin", "#7c7c74", "#5e5e58", "bricks")
-t("sk_shingle", "Sawtooth roof (copper shingles)", "create:copper_shingles", "skin", "#b8673f", "#8e4b2c", "tiles")
-t("sk_roofwin", "Sawtooth roof light (framed glass, faces north)", "create:framed_glass", "skin", "#c7dde3", "#5d4a33", "glass", a=0.5)
-t("sk_stack", "Smokestack (deepslate brick), smoke from a campfire at the top", "minecraft:deepslate_bricks", "skin", "#3c3c41", "#29292d", "bricks")
-t("sk_band", "Stack band (copper casing)", "create:copper_casing", "skin", "#b8673f", "#5c3a26", "frame")
-t("sk_smoke", "Campfire (the stack smokes)", "minecraft:campfire", "skin", "#5a4636", "#ff9a3c", "lava")
-t("sk_tank", "Fluid tank (Create): water and lava buffers for the generators and the fuel line", "create:fluid_tank", "skin", "#6f6250", "#c9a35a", "frame")
-t("sk_pipe", "Copper pipe (Create fluid pipe)", "create:fluid_pipe", "skin", "#c47a4a", "#8e4b2c", "pipe", "pipe")
-t("sk_belt", "Roof conveyor (Create belt): ore from the launch bay to the hall", "create:belt", "skin", "#2b2b2f", "#8d8f99", "stripe", "slab")
-t("sk_cog", "Large cogwheel (Create), turning on the gate motor", "create:large_cogwheel", "skin", "#9b7a4a", "#5c4428", "machine")
-t("sk_whistle", "Steam whistle (blows at shift change and on the alarm)", "create:steam_whistle", "skin", "#c9a35a", "#8a6a3a", "flat", "post")
-t("sk_fan", "Roof vent (Create encased fan)", "create:encased_fan", "skin", "#8c8c84", "#2b2b2f", "machine")
-t("sk_post", "Path light (lantern on a post)", "minecraft:lantern", "skin", "#e8b04a", "#fff0c0", "flat", "post")
-t("sk_sail", "Windmill sail (Create): the windmill turns, and drives the gate and the belts", "create:white_sail", "skin", "#efe9dc", "#b9ad94", "tiles")
-t("sk_hub", "Windmill bearing (Create)", "create:windmill_bearing", "skin", "#9b7a4a", "#5c4428", "machine")
-t("sk_nacelle", "Windmill housing (deepslate bricks, copper bands)", "minecraft:deepslate_bricks", "skin", "#3c3c41", "#b8673f", "bricks")
-t("sk_pod", "Lookout pod glass (framed glass): the Bridge hangs out over the apron", "create:framed_glass", "skin", "#bfe0ea", "#3c3c41", "glass", a=0.45)
-t("sk_podframe", "Lookout pod frame (copper casing)", "create:copper_casing", "skin", "#b8673f", "#5c3a26", "frame")
-t("sk_lift", "Glass lift shaft (Create elevator pulley): ground to the Bridge", "create:framed_glass", "skin", "#cfe6ee", "#3c3c41", "glass", a=0.4)
-t("sk_pulley", "Elevator pulley (Create)", "create:elevator_pulley", "skin", "#9b7a4a", "#5c4428", "machine")
-t("sk_catwalk", "Catwalk (andesite scaffolding) round the hall", "create:andesite_scaffolding", "skin", "#a3a091", "#6c5a3e", "frame", "slab")
-t("sk_track", "Train track (Create)", "create:track", "skin", "#5a4a3a", "#8d8f99", "stripe", "slab")
-t("sk_platform", "Station platform (cut andesite)", "create:cut_andesite_bricks", "skin", "#9a9a92", "#7a7a72", "bricks")
-t("sk_canopy", "Station canopy (copper shingles)", "create:copper_shingles", "skin", "#b8673f", "#8e4b2c", "tiles", "slab")
-t("sk_train", "Ore train (Create, railway casing): runs to the mine, the drones load it", "create:railway_casing", "skin", "#3a3d44", "#c9a35a", "machine")
-t("sk_vault", "Item vault (Create), stacked like containers: bulk overflow on ME", "create:item_vault", "skin", "#6f6a5e", "#c9a35a", "frame")
+# the new outside: concrete block, green-roofed podium, red steel (cat "skin", shown with Outside)
+t("sk_conc", "Light grey concrete", "minecraft:light_gray_concrete", "skin", "#9d9d97", "#86867f", "flat")
+t("sk_pil", "Pilaster (light grey concrete), stands a block out of the wall", "minecraft:light_gray_concrete", "skin", "#a9a9a3", "#8d8d86", "flat")
+t("sk_band", "Floor band (smooth stone), stands out at every floor", "minecraft:smooth_stone", "skin", "#b9b9b4", "#9c9c96", "tiles")
+t("sk_win", "Window (grey stained glass), dark by day, lit at night", "minecraft:gray_stained_glass", "skin", "#3a3f47", "#69707c", "glass", a=0.85)
+t("sk_wlit", "Window, lit", "minecraft:gray_stained_glass", "skin", "#c9a25a", "#69707c", "glass", a=0.85)
+t("sk_roof", "Roof deck (grey concrete)", "minecraft:gray_concrete", "skin", "#5a5c60", "#4b4d51", "flat")
+t("sk_red", "Red steel (red concrete)", "minecraft:red_concrete", "skin", "#9b2d24", "#7a2119", "flat")
+t("sk_bars", "Lattice bracing (iron bars)", "minecraft:iron_bars", "skin", "#8d8f99", "#5d5f66", "frame", "bars")
+t("sk_core", "Furnace shaft (polished deepslate)", "minecraft:polished_deepslate", "skin", "#36373c", "#25262a", "tiles")
+t("sk_moss", "Green roof (moss)", "minecraft:moss_block", "skin", "#5f8a3a", "#4a7030", "speck")
+t("sk_sky", "Skylight (glass)", "minecraft:glass", "skin", "#cfe6ee", "#ffffff", "glass", a=0.45)
+t("sk_white", "Chimney band (white concrete)", "minecraft:white_concrete", "skin", "#d8dadb", "#c3c5c6", "flat")
+t("sk_grey", "Chimney (grey concrete)", "minecraft:gray_concrete", "skin", "#6b6d72", "#56585c", "flat")
+t("sk_road", "Road (grey concrete)", "minecraft:gray_concrete", "skin", "#4a4b4f", "#3e3f42", "flat")
+t("sk_line", "Road line (white concrete)", "minecraft:white_concrete", "skin", "#d8dadb", "#c3c5c6", "flat")
+t("sk_pave", "Forecourt (smooth stone)", "minecraft:smooth_stone", "skin", "#b0b0ab", "#9a9a95", "tiles")
+t("sk_hedge", "Hedge (azalea leaves)", "minecraft:azalea_leaves", "skin", "#4f7a32", "#3c6125", "speck")
+t("sk_log", "Tree (oak log)", "minecraft:oak_log", "skin", "#6b5235", "#4e3b25", "bricks")
+t("sk_leaf", "Tree (oak leaves)", "minecraft:oak_leaves", "skin", "#4c8a2e", "#3a6e22", "speck")
+t("sk_lamp", "Street light (lantern on a post)", "minecraft:lantern", "skin", "#e8b04a", "#fff0c0", "flat", "post")
+t("sk_pod", "Lookout glass (tinted)", "minecraft:tinted_glass", "skin", "#2c2a33", "#69707c", "glass", a=0.7)
 
 SURVEY = dict(A.SURVEY)
 SURVEY.update({"sophisticatedstorage:limited_barrel_1": "barrel", "sophisticatedstorage:limited_barrel_4": "barrel",
@@ -172,131 +163,131 @@ def v2():
 
 SKIN = {}
 def skin():
-    """The new outside in Create industrial: brick walls with andesite piers that stand
-    out of the face, tall factory windows between them, a plinth and an overhanging
-    cornice; a sawtooth roof on the hall; smokestacks, tanks and copper pipes on the
-    east side; a conveyor over the roof; vents, a cogwheel, a whistle, path lights."""
+    """The new outside, after Kyle's reference: a tall concrete block with a strong grid
+    (pilasters and floor bands standing proud, dark windows set back), a low podium over
+    the hall with an arcade and a green roof with skylights, red steel lattice towers
+    joined by red bridges, twin banded chimneys, a forecourt, road, hedges and trees."""
     SKIN.clear()
-    WALL = ("sb", "pd", "gl", "dt", "db", "cob", "cap")
-    pts = [k for k, v in A.B.items() if v[0] in WALL and k[1] >= 1 and -1 <= k[0] <= 46 and 0 <= k[2] <= 30]
-    face = set()
-    rows, colz = {}, {}
-    for (x, y, z) in pts:
-        r = rows.setdefault((y, z), [x, x]); r[0] = min(r[0], x); r[1] = max(r[1], x)
-        c = colz.setdefault((y, x), [z, z]); c[0] = min(c[0], z); c[1] = max(c[1], z)
-    for (y, z), (a, b) in rows.items(): face.add((a, y, z)); face.add((b, y, z))
-    for (y, x), (a, b) in colz.items(): face.add((x, y, a)); face.add((x, y, b))
-    top = {}
-    for (x, y, z) in face: top[(x, z)] = max(top.get((x, z), 0), y)
+    def S(x, y, z, ty, f=0): SKIN[(x, y, z)] = (ty, f)
     def opening(x, y, z): return (z == 30 and 20 <= x <= 25 and y <= 4) or (x == 0 and 12 <= z <= 20 and y <= 8)
-    def normal(x, z):
-        if x == 0: return (-1, 0)
-        if x >= 44: return (1, 0)
-        if z == 0: return (0, -1)
-        if z == 30: return (0, 1)
-        return None
-    def put_s(x, y, z, ty):
-        if (x, y, z) in A.B and A.B[(x, y, z)][0] not in WALL + ("grass", "path", "iron", "stripe"): return
-        SKIN[(x, y, z)] = ty
-    for (x, y, z) in face:
-        n = normal(x, z)
-        if not n or opening(x, y, z): continue
-        tp = top[(x, z)]
-        along = z if n[0] else x
-        pier = along % 5 == 0
-        win = along % 5 in (2, 3) and 3 <= y <= tp - 2
-        if pier: ty = "sk_pier"
-        elif y == 1: ty = "sk_plinth"
-        elif y == tp: ty = "sk_cornice"
-        elif win: ty = "sk_win"
-        else: ty = "sk_brick"
-        SKIN[(x, y, z)] = ty
-        ox, oz = x + n[0], z + n[1]
-        if opening(ox, y, oz) or opening(x, y, z): continue
-        if pier: put_s(ox, y, oz, "sk_pier")
-        elif y == 1: put_s(ox, y, oz, "sk_plinth")
-        elif y == tp: put_s(ox, y, oz, "sk_cornice")
-    for (x, z), tp in top.items():                 # pier caps rise above the cornice
-        n = normal(x, z)
-        if n and ((z if n[0] else x) % 5 == 0): SKIN[(x, tp + 1, z)] = "sk_pier"
-    for (x, y, z) in pts:                         # inner walls above the roofs: brick to match
-        if y >= 9 and (x, y, z) not in SKIN and not opening(x, y, z): SKIN[(x, y, z)] = "sk_brick"
-    # the hall's sawtooth roof: north-facing glass, copper shingle slopes
-    prof = {}
-    for zt in range(1, 30, 5):
-        prof[zt] = ("w", 13)
-        for k, h in enumerate((13, 12, 11, 10)):
-            if zt + 1 + k <= 29: prof[zt + 1 + k] = ("s", h)
-    for z, (kind, h) in prof.items():
-        for x in range(29, 44):
-            if kind == "w":
-                for y in range(10, 14): SKIN[(x, y, z)] = "sk_roofwin"
-            else:
-                SKIN[(x, h, z)] = "sk_shingle"
-        for x in (28, 44):
-            for y in range(11, h + 1): SKIN[(x, y, z)] = "sk_brick"
-    # smokestacks and tanks on the east side, by the power bay
-    for (z0, hgt) in ((4, 22), (24, 20)):
-        for x in range(47, 50):
-            for z in range(z0, z0 + 3):
-                for y in range(1, hgt + 1):
-                    SKIN[(x, y, z)] = "sk_band" if y in (hgt - 1, 6) else "sk_stack"
-        SKIN[(48, hgt + 1, z0 + 1)] = "sk_smoke"
-    for z0 in (10, 17):
-        for x in range(47, 50):
-            for z in range(z0, z0 + 3):
-                for y in range(1, 8): SKIN[(x, y, z)] = "sk_tank"
-        SKIN[(46, 5, z0 + 1)] = "sk_pipe"
-    for z in range(11, 19): SKIN[(46, 8, z)] = "sk_pipe"
-    SKIN[(46, 6, 11)] = SKIN[(46, 7, 11)] = SKIN[(46, 6, 18)] = SKIN[(46, 7, 18)] = "sk_pipe"
-    SKIN[(43, 14, 3)] = "sk_whistle"
-    # conveyor over the storeroom roof, launch bay to hall gable
-    for x in range(8, 29): SKIN[(x, 10, 15)] = "sk_belt"
-    for x in range(10, 28, 5): SKIN[(x, 9, 15)] = "sk_pier"
-    for x in range(12, 27, 5):                     # roof vents over the storerooms
-        for z in (7, 23): SKIN[(x, 9, z)] = "sk_fan"
-    SKIN[(26, 4, 31)] = "sk_cog"
-    # the windmill on the hall's east gable: Create sails, it turns
-    for y in range(14, 18):
-        for z in range(14, 17): SKIN[(45, y, z)] = "sk_nacelle"
-    SKIN[(46, 16, 15)] = "sk_hub"
-    for d in range(2, 9):
-        for w in (-1, 0, 1):
-            SKIN[(47, 16 + w, 15 + d)] = SKIN[(47, 16 + w, 15 - d)] = "sk_sail"
-            SKIN[(47, 16 + d, 15 + w)] = SKIN[(47, 16 - d, 15 + w)] = "sk_sail"
-    # the lookout pod: the Bridge hangs out over the apron, above the hangar door
-    for x in range(-6, 0):
-        for z in range(11, 22):
+    # ---- the main block: x 0..27, z 0..30, four floors to y 21
+    TOP = 21
+    def grid_face(cells, n, ylo, yhi, step=3, lit=()):
+        """cells: list of (x, z, along) on one face; n: outward (dx, dz)."""
+        for (x, z, al) in cells:
+            for y in range(ylo, yhi + 1):
+                if opening(x, y, z): continue
+                pil = al % step == 0
+                band = y % 5 == 0
+                if y == yhi: ty = "sk_conc"
+                elif pil or band: ty = "sk_conc"
+                elif y <= 3 and z == 30: ty = "sk_wlit"
+                else: ty = "sk_wlit" if (al * 7 + y * 3) % 11 in lit else "sk_win"
+                S(x, y, z, ty)
+                ox, oz = x + n[0], z + n[1]
+                if opening(ox, y, oz) or opening(x, y, z): continue
+                if pil: S(ox, y, oz, "sk_pil")
+                elif band: S(ox, y, oz, "sk_band")
+    LIT = (2, 5)
+    grid_face([(x, 30, x) for x in range(0, 28)], (0, 1), 1, TOP, lit=LIT)
+    grid_face([(x, 0, x) for x in range(0, 28)], (0, -1), 1, TOP, lit=LIT)
+    grid_face([(0, z, z) for z in range(0, 31)], (-1, 0), 1, TOP, lit=LIT)
+    grid_face([(27, z, z) for z in range(0, 31)], (1, 0), 11, TOP, lit=LIT)
+    for x in range(1, 27):
+        for z in range(1, 30): S(x, TOP, z, "sk_roof")
+    for x in range(0, 28):
+        S(x, TOP + 1, 0, "sk_red"); S(x, TOP + 1, 30, "sk_red")
+    for z in range(0, 31):
+        S(0, TOP + 1, z, "sk_red"); S(27, TOP + 1, z, "sk_red")
+    # ---- the podium over the hall: x 28..45, arcade on the south and east, green roof
+    PT = 10
+    def arcade(cells, n):
+        for (x, z, al) in cells:
+            pier = al % 4 == 0
+            for y in range(1, PT + 1):
+                if opening(x, y, z): continue
+                if y == PT: ty = "sk_conc"
+                elif y == 4: ty = "sk_red"
+                else: ty = "sk_win"
+                S(x, y, z, ty)
+                if pier:
+                    for k in (1, 2): S(x + n[0] * k, y, z + n[1] * k, "sk_pil")
+            for k in (1, 2): S(x + n[0] * k, PT, z + n[1] * k, "sk_band")
+            S(x + n[0] * 2, PT + 1, z + n[1] * 2, "sk_conc")
+    arcade([(x, 30, x) for x in range(28, 46)], (0, 1))
+    arcade([(45, z, z) for z in range(0, 31)], (1, 0))
+    arcade([(x, 0, x) for x in range(28, 46)], (0, -1))
+    for x in range(28, 45):
+        for z in range(1, 30):
+            ty = "sk_sky" if (z % 6 in (2, 3) and 30 <= x <= 42) else ("sk_pave" if x in (28, 44) or z % 6 == 5 else "sk_moss")
+            S(x, PT, z, ty)
+    # ---- red steel: the lattice tower on the east (a headframe over the furnace shaft)
+    X0, X1, Z0, Z1, H = 49, 55, 9, 15, 34
+    for y in range(1, H + 1):
+        for x in range(X0, X1 + 1):
+            for z in range(Z0, Z1 + 1):
+                edge_x, edge_z = x in (X0, X1), z in (Z0, Z1)
+                if edge_x and edge_z: S(x, y, z, "sk_red")
+                elif (edge_x or edge_z) and y % 6 == 0: S(x, y, z, "sk_red")
+                elif edge_x or edge_z:
+                    al = z if edge_x else x
+                    if (al - (Z0 if edge_x else X0) + y) % 6 == 0: S(x, y, z, "sk_bars", 1 if edge_x else 0)
+    for y in range(1, 27):
+        for x in range(51, 54):
+            for z in range(11, 14): S(x, y, z, "sk_core")
+    for y in range(H + 1, H + 5):
+        for x in range(X0 + 1, X1):
+            for z in range(Z0 + 1, Z1): S(x, y, z, "sk_red" if y == H + 4 or x in (X0 + 1, X1 - 1) or z in (Z0 + 1, Z1 - 1) else "sk_core")
+    for k in range(0, 15):                                  # inclined red skip-bridge down onto the podium roof
+        S(48 - k, 25 - k, 12, "sk_red"); S(48 - k, 26 - k, 12, "sk_bars", 0)
+    for x in range(28, 49):                                 # high red truss across to the main block
+        S(x, 24, 18, "sk_red"); S(x, 27, 18, "sk_red")
+        if x % 3 == 0: S(x, 25, 18, "sk_red"); S(x, 26, 18, "sk_red")
+        else: S(x, 25, 18, "sk_bars", 0); S(x, 26, 18, "sk_bars", 0)
+    # red frame and twin red stacks on the main block's roof
+    for x in range(12, 21):
+        for z in range(10, 19):
+            for y in range(TOP + 1, 30):
+                ex, ez = x in (12, 20), z in (10, 18)
+                if (ex and ez) or ((ex or ez) and y in (TOP + 1, 25, 29)): S(x, y, z, "sk_red")
+                elif (ex or ez) and (x + z + y) % 4 == 0: S(x, y, z, "sk_bars", 1 if ex else 0)
+    for (sx, sz) in ((13, 13), (18, 13)):
+        for y in range(TOP + 1, 42):
+            for dx in (0, 1):
+                for dz in (0, 1): S(sx + dx, y, sz + dz, "sk_core" if y >= 40 else "sk_red")
+    # twin banded chimneys, south-east
+    for (cx, cz) in ((49, 21), (53, 21)):
+        for x in range(cx - 1, cx + 3):
+            for z in range(cz - 1, cz + 3):
+                for y in (1, 2): S(x, y, z, "sk_conc")
+        for y in range(3, 46):
+            for dx in (0, 1):
+                for dz in (0, 1): S(cx + dx, y, cz + dz, "sk_core" if y >= 44 else ("sk_white" if (y // 4) % 2 else "sk_grey"))
+    # ---- ground: forecourt, road, hedges, trees, street lights
+    for x in range(17, 29):
+        for z in range(31, 36): S(x, 0, z, "sk_pave")
+    for x in range(-12, 60):
+        for z in (37, 38, 39): S(x, 0, z, "sk_line" if (z == 38 and x % 4 < 2) else "sk_road")
+    for z in range(-6, 37):
+        for x in (57, 58, 59): S(x, 0, z, "sk_line" if (x == 58 and z % 4 < 2) else "sk_road")
+    for x in list(range(-1, 17)) + list(range(29, 47)):
+        S(x, 1, 34, "sk_hedge")
+    for z in range(-1, 31):
+        if not (8 <= z <= 24): S(-8, 1, z, "sk_hedge")
+    for (tx, tz) in ((-6, 41), (6, 41), (18, 41), (30, 41), (42, 41), (54, 41), (-10, 30), (-10, 2), (61, 30), (61, 5)):
+        for y in range(1, 4): S(tx, y, tz, "sk_log")
+        for dx in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                for y in (4, 5): S(tx + dx, y, tz + dz, "sk_leaf")
+        S(tx, 6, tz, "sk_leaf")
+    for x in range(-8, 58, 10): S(x, 1, 36, "sk_lamp")
+    # ---- the lookout: a dark glass box out of the west face over the hangar door
+    for x in range(-5, 0):
+        for z in range(12, 21):
             for y in range(9, 13):
-                edge = x == -6 or z in (11, 21)
-                if y in (9, 12): SKIN[(x, y, z)] = "sk_podframe" if edge else ("sk_pod" if y == 9 else "sk_brick")
-                elif edge: SKIN[(x, y, z)] = "sk_podframe" if (z in (11, 21) and x == -6) else "sk_pod"
-    # glass lift on the south face of the launch bay, ground to the Bridge
-    for y in range(1, 13):
-        for x in (2, 3): SKIN[(x, y, 31)] = "sk_lift"
-    SKIN[(2, 13, 31)] = SKIN[(3, 13, 31)] = "sk_pulley"
-    # catwalk round the hall's south face, under the cornice
-    for x in range(28, 46): SKIN[(x, 7, 31)] = "sk_catwalk"
-    # rail spur and station along the south yard
-    for x in range(-12, 53): SKIN[(x, 0, 36)] = "sk_track"
-    for x in range(30, 45):
-        for z in (34, 35): SKIN[(x, 0, z)] = "sk_platform"
-        for z in (34, 35, 36): SKIN[(x, 4, z)] = "sk_canopy"
-    for x in (30, 37, 44):
-        for y in range(1, 4): SKIN[(x, y, 34)] = "sk_pier"
-    for x in range(32, 43):
-        if x not in (36, 39):
-            for y in (1, 2): SKIN[(x, y, 36)] = "sk_train"
-    # container yard: Create item vaults stacked south of the apron
-    for x in range(-10, -1, 3):
-        for z in range(24, 30, 3):
-            for dx in range(2):
-                for dz in range(2):
-                    for y in range(1, 3 if (x + z) % 2 else 5): SKIN[(x + dx, y, z + dz)] = "sk_vault"
-    for x in range(-3, 53, 8):                     # path lights round the patrol ring
-        SKIN[(x, 1, -3)] = "sk_post"; SKIN[(x, 1, 33)] = "sk_post"
-    for z in range(5, 30, 8):
-        SKIN[(-3, 1, z)] = "sk_post"; SKIN[(52, 1, z)] = "sk_post"
+                edge = x == -5 or z in (12, 20)
+                if y == 9 or y == 12: S(x, y, z, "sk_conc" if (edge or y == 12) else "sk_pod")
+                elif edge: S(x, y, z, "sk_conc" if (x == -5 and z in (12, 20)) else "sk_pod")
 
 ZONES = [
  dict(id="gate", name="Blast gate", cam=[22.5, 2, 31], h=5.5, ph="A",
@@ -311,14 +302,14 @@ ZONES = [
       text="The barrel rooms stay, now read and filled by ME. v2 adds category lighting over each zone and a requisition screen at each end."),
  dict(id="lane", name="Old rack", cam=[22, 1, 2], h=4.5, ph="E",
       text="The old lane and rack retire once the launch bay is running. The lane stays as a corridor; the rack comes out."),
- dict(id="outside", name="The outside", cam=[24, 6, 15], h=4, ph="F",
-      text="Create industrial in deepslate brick: andesite piers standing proud, tall windows glowing warm, plinth and cornice. The hall gets a sawtooth copper roof and a catwalk under its cornice. Smokestacks and fluid tanks on the east side, a conveyor over the roof from the launch bay to the hall."),
- dict(id="windmill", name="Windmill", cam=[47, 16, 15], h=10, ph="F",
-      text="A Create windmill on the hall's east gable: four arms of sails, 17 blocks across, turning on the skyline. It is not just for show: it turns the gate, the belts and the cogwheel, so the Create side runs on wind."),
- dict(id="pod", name="Lookout pod", cam=[-3, 10, 16], h=5, ph="B",
-      text="The Bridge pushes out through the west wall as a glass pod hanging over the hangar door and the apron, copper-framed. You watch the drones go out under your feet. A glass lift on the south face runs from the ground straight up to it."),
- dict(id="rail", name="Rail spur", cam=[37, 2, 35], h=5, ph="G",
-      text="A Create train line along the south yard with a station under a copper canopy. An ore train runs to the mine; the drones load it there and unload it here. Beside the apron, Create item vaults stacked like shipping containers hold bulk overflow for ME."),
+ dict(id="outside", name="The outside", cam=[14, 10, 15], h=4, ph="F",
+      text="After your picture. The west half rises to a four-storey concrete block with a strong grid: pilasters every three blocks and a band at every floor, standing a block proud, with dark windows set back and a few lit. Red trim on the parapet. The hall becomes a low podium: an arcade of deep piers on the south and east, a red band, and a green roof with rows of skylights."),
+ dict(id="steel", name="Red steel", cam=[45, 20, 15], h=12, ph="F",
+      text="The industrial side. A red steel lattice tower on the east over a dark furnace shaft, a red skip-bridge dropping from it onto the podium roof, a high red truss across to the main block, a red frame with twin red stacks on the main block's roof, and two tall grey-and-white banded chimneys. All red concrete, iron bars and polished deepslate."),
+ dict(id="pod", name="Lookout", cam=[-3, 10, 16], h=5, ph="B",
+      text="The Bridge pushes out of the west face as a dark glass box over the hangar door: watch the drones go out under your feet."),
+ dict(id="grounds", name="Grounds", cam=[22, 1, 36], h=4, ph="E",
+      text="A paved forecourt at the gate, a road along the south and east with lines and street lights, hedges along the front, trees along the road."),
  dict(id="guards", name="Guards", cam=[46, 1, 32], h=3.5, ph="D",
       text="Four melee turtles walk a ring round the building at night and two hold the gate. They strike hostile mobs only, stand down near players, and raise the alarm and the gate lights."),
  dict(id="yard", name="Apron", cam=[-5, 1, 16], h=3.5, ph="E",
@@ -339,13 +330,8 @@ def page():
                 nb = (x + dx, y + dy, z + dz)
                 if (nb in A.B and A.B[nb][0] == ty) or ((x, y, z), nb) in A.LINKS: m |= 1 << i
         blocks.append([x, y, z, keys.index(ty), f, min(ph, 8), ni, m])
-    for (x, y, z), ty in SKIN.items():
-        m = 0
-        if ty == "sk_pipe":
-            for i, (dx, dy, dz) in enumerate(((1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 0, -1), (0, 1, 0), (0, -1, 0))):
-                nb = SKIN.get((x + dx, y + dy, z + dz))
-                if nb in ("sk_pipe", "sk_tank") or (dx == -1 and (x + dx, y, z) not in SKIN): m |= 1 << i
-        blocks.append([x, y, z, keys.index(ty), 0, 8, -1, m])
+    for (x, y, z), (ty, f) in SKIN.items():
+        blocks.append([x, y, z, keys.index(ty), f, 8, -1, 0])
     data = dict(types=[dict(k=k, **T[k]) for k in keys], blocks=blocks, notes=A.NOTES, zones=ZONES, phases=[], bom={})
     tpl = open(os.path.join(ROOT, "tools", "ae2plan_page.html")).read()
     book = open(os.path.join(ROOT, "tools", "factoryv2_book.js")).read()
@@ -358,11 +344,12 @@ def page():
            ('<div class="grp"><label for="ph">Build phase</label><input id="ph" type="range" min="0" max="8" value="8"><label id="phv">8 of 8</label></div>',
             '<div class="grp"><button id="t_out" aria-pressed="true">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
            ('press("t_floor","floor");', 'press("t_up","upper");press("t_out","out");press("t_floor","floor");'),
+           ('  case"slab":return[[0,0,0,16,8,16]];', '  case"slab":return[[0,0,0,16,8,16]];\n  case"bars":return f%2?[[7,0,0,9,16,16]]:[[0,0,7,16,16,9]];'),
            ("    const cat=t.cat;\n", "    const cat=t.cat;\n    if(cat==\"skin\"&&!O.out)continue;if(O.out&&cat!=\"skin\"&&SK.has(b[0]+\",\"+b[1]+\",\"+b[2]))continue;\n"),
            ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={out:true,"),
            ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.upper&&!O.out&&b[1]>=6)continue;"),
-           ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:20,cz:15,rot:0,zoom:1,px:0,py:0};"),
-           ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(62*HW*1.1),H/(62*HH*1.5))"),
+           ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:24,cz:17,rot:0,zoom:1,px:0,py:90};"),
+           ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(80*HW*1.05),H/(80*HH*2.1))"),
            ('zn.id=="core"?6.4:(zn.id=="garden"?5.4:(zn.id=="fuel"?2.4:3.3))', "(zn.h||3.3)"),
            ("const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=27:b[2]<=3,n=nr(XDIR[r])||nr(ZDIR[r]);",
             "const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=0:b[2]<=0,n=(nr(XDIR[r])||nr(ZDIR[r]))&&b[0]>=0&&b[0]<=44&&b[2]>=0&&b[2]<=30&&TY[b[3]].cat!=\"v2\"&&!O.out;"),
