@@ -517,7 +517,9 @@ local function meDesk()
         local res, err
         if type(msg.arg) == "string" then res, err = call(msg.call, { name = msg.arg }) else res, err = call(msg.call) end
         local out = {}
-        if type(res) == "table" then
+        if type(res) == "table" and msg.find == "*" then      -- the whole answer, as text
+          out[1] = textutils.serialize(res, { compact = true }):gsub("prototype=%b{},?", ""):gsub("tags=%b{},?", ""):sub(1, 7000)
+        elseif type(res) == "table" then
           for k, v in pairs(res) do
             local name = type(v) == "table" and tostring(v.name or v.id or k) or tostring(v)
             local text = type(v) == "table" and textutils.serialize(v, { compact = true }) or tostring(v)
