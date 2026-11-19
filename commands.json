@@ -1,12 +1,40 @@
 {
   "commands": [
     {
-      "id": 1795046553,
-      "issued": 1795046553000,
+      "id": 1795047624,
+      "issued": 1795047624000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "minecraft:lava_bucket",
-      "n": 4
+      "ask": "ae2:charged_certus_quartz_crystal"
+    },
+    {
+      "id": 1795047625,
+      "issued": 1795047624000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "ae2:fluix_crystal"
+    },
+    {
+      "id": 1795047626,
+      "issued": 1795047624000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "minecraft:redstone"
+    },
+    {
+      "id": 1795047627,
+      "issued": 1795047624000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "minecraft:quartz"
+    },
+    {
+      "id": 1795047628,
+      "issued": 1795047624000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "ae2:fluix_crystal",
+      "n": 16
     }
   ]
 }
