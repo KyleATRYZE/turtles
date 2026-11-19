@@ -520,9 +520,9 @@ local function meDesk()
             local name = type(v) == "table" and tostring(v.name or v.id or k) or tostring(v)
             local text = type(v) == "table" and textutils.serialize(v, { compact = true }) or tostring(v)
             if not msg.find or text:lower():find(tostring(msg.find):lower(), 1, true) then
-              out[#out + 1] = msg.find and text:sub(1, 300) or name
+              out[#out + 1] = msg.find and text:gsub("prototype=%b{},?", ""):sub(1, 900) or name
             end
-            if #out >= 12 then break end
+            if #out >= (msg.find and 4 or 12) then break end
           end
         else
           out[1] = tostring(res) .. " " .. tostring(err)
@@ -544,8 +544,19 @@ local function meDesk()
       elseif type(msg.craft) == "string" then
         local n = math.max(1, math.floor(tonumber(msg.n) or 1))
         local before = count(msg.craft)
-        local can = call("isItemCraftable", { name = msg.craft })
-        local ok, err = call("craftItem", { name = msg.craft, count = n })
+        -- (by name alone the bridge picks a stored item of that name, and one
+        -- with a label or an id on it is "not craftable": ask for the very
+        -- item the patterns make, by its fingerprint)
+        local filter, can = { name = msg.craft, count = n }, false
+        local list = call("getCraftableItems")
+        for _, it in ipairs(type(list) == "table" and list or {}) do
+          if type(it) == "table" and it.name == msg.craft then
+            can = true
+            if it.fingerprint then filter.fingerprint = it.fingerprint end
+            break
+          end
+        end
+        local ok, err = call("craftItem", filter)
         line = ("craft %d %s: %s%s (craftable: %s, had %s)"):format(n, msg.craft, ok and "started" or "refused",
           err and (" " .. tostring(err)) or "", tostring(can), tostring(before))
         local seen = false
