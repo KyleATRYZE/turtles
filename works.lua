@@ -425,7 +425,16 @@ local function meDesk()
     local methods = {}
     for k in pairs(bridge) do methods[#methods + 1] = k end
     table.sort(methods)
-    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log,
+    -- what each CPU is doing, and the lava ME holds
+    local tasks = {}
+    local okT, list = pcall(function() return bridge.getCraftingTasks() end)
+    for i, t in ipairs(okT and type(list) == "table" and list or {}) do
+      if i <= 6 then tasks[#tasks + 1] = textutils.serialize(t, { compact = true }):sub(1, 260) end
+    end
+    local lava = call("getFluid", { name = "minecraft:lava" })
+    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks,
+      lava = type(lava) == "table" and (lava.count or lava.amount) or nil,
+      free = call("getAvailableItemStorage"), freeBarrels = call("getAvailableExternalItemStorage"),
       energy = call("getEnergyStorage") or call("getStoredEnergy"), usage = call("getEnergyUsage"),
       cpus = type(cpus) == "table" and #cpus or nil, busy = busy,
       methods = #log == 0 and table.concat(methods, " ") or nil } }, W.JOB)
