@@ -546,13 +546,14 @@ local function meDesk()
         local before = count(msg.craft)
         -- (by name alone the bridge picks a stored item of that name, and one
         -- with a label or an id on it is "not craftable": ask for the very
-        -- item the patterns make, by its fingerprint)
+        -- item the patterns make: by its fingerprint, or as the plain item)
         local filter, can = { name = msg.craft, count = n }, false
         local list = call("getCraftableItems")
         for _, it in ipairs(type(list) == "table" and list or {}) do
           if type(it) == "table" and it.name == msg.craft then
             can = true
-            if it.fingerprint then filter.fingerprint = it.fingerprint end
+            if it.fingerprint then filter.fingerprint = it.fingerprint
+            elseif type(it.components) ~= "table" or next(it.components) == nil then filter.components = "{}" end
             break
           end
         end
