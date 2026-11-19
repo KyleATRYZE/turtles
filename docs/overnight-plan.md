@@ -255,4 +255,11 @@ What: a short dense trunk of its own from a free controller face, with the four 
 - Channels on trunk O: 16 of 32, and the vault columns go back to one drive each.
 How, given 02:02: one link at a time, water first (least to lose). Lay the cable. Place the new connector, remove the old one, and within 5 seconds read `execute if block -4417 71 1539 ae2:controller[state=online]`. If it is not online: put the old connector back at once, remove the new one, run the sweep. Only when one link has held for 10 minutes move the next. The cause of the 02:02 conflict is still unknown, so this may fail the same way; that is why it waits for Kyle.
 
+### Morning, 19 Nov (Kyle online): trunk O built
+- Purple dense cable under the controller at hall 30..33 -1 22 (world -4418..-4415 70 1540). Not the plan's x31-34: 34 -2 22 touched trunk A's dip, so the run moved one west.
+- Water link (4245) moved to 30 -2 22 (-4418 69 1540), ore link (4244) to 32 -2 22 (-4416 69 1540). Old ones off the vault. Controller checked online after each move. Proved: generator tanks full; 4 lead dust made through the ore line.
+- Store links (4242, 4243: 1 and 2 channels) left on the vault; they fit there now.
+- New drive under the floor at 33 -2 22 (-4415 69 1540) on trunk O: 6 x 64k item, 2 x 64k fluid, placed fresh with the cells in it (not an edit of an existing drive). On the grid.
+- Sweep (tools/mehealth.md) updated for the new blocks; passes.
+
 ### Next shifts (function): NO changes to controllers, connectors or drives without Kyle. Run the sweep; trunk O as a plan on paper (survey every cell first) so the ore line, water and stores leave the vault columns; more matrix patterns; atomic alloy / ultimate circuit once more now the chain is fixed; gas plant.
