@@ -34,3 +34,15 @@ Every placement was `fill/setblock ... keep`: only air was filled, nothing exist
   (belt connector, chains, contraptions).
 - Patrol path ring: the land drops 1-4 blocks east and south; needs terraforming first.
 - ME health sweep after the build: all four lines passed.
+
+## Pass 3: Create links by command (19 Nov 15:10)
+- Belts: a belt piece checks its chain on its first tick and breaks if the rest isn't there yet, so the whole belt is
+  placed while the world is paused for a split second: `tick freeze`, start + `fill` middle + end, `tick unfreeze`.
+  Built: engine floor z 1543 (x -4432..-4423), hall overhead belts y 78 at z 1526 (x -4419..-4405) and z 1540 (x -4419..-4409).
+  (First tries broke and dropped a few belts/shafts: those items were removed.)
+- Chain conveyors: links are the posts' `Connections` (relative offsets, both ends): deck loop (four posts at y 84),
+  outside tower chain (y 90), hall pair (y 80).
+- Still needed for motion: rotation. Plan: Create Crafts & Additions electric motors fed from the thermo generator row
+  (x -4406, y 72, z 1535..1541 pushes FE), shafts/gearboxes up to the belt pulleys. Keep clear of the ME blocks at x -4409/-4410.
+- The real hall is taller than the model (air to y 84, roof from y 85): the podium roof must go at y 85, not y 81.
+  The hall roof block type could not be identified by tests: look in game before swapping it.
