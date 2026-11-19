@@ -1,39 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795053057,
-      "issued": 1795053057000,
+      "id": 1795053155,
+      "issued": 1795053155000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "alltheores:platinum_dust"
-    },
-    {
-      "id": 1795053058,
-      "issued": 1795053057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:iridium_dust"
-    },
-    {
-      "id": 1795053059,
-      "issued": 1795053057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:uranium_dust"
-    },
-    {
-      "id": 1795053060,
-      "issued": 1795053057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:raw_platinum"
-    },
-    {
-      "id": 1795053061,
-      "issued": 1795053057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:raw_iridium"
+      "call": "getItems",
+      "find": "platinum"
     }
   ]
 }
