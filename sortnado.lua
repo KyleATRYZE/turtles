@@ -87,6 +87,12 @@ function S.discover()
   local names, controller, bridge = {}, nil, nil
   local controllers = {}
   S.manager, S.managers = nil, {}
+  S.overflow = nil
+  for _, n in ipairs(peripheral.getNames()) do
+    -- (an ME Interface on the cable: what the barrels have no room for goes
+    -- into the ME system through it, and shows in the ME terminals)
+    if n:find("ae2:interface", 1, true) and peripheral.hasType(n, "inventory") then S.overflow = S.overflow or n end
+  end
   for _, n in ipairs(peripheral.getNames()) do
     if peripheral.hasType(n, "inventory_manager") or peripheral.hasType(n, "inventoryManager") then
       S.manager = S.manager or n        -- (holds the owner's memory card)
@@ -95,7 +101,7 @@ function S.discover()
       if ok and type(who) == "string" then S.managers[who:lower()] = n end
     elseif peripheral.hasType(n, "me_bridge") or peripheral.hasType(n, "meBridge") then
       bridge = bridge or n
-    elseif n ~= cfg.inbox and n ~= cfg.outbox and peripheral.hasType(n, "inventory")
+    elseif n ~= cfg.inbox and n ~= cfg.outbox and n ~= S.overflow and peripheral.hasType(n, "inventory")
       and not n:find("furnace") and not n:find("turtle") then
       names[#names + 1] = n
       if n == cfg.store or (not cfg.store and n:find("sophisticatedstorage:controller", 1, true)) then
@@ -372,6 +378,12 @@ local function store(container, slot, name, count, dest)
       local ok, k = pcall(peripheral.call, container, "pushItems", ctl, slot, count)
       if ok and (tonumber(k) or 0) > 0 then return tonumber(k) end
     end
+    if S.overflow then                            -- no barrel has room: the ME system
+      local ok, k = pcall(peripheral.call, container, "pushItems", S.overflow, slot, count)
+      k = ok and tonumber(k) or 0
+      if k > 0 then S.overflowed = (S.overflowed or 0) + k end
+      return k
+    end
     return 0
   end
   local ok, n = pcall(peripheral.call, container, "pushItems", dest, slot, count)
@@ -517,7 +529,7 @@ function S.drainList(spec)
   for _, n in ipairs(S.order) do mine[n] = true end
   for _, n in ipairs(peripheral.getNames()) do
     if wanted(n) and not mine[n] and not seen[n] and peripheral.hasType(n, "inventory")
-      and not n:find("furnace") and not n:find("turtle") and not n:find("controller") then
+      and not n:find("furnace") and not n:find("turtle") and not n:find("controller") and n ~= S.overflow then
       local total = 0
       for _, st in pairs(peripheral.call(n, "list") or {}) do total = total + st.count end
       out[#out + 1] = { n, total }
@@ -1141,7 +1153,8 @@ local function report()
   if not swarm then return end
   local used, slots = S.totals()
   local t = { role = "storage", state = (S.pending or 0) > 0 and "store full" or "sorting",
-    storage = { used = used, slots = slots, free = slots - used }, survey = S.survey, resort = S.resortNote, bay = S.bayNote,
+    storage = { used = used, slots = slots, free = slots - used },
+    overflow = S.overflow and { to = S.overflow, items = S.overflowed or 0 } or nil, survey = S.survey, resort = S.resortNote, bay = S.bayNote,
     me = S.bridge and (S.backend == "me" and ("the store: " .. S.bridge) or ("seen, not the store: " .. S.bridge)) or nil,
     drain = (cfg.drain or S.drainNote) and { left = cfg.drain and #cfg.drain or 0, done = cfg.drained,
       next = cfg.drain and cfg.drain[1], note = S.drainNote } or nil }
