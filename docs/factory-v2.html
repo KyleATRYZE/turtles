@@ -69,7 +69,7 @@ td code{font-size:11.5px;color:var(--ink-soft)}
 <body>
 <header>
   <h1>Factory v2 Concept</h1>
-  <p>The whole factory from the survey, with the redesign drawn in. A proposal to react to: nothing on this page is built until you say. Drag to move, scroll to zoom, hover any block.</p>
+  <p>The whole factory as it would look after the redesign: the new outside first. Press Outside to take the walls off and see in; pick a zone on the right to fly to it. Drag to move, scroll to zoom, hover any block. Nothing here is built until you say.</p>
 </header>
 <main>
   <section id="stage">
@@ -77,7 +77,7 @@ td code{font-size:11.5px;color:var(--ink-soft)}
       <div class="grp"><button id="rl" title="Turn left">&#8630; Turn</button><button id="rr" title="Turn right">Turn &#8631;</button><button id="home">Whole factory</button></div>
       <div class="grp"><button id="t_floor" aria-pressed="false">Lift the floor</button><button id="t_walls" aria-pressed="true">Walls</button><button id="t_mach" aria-pressed="true">Machines</button><button id="t_lab" aria-pressed="true">Labels</button></div>
       <div class="grp"><label>Under the floor:</label><button id="t_me" aria-pressed="true">ME cable</button><button id="t_pw" aria-pressed="true">Power</button><button id="t_ch" aria-pressed="true">Pipes</button></div>
-      <div class="grp"><button id="t_out" aria-pressed="false">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>
+      <div class="grp"><button id="t_out" aria-pressed="true">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>
     </div>
     <canvas id="cv"></canvas>
     <div id="tip"></div>
@@ -197,7 +197,7 @@ function drawScene(cv,blocks,V,O){
 // ---------------------------------------------------------------- main view
 const cv=document.getElementById("cv"),tip=document.getElementById("tip");
 const HOME={cx:20,cz:15,rot:0,zoom:1,px:0,py:0};
-const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat=="skin").map(b=>b[0]+","+b[1]+","+b[2]));const V=Object.assign({},HOME),O={floor:false,walls:true,mach:true,labels:true,me:true,pw:true,ch:true,phase:8,zones:D.zones,sel:null,cut:true};
+const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat=="skin").map(b=>b[0]+","+b[1]+","+b[2]));const V=Object.assign({},HOME),O={out:true,floor:false,walls:true,mach:true,labels:true,me:true,pw:true,ch:true,phase:8,zones:D.zones,sel:null,cut:true};
 let last=null,raf=0;
 function fit(){const W=cv.clientWidth,H=cv.clientHeight;HOME.zoom=Math.max(.5,Math.min(W/(62*HW*1.1),H/(62*HH*1.5)));}
 function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;last=drawScene(cv,D.blocks,V,O)})}
@@ -226,7 +226,7 @@ function hover(e){const h=pick(e);if(!h){tip.style.display="none";return}
   tip.style.left=Math.min(x,R.width-tip.offsetWidth-8)+"px";tip.style.top=Math.min(y,R.height-tip.offsetHeight-8)+"px"}
 function clickAt(e){const R=cv.getBoundingClientRect(),x=e.clientX-R.left,y=e.clientY-R.top;
   if(O.labels)for(const zn of D.zones){const q=zn._r;if(q&&x>=q[0]&&x<=q[0]+q[2]&&y>=q[1]&&y<=q[1]+q[3]){focusZone(zn.id);return}}}
-function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=id=="outside";document.getElementById("t_out").setAttribute("aria-pressed",O.out);V.cx=zn.cam[0]+.5;V.cz=zn.cam[2]+.5;V.px=0;V.zoom=Math.max(HOME.zoom*2.2,2);V.py=40+(zn.cam[1]-1)*BH*V.zoom;show("tour");syncZones();redraw()}
+function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=["outside","gate","guards","yard"].includes(id);document.getElementById("t_out").setAttribute("aria-pressed",O.out);V.cx=zn.cam[0]+.5;V.cz=zn.cam[2]+.5;V.px=0;V.zoom=Math.max(HOME.zoom*2.2,2);V.py=40+(zn.cam[1]-1)*BH*V.zoom;show("tour");syncZones();redraw()}
 function syncZones(){document.querySelectorAll(".zone").forEach(el=>{el.setAttribute("aria-pressed",el.dataset.id==O.sel);if(el.dataset.id==O.sel)el.scrollIntoView({block:"nearest"})})}
 // ---------------------------------------------------------------- the book
 const TABS=[["tour","Tour"],["works","How it works"],["look","The look"],["order","Build order"],["you","Your calls"]];

@@ -248,12 +248,12 @@ def page():
     rep = [("<title>Foundry AE2 Plan</title>", "<title>Factory v2 Concept</title>"),
            ("<h1>Foundry AE2 Plan</h1>", "<h1>Factory v2 Concept</h1>"),
            ("The foundry hall as it would stand: your real walls and floor from tonight's scan, with the whole AE2 and Mekanism factory in it. The two walls nearest you are cut away. Drag to move, scroll to zoom, hover any block.",
-            "The whole factory from the survey, with the redesign drawn in. A proposal to react to: nothing on this page is built until you say. Drag to move, scroll to zoom, hover any block."),
+            "The whole factory as it would look after the redesign: the new outside first. Press Outside to take the walls off and see in; pick a zone on the right to fly to it. Drag to move, scroll to zoom, hover any block. Nothing here is built until you say."),
            ('<div class="grp"><label for="ph">Build phase</label><input id="ph" type="range" min="0" max="8" value="8"><label id="phv">8 of 8</label></div>',
-            '<div class="grp"><button id="t_out" aria-pressed="false">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
+            '<div class="grp"><button id="t_out" aria-pressed="true">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
            ('press("t_floor","floor");', 'press("t_up","upper");press("t_out","out");press("t_floor","floor");'),
            ("    const cat=t.cat;\n", "    const cat=t.cat;\n    if(cat==\"skin\"&&!O.out)continue;if(O.out&&cat!=\"skin\"&&SK.has(b[0]+\",\"+b[1]+\",\"+b[2]))continue;\n"),
-           ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={"),
+           ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={out:true,"),
            ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.upper&&!O.out&&b[1]>=6)continue;"),
            ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:20,cz:15,rot:0,zoom:1,px:0,py:0};"),
            ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(62*HW*1.1),H/(62*HH*1.5))"),
@@ -267,7 +267,7 @@ def page():
            ("V.px=0;V.py=40;V.zoom=Math.max(HOME.zoom*2.2,2);", "V.px=0;V.zoom=Math.max(HOME.zoom*2.2,2);V.py=40+(zn.cam[1]-1)*BH*V.zoom;"),
            ('<button id="home">Whole hall</button>', '<button id="home">Whole factory</button>'),
            ('function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;',
-            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=id=="outside";document.getElementById("t_out").setAttribute("aria-pressed",O.out);')]
+            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=["outside","gate","guards","yard"].includes(id);document.getElementById("t_out").setAttribute("aria-pressed",O.out);')]
     for x, y in rep:
         assert tpl.count(x) == 1, x[:60]
         tpl = tpl.replace(x, y)
