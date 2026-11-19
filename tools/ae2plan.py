@@ -444,15 +444,15 @@ def bom(B):
     return out
 
 PHASES = [
- (0, "Bench tests", "Five one-block tests before anything is built: induction card powers a Mekanism machine; a provider's items come back by auto-eject; Crystal Fixer holds a flawed budding block; one thermo generator's real FE/t on lava with water; wireless connector range to the storeroom."),
- (1, "Core online", "Controller, vault, desk, ME Bridge, and the storage link. From here ME sees every barrel and you can search and craft at the desk."),
- (2, "Power bay", "Thermo row, chase, flux accessor, the power main, and the fuel station (Nether lava into buckets). The four heat generators and the cable strip behind them come out."),
- (3, "Alloy row and ore line on ME", "Providers behind the machines that stand there now, the four new machines, the infusion feeds. Steel, circuits and alloys by one click. foundry1 retires from carrying."),
- (4, "Crystals and processors", "Garden rebuilt with fixers and planes, and the crystal lab; the old inscriber bench comes out. Certus never runs out again."),
- (5, "Autocrafting at scale", "Two CPUs, the assembler matrix, requesters, the wireless access point. Stock levels hold themselves."),
- (6, "3x ore", "Sink, separator, oxygen tank and main, purification chamber, the gas plant's power."),
- (7, "4x and 5x ore", "The rest of the gas plant, the brine tower, injection and the three slurry machines."),
- (8, "Headroom", "The big generator on the reserved pad, MEGA cells, the Advanced AE quantum computer in place of the two CPUs."),
+ (0, "Bench tests", "Five one-block tests before anything is built: induction card powers a Mekanism machine; a provider's items come back by auto-eject; Crystal Fixer holds a flawed budding block; one thermo generator's real FE/t on lava with water; wireless connector range to the storeroom. Status 19 Nov: done as part of the build."),
+ (1, "Core online", "Controller, vault, desk, ME Bridge, and the storage link. From here ME sees every barrel and you can search and craft at the desk. Status 19 Nov: built. The storerooms, the ore line and the generator water are joined by wireless connectors on the vault for now."),
+ (2, "Power bay", "Thermo row, chase, flux accessor, the power main, and the fuel station (Nether lava into buckets). The four heat generators and the cable strip behind them come out. Status 19 Nov: built with 7 niotic thermo generators; the fuel station pumps Nether lava into ME; generator water comes from ME."),
+ (3, "Alloy row and ore line on ME", "Providers behind the machines that stand there now, the four new machines, the infusion feeds. Steel, circuits and alloys by one click. foundry1 retires from carrying. Status 19 Nov: built. 2x ore for 13 metals (uranium, platinum and iridium run on the alloy row)."),
+ (4, "Crystals and processors", "Garden rebuilt with fixers and planes, and the crystal lab; the old inscriber bench comes out. Certus never runs out again. Status 19 Nov: garden built; the lab has the charger and the crystal assembler (fluix on demand); the old inscriber bench still makes the processors."),
+ (5, "Autocrafting at scale", "Two CPUs, the assembler matrix, requesters, the wireless access point. Stock levels hold themselves. Status 19 Nov: the matrix is built with 23 patterns; six single-block CPUs stand in for the two big ones; stock levels are kept by the ME desk in Lua, not requesters."),
+ (6, "3x ore", "Sink, separator, oxygen tank and main, purification chamber, the gas plant's power. Status 19 Nov: not started."),
+ (7, "4x and 5x ore", "The rest of the gas plant, the brine tower, injection and the three slurry machines. Status 19 Nov: not started."),
+ (8, "Headroom", "The big generator on the reserved pad, MEGA cells, the Advanced AE quantum computer in place of the two CPUs. Status 19 Nov: not started."),
 ]
 
 def page(B):
