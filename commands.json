@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795053464,
-      "issued": 1795053464000,
+      "id": 1795055236,
+      "issued": 1795055236000,
       "cmd": "me",
       "target": "crafter1",
-      "call": "getCells",
+      "call": "getDrives",
       "find": "*"
     }
   ]
