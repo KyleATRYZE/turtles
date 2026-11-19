@@ -236,4 +236,20 @@ Done before the incident:
 
 - Open question: ME reports 48 uranium ingots where crafter1's barrel list has 96 (raw uranium 918 against 1,235). One of the two storeroom buses may not be serving, or may never have.
 
+### Night shift 4 (03:41-, 19 Nov): safe work only
+- Sweep passes; controller online; the 256k cell's NBT matches ME (steel 48, certus 4,280 + 832 in barrels). Lava is back to 6.1M mB.
+- Both storeroom buses serve: three items that only store B holds (sapphire 87, netherrack 247, green xychorium 475) read the same in ME as in the barrel list. The uranium gap (ME 48 ingots / 918 raw, barrels 96 / 1,235) is something about those two items, not a dead bus. Not chased.
+- Ultimate control circuit made again in about 2 minutes: the alloy chain is sound.
+- Matrix: the two outer crafter cores became pattern cores (one crafter core left). Patterns: formation core, annihilation core, ME interface; enrichment chamber, energized smelter. Crusher provider (38 1 22) re-placed with a third pattern: fluix crystal > fluix dust (a Mekanism crusher recipe). 23 patterns in the matrix.
+- First try at the machine patterns was wrong: Mekanism's `alloys/basic` tag is redstone dust, not infused alloy. The bridge said NOT_CRAFTABLE; corrected.
+
+#### Trunk O: plan only, NOT built (needs Kyle's go)
+Why: each vault column (drive, cell, CPU, connector on top) passes 8 channels, and the four wireless links end on those columns: ore 5, water 8, store A 1, store B 2, each sharing with a drive. Water is already at 9 of 8 on its column. Nothing more can be added to a linked subnet.
+What: a short dense trunk of its own from a free controller face, with the four vault-side connectors hanging under it, out of sight.
+- Purple dense cable (`ae2:purple_smart_dense_cable`) at 31 -1 22 (under the controller block 31 0 22), then east 32 -1 22, 33 -1 22, 34 -1 22.
+- Connectors under the cable at 32 -2 22 (water, 4245), 33 -2 22 (ore, 4244), 34 -2 22 (store B, 4243), and store A (4242) at 33 -3 22 under the ore one.
+- Surveyed 03:46: 31..34 -1 22 and 32..34 -2 22 are plain blocks (no block entity). Neighbours: trunk A (orange) runs at 31-34 -1 21, which a purple cable does not join; the power main (universal cable) runs at 31 -1 23 and 32 -2 23, which is not AE. No connector would touch a controller: the nearest is diagonal.
+- Channels on trunk O: 16 of 32, and the vault columns go back to one drive each.
+How, given 02:02: one link at a time, water first (least to lose). Lay the cable. Place the new connector, remove the old one, and within 5 seconds read `execute if block -4417 71 1539 ae2:controller[state=online]`. If it is not online: put the old connector back at once, remove the new one, run the sweep. Only when one link has held for 10 minutes move the next. The cause of the 02:02 conflict is still unknown, so this may fail the same way; that is why it waits for Kyle.
+
 ### Next shifts (function): NO changes to controllers, connectors or drives without Kyle. Run the sweep; trunk O as a plan on paper (survey every cell first) so the ore line, water and stores leave the vault columns; more matrix patterns; atomic alloy / ultimate circuit once more now the chain is fixed; gas plant.

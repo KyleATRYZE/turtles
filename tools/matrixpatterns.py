@@ -34,10 +34,12 @@ cq="ae2:certus_quartz_crystal"; fd="ae2:fluix_dust"; lp="ae2:logic_processor"; b
 G=[pat([cq,fd,lp],"ae2:formation_core",2,"ae2:materials/formationcore"),
    pat(["minecraft:quartz",fd,lp],"ae2:annihilation_core",2,"ae2:materials/annihilationcore"),
    pat([i,g,i,"ae2:annihilation_core",None,"ae2:formation_core",i,g,i],"ae2:interface",1,"ae2:network/blocks/interfaces_interface")]
-# (three machine patterns are 1545 bytes: over the 1446-byte RCON limit, so two; the crusher waits for a core)
-H=[pat([ai,bc,ai,i,sc,i,ai,bc,ai],M+"enrichment_chamber",1,"mekanism:enrichment_chamber"),
-   pat([ai,bc,ai,g,sc,g,ai,bc,ai],M+"energized_smelter",1,"mekanism:energized_smelter")]
 CRUSHER=pat([rd,bc,rd,lb,sc,lb,rd,bc,rd],M+"crusher",1,"mekanism:crusher")
+# (Mekanism's "alloys/basic" is redstone dust, not infused alloy)
+H=[pat([rd,bc,rd,i,sc,i,rd,bc,rd],M+"enrichment_chamber",1,"mekanism:enrichment_chamber"),
+   pat([rd,bc,rd,g,sc,g,rd,bc,rd],M+"energized_smelter",1,"mekanism:energized_smelter")]
+# (CRUSHER would make three: 1513 bytes, over the 1446-byte RCON limit. It waits for a core.)
+
 out=[core(-4418,A),core(-4417,B),core(-4416,C),core(-4418,D,y=75),core(-4417,E,y=75),core(-4416,F,y=75),core(-4418,G,y=74),core(-4416,H,y=74)]
 if __name__=="__main__":
     import os
