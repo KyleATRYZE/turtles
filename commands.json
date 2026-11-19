@@ -1,12 +1,58 @@
 {
   "commands": [
     {
-      "id": 1795052056,
-      "issued": 1795052056000,
+      "id": 1795052218,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "computercraft:turtle_normal",
+      "n": 1
+    },
+    {
+      "id": 1795052219,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "ae2:quartz_glass",
+      "n": 4
+    },
+    {
+      "id": 1795052220,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "ae2:fluix_smart_cable",
+      "n": 2
+    },
+    {
+      "id": 1795052221,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "computercraft:cable",
+      "n": 6
+    },
+    {
+      "id": 1795052222,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "mekanism:ultimate_control_circuit"
+    },
+    {
+      "id": 1795052223,
+      "issued": 1795052218000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "computercraft:computer_normal"
+    },
+    {
+      "id": 1795052224,
+      "issued": 1795052218000,
       "cmd": "me",
       "target": "crafter1",
       "call": "getCraftableItems",
-      "find": "computercraft"
+      "find": "turtle_normal"
     }
   ]
 }
