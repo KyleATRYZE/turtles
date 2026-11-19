@@ -1,42 +1,34 @@
 {
   "commands": [
     {
-      "id": 1795048074,
-      "issued": 1795048074000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "ae2:fluix_glass_cable",
-      "n": 8
-    },
-    {
-      "id": 1795048075,
-      "issued": 1795048074000,
+      "id": 1795048385,
+      "issued": 1795048385000,
       "cmd": "me",
       "target": "crafter1",
       "craft": "computercraft:turtle_normal",
       "n": 1
     },
     {
-      "id": 1795048076,
-      "issued": 1795048074000,
+      "id": 1795048386,
+      "issued": 1795048385000,
       "cmd": "me",
       "target": "crafter1",
       "craft": "mekanism:elite_control_circuit",
       "n": 1
     },
     {
-      "id": 1795048077,
-      "issued": 1795048074000,
+      "id": 1795048387,
+      "issued": 1795048385000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:elite_control_circuit"
+      "ask": "mekanism:alloy_reinforced"
     },
     {
-      "id": 1795048078,
-      "issued": 1795048074000,
+      "id": 1795048388,
+      "issued": 1795048385000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "ae2:quartz_fiber"
+      "ask": "computercraft:computer_normal"
     }
   ]
 }

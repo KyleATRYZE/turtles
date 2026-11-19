@@ -465,11 +465,12 @@ local function meDesk()
       if free <= 1 then break end                  -- (one CPU is always left for orders by hand)
       local have = count(id)
       local a = asked[id]
-      if a and (have == nil or have > a.had or os.clock() - a.at > 600) then asked[id], a = nil, nil end
+      -- (an order is open until what it asked for has arrived, or 15 minutes)
+      if a and (have == nil or have >= a.had + a.n or os.clock() - a.at > 900) then asked[id], a = nil, nil end
       if have and have < target and not a then
         local n = math.min(target - have, 16)
         local ok, err = call("craftItem", { name = id, count = n })
-        asked[id] = { at = os.clock(), had = have }
+        asked[id] = { at = os.clock(), had = have, n = n }
         local line = ("stock: %s %d of %d, ordered %d: %s"):format(id, have, target, n, ok and "started" or ("refused " .. tostring(err)))
         log[#log + 1] = line
         while #log > 8 do table.remove(log, 1) end
