@@ -405,9 +405,7 @@ def skin():
                 edge_x, edge_z = x in (X0, X1), z in (Z0, Z1)
                 if edge_x and edge_z: S(x, y, z, "sk_red")
                 elif (edge_x or edge_z) and y % 6 == 0: S(x, y, z, "sk_red")
-                elif edge_x or edge_z:
-                    al = z if edge_x else x
-                    if (al - (Z0 if edge_x else X0) + y) % 6 == 0: S(x, y, z, "sk_bars", 1 if edge_x else 0)
+                elif edge_x or edge_z: S(x, y, z, "sk_bars", 1 if edge_x else 0)    # steel mesh between the rings
     for y in range(1, 27):
         for x in range(51, 54):
             for z in range(11, 14): S(x, y, z, "sk_core")
@@ -429,7 +427,7 @@ def skin():
             for y in range(TOP + 1, 30):
                 ex, ez = x in (12, 20), z in (10, 18)
                 if (ex and ez) or ((ex or ez) and y in (TOP + 1, 25, 29)): S(x, y, z, "sk_red")
-                elif (ex or ez) and (x + z + y) % 4 == 0: S(x, y, z, "sk_bars", 1 if ex else 0)
+                elif (ex or ez): S(x, y, z, "sk_bars", 1 if ex else 0)
     for (sx, sz) in ((13, 13), (18, 13)):
         for y in range(TOP + 1, 42):
             for dx in (0, 1):
