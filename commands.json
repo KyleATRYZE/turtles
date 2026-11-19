@@ -1,33 +1,36 @@
 {
   "commands": [
     {
-      "id": 1795048794,
-      "issued": 1795048794000,
+      "id": 1795048932,
+      "issued": 1795048932000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "computercraft:turtle_normal",
+      "craft": "computercraft:computer_normal",
       "n": 1
     },
     {
-      "id": 1795048795,
-      "issued": 1795048794000,
+      "id": 1795048933,
+      "issued": 1795048932000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:enriched_carbon"
+      "craft": "minecraft:chest",
+      "n": 1
     },
     {
-      "id": 1795048796,
-      "issued": 1795048794000,
+      "id": 1795048934,
+      "issued": 1795048932000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "minecraft:coal"
+      "craft": "ae2:blank_pattern",
+      "n": 2
     },
     {
-      "id": 1795048797,
-      "issued": 1795048794000,
+      "id": 1795048935,
+      "issued": 1795048932000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "minecraft:chest"
+      "craft": "mekanism:ultimate_control_circuit",
+      "n": 1
     }
   ]
 }
