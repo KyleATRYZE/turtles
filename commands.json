@@ -1,49 +1,54 @@
 {
   "commands": [
     {
-      "id": 1795055833,
-      "issued": 1795055833000,
+      "id": 1795059748,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "rule": "alltheores:steel_ingot",
-      "n": 32
+      "ask": "alltheores:sapphire"
     },
     {
-      "id": 1795055834,
-      "issued": 1795055833000,
+      "id": 1795059749,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "alltheores:platinum_ingot",
-      "n": 4
+      "ask": "minecraft:netherrack"
     },
     {
-      "id": 1795055835,
-      "issued": 1795055833000,
+      "id": 1795059750,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "alltheores:iridium_ingot",
-      "n": 4
+      "ask": "xycraft_world:xychorium_gem_green"
     },
     {
-      "id": 1795055836,
-      "issued": 1795055833000,
+      "id": 1795059751,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "alltheores:platinum_ingot"
+      "ask": "alltheores:raw_uranium"
     },
     {
-      "id": 1795055837,
-      "issued": 1795055833000,
+      "id": 1795059752,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "alltheores:iridium_ingot"
+      "ask": "mekanism:alloy_atomic"
     },
     {
-      "id": 1795055838,
-      "issued": 1795055833000,
+      "id": 1795059753,
+      "issued": 1795059748000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "alltheores:uranium_ingot"
+      "ask": "mekanism:ultimate_control_circuit"
+    },
+    {
+      "id": 1795059754,
+      "issued": 1795059748000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "mekanism:ultimate_control_circuit",
+      "n": 1
     }
   ]
 }
