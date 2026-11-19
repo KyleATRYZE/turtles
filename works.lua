@@ -481,8 +481,19 @@ local function meDesk()
   note("ME desk: bridge found. Reporting to the factory.")
   tell()
   local lastTell = os.clock()
+  -- (orders are taken by a listener of their own: a bridge call waits on an
+  -- event, and an order arriving meanwhile would be thrown away)
+  local inbox = {}
+  local function listen()
+    while true do
+      local _, msg = rednet.receive(W.JOB)
+      if type(msg) == "table" and msg.type == "me_order" then inbox[#inbox + 1] = msg end
+    end
+  end
+  local function work()
   while true do
-    local _, msg = rednet.receive(W.JOB, 20)
+    if #inbox == 0 then sleep(2) end
+    local msg = table.remove(inbox, 1)
     if type(msg) == "table" and msg.type == "me_order" then
       local line
       if type(msg.rule) == "string" then
@@ -493,7 +504,9 @@ local function meDesk()
         h.close()
         line = "rule " .. msg.rule .. " = " .. tostring(rules[msg.rule])
       elseif type(msg.ask) == "string" then
-        watch[#watch + 1] = msg.ask
+        local seen = false
+        for _, id in ipairs(watch) do if id == msg.ask then seen = true end end
+        if not seen then watch[#watch + 1] = msg.ask end
         line = "watching " .. msg.ask
       elseif type(msg.craft) == "string" then
         local n = math.max(1, math.floor(tonumber(msg.n) or 1))
@@ -512,8 +525,10 @@ local function meDesk()
         log[#log + 1] = lastOrder
         while #log > 8 do table.remove(log, 1) end
         note(line)
-        tell()
-        lastTell = os.clock()
+        if #inbox == 0 then
+          tell()
+          lastTell = os.clock()
+        end
       end
     end
     if os.clock() - lastTell > 60 then
@@ -522,6 +537,8 @@ local function meDesk()
       tell()
     end
   end
+  end
+  parallel.waitForAny(listen, work)
 end
 
 if not os.getComputerLabel() then os.setComputerLabel("Works") end
