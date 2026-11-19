@@ -34,14 +34,14 @@ t("shelf", "Bay shelf (industrial iron slab)", "create:industrial_iron_block", "
 t("fuel", "Fuel port (ME interface: lava buckets out, drone loads in)", "ae2:interface", "v2", "#2c2f38", "#ffb84a", "frame")
 t("hatch", "Hangar door leaf (Create sliding door)", "create:industrial_iron_block", "v2", "#3d4147", "#e8b04a", "stripe")
 # the new outside, Create industrial (cat "skin": shown with the Outside button, in place of the old wall face)
-t("sk_brick", "Brick wall", "minecraft:bricks", "skin", "#8f4b3a", "#6e3529", "bricks")
+t("sk_brick", "Deepslate brick wall", "minecraft:deepslate_bricks", "skin", "#47474d", "#2f2f34", "bricks")
 t("sk_plinth", "Plinth (cut andesite bricks)", "create:cut_andesite_bricks", "skin", "#8c8c84", "#6e6e66", "bricks")
 t("sk_pier", "Pier (andesite casing), stands out of the wall", "create:andesite_casing", "skin", "#a3a091", "#6c5a3e", "frame")
-t("sk_win", "Factory window (Create framed glass)", "create:framed_glass", "skin", "#c7dde3", "#5d4a33", "glass", a=0.55)
+t("sk_win", "Factory window (Create framed glass), lit warm from inside", "create:framed_glass", "skin", "#f2c27a", "#5d4a33", "glass", a=0.7)
 t("sk_cornice", "Cornice (cut andesite bricks), overhangs the wall", "create:cut_andesite_bricks", "skin", "#7c7c74", "#5e5e58", "bricks")
 t("sk_shingle", "Sawtooth roof (copper shingles)", "create:copper_shingles", "skin", "#b8673f", "#8e4b2c", "tiles")
 t("sk_roofwin", "Sawtooth roof light (framed glass, faces north)", "create:framed_glass", "skin", "#c7dde3", "#5d4a33", "glass", a=0.5)
-t("sk_stack", "Smokestack (brick), smoke from a campfire at the top", "minecraft:bricks", "skin", "#7a3f31", "#5a2c22", "bricks")
+t("sk_stack", "Smokestack (deepslate brick), smoke from a campfire at the top", "minecraft:deepslate_bricks", "skin", "#3c3c41", "#29292d", "bricks")
 t("sk_band", "Stack band (copper casing)", "create:copper_casing", "skin", "#b8673f", "#5c3a26", "frame")
 t("sk_smoke", "Campfire (the stack smokes)", "minecraft:campfire", "skin", "#5a4636", "#ff9a3c", "lava")
 t("sk_tank", "Fluid tank (Create): water and lava buffers for the generators and the fuel line", "create:fluid_tank", "skin", "#6f6250", "#c9a35a", "frame")
@@ -51,6 +51,19 @@ t("sk_cog", "Large cogwheel (Create), turning on the gate motor", "create:large_
 t("sk_whistle", "Steam whistle (blows at shift change and on the alarm)", "create:steam_whistle", "skin", "#c9a35a", "#8a6a3a", "flat", "post")
 t("sk_fan", "Roof vent (Create encased fan)", "create:encased_fan", "skin", "#8c8c84", "#2b2b2f", "machine")
 t("sk_post", "Path light (lantern on a post)", "minecraft:lantern", "skin", "#e8b04a", "#fff0c0", "flat", "post")
+t("sk_sail", "Windmill sail (Create): the windmill turns, and drives the gate and the belts", "create:white_sail", "skin", "#efe9dc", "#b9ad94", "tiles")
+t("sk_hub", "Windmill bearing (Create)", "create:windmill_bearing", "skin", "#9b7a4a", "#5c4428", "machine")
+t("sk_nacelle", "Windmill housing (deepslate bricks, copper bands)", "minecraft:deepslate_bricks", "skin", "#3c3c41", "#b8673f", "bricks")
+t("sk_pod", "Lookout pod glass (framed glass): the Bridge hangs out over the apron", "create:framed_glass", "skin", "#bfe0ea", "#3c3c41", "glass", a=0.45)
+t("sk_podframe", "Lookout pod frame (copper casing)", "create:copper_casing", "skin", "#b8673f", "#5c3a26", "frame")
+t("sk_lift", "Glass lift shaft (Create elevator pulley): ground to the Bridge", "create:framed_glass", "skin", "#cfe6ee", "#3c3c41", "glass", a=0.4)
+t("sk_pulley", "Elevator pulley (Create)", "create:elevator_pulley", "skin", "#9b7a4a", "#5c4428", "machine")
+t("sk_catwalk", "Catwalk (andesite scaffolding) round the hall", "create:andesite_scaffolding", "skin", "#a3a091", "#6c5a3e", "frame", "slab")
+t("sk_track", "Train track (Create)", "create:track", "skin", "#5a4a3a", "#8d8f99", "stripe", "slab")
+t("sk_platform", "Station platform (cut andesite)", "create:cut_andesite_bricks", "skin", "#9a9a92", "#7a7a72", "bricks")
+t("sk_canopy", "Station canopy (copper shingles)", "create:copper_shingles", "skin", "#b8673f", "#8e4b2c", "tiles", "slab")
+t("sk_train", "Ore train (Create, railway casing): runs to the mine, the drones load it", "create:railway_casing", "skin", "#3a3d44", "#c9a35a", "machine")
+t("sk_vault", "Item vault (Create), stacked like containers: bulk overflow on ME", "create:item_vault", "skin", "#6f6a5e", "#c9a35a", "frame")
 
 SURVEY = dict(A.SURVEY)
 SURVEY.update({"sophisticatedstorage:limited_barrel_1": "barrel", "sophisticatedstorage:limited_barrel_4": "barrel",
@@ -243,6 +256,43 @@ def skin():
     for x in range(12, 27, 5):                     # roof vents over the storerooms
         for z in (7, 23): SKIN[(x, 9, z)] = "sk_fan"
     SKIN[(26, 4, 31)] = "sk_cog"
+    # the windmill on the hall's east gable: Create sails, it turns
+    for y in range(14, 18):
+        for z in range(14, 17): SKIN[(45, y, z)] = "sk_nacelle"
+    SKIN[(46, 16, 15)] = "sk_hub"
+    for d in range(2, 9):
+        for w in (-1, 0, 1):
+            SKIN[(47, 16 + w, 15 + d)] = SKIN[(47, 16 + w, 15 - d)] = "sk_sail"
+            SKIN[(47, 16 + d, 15 + w)] = SKIN[(47, 16 - d, 15 + w)] = "sk_sail"
+    # the lookout pod: the Bridge hangs out over the apron, above the hangar door
+    for x in range(-6, 0):
+        for z in range(11, 22):
+            for y in range(9, 13):
+                edge = x == -6 or z in (11, 21)
+                if y in (9, 12): SKIN[(x, y, z)] = "sk_podframe" if edge else ("sk_pod" if y == 9 else "sk_brick")
+                elif edge: SKIN[(x, y, z)] = "sk_podframe" if (z in (11, 21) and x == -6) else "sk_pod"
+    # glass lift on the south face of the launch bay, ground to the Bridge
+    for y in range(1, 13):
+        for x in (2, 3): SKIN[(x, y, 31)] = "sk_lift"
+    SKIN[(2, 13, 31)] = SKIN[(3, 13, 31)] = "sk_pulley"
+    # catwalk round the hall's south face, under the cornice
+    for x in range(28, 46): SKIN[(x, 7, 31)] = "sk_catwalk"
+    # rail spur and station along the south yard
+    for x in range(-12, 53): SKIN[(x, 0, 36)] = "sk_track"
+    for x in range(30, 45):
+        for z in (34, 35): SKIN[(x, 0, z)] = "sk_platform"
+        for z in (34, 35, 36): SKIN[(x, 4, z)] = "sk_canopy"
+    for x in (30, 37, 44):
+        for y in range(1, 4): SKIN[(x, y, 34)] = "sk_pier"
+    for x in range(32, 43):
+        if x not in (36, 39):
+            for y in (1, 2): SKIN[(x, y, 36)] = "sk_train"
+    # container yard: Create item vaults stacked south of the apron
+    for x in range(-10, -1, 3):
+        for z in range(24, 30, 3):
+            for dx in range(2):
+                for dz in range(2):
+                    for y in range(1, 3 if (x + z) % 2 else 5): SKIN[(x + dx, y, z + dz)] = "sk_vault"
     for x in range(-3, 53, 8):                     # path lights round the patrol ring
         SKIN[(x, 1, -3)] = "sk_post"; SKIN[(x, 1, 33)] = "sk_post"
     for z in range(5, 30, 8):
@@ -262,7 +312,13 @@ ZONES = [
  dict(id="lane", name="Old rack", cam=[22, 1, 2], h=4.5, ph="E",
       text="The old lane and rack retire once the launch bay is running. The lane stays as a corridor; the rack comes out."),
  dict(id="outside", name="The outside", cam=[24, 6, 15], h=4, ph="F",
-      text="Create industrial. Brick walls with andesite piers that stand a block proud, tall factory windows between them, a plinth at the foot and an overhanging cornice. The hall gets a sawtooth roof: copper shingles with north-facing glass. On the east side by the power bay, two brick smokestacks that smoke and two Create fluid tanks piped into the wall. A conveyor runs over the storeroom roof from the launch bay into the hall. Vents, a steam whistle, a cogwheel turning by the gate, lanterns round the path."),
+      text="Create industrial in deepslate brick: andesite piers standing proud, tall windows glowing warm, plinth and cornice. The hall gets a sawtooth copper roof and a catwalk under its cornice. Smokestacks and fluid tanks on the east side, a conveyor over the roof from the launch bay to the hall."),
+ dict(id="windmill", name="Windmill", cam=[47, 16, 15], h=10, ph="F",
+      text="A Create windmill on the hall's east gable: four arms of sails, 17 blocks across, turning on the skyline. It is not just for show: it turns the gate, the belts and the cogwheel, so the Create side runs on wind."),
+ dict(id="pod", name="Lookout pod", cam=[-3, 10, 16], h=5, ph="B",
+      text="The Bridge pushes out through the west wall as a glass pod hanging over the hangar door and the apron, copper-framed. You watch the drones go out under your feet. A glass lift on the south face runs from the ground straight up to it."),
+ dict(id="rail", name="Rail spur", cam=[37, 2, 35], h=5, ph="G",
+      text="A Create train line along the south yard with a station under a copper canopy. An ore train runs to the mine; the drones load it there and unload it here. Beside the apron, Create item vaults stacked like shipping containers hold bulk overflow for ME."),
  dict(id="guards", name="Guards", cam=[46, 1, 32], h=3.5, ph="D",
       text="Four melee turtles walk a ring round the building at night and two hold the gate. They strike hostile mobs only, stand down near players, and raise the alarm and the gate lights."),
  dict(id="yard", name="Apron", cam=[-5, 1, 16], h=3.5, ph="E",
