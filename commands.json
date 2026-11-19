@@ -1,49 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795052478,
-      "issued": 1795052478000,
+      "id": 1795052545,
+      "issued": 1795052545000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "alltheores:uranium_ingot",
-      "n": 4
-    },
-    {
-      "id": 1795052479,
-      "issued": 1795052478000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "alltheores:platinum_ingot",
-      "n": 4
-    },
-    {
-      "id": 1795052480,
-      "issued": 1795052478000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "alltheores:iridium_ingot",
-      "n": 4
-    },
-    {
-      "id": 1795052481,
-      "issued": 1795052478000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "mekanism:enriched_refined_obsidian"
-    },
-    {
-      "id": 1795052482,
-      "issued": 1795052478000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "mekanism:dust_refined_obsidian"
-    },
-    {
-      "id": 1795052483,
-      "issued": 1795052478000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "mekanism:dust_obsidian"
+      "craft": "mekanism:enriched_refined_obsidian",
+      "n": 2
     }
   ]
 }
