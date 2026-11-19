@@ -236,12 +236,15 @@ Done before the incident:
 
 - Open question: ME reports 48 uranium ingots where crafter1's barrel list has 96 (raw uranium 918 against 1,235). One of the two storeroom buses may not be serving, or may never have.
 
-### Night shift 4 (03:41-, 19 Nov): safe work only
+### Night shift 4 (03:41-03:55, 19 Nov): safe work only
 - Sweep passes; controller online; the 256k cell's NBT matches ME (steel 48, certus 4,280 + 832 in barrels). Lava is back to 6.1M mB.
 - Both storeroom buses serve: three items that only store B holds (sapphire 87, netherrack 247, green xychorium 475) read the same in ME as in the barrel list. The uranium gap (ME 48 ingots / 918 raw, barrels 96 / 1,235) is something about those two items, not a dead bus. Not chased.
 - Ultimate control circuit made again in about 2 minutes: the alloy chain is sound.
 - Matrix: the two outer crafter cores became pattern cores (one crafter core left). Patterns: formation core, annihilation core, ME interface; enrichment chamber, energized smelter. Crusher provider (38 1 22) re-placed with a third pattern: fluix crystal > fluix dust (a Mekanism crusher recipe). 23 patterns in the matrix.
 - First try at the machine patterns was wrong: Mekanism's `alloys/basic` tag is redstone dust, not infused alloy. The bridge said NOT_CRAFTABLE; corrected.
+- PROVED through the desk: 1 ME interface (fluix > dust > cores > interface) and 1 energized smelter. Both are in the 256k cell's NBT.
+- AE2 plan page republished with a status line per phase (tools/ae2plan.py PHASES).
+- Ended 03:55 with the sweep passing on all three lines and the controller online. No shift 5 scheduled: what is left (trunk O, cells for the empty drives, gas plant, v2) needs Kyle's say.
 
 #### Trunk O: plan only, NOT built (needs Kyle's go)
 Why: each vault column (drive, cell, CPU, connector on top) passes 8 channels, and the four wireless links end on those columns: ore 5, water 8, store A 1, store B 2, each sharing with a drive. Water is already at 9 of 8 on its column. Nothing more can be added to a linked subnet.
