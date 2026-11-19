@@ -21,9 +21,14 @@ Every placement was `fill/setblock ... keep`: only air was filled, nothing exist
 - The hut / crafter1 / crafter2 / old pad shaft corner (x <= -4454, z 1512..1532).
 - Phases 1-7 of the AE2 plan (gas plant covers etc.) and all ME devices.
 
-## Not done yet (needs a word from Kyle or work in game)
-- Reskin of the old walls and roof (stone brick -> concrete, the old pitched roof inside the new top floor): this replaces
-  Kyle's blocks, so ask how (drop them with `destroy`, or replace in place).
+## Pass 2: the old walls swapped (Kyle 14:51 "Swap em", tools/v2reskin.py)
+- Facades x 0, z 0, z 30, x 45 (y 72..83): stone bricks, polished deepslate, deepslate tiles and glass panes replaced in
+  place by the new skin (pilasters, bands, red band, glass). Machines, screens, cables, modems and openings untouched.
+- The old pitched roof inside the new top floor: at y 86 it became engine floor, above it removed.
+- After: controller online, ME sweep line passed, both lane gates and the drop columns still open.
+
+## Not done yet (needs work in game or a later pass)
+- The hall's roof (podium moss roof, skylights) and the inside walls (iwall) are not swapped yet.
 - Launch bay fit-out: the furnaces must be emptied and moved first. Held commands: /tmp/v2_bay_held.txt (regenerate with v2build).
 - Belts, chain-conveyor runs, the hangar door and blast gate are Create pieces that only work when made in game
   (belt connector, chains, contraptions).
