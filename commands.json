@@ -1,54 +1,48 @@
 {
   "commands": [
     {
-      "id": 1795059748,
-      "issued": 1795059748000,
+      "id": 1795059941,
+      "issued": 1795059941000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "alltheores:sapphire"
-    },
-    {
-      "id": 1795059749,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "minecraft:netherrack"
-    },
-    {
-      "id": 1795059750,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "xycraft_world:xychorium_gem_green"
-    },
-    {
-      "id": 1795059751,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:raw_uranium"
-    },
-    {
-      "id": 1795059752,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "mekanism:alloy_atomic"
-    },
-    {
-      "id": 1795059753,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "mekanism:ultimate_control_circuit"
-    },
-    {
-      "id": 1795059754,
-      "issued": 1795059748000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "mekanism:ultimate_control_circuit",
+      "craft": "ae2:interface",
       "n": 1
+    },
+    {
+      "id": 1795059942,
+      "issued": 1795059941000,
+      "cmd": "me",
+      "target": "crafter1",
+      "craft": "mekanism:energized_smelter",
+      "n": 1
+    },
+    {
+      "id": 1795059943,
+      "issued": 1795059941000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "ae2:interface"
+    },
+    {
+      "id": 1795059944,
+      "issued": 1795059941000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "mekanism:energized_smelter"
+    },
+    {
+      "id": 1795059945,
+      "issued": 1795059941000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "ae2:fluix_dust"
+    },
+    {
+      "id": 1795059946,
+      "issued": 1795059941000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "ae2:fluix_crystal"
     }
   ]
 }

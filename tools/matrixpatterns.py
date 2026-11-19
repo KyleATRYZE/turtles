@@ -29,7 +29,16 @@ st="alltheores:steel_ingot"; os_="alltheores:osmium_ingot"; od="alltheores:osmiu
 F=[pat([st,g,st,g,os_,g,st,g,st],M+"steel_casing",1,"mekanism:steel_casing"),
    pat([None,g,None,ai,od,ai,None,g,None],M+"upgrade_speed",1,"mekanism:upgrade/speed"),
    pat([cc,cc,cc,cc],"ae2:fluix_covered_dense_cable",1,"ae2:network/cables/dense_covered_fluix")]
-out=[core(-4418,A),core(-4417,B),core(-4416,C),core(-4418,D,y=75),core(-4417,E,y=75),core(-4416,F,y=75)]
+# third set: the outer two cores of the middle row (y 3), the crafter core stays between them
+cq="ae2:certus_quartz_crystal"; fd="ae2:fluix_dust"; lp="ae2:logic_processor"; bc=M+"basic_control_circuit"; sc=M+"steel_casing"; lb="minecraft:lava_bucket"
+G=[pat([cq,fd,lp],"ae2:formation_core",2,"ae2:materials/formationcore"),
+   pat(["minecraft:quartz",fd,lp],"ae2:annihilation_core",2,"ae2:materials/annihilationcore"),
+   pat([i,g,i,"ae2:annihilation_core",None,"ae2:formation_core",i,g,i],"ae2:interface",1,"ae2:network/blocks/interfaces_interface")]
+# (three machine patterns are 1545 bytes: over the 1446-byte RCON limit, so two; the crusher waits for a core)
+H=[pat([ai,bc,ai,i,sc,i,ai,bc,ai],M+"enrichment_chamber",1,"mekanism:enrichment_chamber"),
+   pat([ai,bc,ai,g,sc,g,ai,bc,ai],M+"energized_smelter",1,"mekanism:energized_smelter")]
+CRUSHER=pat([rd,bc,rd,lb,sc,lb,rd,bc,rd],M+"crusher",1,"mekanism:crusher")
+out=[core(-4418,A),core(-4417,B),core(-4416,C),core(-4418,D,y=75),core(-4417,E,y=75),core(-4416,F,y=75),core(-4418,G,y=74),core(-4416,H,y=74)]
 if __name__=="__main__":
     import os
     for o in out: print(len(o.encode()))
