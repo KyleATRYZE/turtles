@@ -1,61 +1,39 @@
 {
   "commands": [
     {
-      "id": 1795052939,
-      "issued": 1795052939000,
+      "id": 1795053057,
+      "issued": 1795053057000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:enriched_refined_obsidian",
-      "n": 4
+      "ask": "alltheores:platinum_dust"
     },
     {
-      "id": 1795052940,
-      "issued": 1795052939000,
+      "id": 1795053058,
+      "issued": 1795053057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:enriched_refined_obsidian"
+      "ask": "alltheores:iridium_dust"
     },
     {
-      "id": 1795052941,
-      "issued": 1795052939000,
+      "id": 1795053059,
+      "issued": 1795053057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:dust_refined_obsidian"
+      "ask": "alltheores:uranium_dust"
     },
     {
-      "id": 1795052942,
-      "issued": 1795052939000,
+      "id": 1795053060,
+      "issued": 1795053057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:alloy_atomic"
+      "ask": "alltheores:raw_platinum"
     },
     {
-      "id": 1795052943,
-      "issued": 1795052939000,
+      "id": 1795053061,
+      "issued": 1795053057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:ultimate_control_circuit"
-    },
-    {
-      "id": 1795052944,
-      "issued": 1795052939000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:platinum_ingot"
-    },
-    {
-      "id": 1795052945,
-      "issued": 1795052939000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:iridium_ingot"
-    },
-    {
-      "id": 1795052946,
-      "issued": 1795052939000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:uranium_ingot"
+      "ask": "alltheores:raw_iridium"
     }
   ]
 }
