@@ -40,6 +40,13 @@ t("basin", "Basin (Create)", "create:basin", "v2", "#8a8a84", "#5c5c56", "frame"
 t("press", "Mechanical press (Create): plates and sheets", "create:mechanical_press", "v2", "#8a6a3a", "#c9a35a", "machine")
 t("mixer", "Mechanical mixer (Create): brass, andesite alloy, dough", "create:mechanical_mixer", "v2", "#8a6a3a", "#c9a35a", "machine")
 t("deployer", "Deployer (Create): fits parts onto what passes on the belt", "create:deployer", "v2", "#8a6a3a", "#5c4428", "machine")
+t("catwalk", "Catwalk (Create metal girder deck) over the machines", "create:metal_girder", "v2", "#6a6f76", "#3e4248", "bricks", "slab")
+t("rail", "Railing (iron bars)", "minecraft:iron_bars", "v2", "#8d8f99", "#5d5f66", "frame", "bars")
+t("chute", "Chute (Create): drops what the belt carries into the machine below", "create:chute", "v2", "#8d8f99", "#c9a35a", "frame")
+t("lavapipe", "Lava main (Create copper pipe): from the Nether pump to the generators and the fuel port", "create:fluid_pipe", "v2", "#d06a2a", "#8e4b2c", "pipe", "pipe")
+t("waterpipe", "Water main (Create copper pipe, glass sections): to the generators and boilers", "create:fluid_pipe", "v2", "#3a7bd0", "#2a5a9a", "pipe", "pipe")
+t("hlamp", "Hanging lantern on a chain", "minecraft:lantern", "v2", "#e8b04a", "#fff0c0", "flat", "post")
+t("ore", "Ore on the belt", "minecraft:raw_iron_block", "v2", "#b89a7a", "#8a6a4a", "speck", "post")
 t("deck", "Floor slab (grey concrete)", "minecraft:gray_concrete", "v2", "#5a5c60", "#4b4d51", "flat")
 t("redcol", "Red steel column (red concrete)", "minecraft:red_concrete", "v2", "#9b2d24", "#7a2119", "flat")
 t("packager", "Packager (Create): boxes what a drone brings in into a package addressed to where it goes", "create:packager", "v2", "#8a6a3a", "#c9a35a", "machine")
@@ -80,6 +87,9 @@ t("sk_hedge", "Hedge (azalea leaves)", "minecraft:azalea_leaves", "skin", "#4f7a
 t("sk_log", "Tree (oak log)", "minecraft:oak_log", "skin", "#6b5235", "#4e3b25", "bricks")
 t("sk_leaf", "Tree (oak leaves)", "minecraft:oak_leaves", "skin", "#4c8a2e", "#3a6e22", "speck")
 t("sk_lamp", "Street light (lantern on a post)", "minecraft:lantern", "skin", "#e8b04a", "#fff0c0", "flat", "post")
+t("sk_chain", "Chain conveyor (Create) between the red tower and the main block: packages ride it in the open", "create:chain_conveyor", "skin", "#8d8f99", "#5d5f66", "frame", "chain")
+t("sk_chainpost", "Chain conveyor post (Create)", "create:chain_conveyor", "skin", "#9b7a4a", "#5c4428", "machine")
+t("sk_pkg", "Package on the chain", "create:cardboard_block", "skin", "#b88a55", "#8e6a3e", "tiles", "post")
 t("sk_pod", "Lookout glass (tinted)", "minecraft:tinted_glass", "skin", "#2c2a33", "#69707c", "glass", a=0.7)
 
 SURVEY = dict(A.SURVEY)
@@ -264,6 +274,68 @@ def v3():
     put(35, 8, 15, "gcar", 0, 8, "Gantry carriage: lifts a full crate from the drop point to any machine")
     for y in (6, 7): put(35, y, 15, "hook", 2, 8, "Crane hook")
     put(35, 5, 15, "pkg", 0, 8, "A crate on the hook")
+    def free(x, y, z): return (x, y, z) not in A.B
+    # the overhead layer in the hall: catwalk galleries, bridges, belts with ore on them, pipe mains, lanterns, drones
+    for x in range(29, 43):
+        for z in (2, 3, 27, 28):
+            if free(x, 5, z): put(x, 5, z, "catwalk", 0, 8, "Gallery catwalk: walk the hall above the machines")
+        for z in (4, 26):
+            if free(x, 6, z): put(x, 6, z, "rail", 1, 8, "Railing")
+    for x in (32, 41):
+        for z in range(4, 27):
+            if free(x, 5, z): put(x, 5, z, "catwalk", 1, 8, "Bridge across the hall over the machines")
+            for xx in (x - 1, x + 1):
+                if free(xx, 6, z) and z not in (8, 22): put(xx, 6, z, "rail", 0, 8, "Railing")
+    for (zb, dest, cx) in ((8, "the ore line", 43), (22, "the alloy row", 39)):
+        for x in range(29, 44):
+            if free(x, 7, zb): put(x, 7, zb, "belt", 0, 8, "Overhead belt (Create) on red brackets: carries ore from the roof drop to " + dest)
+            if x % 4 == 1 and free(x, 8, zb): put(x, 8, zb, "redcol", 0, 8, "Red bracket")
+        for y in (5, 6):
+            if free(cx, y, zb): put(cx, y, zb, "chute", 0, 8, "Chute down into " + dest)
+    for x in range(29, 44):
+        if free(x, 8, 11): put(x, 8, 11, "lavapipe", 0, 8, "Lava main")
+        if free(x, 8, 19): put(x, 8, 19, "waterpipe", 0, 8, "Water main")
+    for x in (31, 37, 43):
+        for z in (5, 13, 24):
+            if free(x, 8, z) and free(x, 7, z):
+                put(x, 8, z, "hook", 2, 8, "Chain"); put(x, 7, z, "hlamp", 0, 8, "Hanging lantern")
+    put(34, 6, 11, "drone", 0, 8, "A drone in flight, bringing a load in from the roof hatch")
+    put(39, 7, 18, "drone", 2, 8, "A drone in flight to the alloy row")
+    # the logistics deck: sorting belts with packages, more on the chain, lights, columns
+    for zb in (8, 22):
+        for x in range(14, 26):
+            put(x, 9, zb, "belt", 0, 8, "Sorting belt: packages run to their frogport")
+        put(26, 9, zb, "frogport", 0, 8, "Frogport at the belt end: up onto the chain")
+    for x in (14, 20):
+        for z in (11, 19):
+            for y in range(9, 15): put(x, y, z, "redcol", 0, 8, "Red steel column")
+    for x in range(13, 26, 4):
+        for z in (6, 15, 24):
+            if free(x, 14, z): put(x, 14, z, "hlamp", 0, 8, "Light")
+    # engine floor: a second process line, a tank farm, overhead drive, lights
+    for x in range(5, 26):
+        if free(x, 16, 20): put(x, 16, 20, "belt", 0, 8, "Wash and press line (Create belt)")
+    for x in (8, 12, 16, 20):
+        if free(x, 18, 20): put(x, 18, 20, "press", 0, 8, "Mechanical press over the belt: plates from ingots")
+        if free(x, 19, 20): put(x, 19, 20, "shaft", 0, 8, "Drive shaft")
+    for x in (10, 14, 18, 22):
+        if free(x, 18, 20): put(x, 18, 20, "deployer", 3, 8, "Deployer: puts the next part on")
+    for x in range(5, 26):
+        if free(x, 20, 20): put(x, 20, 20, "shaft", 0, 8, "Overhead drive shaft")
+    for x in (2, 3):
+        for z in range(11, 20, 2):
+            for y in range(16, 20):
+                if free(x, y, z): put(x, y, z, "boiler", 0, 8, "Fluid tank: lava and water stores for the boilers")
+    for x in range(4, 26, 5):
+        for z in (6, 16, 28):
+            if free(x, 20, z) and free(x, 19, z):
+                put(x, 20, z, "hook", 2, 8, "Chain"); put(x, 19, z, "hlamp", 0, 8, "Hanging lantern")
+    for x in range(5, 26):
+        if free(x, 19, 11): put(x, 19, 11, "flue", 0, 8, "Steam main from the boilers")
+    # drones in the air outside: out of the hangar, over the apron, up past the roof
+    for (x, y, z, n) in ((-7, 4, 16, "leaving the hangar"), (-13, 8, 13, "climbing out over the apron"), (-18, 13, 9, "outbound to the mine"),
+                         (-6, 6, 19, "coming in to land"), (8, 26, 6, "over the roof"), (40, 24, 4, "on its way to the red tower")):
+        put(x, y, z, "drone", 3, 8, "A drone " + n)
 
 SKIN = {}
 def skin():
@@ -348,6 +420,9 @@ def skin():
         S(x, 24, 18, "sk_red"); S(x, 27, 18, "sk_red")
         if x % 3 == 0: S(x, 25, 18, "sk_red"); S(x, 26, 18, "sk_red")
         else: S(x, 25, 18, "sk_bars", 0); S(x, 26, 18, "sk_bars", 0)
+    for x in range(28, 49):                                 # chain conveyor from the tower to the main block
+        S(x, 19, 12, "sk_chain", 0)
+    S(48, 19, 11, "sk_chainpost"); S(27, 19, 11, "sk_chainpost")
     # red frame and twin red stacks on the main block's roof
     for x in range(12, 21):
         for z in range(10, 19):
@@ -424,6 +499,24 @@ ZONES = [
       text="Where the old base stands: taken apart by the drones into the store, levelled, and laid as a marked apron in front of the hangar door. The ground round the factory is terraformed to match."),
 ]
 
+MOVERS = [
+    # (type, path of block points, loop?, speed b/s, how many, outdoors?, size)
+    ("pkg", [(11, 12, 4), (25, 12, 4), (25, 12, 26), (11, 12, 26)], True, 2.0, 12, False, .62),       # deck chain loop
+    ("pkg", [(27, 8, 20), (40, 8, 20), (40, 8, 13), (41, 7, 13)], False, 1.6, 4, False, .62),         # chain into the hall
+    ("ore", [(29, 7.5, 8), (43, 7.5, 8), (43, 5, 8)], False, 1.4, 7, False, .45),                      # overhead ore belt
+    ("ore", [(29, 7.5, 22), (39, 7.5, 22), (39, 5, 22)], False, 1.4, 6, False, .45),                   # overhead ore belt 2
+    ("pkg", [(14, 9.5, 8), (26, 9.5, 8), (26, 12, 8), (25, 12, 4)], False, 1.6, 5, False, .5),          # sorting belt up to the chain
+    ("pkg", [(14, 9.5, 22), (26, 9.5, 22), (26, 12, 22), (25, 12, 26)], False, 1.6, 5, False, .5),
+    ("ore", [(25, 16.5, 25), (5, 16.5, 25)], False, 1.2, 9, False, .45),
+    ("ore", [(5, 16.5, 20), (25, 16.5, 20)], False, 1.0, 10, False, .45),                               # engine floor processing belt
+    ("pkg", [(48, 18, 12), (28, 18, 12)], False, 1.8, 6, True, .62),                                   # outside chain, tower -> main block
+    ("pkg", [(35, 5, 15), (43, 5, 15), (35, 5, 15), (29, 5, 15)], True, 1.0, 1, False, .9),            # the crane's crate
+    ("drone", [(1, 3, 16), (-8, 5, 16), (-16, 12, 10), (-22, 20, 0), (8, 27, -6), (40, 27, 2), (52, 31, 12),
+               (40, 26, 30), (10, 22, 38), (-10, 10, 26), (-6, 4, 18)], True, 4.0, 3, True, .9),         # drones on the round
+    ("drone", [(30, 6, 5), (40, 7, 6), (42, 6, 24), (31, 7, 26), (34, 6, 15)], True, 2.2, 2, False, .9),  # drones in the hall
+    ("drone", [(8, 4, 9), (5, 4, 10), (4, 3, 16), (0, 3, 16), (-7, 4, 16)], False, 1.5, 1, False, .9),   # one leaving its bay
+]
+
 def page():
     A.B.clear(); A.LINKS.clear(); del A.NOTES[:]
     shell(); A.plan(); A.services(); v2(); v3()
@@ -440,7 +533,21 @@ def page():
         blocks.append([x, y, z, keys.index(ty), f, min(ph, 8), ni, m])
     for (x, y, z), (ty, f) in SKIN.items():
         blocks.append([x, y, z, keys.index(ty), f, 8, -1, 0])
-    data = dict(types=[dict(k=k, **T[k]) for k in keys], blocks=blocks, notes=A.NOTES, zones=ZONES, phases=[], bom={})
+    rt = {}
+    try:
+        import realtex
+        rt, bad = realtex.build(set(keys))
+    except Exception as e:
+        print("no real textures:", e)
+    types = []
+    for k in keys:
+        d = dict(k=k, **T[k])
+        if k in rt:
+            d["rt"] = 1
+            if d["t"] == "glass": d["a"] = 0.92
+        types.append(d)
+    mv = [dict(t=keys.index(ty) if ty in keys else 0, p=pts, loop=lp, v=sp, n=n, out=o, s=sz) for (ty, pts, lp, sp, n, o, sz) in MOVERS]
+    data = dict(types=types, movers=mv, blocks=blocks, notes=A.NOTES, zones=ZONES, phases=[], bom={}, rt=rt)
     tpl = open(os.path.join(ROOT, "tools", "ae2plan_page.html")).read()
     book = open(os.path.join(ROOT, "tools", "factoryv2_book.js")).read()
     a, b = tpl.index("const TABS="), tpl.index("function show(")
@@ -456,11 +563,20 @@ def page():
            ("    const cat=t.cat;\n", "    const cat=t.cat;\n    if(cat==\"skin\"&&!O.out)continue;if(O.out&&cat!=\"skin\"&&SK.has(b[0]+\",\"+b[1]+\",\"+b[2]))continue;\n"),
            ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={out:true,"),
            ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.out&&b[1]>=[6,15,99][O.lvl|0])continue;"),
+           ("const TX=TY.map(", "let TX=TY.map("),
+           ("// ---------------------------------------------------------------- shapes", "(function(){const R=D.rt||{},RO={};let n=0,tot=0;TY.forEach((t,i)=>{const r=R[t.k];if(!r)return;const o={};RO[i]=o;for(const f of[\"top\",\"side\",\"front\"]){tot++;const im=new Image();im.onload=()=>{const base=mk(g=>{g.imageSmoothingEnabled=false;g.drawImage(im,0,0,16,16)});o[f]={top:base,l:shaded(base,SH.l),r:shaded(base,SH.r)};if(++n==tot){for(const j in RO)TX[j]=RO[j];window.RTREADY=1;if(typeof redraw==\"function\")redraw()}};im.src=r[f]}})})();\n// ---------------------------------------------------------------- shapes"),
+           ('const fx=(t.t=="machine"||', 'const fx=(t.rt||t.t=="machine"||'),
+           ('fz=(t.t=="machine"||', 'fz=(t.rt||t.t=="machine"||'),
+           ("        poly([P(x0,y1,z1),P(x1,y1,z1),P(x1,y0,z1),P(x0,y0,z1)],shade(col,SH.l));",
+            "        if(t.rt&&window.RTREADY){const T3=TX[b[3]],w=q[3]-q[0],h=q[4]-q[1],d=q[5]-q[2];if(w>0&&h>0)fq(T3.side.l,q[0],16-q[4],w,h,P(x0,y1,z1),P(x1,y1,z1),P(x0,y0,z1));if(d>0&&h>0)fq(T3.side.r,16-q[5],16-q[4],d,h,P(x1,y1,z1),P(x1,y1,z0),P(x1,y0,z1));if(w>0&&d>0)fq(T3.top.top,q[0],q[2],w,d,P(x0,y1,z0),P(x1,y1,z0),P(x0,y1,z1));continue}\n        poly([P(x0,y1,z1),P(x1,y1,z1),P(x1,y0,z1),P(x0,y0,z1)],shade(col,SH.l));"),
+           ("  const wd=d=>DIRS[d];", "  const wd=d=>DIRS[d];\n  function fq(img,sx,sy,sw,sh,o,pu,pv){const u0=pu[0]-o[0],u1=pu[1]-o[1],v0=pv[0]-o[0],v1=pv[1]-o[1];g.setTransform(z*u0/sw,z*u1/sw,z*v0/sh,z*v1/sh,ox+z*o[0],oy+z*o[1]);g.drawImage(img,sx,sy,sw,sh,-.05,-.05,sw+.1,sh+.1)}"),
+           ("function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;last=drawScene(cv,D.blocks,V,O)})}",
+            "function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;last=drawScene(cv,D.blocks,V,O);snap();movers()})}\n" + open(os.path.join(ROOT, "tools", "factoryv2_anim.js")).read()),
            ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:24,cz:17,rot:0,zoom:1,px:0,py:90};"),
            ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(80*HW*1.05),H/(80*HH*2.1))"),
            ('zn.id=="core"?6.4:(zn.id=="garden"?5.4:(zn.id=="fuel"?2.4:3.3))', "(zn.h||3.3)"),
            ("const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=27:b[2]<=3,n=nr(XDIR[r])||nr(ZDIR[r]);",
-            "const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=0:b[2]<=0,n=(nr(XDIR[r])||nr(ZDIR[r]))&&b[0]>=0&&b[0]<=44&&b[2]>=0&&b[2]<=30&&TY[b[3]].cat!=\"v2\"&&!O.out;"),
+            "const nr=d=>d==0?b[0]>=44:d==1?b[2]>=29:d==2?b[0]<=0:b[2]<=0,n=(nr(XDIR[r])||nr(ZDIR[r]))&&b[0]>=0&&b[0]<=46&&b[2]>=0&&b[2]<=31&&TY[b[3]].cat!=\"v2\"&&!O.out;"),
            ("if(n&&b[0]>=45&&b[1]>=1)a*=.3}", "}"),
            ('if(!O.mach&&(cat=="ae"||cat=="mek"||cat=="power"||cat=="lava")&&!(cat=="lava"))continue;',
             'if(!O.mach&&(cat=="ae"||cat=="mek"||cat=="power"||cat=="v2"))continue;'),
