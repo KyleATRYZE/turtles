@@ -1,26 +1,26 @@
 {
   "commands": [
     {
-      "id": 1795060165,
-      "issued": 1795060165000,
+      "id": 1795079057,
+      "issued": 1795079057000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:energized_smelter",
-      "n": 1
+      "craft": "alltheores:lead_dust",
+      "n": 4
     },
     {
-      "id": 1795060166,
-      "issued": 1795060165000,
+      "id": 1795079058,
+      "issued": 1795079057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:energized_smelter"
+      "ask": "alltheores:lead_dust"
     },
     {
-      "id": 1795060167,
-      "issued": 1795060165000,
+      "id": 1795079059,
+      "issued": 1795079057000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:steel_casing"
+      "ask": "alltheores:raw_lead"
     }
   ]
 }
