@@ -1,36 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795048932,
-      "issued": 1795048932000,
+      "id": 1795052056,
+      "issued": 1795052056000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "computercraft:computer_normal",
-      "n": 1
-    },
-    {
-      "id": 1795048933,
-      "issued": 1795048932000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "minecraft:chest",
-      "n": 1
-    },
-    {
-      "id": 1795048934,
-      "issued": 1795048932000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "ae2:blank_pattern",
-      "n": 2
-    },
-    {
-      "id": 1795048935,
-      "issued": 1795048932000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "mekanism:ultimate_control_circuit",
-      "n": 1
+      "call": "getCraftableItems",
+      "find": "computercraft"
     }
   ]
 }
