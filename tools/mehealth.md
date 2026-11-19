@@ -23,3 +23,8 @@ line, press, fuel, crystal lab, drives. Line 4: generator water buses, CPUs,
 storeroom buses and the overflow interface, terminals, lab, garden, matrix.
 The ME Bridge (34 0 15) has no node NBT: if crafter1's `me` shows cpus 0,
 re-place the cable under it (34 -1 15).
+
+## Lessons (19 Nov, 02:02)
+- A wireless connector placed against a controller block put the controllers into `conflicted`: everything went offline, and afterwards adjacent cables and blocks in four places were no longer joined.
+- Each vault column (drive, cell, CPU, connector) passes 8 channels. The wireless links end there: do not add devices to a linked subnet without counting.
+- A drive's cells: `data get block <drive> inv` shows the live contents. If ME reports stock that the cells do not show, the stock is not being saved.
