@@ -1,48 +1,42 @@
 {
   "commands": [
     {
-      "id": 1795047947,
-      "issued": 1795047947000,
+      "id": 1795048074,
+      "issued": 1795048074000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "ae2:fluix_crystal",
-      "n": 16
+      "craft": "ae2:fluix_glass_cable",
+      "n": 8
     },
     {
-      "id": 1795047948,
-      "issued": 1795047947000,
+      "id": 1795048075,
+      "issued": 1795048074000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:advanced_control_circuit",
-      "n": 2
+      "craft": "computercraft:turtle_normal",
+      "n": 1
     },
     {
-      "id": 1795047949,
-      "issued": 1795047947000,
+      "id": 1795048076,
+      "issued": 1795048074000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "minecraft:redstone"
+      "craft": "mekanism:elite_control_circuit",
+      "n": 1
     },
     {
-      "id": 1795047950,
-      "issued": 1795047947000,
+      "id": 1795048077,
+      "issued": 1795048074000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "minecraft:quartz"
+      "ask": "mekanism:elite_control_circuit"
     },
     {
-      "id": 1795047951,
-      "issued": 1795047947000,
+      "id": 1795048078,
+      "issued": 1795048074000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "ae2:fluix_glass_cable"
-    },
-    {
-      "id": 1795047952,
-      "issued": 1795047947000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "computercraft:turtle_normal"
+      "ask": "ae2:quartz_fiber"
     }
   ]
 }
