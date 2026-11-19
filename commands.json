@@ -1,34 +1,33 @@
 {
   "commands": [
     {
-      "id": 1795048385,
-      "issued": 1795048385000,
+      "id": 1795048794,
+      "issued": 1795048794000,
       "cmd": "me",
       "target": "crafter1",
       "craft": "computercraft:turtle_normal",
       "n": 1
     },
     {
-      "id": 1795048386,
-      "issued": 1795048385000,
+      "id": 1795048795,
+      "issued": 1795048794000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:elite_control_circuit",
-      "n": 1
+      "ask": "mekanism:enriched_carbon"
     },
     {
-      "id": 1795048387,
-      "issued": 1795048385000,
+      "id": 1795048796,
+      "issued": 1795048794000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "mekanism:alloy_reinforced"
+      "ask": "minecraft:coal"
     },
     {
-      "id": 1795048388,
-      "issued": 1795048385000,
+      "id": 1795048797,
+      "issued": 1795048794000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "computercraft:computer_normal"
+      "ask": "minecraft:chest"
     }
   ]
 }
