@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795046238,
-      "issued": 1795046238000,
+      "id": 1795046553,
+      "issued": 1795046553000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:alloy_atomic",
-      "n": 2
+      "craft": "minecraft:lava_bucket",
+      "n": 4
     }
   ]
 }
