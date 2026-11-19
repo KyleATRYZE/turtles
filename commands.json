@@ -1,58 +1,62 @@
 {
   "commands": [
     {
-      "id": 1795052218,
-      "issued": 1795052218000,
+      "id": 1795052391,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
       "craft": "computercraft:turtle_normal",
       "n": 1
     },
     {
-      "id": 1795052219,
-      "issued": 1795052218000,
+      "id": 1795052392,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "ae2:quartz_glass",
-      "n": 4
+      "craft": "mekanism:steel_casing",
+      "n": 1
     },
     {
-      "id": 1795052220,
-      "issued": 1795052218000,
+      "id": 1795052393,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "ae2:fluix_smart_cable",
-      "n": 2
+      "ask": "alltheores:raw_uranium"
     },
     {
-      "id": 1795052221,
-      "issued": 1795052218000,
+      "id": 1795052394,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "computercraft:cable",
-      "n": 6
+      "ask": "alltheores:raw_platinum"
     },
     {
-      "id": 1795052222,
-      "issued": 1795052218000,
+      "id": 1795052395,
+      "issued": 1795052391000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "alltheores:raw_iridium"
+    },
+    {
+      "id": 1795052396,
+      "issued": 1795052391000,
+      "cmd": "me",
+      "target": "crafter1",
+      "ask": "ae2:quartz_glass"
+    },
+    {
+      "id": 1795052397,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
       "ask": "mekanism:ultimate_control_circuit"
     },
     {
-      "id": 1795052223,
-      "issued": 1795052218000,
+      "id": 1795052398,
+      "issued": 1795052391000,
       "cmd": "me",
       "target": "crafter1",
-      "ask": "computercraft:computer_normal"
-    },
-    {
-      "id": 1795052224,
-      "issued": 1795052218000,
-      "cmd": "me",
-      "target": "crafter1",
-      "call": "getCraftableItems",
-      "find": "turtle_normal"
+      "ask": "alltheores:osmium_ingot"
     }
   ]
 }
