@@ -406,6 +406,7 @@ local function meDesk()
     "mekanism:ingot_refined_obsidian", "minecraft:lava_bucket" }
   local lastOrder, log = nil, {}
   local craftEvents = {}        -- (filled by the listener below)
+  local answer                  -- the last `call` order's result
   -- Stock rules: ME is asked for the difference when an item falls under its
   -- target (one order per item at a time, small batches, only with a CPU
   -- free). order: me crafter1 rule=<id> n=<target> (n=0 drops the rule)
@@ -447,7 +448,7 @@ local function meDesk()
       if i <= 6 then tasks[#tasks + 1] = textutils.serialize(t, { compact = true }):sub(1, 260) end
     end
     local lava = call("getFluid", { name = "minecraft:lava" })
-    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks, rules = rules, events = craftEvents,
+    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks, rules = rules, events = craftEvents, answer = answer,
       lava = type(lava) == "table" and (lava.count or lava.amount) or nil,
       free = call("getAvailableItemStorage"), freeBarrels = call("getAvailableExternalItemStorage"),
       energy = call("getEnergyStorage") or call("getStoredEnergy"), usage = call("getEnergyUsage"),
@@ -500,7 +501,7 @@ local function meDesk()
           parts[#parts + 1] = type(v) == "table" and textutils.serialize(v, { compact = true }):sub(1, 120) or tostring(v)
         end
         events[#events + 1] = table.concat(parts, " | "):sub(1, 240)
-        while #events > 6 do table.remove(events, 1) end
+        while #events > 14 do table.remove(events, 1) end
       end
     end
   end
@@ -510,7 +511,25 @@ local function meDesk()
     local msg = table.remove(inbox, 1)
     if type(msg) == "table" and msg.type == "me_order" then
       local line
-      if type(msg.rule) == "string" then
+      if type(msg.call) == "string" then
+        -- me crafter1 call=<bridge method> [find=<text>]: what the bridge answers (for checking by hand)
+        local res, err = call(msg.call)
+        local out = {}
+        if type(res) == "table" then
+          for k, v in pairs(res) do
+            local name = type(v) == "table" and tostring(v.name or v.id or k) or tostring(v)
+            local text = type(v) == "table" and textutils.serialize(v, { compact = true }) or tostring(v)
+            if not msg.find or text:lower():find(tostring(msg.find):lower(), 1, true) then
+              out[#out + 1] = msg.find and text:sub(1, 300) or name
+            end
+            if #out >= 12 then break end
+          end
+        else
+          out[1] = tostring(res) .. " " .. tostring(err)
+        end
+        answer = { call = msg.call, find = msg.find, n = #out, out = out }
+        line = "call " .. msg.call .. (msg.find and (" find " .. msg.find) or "") .. ": " .. #out
+      elseif type(msg.rule) == "string" then
         local n = math.floor(tonumber(msg.n) or 0)
         rules[msg.rule] = n > 0 and n or nil
         local h = fs.open(RULES_FILE, "w")
