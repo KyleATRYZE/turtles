@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795052545,
-      "issued": 1795052545000,
+      "id": 1795052877,
+      "issued": 1795052877000,
       "cmd": "me",
       "target": "crafter1",
-      "craft": "mekanism:enriched_refined_obsidian",
-      "n": 2
+      "call": "cancelCraftingTasks",
+      "arg": "mekanism:enriched_refined_obsidian"
     }
   ]
 }
