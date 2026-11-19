@@ -28,6 +28,11 @@ t("tunnel", "Brass tunnel", "create:brass_tunnel", "v2", "#c9a35a", "#8a6a3a", "
 t("path", "Patrol path", "minecraft:deepslate_tiles", "v2", "#37373c", "#57e3c2", "bricks")
 t("iron", "Industrial iron plating", "create:industrial_iron_block", "v2", "#3d4147", "#2e3136", "tiles")
 t("speaker", "Speaker (alarms, door chime)", "computercraft:speaker", "v2", "#5b5d68", "#c0392b", "machine")
+t("drone", "Drone docked in its bay (turtle)", "computercraft:turtle_normal", "v2", "#c9b04a", "#57e3c2", "machine")
+t("baylamp", "Bay light (copper bulb on a relay: green docked, amber out, red trouble)", "minecraft:copper_bulb", "v2", "#7bd88f", "#e6fff0", "lava")
+t("shelf", "Bay shelf (industrial iron slab)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "tiles", "slab")
+t("fuel", "Fuel port (ME interface: lava buckets out, drone loads in)", "ae2:interface", "v2", "#2c2f38", "#ffb84a", "frame")
+t("hatch", "Hangar door leaf (Create sliding door)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "stripe")
 
 SURVEY = dict(A.SURVEY)
 SURVEY.update({"sophisticatedstorage:limited_barrel_1": "barrel", "sophisticatedstorage:limited_barrel_4": "barrel",
@@ -83,8 +88,9 @@ def v2():
     for z in range(10, 21):
         put(5, 9, z, "console", 2, 8, "Console desk: fleet, ME stock and crafting, power, the gate. Each one a touch screen")
         if z % 2 == 0: put(5, 10, z, "lever", 0, 8, "Levers on redstone relays: RECALL ALL, LOCKDOWN, MINERS OUT, LIGHTS, SIREN TEST. A computer reads them and acts")
-    for x in range(2, 8):
-        for y in (10, 11): put(x, y, 1, "board", 1, 8, "Split-flap board: DEPARTURES and ARRIVALS for the drones, written by a computer through a display link")
+    for x in range(3, 7):
+        for z in range(11, 20):
+            put(x, 8, z, "gfloor", 0, 8, "Glass floor in the Bridge: look straight down onto the launch bay and the drones in their bays")
     for z in (4, 26):
         for x in range(2, 8): put(x, 12, z, "cyan", 0, 8, "Ceiling light strip")
     # 4. the hall: glass over the trench, light strips, the ore conveyor
@@ -96,28 +102,62 @@ def v2():
     put(28, 3, 4, "barrel", 0, 8, "Drop chute: drones hand in here")
     for z in range(5, 29, 4):
         put(28, 5, z, "lamp", 0, 8, "Wall light strip"); put(43, 5, z, "lamp", 0, 8, "Wall light strip")
-    # 5. the drone yard where the old base stood
-    for x in range(-10, -3):
-        for z in range(5, 12):
-            edge = x in (-10, -4) or z in (5, 11)
-            put(x, 0, z, "stripe" if edge else "iron", 0, 8, "Drone yard on the old base's site: a marked landing pad, the old hut and chests gone")
-    put(-7, 1, 8, "cyan", 0, 8, "Pad beacon")
+    # 5. the launch bay: the old furnace room (x 1-8, z 4-28, y 1-7) becomes the drones' home
+    for k in [k for k in A.B if 1 <= k[0] <= 8 and 4 <= k[2] <= 28 and 1 <= k[1] <= 7]: del A.B[k]
+    for x in range(1, 9):
+        for z in range(4, 29):
+            put(x, 0, z, "stripe" if x in (2, 7) else "iron", 0, 8, "Launch bay floor: dark plating, striped lanes either side of the aisle")
+    BAY = "Drone bay: the drone parks here between jobs, its light shows its state. Idle drones come home; none wait overhead"
+    bays = [(8, z) for z in range(5, 28, 2)] + [(1, z) for z in list(range(5, 12, 2)) + list(range(21, 28, 2))]
+    for (x, z) in bays:
+        for lv in (1, 4):
+            if lv == 4: put(x, 3, z, "shelf", 0, 8, "Bay shelf: the upper row of bays")
+            put(x, lv, z, "drone", 1 if x == 8 else 3, 8, BAY)
+            put(x, lv + 1, z, "baylamp", 0, 8, "Bay light: green docked, amber out on a job, red when the drone needs help. A computer sets each one through a redstone relay")
+    for x in range(3, 7):
+        put(x, 1, 4, "fuel" if x in (3, 4) else "iface", 0, 8,
+            "Fuel and intake counter at the north end: drones hand in what they carry (ME interface), then take lava buckets (fuel port) before they dock" if x in (3, 4) else
+            "Intake: what a drone brings in goes straight into ME")
+    for z in range(13, 20):
+        for y in range(1, 7):
+            put(0, y, z, "hatch", 0, 8, "Hangar door in the west wall: two leaves on a Create gantry, opened by the bay computer as a drone comes or goes")
+        put(0, 7, z, "girder", 0, 8, "Gantry the hangar door slides on")
+    put(0, 7, 12, "motor", 0, 8, "Electric motor for the hangar door")
+    for x in range(-1, 2):
+        for z in range(13, 20):
+            if x == 1: put(x, 0, z, "stripe", 0, 8, "Threshold")
+    for z in range(5, 28, 4):
+        put(4, 7, z, "cyan", 0, 8, "Ceiling light strip over the aisle"); put(5, 7, z, "cyan", 0, 8, "Ceiling light strip over the aisle")
+    for x in range(2, 8):
+        for y in (5, 6): put(x, y, 28, "board", 2, 8, "Departures board on the south wall: which drone left, for what, when it is due back. Split-flap, written by a computer")
+    put(4, 1, 27, "console", 2, 8, "Bay console: launch, recall and refuel a drone by touch")
+    put(5, 2, 27, "lever", 0, 8, "RECALL ALL lever")
+    # 6. the apron where the old base stood: cleared, levelled, marked
+    for k in [k for k in A.B if k[0] < 0 and -6 <= k[2] <= 35 and k[1] >= 1 and A.B[k][0] in ("cob", "cauld", "drip", "lava", "sb", "pd", "gl", "grass")]: del A.B[k]
+    for x in range(-9, 0):
+        for z in range(10, 23):
+            edge = x == -9 or z in (10, 22)
+            put(x, 0, z, "stripe" if edge else "iron", 0, 8, "Apron outside the hangar door, on the old base's ground: the old hut and chests are gone, carried into the store by the drones")
+    for (x, z) in ((-9, 10), (-9, 22)):
+        put(x, 1, z, "cyan", 0, 8, "Apron beacon")
 
 ZONES = [
  dict(id="gate", name="Blast gate", cam=[22.5, 2, 31], h=5.5, ph="A",
       text="A four-wide sliding gate at the south entrance, built as a Create contraption on a gantry with an electric motor. A computer with the Player Detector opens it for people on the list and says so on a screen; LOCKDOWN shuts it. Two guard turtles stand either side."),
+ dict(id="launch", name="Launch bay", cam=[4.5, 2, 16], h=6.5, ph="B",
+      text="The old furnace room becomes the drones' home. 40 bays in two rows down both walls, each with a light (green docked, amber out, red trouble). A hangar door in the west wall opens as a drone comes or goes. At the north end a counter takes in what they carry and hands out lava buckets; at the south end the departures board and a console. The 12 vanilla furnaces go: their smelting moves to the ME smelters first."),
  dict(id="bridge", name="The Bridge", cam=[4, 10, 15], h=13.5, ph="B",
-      text="The control room, upstairs in the west room. One wall is the map: 13 by 4 monitors showing the land in real map colours with every drone as a moving dot. A row of consoles faces it, with levers that do things. Turn on the upper deck to see it."),
+      text="The control room, upstairs over the launch bay. One wall is the map: 13 by 4 monitors showing the land in real map colours with every drone as a moving dot. A row of consoles with levers that do things, and a glass floor to look straight down on the bays. Turn on the upper deck to see it."),
  dict(id="hall", name="Foundry hall", cam=[36, 1, 15], h=6.5, ph="C",
-      text="The AE2 and Mekanism hall you saw, most of it now running. v2 adds a tinted glass floor down the spine so the cables and pipes show, light strips, and an overhead belt that carries incoming ore into ME."),
+      text="The AE2 and Mekanism hall, running. v2 adds a tinted glass floor down the spine so the cables and pipes show, light strips, and an overhead belt that carries incoming ore into ME."),
  dict(id="store", name="Storerooms", cam=[14, 1, 15], h=6.5, ph="C",
       text="The barrel rooms stay, now read and filled by ME. v2 adds category lighting over each zone and a requisition screen at each end."),
- dict(id="lane", name="Drone lane and rack", cam=[22, 1, 2], h=4.5, ph="C",
-      text="The drones' lane and bays. v2: a status light over every bay (green docked, amber out, red in trouble) and the departures board upstairs. Idle drones dock; none wait overhead."),
+ dict(id="lane", name="Old rack", cam=[22, 1, 2], h=4.5, ph="E",
+      text="The old lane and rack retire once the launch bay is running. The lane stays as a corridor; the rack comes out."),
  dict(id="guards", name="Guards", cam=[46, 1, 32], h=3.5, ph="D",
       text="Four melee turtles walk a ring round the building at night and two hold the gate. They strike hostile mobs only, stand down near players, and raise the alarm and the gate lights."),
- dict(id="yard", name="Drone yard", cam=[-7, 1, 8], h=3.5, ph="E",
-      text="Where the old base stands: cleared by the drones into the store, levelled, and marked as a landing pad. The ground round the factory is terraformed to match."),
+ dict(id="yard", name="Apron", cam=[-5, 1, 16], h=3.5, ph="E",
+      text="Where the old base stands: taken apart by the drones into the store, levelled, and laid as a marked apron in front of the hangar door. The ground round the factory is terraformed to match."),
 ]
 
 def page():
