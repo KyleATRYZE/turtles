@@ -405,6 +405,7 @@ local function meDesk()
     "mekanism:alloy_infused", "mekanism:alloy_reinforced", "mekanism:alloy_atomic",
     "mekanism:ingot_refined_obsidian", "minecraft:lava_bucket" }
   local lastOrder, log = nil, {}
+  local craftEvents = {}        -- (filled by the listener below)
   -- Stock rules: ME is asked for the difference when an item falls under its
   -- target (one order per item at a time, small batches, only with a CPU
   -- free). order: me crafter1 rule=<id> n=<target> (n=0 drops the rule)
@@ -446,7 +447,7 @@ local function meDesk()
       if i <= 6 then tasks[#tasks + 1] = textutils.serialize(t, { compact = true }):sub(1, 260) end
     end
     local lava = call("getFluid", { name = "minecraft:lava" })
-    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks, rules = rules,
+    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks, rules = rules, events = craftEvents,
       lava = type(lava) == "table" and (lava.count or lava.amount) or nil,
       free = call("getAvailableItemStorage"), freeBarrels = call("getAvailableExternalItemStorage"),
       energy = call("getEnergyStorage") or call("getStoredEnergy"), usage = call("getEnergyUsage"),
@@ -485,10 +486,22 @@ local function meDesk()
   -- (orders are taken by a listener of their own: a bridge call waits on an
   -- event, and an order arriving meanwhile would be thrown away)
   local inbox = {}
+  local events = craftEvents    -- what the bridge said about its crafting jobs (the last 6)
   local function listen()
     while true do
-      local _, msg = rednet.receive(W.JOB)
-      if type(msg) == "table" and msg.type == "me_order" then inbox[#inbox + 1] = msg end
+      local ev = table.pack(os.pullEvent())
+      if ev[1] == "rednet_message" and ev[4] == W.JOB then
+        local msg = ev[3]
+        if type(msg) == "table" and msg.type == "me_order" then inbox[#inbox + 1] = msg end
+      elseif type(ev[1]) == "string" and ev[1]:lower():find("craft", 1, true) then
+        local parts = {}
+        for i = 1, math.min(ev.n, 5) do
+          local v = ev[i]
+          parts[#parts + 1] = type(v) == "table" and textutils.serialize(v, { compact = true }):sub(1, 120) or tostring(v)
+        end
+        events[#events + 1] = table.concat(parts, " | "):sub(1, 240)
+        while #events > 6 do table.remove(events, 1) end
+      end
     end
   end
   local function work()
