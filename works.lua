@@ -405,6 +405,20 @@ local function meDesk()
     "mekanism:alloy_infused", "mekanism:alloy_reinforced", "mekanism:alloy_atomic",
     "mekanism:ingot_refined_obsidian", "minecraft:lava_bucket" }
   local lastOrder, log = nil, {}
+  -- Stock rules: ME is asked for the difference when an item falls under its
+  -- target (one order per item at a time, small batches, only with a CPU
+  -- free). order: me crafter1 rule=<id> n=<target> (n=0 drops the rule)
+  local RULES_FILE = ".me_rules"
+  local rules = { ["minecraft:lava_bucket"] = 64, ["alltheores:steel_ingot"] = 128,
+    ["ae2:logic_processor"] = 16, ["ae2:calculation_processor"] = 16, ["ae2:engineering_processor"] = 16,
+    ["mekanism:basic_control_circuit"] = 32 }
+  if fs.exists(RULES_FILE) then
+    local h = fs.open(RULES_FILE, "r")
+    local t = textutils.unserialize(h.readAll() or "")
+    h.close()
+    if type(t) == "table" then rules = t end
+  end
+  local asked = {}              -- id -> { at, had }
   local function call(m, ...)
     if type(bridge[m]) ~= "function" then return nil, "no " .. m end
     local r = table.pack(pcall(bridge[m], ...))
@@ -432,12 +446,37 @@ local function meDesk()
       if i <= 6 then tasks[#tasks + 1] = textutils.serialize(t, { compact = true }):sub(1, 260) end
     end
     local lava = call("getFluid", { name = "minecraft:lava" })
-    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks,
+    rednet.broadcast({ type = "me_report", me = { stock = stock, last = lastOrder, log = log, tasks = tasks, rules = rules,
       lava = type(lava) == "table" and (lava.count or lava.amount) or nil,
       free = call("getAvailableItemStorage"), freeBarrels = call("getAvailableExternalItemStorage"),
       energy = call("getEnergyStorage") or call("getStoredEnergy"), usage = call("getEnergyUsage"),
       cpus = type(cpus) == "table" and #cpus or nil, busy = busy,
       methods = #log == 0 and table.concat(methods, " ") or nil } }, W.JOB)
+  end
+  local function freeCpu()
+    local cpus = call("getCraftingCPUs")
+    local free = 0
+    for _, c in ipairs(type(cpus) == "table" and cpus or {}) do if not c.isBusy then free = free + 1 end end
+    return free
+  end
+  local function keepStock()
+    local free = freeCpu()
+    for id, target in pairs(rules) do
+      if free <= 1 then break end                  -- (one CPU is always left for orders by hand)
+      local have = count(id)
+      local a = asked[id]
+      if a and (have == nil or have > a.had or os.clock() - a.at > 600) then asked[id], a = nil, nil end
+      if have and have < target and not a then
+        local n = math.min(target - have, 16)
+        local ok, err = call("craftItem", { name = id, count = n })
+        asked[id] = { at = os.clock(), had = have }
+        local line = ("stock: %s %d of %d, ordered %d: %s"):format(id, have, target, n, ok and "started" or ("refused " .. tostring(err)))
+        log[#log + 1] = line
+        while #log > 8 do table.remove(log, 1) end
+        note(line)
+        if ok then free = free - 1 end
+      end
+    end
   end
   note("ME desk: bridge found. Reporting to the factory.")
   tell()
@@ -446,7 +485,14 @@ local function meDesk()
     local _, msg = rednet.receive(W.JOB, 20)
     if type(msg) == "table" and msg.type == "me_order" then
       local line
-      if type(msg.ask) == "string" then
+      if type(msg.rule) == "string" then
+        local n = math.floor(tonumber(msg.n) or 0)
+        rules[msg.rule] = n > 0 and n or nil
+        local h = fs.open(RULES_FILE, "w")
+        h.write(textutils.serialize(rules))
+        h.close()
+        line = "rule " .. msg.rule .. " = " .. tostring(rules[msg.rule])
+      elseif type(msg.ask) == "string" then
         watch[#watch + 1] = msg.ask
         line = "watching " .. msg.ask
       elseif type(msg.craft) == "string" then
@@ -472,6 +518,7 @@ local function meDesk()
     end
     if os.clock() - lastTell > 60 then
       lastTell = os.clock()
+      pcall(keepStock)
       tell()
     end
   end
