@@ -33,6 +33,32 @@ t("baylamp", "Bay light (copper bulb on a relay: green docked, amber out, red tr
 t("shelf", "Bay shelf (industrial iron slab)", "create:industrial_iron_block", "v2", "#3d4147", "#57e3c2", "tiles", "slab")
 t("fuel", "Fuel port (ME interface: lava buckets out, drone loads in)", "ae2:interface", "v2", "#2c2f38", "#ffb84a", "frame")
 t("hatch", "Hangar door leaf (Create sliding door)", "create:industrial_iron_block", "v2", "#3d4147", "#e8b04a", "stripe")
+# interior to match, and the Create layer
+t("iwall", "Inside wall (light grey concrete), was stone brick", "minecraft:light_gray_concrete", "build", "#9d9d97", "#86867f", "flat")
+t("iglass", "Inside glass (grey stained glass)", "minecraft:gray_stained_glass", "build", "#3a3f47", "#69707c", "glass", a=0.6)
+t("basin", "Basin (Create)", "create:basin", "v2", "#8a8a84", "#5c5c56", "frame")
+t("press", "Mechanical press (Create): plates and sheets", "create:mechanical_press", "v2", "#8a6a3a", "#c9a35a", "machine")
+t("mixer", "Mechanical mixer (Create): brass, andesite alloy, dough", "create:mechanical_mixer", "v2", "#8a6a3a", "#c9a35a", "machine")
+t("deployer", "Deployer (Create): fits parts onto what passes on the belt", "create:deployer", "v2", "#8a6a3a", "#5c4428", "machine")
+t("deck", "Floor slab (grey concrete)", "minecraft:gray_concrete", "v2", "#5a5c60", "#4b4d51", "flat")
+t("redcol", "Red steel column (red concrete)", "minecraft:red_concrete", "v2", "#9b2d24", "#7a2119", "flat")
+t("packager", "Packager (Create): boxes what a drone brings in into a package addressed to where it goes", "create:packager", "v2", "#8a6a3a", "#c9a35a", "machine")
+t("frogport", "Frogport (Create): catches packages off the chain and throws them on", "create:package_frogport", "v2", "#5f8a3a", "#c9a35a", "machine")
+t("ticker", "Stock ticker (Create): ask for anything in stock, it is packed and sent here", "create:stock_ticker", "v2", "#3a3d44", "#ffb84a", "terminal")
+t("requester", "Redstone requester (Create): a lever that orders a set load, e.g. 64 steel to the hall", "create:redstone_requester", "v2", "#5b5d68", "#c0392b", "machine")
+t("chainpost", "Chain conveyor (Create): packages ride the chain overhead between posts", "create:chain_conveyor", "v2", "#9b7a4a", "#5c4428", "machine")
+t("chain", "Chain conveyor run", "create:chain_conveyor", "v2", "#8d8f99", "#5d5f66", "frame", "chain")
+t("pkg", "Package on its way", "create:cardboard_block", "v2", "#b88a55", "#8e6a3e", "tiles", "post")
+t("gshaft", "Gantry shaft (Create): the crane rides it the length of the hall", "create:gantry_shaft", "v2", "#9b2d24", "#5a5f66", "frame", "beam")
+t("gcar", "Gantry carriage with a hook (Create)", "create:gantry_carriage", "v2", "#9b2d24", "#c9a35a", "machine")
+t("hook", "Crane hook chain", "minecraft:chain", "v2", "#5d5f66", "#3a3b40", "frame", "chain")
+t("burner", "Blaze burner under the boiler (Create)", "create:blaze_burner", "v2", "#3a3b40", "#ff8a2a", "lava")
+t("boiler", "Boiler (Create fluid tank, 3 x 3 x 3)", "create:fluid_tank", "v2", "#6f6250", "#c9a35a", "frame")
+t("sengine", "Steam engine (Create): turns the shafts that run the gate, the lift, the crane and the belts", "create:steam_engine", "v2", "#8d8f99", "#c9a35a", "machine")
+t("bigcog", "Large cogwheel (Create)", "create:large_cogwheel", "v2", "#9b7a4a", "#5c4428", "machine")
+t("shaft", "Shaft (Create)", "create:shaft", "v2", "#8d8f99", "#5d5f66", "frame", "beam")
+t("crafter", "Mechanical crafter wall (Create): big recipes laid out where you can watch them", "create:mechanical_crafter", "v2", "#b8673f", "#5c3a26", "machine")
+t("flue", "Flue up to the roof stacks (copper pipe)", "create:fluid_pipe", "v2", "#c47a4a", "#8e4b2c", "pipe", "pipe")
 # the new outside: concrete block, green-roofed podium, red steel (cat "skin", shown with Outside)
 t("sk_conc", "Light grey concrete", "minecraft:light_gray_concrete", "skin", "#9d9d97", "#86867f", "flat")
 t("sk_pil", "Pilaster (light grey concrete), stands a block out of the wall", "minecraft:light_gray_concrete", "skin", "#a9a9a3", "#8d8d86", "flat")
@@ -160,6 +186,84 @@ def v2():
             put(x, 0, z, "stripe" if edge else "iron", 0, 8, "Apron outside the hangar door, on the old base's ground: the old hut and chests are gone, carried into the store by the drones")
     for (x, z) in ((-9, 10), (-9, 22)):
         put(x, 1, z, "cyan", 0, 8, "Apron beacon")
+
+def v3():
+    """Inside, to match the new outside, with Create doing the moving."""
+    WALL = ("sb", "pd", "dt", "db", "cob", "cap")
+    for k, v in list(A.B.items()):              # stone brick inside becomes concrete and grey glass
+        x, y, z = k
+        if 0 <= x <= 45 and 0 <= z <= 30 and y >= 1:
+            if v[0] in WALL: A.B[k] = ("deck" if (y == 8 and v[0] == "pd") else "iwall",) + tuple(v[1:])
+            elif v[0] == "gl": A.B[k] = ("iglass",) + tuple(v[1:])
+    # floor 3 slab (the engine floor) over the main block
+    for x in range(1, 27):
+        for z in range(1, 30): put(x, 15, z, "deck", 0, 8, "Engine floor slab")
+    # --- floor 2, the logistics deck beside the Bridge (x 10..26, y 9..14)
+    for z in range(12, 19): put(10, 11, z, "board", 1, 8, "Stock boards (Create display boards): what is in ME and the barrels, what is on its way")
+    put(13, 9, 15, "ticker", 2, 8, "Stock ticker: ask for anything in stock; it is packed and sent to this deck, the Bridge or the hall")
+    for z in (13, 14, 16, 17): put(12, 9, z, "requester", 0, 8, "Redstone requesters: pull a lever, a set load is ordered (64 steel to the hall, a stack of lava buckets to the launch bay)")
+    for x in range(15, 26, 3):
+        put(x, 9, 4, "packager", 0, 8, "Packagers on the ME interfaces: ME stock leaves as addressed packages")
+        put(x, 10, 4, "frogport", 0, 8, "Frogport: throws the package onto the chain")
+    # chain conveyor loop overhead on the deck, and on into the hall
+    loop = [(11, 4), (25, 4), (25, 26), (11, 26)]
+    for (x, z) in loop: put(x, 13, z, "chainpost", 0, 8, "Chain conveyor post: a cogwheel the chain runs round")
+    for x in range(12, 25):
+        put(x, 13, 4, "chain", 0, 8, "Chain conveyor: packages ride it overhead"); put(x, 13, 26, "chain", 0, 8, "Chain conveyor")
+    for z in range(5, 26):
+        put(11, 13, z, "chain", 1, 8, "Chain conveyor"); put(25, 13, z, "chain", 1, 8, "Chain conveyor")
+    for (x, z) in ((18, 4), (25, 14), (14, 26)): put(x, 12, z, "pkg", 0, 8, "A package on its way")
+    # down into the hall: a post at the wall, the chain along z 20, a frogport over the ore line
+    put(27, 9, 20, "chainpost", 0, 8, "Chain conveyor post at the hall wall")
+    for x in range(28, 40): put(x, 9, 20, "chain", 0, 8, "Chain conveyor into the hall, under the skylights")
+    put(40, 9, 20, "chainpost", 0, 8, "Chain conveyor post")
+    for z in range(14, 20): put(40, 9, z, "chain", 1, 8, "Chain conveyor")
+    put(40, 9, 13, "chainpost", 0, 8, "Chain conveyor post")
+    put(41, 8, 13, "frogport", 0, 8, "Frogport over the ore line: drops packages of raw ore into its ME interface; takes finished ingots back")
+    put(33, 8, 20, "pkg", 0, 8, "Raw ore on its way to the ore line")
+    # from the launch bay intake up to the deck
+    put(5, 2, 5, "packager", 0, 8, "Packager on the intake: what a drone hands in is boxed")
+    put(5, 3, 5, "frogport", 0, 8, "Frogport: throws the box up to the chain on the deck")
+    # --- floor 3, the engine floor (y 16..19): two boilers right under the roof stacks
+    for (bx, bz) in ((12, 12), (17, 12)):
+        for x in range(bx, bx + 3):
+            for z in range(bz, bz + 3):
+                put(x, 16, z, "burner", 0, 8, "Blaze burners: superheated, they boil the water")
+                for y in (17, 18, 19): put(x, y, z, "boiler", 0, 8, "Boiler (Create fluid tank): water in from ME, steam to the engines")
+        for x in range(bx, bx + 3): put(x, 18, bz - 1, "sengine", 3, 8, "Steam engine on the boiler side: turns the shaft line")
+        put(bx + 1, 20, bz + 1, "flue", 0, 8, "Flue to the red stack on the roof")
+    for x in range(4, 26): put(x, 18, 9, "shaft", 0, 8, "Shaft line along the engine floor")
+    for x in (6, 15, 24): put(x, 18, 8, "bigcog", 0, 8, "Large cogwheel: the drive splits here")
+    for y in range(1, 18): put(24, y, 9, "shaft", 2, 8, "Drive shaft down through the building: gate, belts, the crane" if y == 9 else "Drive shaft")
+    for z in range(22, 26):
+        for y in range(16, 19): put(1, y, z, "crafter", 1, 8, "Mechanical crafter wall: big Create recipes on show")
+    # a Create processing line across the south of the engine floor: belt, presses, mixers on burners, deployers
+    for x in range(5, 26): put(x, 16, 25, "belt", 0, 8, "Processing belt (Create): ingots in from the chain, plates, brass and parts out")
+    for x in (8, 11):
+        put(x, 18, 25, "press", 0, 8, "Mechanical press over the belt: iron, copper and gold sheets")
+        put(x, 17, 25, "shaft", 2, 8, "Press head")
+    for x in (15, 19):
+        put(x, 16, 23, "burner", 0, 8, "Blaze burner under the basin: heated mixing")
+        put(x, 17, 23, "basin", 0, 8, "Basin")
+        put(x, 19, 23, "mixer", 0, 8, "Mechanical mixer: brass from copper and zinc, andesite alloy")
+    for x in (22, 24): put(x, 17, 26, "deployer", 3, 8, "Deployer: fits parts onto what passes on the belt")
+    put(25, 17, 25, "frogport", 0, 8, "Frogport: finished parts go back onto the chain to ME")
+    for x in (7, 13, 19, 25):
+        for z in (6, 20):
+            for y in range(16, 20):
+                if (x, y, z) not in A.B: put(x, y, z, "redcol", 0, 8, "Red steel column")
+    for x in range(5, 26, 4):
+        put(x, 19, 3, "cyan", 0, 8, "Light"); put(x, 19, 28, "cyan", 0, 8, "Light")
+    put(3, 16, 27, "console", 2, 8, "Engine console: steam pressure, shaft speed, burner fuel")
+    # --- the hall: red columns at the walls, the gantry crane under the skylights
+    for x in (30, 36, 42):
+        for z in (1, 29):
+            for y in range(1, 10):
+                if (x, y, z) not in A.B: put(x, y, z, "redcol", 0, 8, "Red steel column")
+    for x in range(29, 44): put(x, 9, 15, "gshaft", 0, 8, "Gantry shaft: the hall crane runs on it")
+    put(35, 8, 15, "gcar", 0, 8, "Gantry carriage: lifts a full crate from the drop point to any machine")
+    for y in (6, 7): put(35, y, 15, "hook", 2, 8, "Crane hook")
+    put(35, 5, 15, "pkg", 0, 8, "A crate on the hook")
 
 SKIN = {}
 def skin():
@@ -296,8 +400,12 @@ ZONES = [
       text="The old furnace room becomes the drones' home. 40 bays in two rows down both walls, each with a light (green docked, amber out, red trouble). A hangar door in the west wall opens as a drone comes or goes. At the north end a counter takes in what they carry and hands out lava buckets; at the south end the departures board and a console. The 12 vanilla furnaces go: their smelting moves to the ME smelters first."),
  dict(id="bridge", name="The Bridge", cam=[4, 10, 15], h=13.5, ph="B",
       text="The control room, upstairs over the launch bay. One wall is the map: 13 by 4 monitors showing the land in real map colours with every drone as a moving dot. A row of consoles with levers that do things, and a glass floor to look straight down on the bays. Turn on the upper deck to see it."),
+ dict(id="deck", name="Logistics deck", cam=[18, 10, 15], h=13.5, ph="B",
+      text="Create 6 logistics on floor 2, beside the Bridge. A stock ticker where you ask for anything; packagers on the ME interfaces box it; frogports throw the box onto a chain conveyor that runs overhead round the deck and on into the hall. Display boards show stock and what is moving. Redstone requesters are levers that order a set load. Drones hand in at the launch bay, their load is boxed and comes up the same way."),
+ dict(id="engine", name="Engine floor", cam=[16, 16, 14], h=19.5, ph="F",
+      text="Floor 3 is a Create steam plant. Two boilers on blaze burners sit right under the twin red stacks on the roof (the stacks are their flues). Steam engines turn a shaft line with large cogwheels; a drive shaft runs down through the building to the gate, the lift, the hall crane and the belts. A mechanical crafter wall at the west end."),
  dict(id="hall", name="Foundry hall", cam=[36, 1, 15], h=6.5, ph="C",
-      text="The AE2 and Mekanism hall, running. v2 adds a tinted glass floor down the spine so the cables and pipes show, light strips, and an overhead belt that carries incoming ore into ME."),
+      text="The AE2 and Mekanism hall, running, under the green roof. Red steel columns at the walls, a Create gantry crane running the length of the hall under the skylights, and the chain conveyor coming in from the deck to a frogport over the ore line. A tinted glass floor down the spine shows the cables."),
  dict(id="store", name="Storerooms", cam=[14, 1, 15], h=6.5, ph="C",
       text="The barrel rooms stay, now read and filled by ME. v2 adds category lighting over each zone and a requisition screen at each end."),
  dict(id="lane", name="Old rack", cam=[22, 1, 2], h=4.5, ph="E",
@@ -318,7 +426,7 @@ ZONES = [
 
 def page():
     A.B.clear(); A.LINKS.clear(); del A.NOTES[:]
-    shell(); A.plan(); A.services(); v2()
+    shell(); A.plan(); A.services(); v2(); v3()
     for k in [k for k, v in A.B.items() if v[0] in ("evap", "ghost")]: del A.B[k]
     skin()
     keys = list(T)
@@ -342,12 +450,12 @@ def page():
            ("The foundry hall as it would stand: your real walls and floor from tonight's scan, with the whole AE2 and Mekanism factory in it. The two walls nearest you are cut away. Drag to move, scroll to zoom, hover any block.",
             "The whole factory as it would look after the redesign: the new outside first. Press Outside to take the walls off and see in; pick a zone on the right to fly to it. Drag to move, scroll to zoom, hover any block. Nothing here is built until you say."),
            ('<div class="grp"><label for="ph">Build phase</label><input id="ph" type="range" min="0" max="8" value="8"><label id="phv">8 of 8</label></div>',
-            '<div class="grp"><button id="t_out" aria-pressed="true">Outside</button><button id="t_up" aria-pressed="false">Upper deck</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
-           ('press("t_floor","floor");', 'press("t_up","upper");press("t_out","out");press("t_floor","floor");'),
-           ('  case"slab":return[[0,0,0,16,8,16]];', '  case"slab":return[[0,0,0,16,8,16]];\n  case"bars":return f%2?[[7,0,0,9,16,16]]:[[0,0,7,16,16,9]];'),
+            '<div class="grp"><button id="t_out" aria-pressed="true">Outside</button><button id="t_up" aria-pressed="false">Floor: ground</button><input id="ph" type="hidden" value="8"><label id="phv" hidden></label></div>'),
+           ('press("t_floor","floor");', 'press("t_out","out");press("t_floor","floor");const LV=["Floor: ground","Floor: Bridge deck","Floor: engine floor"],setLv=v=>{O.lvl=v;const e=document.getElementById("t_up");e.textContent=LV[v];e.setAttribute("aria-pressed",v>0)};document.getElementById("t_up").onclick=()=>{setLv(((O.lvl|0)+1)%3);redraw()};'),
+           ('  case"slab":return[[0,0,0,16,8,16]];', '  case"slab":return[[0,0,0,16,8,16]];\n  case"bars":return f%2?[[7,0,0,9,16,16]]:[[0,0,7,16,16,9]];\n  case"chain":return f==2?[[7,0,7,9,16,9]]:f%2?[[7,7,0,9,9,16]]:[[0,7,7,16,9,9]];\n  case"beam":return f==2?[[5,0,5,11,16,11]]:f%2?[[5,5,0,11,11,16]]:[[0,5,5,16,11,11]];'),
            ("    const cat=t.cat;\n", "    const cat=t.cat;\n    if(cat==\"skin\"&&!O.out)continue;if(O.out&&cat!=\"skin\"&&SK.has(b[0]+\",\"+b[1]+\",\"+b[2]))continue;\n"),
            ("const V=Object.assign({},HOME),O={", "const SK=new Set(D.blocks.filter(b=>D.types[b[3]].cat==\"skin\").map(b=>b[0]+\",\"+b[1]+\",\"+b[2]));const V=Object.assign({},HOME),O={out:true,"),
-           ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.upper&&!O.out&&b[1]>=6)continue;"),
+           ("    if(b[5]>O.phase)continue;", "    if(b[5]>O.phase)continue;if(!O.out&&b[1]>=[6,15,99][O.lvl|0])continue;"),
            ("const HOME={cx:36,cz:16.5,rot:0,zoom:1,px:0,py:0};", "const HOME={cx:24,cz:17,rot:0,zoom:1,px:0,py:90};"),
            ("Math.min(W/(30*HW*1.45),H/(30*HH*1.9))", "Math.min(W/(80*HW*1.05),H/(80*HH*2.1))"),
            ('zn.id=="core"?6.4:(zn.id=="garden"?5.4:(zn.id=="fuel"?2.4:3.3))', "(zn.h||3.3)"),
@@ -360,7 +468,7 @@ def page():
            ("V.px=0;V.py=40;V.zoom=Math.max(HOME.zoom*2.2,2);", "V.px=0;V.zoom=Math.max(HOME.zoom*2.2,2);V.py=40+(zn.cam[1]-1)*BH*V.zoom;"),
            ('<button id="home">Whole hall</button>', '<button id="home">Whole factory</button>'),
            ('function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;',
-            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(id=="bridge"&&!O.upper){O.upper=true;document.getElementById("t_up").setAttribute("aria-pressed","true")}O.out=["outside","gate","guards","yard"].includes(id);document.getElementById("t_out").setAttribute("aria-pressed",O.out);')]
+            'function focusZone(id){const zn=D.zones.find(z=>z.id==id);O.sel=id;if(["bridge","pod","deck","hall"].includes(id))setLv(1);else if(id=="engine")setLv(2);else setLv(0);O.out=["outside","gate","guards","yard"].includes(id);document.getElementById("t_out").setAttribute("aria-pressed",O.out);')]
     for x, y in rep:
         assert tpl.count(x) == 1, x[:60]
         tpl = tpl.replace(x, y)
