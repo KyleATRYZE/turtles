@@ -512,8 +512,10 @@ local function meDesk()
     if type(msg) == "table" and msg.type == "me_order" then
       local line
       if type(msg.call) == "string" then
-        -- me crafter1 call=<bridge method> [find=<text>]: what the bridge answers (for checking by hand)
-        local res, err = call(msg.call)
+        -- me crafter1 call=<bridge method> [arg=<item id>] [find=<text>]: what the bridge answers
+        -- (arg=<item id> is passed as { name = <id> }: cancelCraftingTasks, getItem, isCraftable)
+        local res, err
+        if type(msg.arg) == "string" then res, err = call(msg.call, { name = msg.arg }) else res, err = call(msg.call) end
         local out = {}
         if type(res) == "table" then
           for k, v in pairs(res) do

@@ -4401,7 +4401,7 @@ while true do
       return true
     elseif c.cmd == "me" then              -- me crafter1 craft=<id> n=<n> | ask=<id>: passed to the ME desk
       rednet.broadcast({ type = "me_order", craft = c.craft, n = tonumber(c.n), ask = c.ask, rule = c.rule,
-        call = c.call, find = c.find }, K.JOB_PROTOCOL)
+        call = c.call, find = c.find, arg = c.arg }, K.JOB_PROTOCOL)
       print("ME order passed on: " .. tostring(c.craft or c.ask))
       return true
     elseif c.cmd == "probe" then           -- probe crafter1 [name=<machine>]: can the store push into a machine?
