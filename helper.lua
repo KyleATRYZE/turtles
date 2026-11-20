@@ -180,6 +180,16 @@ local function step(dir)
       elseif dir == "u" then pos.y = pos.y + 1 else pos.y = pos.y - 1 end
       return true
     end
+    -- out of fuel is not a mob in the way: burn what's on board, else say so at once
+    -- (it used to wait 15 s as if for a mob and then stop where it was, mid-air)
+    if tostring(whyNot):find("fuel", 1, true) then
+      refuel(200)
+      if fuel() < 1 then
+        print("Out of fuel at " .. pos.x .. " " .. pos.y .. " " .. pos.z)
+        report("out of fuel")
+        return false, "out of fuel"
+      end
+    end
     local ok, data = turtle["inspect" .. SUFFIX[dir]]()
     local name = ok and type(data) == "table" and data.name or nil
     if name and name:find("computercraft:turtle", 1, true) then
@@ -342,7 +352,13 @@ function LN.home()
   local L = base.lane
   local label, i = myName(), nil
   for k, n in ipairs(HOMES) do if n == label then i = k - 1 end end
-  i = i or (os.getComputerID() % (2 * L.perRow))
+  -- unnamed drones: a home past the named ones, so two drones never share a slot
+  if not i then
+    local slots = #(L.rows or { L.low, L.high }) * L.perRow
+    local spare = slots - #HOMES
+    if spare > 0 then i = #HOMES + os.getComputerID() % spare
+    else i = os.getComputerID() % slots end           -- no spare slots: as before
+  end
   local rows = L.rows or { L.low, L.high }
   return L.rackX + i % L.perRow, rows[math.floor(i / L.perRow) + 1] or L.high, L.rackZ
 end
@@ -981,7 +997,9 @@ local function runBuild()
     if not findSlot(want.name) then
       supplyRun(rest, "out of " .. want.name:gsub("^.*:", ""))
       return false
-    elseif fuel() < FUEL_SPARE + math.abs(pos.x - base.f.x) + math.abs(pos.z - base.f.z) then
+    -- (the climb to the flying height and back counts too: one ran dry at y107)
+    elseif fuel() < FUEL_SPARE + math.abs(pos.x - base.f.x) + math.abs(pos.z - base.f.z)
+        + 2 * math.abs(highway() - pos.y) then
       supplyRun(rest, "low on fuel")
       return false
     end
@@ -3243,8 +3261,28 @@ local function work()
   if not LN.on() then riseTo(math.max(pos.y, base.f.y + 12)) end
   goHover()
   print(st.done and "Share done. Waiting for jobs." or "Waiting for jobs.")
+  -- Waiting: keep trying to get home (it used to try once and then sit wherever it
+  -- stopped), top up fuel before it is short, and say plainly where it is.
   while true do
-    report(st.paused and "stopped" or "idle")
+    local atHome = false
+    if LN.on() then
+      local hx, hy, hz = LN.home()
+      atHome = pos.x == hx and pos.y == hy and pos.z == hz
+    end
+    if not st.paused and fuel() < FUEL_SPARE * 2 then
+      pcall(supplyRun, function() return {} end, "fuel while waiting", true)
+    end
+    if not st.paused and LN.on() and not atHome then
+      LN.why = nil
+      if goHover() then
+        local hx, hy, hz = LN.home()
+        atHome = pos.x == hx and pos.y == hy and pos.z == hz
+      end
+    end
+    if st.paused then report("stopped")
+    elseif atHome then report("docked")
+    elseif LN.on() then report("idle (not home: " .. tostring(LN.why or "?") .. ")")
+    else report("idle") end
     sleep(60)
   end
 end
