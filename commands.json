@@ -1,26 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795079057,
-      "issued": 1795079057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "craft": "alltheores:lead_dust",
-      "n": 4
-    },
-    {
-      "id": 1795079058,
-      "issued": 1795079057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:lead_dust"
-    },
-    {
-      "id": 1795079059,
-      "issued": 1795079057000,
-      "cmd": "me",
-      "target": "crafter1",
-      "ask": "alltheores:raw_lead"
+      "id": 1795208987,
+      "issued": 1795208987000,
+      "cmd": "rebase",
+      "target": "all",
+      "lane": 1
     }
   ]
 }
