@@ -304,7 +304,9 @@ local function myName()          -- (the new name, even before the label is chan
   return label
 end
 local function slot() return SLOTS[myName()] or (os.getComputerID() % 4) end
-local function highway() return (st.job and st.job.oy or base.f.y) + OVER_SITE + 2 * slot() end
+-- (never below SKY_FLOOR: the factory's headframe, stacks and chimneys reach y149 since 20 Nov)
+local SKY_FLOOR = 156
+local function highway() return math.max((st.job and st.job.oy or base.f.y) + OVER_SITE, SKY_FLOOR) + 2 * slot() end
 -- where we wait: in the open air beside the hole over the launch pad (12
 -- above the factory; a rebase order can raise that, base.hoverUp, so the
 -- row clears the roof of a building the pad is in)

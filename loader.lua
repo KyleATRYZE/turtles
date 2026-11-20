@@ -28,7 +28,7 @@ if not okSwarm then swarm = nil end
 local NAME       = "Ghastly"
 local STATE_FILE = "loader.state"
 local BASE_FILE  = ".base"
-local CRUISE     = 150    -- flying height: above every hill and tree
+local CRUISE     = 156    -- flying height: above every hill and tree, and the factory's headframe (y149)
 local NEAR_BASE  = 32     -- an escorted turtle closer than this is safe
 local JOB_PROTOCOL = "swarm_job"
 -- What a name is filed under: the same for a turtle's old name and its new
