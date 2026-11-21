@@ -529,7 +529,10 @@ function S.drainList(spec)
   for _, n in ipairs(S.order) do mine[n] = true end
   for _, n in ipairs(peripheral.getNames()) do
     if wanted(n) and not mine[n] and not seen[n] and peripheral.hasType(n, "inventory")
-      and not n:find("furnace") and not n:find("turtle") and not n:find("controller") and n ~= S.overflow then
+      and not n:find("furnace") and not n:find("turtle") and n ~= S.overflow
+      -- (a Sophisticated controller is the store, so it is never drained; once the ME system is the store
+      -- (me Sortnado on=1) the controllers are just barrels to empty: drain Sortnado from=sophisticatedstorage:controller_*)
+      and (S.backend == "me" or not n:find("controller")) then
       local total = 0
       for _, st in pairs(peripheral.call(n, "list") or {}) do total = total + st.count end
       out[#out + 1] = { n, total }
@@ -1282,6 +1285,8 @@ parallel.waitForAny(
         report()
       elseif c.cmd == "drain" then
         -- drain Sortnado from=minecraft:chest_3,minecraft:chest_4 (or minecraft:chest_*);
+        -- with the ME store: drain Sortnado from=sophisticatedstorage:controller_* empties the barrel room into ME
+        -- (set the drives' priority above the storage buses first, or items go straight back into the barrels);
         -- drain Sortnado stop=1
         if c.stop then
           cfg.drain = nil
