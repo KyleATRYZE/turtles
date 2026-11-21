@@ -1,11 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795273781,
-      "issued": 1795273781000,
-      "cmd": "drain",
-      "target": "Sortnado",
-      "from": "sophisticatedstorage:controller_*"
+      "id": 1795273973,
+      "issued": 1795273973000,
+      "cmd": "reboot",
+      "target": "Sortnado"
     }
   ]
 }
