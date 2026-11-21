@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795273674,
-      "issued": 1795273674000,
-      "cmd": "me",
+      "id": 1795273781,
+      "issued": 1795273781000,
+      "cmd": "drain",
       "target": "Sortnado",
-      "on": 1
+      "from": "sophisticatedstorage:controller_*"
     }
   ]
 }
