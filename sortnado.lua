@@ -526,13 +526,14 @@ function S.drainList(spec)
     end
   end
   local mine = { [cfg.inbox or ""] = true, [cfg.outbox or ""] = true }
-  for _, n in ipairs(S.order) do mine[n] = true end
+  local toME = cfg.drainTo == "me"
+  if not toME then for _, n in ipairs(S.order) do mine[n] = true end end
   for _, n in ipairs(peripheral.getNames()) do
     if wanted(n) and not mine[n] and not seen[n] and peripheral.hasType(n, "inventory")
       and not n:find("furnace") and not n:find("turtle") and n ~= S.overflow
       -- (a Sophisticated controller is the store, so it is never drained; once the ME system is the store
       -- (me Sortnado on=1) the controllers are just barrels to empty: drain Sortnado from=sophisticatedstorage:controller_*)
-      and (S.backend == "me" or not n:find("controller")) then
+      and (S.backend == "me" or toME or not n:find("controller")) then
       local total = 0
       for _, st in pairs(peripheral.call(n, "list") or {}) do total = total + st.count end
       out[#out + 1] = { n, total }
@@ -559,8 +560,21 @@ function S.drainStep()
     S.drainNote = ok and ("emptied " .. n) or (n .. " is gone")
     return
   end
-  local moved = S.sortInbox(n)
-  local left = S.left or 0
+  local moved, left
+  if cfg.drainTo == "me" and S.overflow then
+    moved, left = 0, 0
+    for slot, st in pairs(items) do
+      local okP, k = pcall(peripheral.call, n, "pushItems", S.overflow, slot, st.count)
+      k = okP and tonumber(k) or 0
+      moved = moved + k
+      left = left + st.count - k
+      if k > 0 then S.overflowed = (S.overflowed or 0) + k end
+    end
+    S.left = left
+  else
+    moved = S.sortInbox(n)
+    left = S.left or 0
+  end
   if moved == 0 and left > 0 then
     S.drainWait = os.clock() + 60
     S.drainNote = "the store is full: " .. left .. " left in " .. n
@@ -1287,15 +1301,23 @@ parallel.waitForAny(
         -- drain Sortnado from=minecraft:chest_3,minecraft:chest_4 (or minecraft:chest_*);
         -- with the ME store: drain Sortnado from=sophisticatedstorage:controller_* empties the barrel room into ME
         -- (set the drives' priority above the storage buses first, or items go straight back into the barrels);
+        -- drain Sortnado from=sophisticatedstorage:controller_* to=me : push everything in the barrel room
+        --   straight into the ME Interface on the cable (it goes to the highest-priority ME storage)
         -- drain Sortnado stop=1
         if c.stop then
           cfg.drain = nil
           S.drainNote = "stopped"
         else
-          local okL, names = pcall(S.drainList, c.from)
-          cfg.drain = okL and #names > 0 and names or nil
-          cfg.drained = 0
-          S.drainNote = okL and (#names .. " to drain") or ("drain: " .. tostring(names))
+          cfg.drainTo = (c.to == "me") and "me" or nil
+          if cfg.drainTo and not S.overflow then
+            cfg.drain = nil
+            S.drainNote = "drain to=me: no ME Interface on the cable"
+          else
+            local okL, names = pcall(S.drainList, c.from)
+            cfg.drain = okL and #names > 0 and names or nil
+            cfg.drained = 0
+            S.drainNote = okL and (#names .. " to drain") or ("drain: " .. tostring(names))
+          end
         end
         S.saveConfig()
         report()
