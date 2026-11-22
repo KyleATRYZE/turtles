@@ -1,9 +1,9 @@
 {
   "commands": [
     {
-      "id": 1795381175,
-      "issued": 1795381175000,
-      "cmd": "reboot",
+      "id": 1795381205,
+      "issued": 1795381205000,
+      "cmd": "resume",
       "target": "miner2"
     }
   ]
