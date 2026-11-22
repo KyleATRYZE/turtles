@@ -249,3 +249,17 @@ The works gate (22 Nov) is new: an 8 x 7 leaf of gray concrete and framed
 glass behind the works hall's street opening, parked behind the wall above
 it when up; pulley at -4461, 85, 1547, motor at -4458, 85, 1547, fed by a
 cable up the inside of the wall at x -4455.
+
+### Orders for the ME store (22 Nov)
+
+Any station with an ME Bridge touching it takes three orders, whatever its
+post. The foundry board (`FoundryBoard`) has one under it.
+
+| Order | What it does |
+|---|---|
+| `craft item=<id> n=<count>` | asks the network to autocraft it, watches the job for a few seconds, and says whether it is under way or what the network is short of |
+| `stock items=<id>,<id>,...` | how many of each the network holds |
+| `recipes items=<id>,<id>,...` | which of them the network has a pattern for |
+
+What came of the last twelve is sent with the station's report, as the `me`
+list in the status file.

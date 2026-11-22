@@ -606,6 +606,9 @@ end
 -- orders, whatever its post:
 --   craft item=<id> n=<count>     ask the ME network to autocraft it
 --   stock items=<id>,<id>,...     say how many of each the network holds
+--   recipes items=<id>,<id>,...   say which of them the network has a pattern for
+-- A craft order watches its job for a few seconds and says how it went: under
+-- way, or why the network would not plan it (what it is short of).
 -- What came of the last few is kept in S.me and sent with every report
 -- (the status file's `me` list), so it can be read from outside the game.
 local function meBridge() return peripheral.find("me_bridge") or peripheral.find("meBridge") end
@@ -620,6 +623,38 @@ local function meCount(b, id)
   if not ok or type(it) ~= "table" then return nil end
   return tonumber(it.count) or tonumber(it.amount) or 0
 end
+-- How a crafting job went, watched for at most `wait` seconds.
+local function meJob(job, wait)
+  if type(job) ~= "table" then return "started" end
+  local function ask(name)
+    local f = job[name]
+    if type(f) ~= "function" then return nil end
+    local ok, v = pcall(f)
+    if ok then return v end
+  end
+  local t0 = os.clock()
+  while true do
+    if ask("isCalculationNotSuccessful") or ask("hasErrorOccurred") then
+      local short = {}
+      local miss = ask("getMissingItems")
+      if type(miss) == "table" then
+        for _, m in pairs(miss) do
+          if type(m) == "table" then
+            short[#short + 1] = tostring(m.name or m.displayName or "?"):gsub("^.*:", "") .. " x" .. tostring(m.count or m.amount or "?")
+          end
+          if #short >= 6 then break end
+        end
+      end
+      return "not planned: " .. tostring(ask("getDebugMessage") or "no reason given")
+        .. (#short > 0 and (", short of " .. table.concat(short, ", ")) or "")
+    end
+    if ask("isDone") then return "done" end
+    if ask("isCraftingStarted") then return "under way" end
+    if os.clock() - t0 >= wait then return "started, still planning: " .. tostring(ask("getDebugMessage") or "") end
+    sleep(0.5)
+  end
+end
+
 local function meOrder(cmd)
   local b = meBridge()
   if not b then return meSay(tostring(cmd.cmd) .. ": no ME bridge touching me") end
@@ -630,8 +665,15 @@ local function meOrder(cmd)
     local how
     if not ok then how = "error: " .. tostring(res)
     elseif res == nil or res == false then how = "refused: " .. tostring(err or "no pattern or missing parts")
-    else how = "started" end
+    else how = meJob(res, tonumber(cmd.wait) or 8) end
     return meSay(("craft %d %s: %s (in store before: %s)"):format(n, cmd.item, how, tostring(have)))
+  elseif cmd.cmd == "recipes" and type(cmd.items) == "string" then
+    local out = {}
+    for id in cmd.items:gmatch("[^,%s]+") do
+      local ok, yes = pcall(b.isCraftable, { name = id })
+      out[#out + 1] = (id:gsub("^.*:", "")) .. "=" .. (not ok and "?" or yes and "yes" or "no")
+    end
+    return meSay("recipes " .. table.concat(out, " "))
   elseif cmd.cmd == "stock" and type(cmd.items) == "string" then
     local out = {}
     for id in cmd.items:gmatch("[^,%s]+") do
@@ -875,7 +917,7 @@ local function orders()
       writeFile(POST_FILE, (cmd.name:gsub("_", " ")))
       sleep(1)
       os.reboot()
-    elseif cmd.cmd == "craft" or cmd.cmd == "stock" then
+    elseif cmd.cmd == "craft" or cmd.cmd == "stock" or cmd.cmd == "recipes" then
       local line = meOrder(cmd)
       if line then report("on", line) end
     elseif cmd.cmd == "ping" then

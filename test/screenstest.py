@@ -344,6 +344,19 @@ check("a craft the network refuses says why", "refused: no pattern" in line)
 line = L.eval('SCR.meOrder({ cmd = "stock", items = "minecraft:iron_ingot,ad_astra:steel_plate,minecraft:dirt" })')
 check("a stock order counts each thing asked about", line == "stock iron_ingot=12 steel_plate=0 dirt=?")
 check("what came of them is kept for the report", L.eval("#SCR.S.me") == 3)
+L.execute(r'''
+sleep = function() end
+BRIDGE.isCraftable = function(f) return f.name == "ad_astra:steel_plate" end
+BRIDGE.craftItem = function(f)
+  if f.name == "x:short" then return { isCalculationNotSuccessful = function() return true end,
+    getDebugMessage = function() return "MISSING_ITEMS" end, getMissingItems = function() return { { name = "minecraft:coal", count = 3 } } end } end
+  return { isCalculationNotSuccessful = function() return false end, isCraftingStarted = function() return true end }
+end
+''')
+check("a job the network starts is reported as under way", "under way" in L.eval('SCR.meOrder({ cmd = "craft", item = "ad_astra:steel_plate", n = 1 })'))
+line = L.eval('SCR.meOrder({ cmd = "craft", item = "x:short", n = 1 })')
+check("a job it cannot plan says why and what is short", "not planned: MISSING_ITEMS" in line and "coal x3" in line)
+check("a recipes order says which things have a pattern", L.eval('SCR.meOrder({ cmd = "recipes", items = "ad_astra:steel_plate,minecraft:dirt" })') == "recipes steel_plate=yes dirt=no")
 L.execute("peripheral.find = function() end")
 check("no bridge: it says so", "no ME bridge" in L.eval('SCR.meOrder({ cmd = "craft", item = "x:y" })'))
 
