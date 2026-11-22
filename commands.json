@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795380426,
-      "issued": 1795380426000,
-      "cmd": "reboot",
-      "target": "builder6"
+      "id": 1795380446,
+      "issued": 1795380446000,
+      "cmd": "hangar",
+      "target": "builder6",
+      "on": 1
     }
   ]
 }
