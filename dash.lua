@@ -12,6 +12,7 @@
 --   dash.store(mon, view)           -- the storage room's touch screen
 --   dash.panel(mon, view)           -- a touch panel: a few safe buttons
 --   dash.board(mon, view)           -- a hall's sign board (5 x 1 or 3 x 1)
+--   dash.desk(screen, view)         -- a desk computer's own screen (51 x 19)
 --   dash.notice(mon, lines)         -- plain words on any screen (no data yet)
 --
 -- Every screen returns the touch zones it drew ({x1, y1, x2, y2, id}), so
@@ -950,6 +951,66 @@ function D.board(mon, view, frame)
     text(s, 2, 9, pad(view.line, W - 2), C.dim)
   end
   hazard(s, 1, H, W, frame)
+  return show(mon, s)
+end
+
+---------------------------------------------------------------- a desk computer's own screen
+-- Drawn on the computer itself (51 x 19), seen when it is opened: the
+-- desk's name, the time, the fleet counted, then every drone on a line of
+-- its own (its chip, name, what it is doing, fuel). A click on a drone
+-- says where it is and what it last said.
+-- view = { title, clock, counts, units, now, page, pick = { line, line, line }, stale, updated }
+function D.desk(mon, view, frame)
+  frame = frame or 0
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  local hc = canvas(W * 2, 9, C.night)
+  big(hc, 2, 2, view.title or "DESK", C.text, 1)
+  put(s, hc, 1, 1)
+  local clock = view.clock or ""
+  text(s, W - #clock, 2, clock, C.cyan)
+  hazard(s, 1, 4, W, -frame)
+  local x = 2
+  for _, c in ipairs(view.counts or {}) do
+    local t = tostring(c[1]) .. " " .. c[2]
+    if x + #t > W - 10 then break end
+    text(s, x, 5, t, C[c[3] or "text"] or C.text)
+    x = x + #t + 2
+  end
+  local list = D.chips(view.units or {})
+  local top, bottom = 7, H - (view.pick and 5 or 2)
+  local per = max(1, bottom - top + 1)
+  local pages = max(1, math.ceil(#list / per))
+  local page = (view.page or 0) % pages
+  if pages > 1 then
+    local t = ("page %d/%d"):format(page + 1, pages)
+    text(s, W - #t, 5, t, C.dim)
+  end
+  for i = 1, per do
+    local u = list[page * per + i]
+    if not u then break end
+    local y = top + i - 1
+    chip(s, 2, y, u)
+    text(s, 6, y, pad(u.label or "?", 12), C.text)
+    local fuel = (type(u.fuel) == "number" and u.fuel >= 0) and ("fuel " .. u.fuel) or ""
+    text(s, 19, y, pad(u.state or "", W - 19 - #fuel - 1), stateColour(u, view.now))
+    text(s, W - #fuel, y, fuel, (type(u.fuel) == "number" and u.fuel < 400) and C.red or C.dim)
+    s.zones[#s.zones + 1] = { 1, y, W, y, "unit:" .. tostring(u.label) }
+  end
+  if #list == 0 then text(s, 2, top, "No drone heard yet.", C.dim) end
+  if view.pick then
+    fillCells(s, 1, H - 3, W, H - 1, C.panel)
+    for i = 1, 3 do
+      text(s, 2, H - 4 + i, pad(view.pick[i] or "", W - 2), i == 1 and C.text or C.dim, C.panel)
+    end
+  end
+  fillCells(s, 1, H, W, H, C.panel)
+  if view.stale then
+    text(s, 2, H, pad(view.stale, W - 2), (frame % 4 < 2) and C.red or C.amber, C.panel)
+  else
+    text(s, 2, H, pad(view.updated or "", W - 2), C.dim, C.panel)
+  end
   return show(mon, s)
 end
 

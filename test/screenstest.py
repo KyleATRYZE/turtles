@@ -242,6 +242,49 @@ for size, cells in (((5, 1), (100, 10)), ((3, 1), (57, 10))):
     L.globals().SCR.draw(post, board)
     check("  gone quiet: NO SIGNAL SINCE", "NO SIGNAL SINCE 23:10" in board.text())
 
+# ---------------------------------------------------------------- the desk computers
+L = fresh()
+ok = True
+for label, name in (("WorksDesk", "works desk"), ("MEDesk", "me desk"), ("HangarDesk", "hangar desk"),
+                    ("LogisticsDesk", "logistics desk"), ("ControlWest", "control west"), ("ControlEast", "control east")):
+    L.execute('LABEL = "%s"' % label)
+    p, how = L.eval("{SCR.identify(nil)}").values()
+    ok = ok and p.name == name and p.kind == "desk" and how == "label"
+check("a desk computer is told by its name, with no monitor at all", ok)
+OWN = 'function ownScreen() local m = makeMon(1, 1) m.getSize = function() return 51, 19 end return m end'
+L.execute(OWN)
+desk = L.eval("ownScreen()")
+post = L.globals().SCR.byName("me desk")
+L.globals().SCR.draw(post, desk)
+check("nothing heard: the desk says so on its own 51 x 19",
+      len(desk.rows) == 19 and all(len(desk.rows[y]) == 51 for y in range(1, 20))
+      and "No drone heard yet." in desk.text() and "WAITING FOR THE SWARM" in desk.text())
+hear_all(L)
+zones = L.globals().SCR.draw(post, desk)
+t = desk.text()
+check("with reports: every drone on a line, its state and fuel, and no stale words",
+      all(n in t for n in ("DigA", "DigB", "LoadA", "LoadB", "HelpA", "Mason", "Forge"))
+      and "mining" in t and "fuel 2774" in t and "live" in t and "WAITING" not in t)
+z = [z for z in zones.values() if z[5] == "unit:DigA"][0]
+L.globals().SCR.tap(L.globals().SCR.zoneAt(zones, z[1] + 3, z[2]), post)
+L.globals().SCR.draw(post, desk)
+check("a click on a drone says where it is and what it last said",
+      "at -4414, -21, 1562" in desk.text() and "Layer 24/37" in desk.text())
+many = dict(status)
+for i in range(30):
+    many[str(100 + i)] = {"label": "Bot%02d" % i, "role": "miner", "state": "mining", "fuel": 1000 + i,
+                          "pos": {"x": -4500 + i, "y": 10, "z": 1500}, "log": ["x"]}
+L = fresh()
+L.execute(OWN)
+hear_all(L, many)
+desk = L.eval("ownScreen()")
+seen = set()
+for k in range(6):
+    L.execute("CLOCK = %d" % (1000 + 8 * k))
+    L.globals().SCR.draw(L.globals().SCR.byName("works desk"), desk)
+    seen |= {("Bot%02d" % i) for i in range(30) if ("Bot%02d" % i) in desk.text()}
+check("thirty-seven drones: the list pages, and every drone gets its turn", len(seen) == 30 and "page" in desk.text())
+
 # ---------------------------------------------------------------- panels and their buttons
 for idx, size, title in ((4, (2, 2), "LAUNCH BAY"), (6, (3, 2), "CONTROL")):
     L = fresh()

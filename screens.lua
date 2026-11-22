@@ -50,6 +50,13 @@ local BOARDS = {
   { name = "foundry board", kind = "board", label = "FoundryBoard", title = "FOUNDRY" },
   -- a 5 x 1 whose station has no name of its own
   { name = "floor board",   kind = "board", label = "FloorBoard",   title = "FACTORY" },
+  -- the desk computers: no monitor, the picture is on the computer's own screen
+  { name = "works desk",     kind = "desk", label = "WorksDesk",     title = "WORKS DESK" },
+  { name = "me desk",        kind = "desk", label = "MEDesk",        title = "ME DESK" },
+  { name = "hangar desk",    kind = "desk", label = "HangarDesk",    title = "HANGAR DESK" },
+  { name = "logistics desk", kind = "desk", label = "LogisticsDesk", title = "LOGISTICS" },
+  { name = "control west",   kind = "desk", label = "ControlWest",   title = "CONTROL" },
+  { name = "control east",   kind = "desk", label = "ControlEast",   title = "CONTROL" },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }
@@ -419,6 +426,31 @@ local function boardView(post)
   return { title = post.title or "FACTORY", clock = clock(), counts = c, line = line, stale = staleWords() }
 end
 
+---------------------------------------------------------------- the desks
+-- The fleet as a list, a line for each drone; with more than fit, a new
+-- page every eight seconds. A drone that was clicked gets three lines of
+-- its own for half a minute.
+local function deskView(post)
+  local working, resting, silent, low = counts()
+  local c = { { working, "working", "amber" }, { resting, "resting", "dim" } }
+  if silent > 0 then c[#c + 1] = { silent, "silent", "red" } end
+  if low > 0 then c[#c + 1] = { low, "low fuel", "red" } end
+  local pick
+  if S.pick and os.clock() - S.pickAt < 30 then
+    for _, u in pairs(S.units) do
+      if type(u) == "table" and u.label == S.pick then
+        local p = type(u.pos) == "table" and u.pos
+        pick = { ("%s  %s"):format(tostring(u.label), tostring(u.state)),
+          (p and ("at %d, %d, %d   "):format(p.x, p.y, p.z) or "") .. "fuel " .. tostring(u.fuel or "?"),
+          type(u.log) == "table" and tostring(u.log[#u.log] or "") or "" }
+      end
+    end
+  end
+  return { title = post.title or "DESK", clock = clock(), counts = c, units = fleetList(), now = nowMs(),
+    page = math.floor(os.clock() / 8), pick = pick, stale = staleWords(),
+    updated = S.fromFile and ("status file of " .. S.fromFile) or "live" }
+end
+
 ---------------------------------------------------------------- taps
 -- A button asks the controller; only the controller gives orders. Every
 -- button has to be tapped twice within six seconds.
@@ -487,6 +519,8 @@ local function draw(post, mon)
     return dash.panel(mon, panelView(post), S.frame)
   elseif post.kind == "board" then
     return dash.board(mon, boardView(post), S.frame)
+  elseif post.kind == "desk" then
+    return dash.desk(mon, deskView(post), S.frame)
   end
   return {}
 end
@@ -529,6 +563,13 @@ local function findMonitor()
     end
   end
   return best
+end
+
+-- a desk has no monitor: it draws on the computer's own screen
+local function ownScreen()
+  local t = term.current()
+  if t.setCursorBlink then t.setCursorBlink(false) end
+  return setmetatable({ setTextScale = function() end }, { __index = t })
 end
 
 local function openRadio()
@@ -593,6 +634,7 @@ local function setUp()
   writeFile(POST_FILE, post.name)
   if os.getComputerLabel() ~= post.label then os.setComputerLabel(post.label) end
   print(("Post: %s (told by %s)."):format(post.name, how))
+  if post.kind == "desk" then mon = ownScreen() end
   return mon
 end
 
@@ -637,8 +679,10 @@ end
 
 local function toucher()
   while true do
-    local _, _, x, y = os.pullEvent("monitor_touch")
-    if post then pcall(tap, zoneAt(zones, x, y), post) end
+    local e, _, x, y = os.pullEvent()
+    if post and (e == "monitor_touch" or (e == "mouse_click" and post.kind == "desk")) then
+      pcall(tap, zoneAt(zones, x, y), post)
+    end
   end
 end
 

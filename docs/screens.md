@@ -165,3 +165,21 @@ roof over the control room and the drone lane, which is still behind the
 building at z 1519..1520. The hut is gone from the map. `ORIGIN` in
 `screens.lua` is still the old plan's corner, because the old posts and the
 rack homes on the back lane are told by it.
+
+### The desk computers
+
+The blueprint also has six advanced computers on desks with no monitor.
+They are stations too (role `screen`), of a third kind of post, `desk`
+(`dash.desk`): the picture is drawn on the computer's own screen, seen when
+it is opened. It lists the fleet, a line for each drone (name, what it is
+doing, fuel), pages when there are more than fit, and a click on a drone
+says where it is and what it last said. A desk is told by its name:
+
+| Name | Where |
+|---|---|
+| `WorksDesk` | -4462, 73, 1530 |
+| `MEDesk` | -4424, 72, 1537 |
+| `HangarDesk` | -4414, 79, 1532 |
+| `LogisticsDesk` | -4407, 72, 1532 |
+| `ControlWest` | -4425, 100, 1540 |
+| `ControlEast` | -4421, 100, 1540 |
