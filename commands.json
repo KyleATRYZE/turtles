@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795386851,
-      "issued": 1795386851000,
+      "id": 1795386876,
+      "issued": 1795386876000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "alltheores:steel_plate",
-      "n": 1
+      "item": "alltheores:steel_ingot",
+      "n": 2
     }
   ]
 }
