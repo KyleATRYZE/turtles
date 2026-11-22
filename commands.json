@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795386328,
-      "issued": 1795386328000,
+      "id": 1795386502,
+      "issued": 1795386502000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "minecraft:lightning_rod",
+      "item": "alltheores:steel_plate",
       "n": 1
     }
   ]
