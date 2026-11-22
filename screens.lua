@@ -61,6 +61,9 @@ local BOARDS = {
   -- doorway with a player detector beside it and opens the door for anyone near.
   { name = "lobby door west", kind = "door", label = "LobbyDoorWest" },
   { name = "lobby door east", kind = "door", label = "LobbyDoorEast" },
+  -- the way through to the works hall: a door in each of the two walls
+  { name = "works door hall side",  kind = "door", label = "WorksDoorHall" },
+  { name = "works door works side", kind = "door", label = "WorksDoorWorks" },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }

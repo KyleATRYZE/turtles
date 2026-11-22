@@ -288,7 +288,8 @@ check("thirty-seven drones: the list pages, and every drone gets its turn", len(
 # ---------------------------------------------------------------- the lobby doors
 L = fresh()
 ok = True
-for label, name in (("LobbyDoorWest", "lobby door west"), ("LobbyDoorEast", "lobby door east")):
+for label, name in (("LobbyDoorWest", "lobby door west"), ("LobbyDoorEast", "lobby door east"),
+                    ("WorksDoorHall", "works door hall side"), ("WorksDoorWorks", "works door works side")):
     L.execute('LABEL = "%s"' % label)
     p, how = L.eval("{SCR.identify(nil)}").values()
     ok = ok and p.name == name and p.kind == "door" and how == "label"
