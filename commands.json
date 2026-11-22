@@ -1,19 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795385672,
-      "issued": 1795385672000,
-      "cmd": "recipes",
+      "id": 1795386235,
+      "issued": 1795386235000,
+      "cmd": "cancel",
       "target": "FoundryBoard",
-      "items": "alltheores:steel_ingot,alltheores:steel_plate,alltheores:iron_plate,alltheores:steel_rod,alltheores:iron_rod,alltheores:steel_block,ad_astra:tier_1_rocket,ad_astra:space_helmet,ad_astra:space_suit,ad_astra:space_pants,ad_astra:space_boots,ad_astra:launch_pad,ad_astra:gas_tank,minecraft:lightning_rod"
-    },
-    {
-      "id": 1795385673,
-      "issued": 1795385672000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "alltheores:steel_ingot",
-      "n": 1
+      "item": "alltheores:steel_ingot"
     }
   ]
 }
