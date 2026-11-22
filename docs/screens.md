@@ -183,3 +183,22 @@ says where it is and what it last said. A desk is told by its name:
 | `LogisticsDesk` | -4407, 72, 1532 |
 | `ControlWest` | -4425, 100, 1540 |
 | `ControlEast` | -4421, 100, 1540 |
+
+### The lobby and its doors
+
+Behind the front gate there is now a lobby room. The ME hall's board is the
+lintel over the lobby's opening into the hall (5 x 1 at -4431..-4427, 74,
+1541, its station beside it at -4426, 74, 1541).
+
+The lobby's two side doors open by themselves. Each has a station of a fourth
+kind of post, `door`, with no screen at all: a computer under the doorway
+with a player detector touching it and a redstone relay under the other
+leaf. While a player is within `door.range` blocks of the detector (default
+3) it powers every side of itself and of the relay, and for `door.hold`
+seconds after (default 1.5). It opens once as it starts, so the wiring can
+be seen to work. A door is told by its name:
+
+| Name | Computer | Relay | Detector |
+|---|---|---|---|
+| `LobbyDoorWest` | -4436, 69, 1544 | -4436, 69, 1545 | -4436, 69, 1543 |
+| `LobbyDoorEast` | -4422, 69, 1544 | -4422, 69, 1545 | -4422, 69, 1543 |

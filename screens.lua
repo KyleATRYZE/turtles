@@ -57,6 +57,10 @@ local BOARDS = {
   { name = "logistics desk", kind = "desk", label = "LogisticsDesk", title = "LOGISTICS" },
   { name = "control west",   kind = "desk", label = "ControlWest",   title = "CONTROL" },
   { name = "control east",   kind = "desk", label = "ControlEast",   title = "CONTROL" },
+  -- the lobby's side doors: no screen at all. The computer sits under the
+  -- doorway with a player detector beside it and opens the door for anyone near.
+  { name = "lobby door west", kind = "door", label = "LobbyDoorWest" },
+  { name = "lobby door east", kind = "door", label = "LobbyDoorEast" },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }
@@ -533,11 +537,58 @@ local function zoneAt(zones, x, y)
 end
 
 ---------------------------------------------------------------- for the tests
+---------------------------------------------------------------- a door that opens by itself
+-- A door post has no picture. It powers every side of itself and of any
+-- redstone relay touching it while a player is near its detector, and for a
+-- moment after. It opens once as it starts, so the wiring can be seen to work.
+--   set door.range <blocks>   how near counts (default 3)
+--   set door.hold <seconds>   how long it stays open after the last one leaves (default 1.5)
+local function doorPower(on)
+  for _, side in ipairs(rs.getSides()) do rs.setOutput(side, on) end
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "redstone_relay" then
+      for _, side in ipairs(rs.getSides()) do pcall(peripheral.call, name, "setOutput", side, on) end
+    end
+  end
+end
+
+local function doorNear(det, range)
+  local ok, names = pcall(det.getPlayersInRange, range)
+  return ok and type(names) == "table" and #names > 0
+end
+
+local function doorLoop(report)
+  local range = tonumber((settings.get("door.range"))) or 3
+  local hold = tonumber((settings.get("door.hold"))) or 1.5
+  doorPower(true)
+  sleep(4)
+  doorPower(false)
+  local open, last, told = false, 0, 0
+  while true do
+    local det = peripheral.find("player_detector") or peripheral.find("playerDetector")
+    if not det then
+      if open then doorPower(false) open = false end
+      if os.clock() - told > 60 then told = os.clock() print("No player detector touching me.") report("no detector", "No player detector touching me.") end
+      sleep(5)
+    else
+      local near = doorNear(det, range)
+      if near then last = os.clock() end
+      if near and not open then
+        doorPower(true) open = true
+      elseif open and not near and os.clock() - last >= hold then
+        doorPower(false) open = false
+      end
+      if os.clock() - told > 60 then told = os.clock() report(open and "open" or "closed", "Door " .. (open and "open" or "closed") .. ".") end
+      sleep(0.2)
+    end
+  end
+end
+
 if _G.SCREENS_TEST then
   return { S = S, POSTS = POSTS, BOARDS = BOARDS, byName = byName, boardView = boardView, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
     hear = hear, loadStatusFile = loadStatusFile, staleWords = staleWords, draw = draw, tap = tap,
     zoneAt = zoneAt, answer = answer, wallData = wallData, gateView = gateView, rackSlots = rackSlots,
-    panelView = panelView, counts = counts }
+    panelView = panelView, counts = counts, doorLoop = doorLoop }
 end
 
 ---------------------------------------------------------------- running
@@ -641,6 +692,7 @@ end
 local zones = {}
 local function painter()
   local mon = setUp()
+  if post.kind == "door" then return doorLoop(report) end
   local hadMonitor = mon ~= nil
   if post.kind == "wall" then pcall(fetchMaps) end
   if not radio then pcall(loadStatusFile) end

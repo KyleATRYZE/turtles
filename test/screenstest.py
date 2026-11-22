@@ -285,6 +285,49 @@ for k in range(6):
     seen |= {("Bot%02d" % i) for i in range(30) if ("Bot%02d" % i) in desk.text()}
 check("thirty-seven drones: the list pages, and every drone gets its turn", len(seen) == 30 and "page" in desk.text())
 
+# ---------------------------------------------------------------- the lobby doors
+L = fresh()
+ok = True
+for label, name in (("LobbyDoorWest", "lobby door west"), ("LobbyDoorEast", "lobby door east")):
+    L.execute('LABEL = "%s"' % label)
+    p, how = L.eval("{SCR.identify(nil)}").values()
+    ok = ok and p.name == name and p.kind == "door" and how == "label"
+check("a door computer is told by its name", ok)
+L.execute(r'''
+OUT, RELAY, NEAR, LOG, STEPS = {}, {}, {}, {}, 0
+rs = { getSides = function() return { "top", "bottom", "left", "right", "front", "back" } end,
+  setOutput = function(side, on) OUT[side] = on end }
+settings = { get = function() end }
+DET = { getPlayersInRange = function(r) RANGE = r return NEAR end }
+peripheral = { getNames = function() return { "left", "right" } end,
+  getType = function(n) return n == "right" and "redstone_relay" or "player_detector" end,
+  call = function(n, m, side, on) RELAY[side] = on end,
+  find = function(t) if t == "player_detector" then return DET end end }
+-- the script: each sleep is a step; what happens at which step
+SCRIPT = {}
+sleep = function(t)
+  CLOCK = CLOCK + t
+  STEPS = STEPS + 1
+  LOG[#LOG + 1] = { OUT.top == true, RELAY.top == true, CLOCK }
+  local f = SCRIPT[STEPS]
+  if f then f() end
+  if STEPS >= 40 then error("done", 0) end
+end
+SCRIPT[3] = function() NEAR = { "someone" } end
+SCRIPT[6] = function() NEAR = {} end
+''')
+L.execute("pcall(SCR.doorLoop, function() end)")
+log = [tuple(v.values()) for v in L.eval("LOG").values()]
+check("it opens once as it starts, on its own sides and on the relay, then shuts", log[0][0] and log[0][1] and not log[1][0] and not log[1][1])
+check("someone near: open on the next look", log[3][0] and log[3][1] and L.eval("RANGE") == 3)
+closed = next(i for i in range(6, 40) if not log[i][0])
+check("it stays open a moment after they leave, then shuts on both", 1.4 <= log[closed][2] - log[5][2] <= 2.0 and not log[closed][1] and not any(l[0] for l in log[closed:]))
+L.execute("STEPS, LOG, NEAR = 0, {}, { 'x' } DET = nil OUT, RELAY = {}, {} SCRIPT = {}")
+L.execute("peripheral.find = function() end")
+L.execute("pcall(SCR.doorLoop, function() end)")
+log = [tuple(v.values()) for v in L.eval("LOG").values()]
+check("no detector: the door stays shut after its opening look", not any(l[0] or l[1] for l in log[1:]))
+
 # ---------------------------------------------------------------- panels and their buttons
 for idx, size, title in ((4, (2, 2), "LAUNCH BAY"), (6, (3, 2), "CONTROL")):
     L = fresh()
