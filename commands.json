@@ -1,12 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795388339,
-      "issued": 1795388339000,
-      "cmd": "craft",
+      "id": 1795388403,
+      "issued": 1795388403000,
+      "cmd": "recipes",
       "target": "FoundryBoard",
-      "item": "minecraft:cobblestone_slab",
-      "n": 6
+      "items": "minecraft:andesite_slab,minecraft:bookshelf,minecraft:bricks,minecraft:chiseled_stone_bricks,minecraft:cobblestone_stairs,minecraft:clay,minecraft:piston"
+    },
+    {
+      "id": 1795388404,
+      "issued": 1795388403000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "minecraft:cobblestone_slab,minecraft:cobblestone"
     }
   ]
 }
