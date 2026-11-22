@@ -1,13 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795387131,
-      "issued": 1795387131000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "ad_astra:tier_1_rocket",
-      "n": 1,
-      "wait": 20
+      "id": 1795387463,
+      "issued": 1795387463000,
+      "cmd": "newjob",
+      "target": "miner1"
     }
   ]
 }
