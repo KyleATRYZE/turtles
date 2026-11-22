@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795386876,
-      "issued": 1795386876000,
+      "id": 1795386927,
+      "issued": 1795386927000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "alltheores:steel_ingot",
-      "n": 2
+      "item": "ad_astra:launch_pad",
+      "n": 1
     }
   ]
 }
