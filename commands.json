@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795377305,
-      "issued": 1795377305000,
-      "cmd": "reboot",
-      "target": "foundry1"
+      "id": 1795378313,
+      "issued": 1795378313000,
+      "cmd": "lab",
+      "target": "foundry1",
+      "ops": "dock|berth"
     }
   ]
 }
