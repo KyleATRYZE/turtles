@@ -1,12 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795387931,
-      "issued": 1795387931000,
-      "cmd": "craft",
+      "id": 1795387953,
+      "issued": 1795387953000,
+      "cmd": "stock",
       "target": "FoundryBoard",
-      "item": "minecraft:iron_block",
-      "n": 1
+      "items": "ad_astra:tier_1_rocket,ad_astra:launch_pad,minecraft:glass,minecraft:iron_block,minecraft:iron_ingot,alltheores:steel_ingot,minecraft:coal"
     }
   ]
 }
