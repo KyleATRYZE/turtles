@@ -249,10 +249,14 @@ end
 -- The drone lane (filled in further down): with the pads on the lane inside
 -- the factory, a helper inside it leaves by the east gate before climbing.
 local LN = {}
+-- The new hangar (filled in further down): a helper inside it leaves by its
+-- gate before climbing.
+local HG = {}
 
 -- Straight up to a height. A block overhead: sidestep and try again.
 local function riseTo(y)
   if y > pos.y and LN.inside and LN.inside() then LN.exit() end
+  if y > pos.y and HG.inside and HG.inside() then HG.exit() end
   local dodged = 0
   while pos.y < y do
     if not step("u") then
@@ -456,6 +460,90 @@ end
 function LN.exit()
   local L = base.lane
   return LN.toFront() and LN.east(L.eastOut.x)
+end
+
+---------------------------------------------------------------- the hangar
+-- The rebuilt factory's rack (docs/new-site.md; swarm.lua M.HANGAR, or
+-- base.hangar): one floor up behind a gate in the back wall, 8 berths
+-- across in two banks, 3 rows. Nothing sends a helper here by itself yet:
+-- the lab verbs dock|berth and dock|leave do, one helper at a time.
+--   in: high over the back of the building, down outside the gate on the
+--     inbound line (the gate's west side, a block over its sill), south
+--     through the gate to the aisle, along the aisle to its column, to its
+--     row, three steps south into the berth;
+--   out: north to the aisle, to the gate's top row, along to the outbound
+--     line (the gate's east side), north out of the gate; then it may climb.
+-- In and out use different columns and heights of the gate, so two helpers
+-- do not meet head on in it. Berths go by name as rack homes do, else by id.
+function HG.geo()
+  if type(base) == "table" and type(base.hangar) == "table" then return base.hangar end
+  return swarm and swarm.HANGAR or nil
+end
+-- inside the hangar (the gate's own cells count): no way straight up
+function HG.inside()
+  local H = HG.geo()
+  if not H then return false end
+  return pos.z >= H.gate.z and pos.z <= H.rackZ and pos.y >= H.gate.low and pos.y <= H.rows[#H.rows] + 1
+    and pos.x >= H.cols[1] - 1 and pos.x <= H.cols[#H.cols] + 1
+end
+function HG.home()
+  local H = HG.geo()
+  local slots = #H.rows * H.perRow
+  local label, i = myName(), nil
+  for k, n in ipairs(HOMES) do if n == label then i = k - 1 end end
+  if not i then
+    local spare = slots - #HOMES
+    if spare > 0 then i = #HOMES + os.getComputerID() % spare
+    else i = os.getComputerID() % slots end
+  end
+  i = i % slots
+  return H.cols[i % H.perRow + 1], H.rows[math.floor(i / H.perRow) + 1], H.rackZ
+end
+-- level along x (the aisle)
+function HG.alongTo(x)
+  if pos.x < x then return LN.go(0, x - pos.x) end
+  if pos.x > x then return LN.go(2, pos.x - x) end
+  return true
+end
+-- to the aisle from wherever it is in the hangar
+function HG.toAisle()
+  local H = HG.geo()
+  if pos.z > H.aisle then return LN.go(3, pos.z - H.aisle) end
+  if pos.z < H.aisle then return LN.go(1, H.aisle - pos.z) end
+  return true
+end
+function HG.toHome()
+  local H = HG.geo()
+  if not H then LN.why = "no hangar known" return false end
+  local hx, hy, hz = HG.home()
+  if pos.x == hx and pos.y == hy and pos.z == hz then return true end
+  local function no(stage)
+    LN.why = LN.why or (stage .. (" (at %d %d %d)"):format(pos.x, pos.y, pos.z))
+    return false
+  end
+  if HG.inside() then
+    if not HG.toAisle() then return no("could not get back to the aisle") end
+  else
+    riseTo(math.max(pos.y, highway()))
+    if not across(H.gate.west + 1, H.gate.z - 2, math.max(highway() + 12, pos.y + 40)) then
+      return no("no way over to the gate")
+    end
+    if not LN.toY(H.gate.low + 1) then return no("could not get down to the gate") end
+    if not LN.go(1, H.aisle - pos.z) then return no("the gate is blocked") end
+  end
+  if not HG.alongTo(hx) then return no("the aisle is blocked") end
+  if not LN.toY(hy) then return no("could not get to my row") end
+  if not (LN.go(1, hz - pos.z) and pos.z == hz) then return no("my berth is taken or shut") end
+  return true
+end
+-- out of the hangar by its gate (to climb outside)
+function HG.exit()
+  local H = HG.geo()
+  if not H or not HG.inside() then return true end
+  if not HG.toAisle() then return false end
+  if not LN.toY(H.gate.high) then return false end
+  if not HG.alongTo(H.gate.east - 1) then return false end
+  return LN.go(3, pos.z - (H.gate.z - 2))
 end
 
 -- The loading bay: docked in its home, the helper touches the shelf's
@@ -1246,6 +1334,7 @@ local function intoBuilding()
     local L = base.lane
     if pos.z == L.rackZ and pos.x >= L.west and pos.x <= L.east and pos.y ~= L.y then LN.exit() end
   end
+  if HG.inside() then HG.exit() end
   local x, y, z = lx(), ly(), lz()
   if x >= m.x1 and x <= m.x2 and z >= m.z1 and z <= m.z2 and y >= 1 and y <= m.y2 and open(x, y, z) then
     return true
@@ -2633,12 +2722,28 @@ local function runLab()
         -- dock|in : into this helper's rack home by the lane (as lane mode
         -- would), whether or not lane mode is on; dock|out : back out of the
         -- rack and the lane by the east gate. Says what stopped it.
+        -- dock|berth : into this helper's berth in the new hangar, through
+        -- its gate; dock|leave : back out of the gate and up. (One helper at
+        -- a time until the route has been watched in game.)
         local had = base.lane
-        if not had and swarm and swarm.LANE then
+        if a[2] == "berth" or a[2] == "leave" then
+          if not HG.geo() then res, stop = "no hangar known", true else
+            LN.why = nil
+            local hx, hy, hz = HG.home()
+            local ok
+            if a[2] == "leave" then ok = HG.exit() and riseTo(math.max(pos.y, highway()))
+            else ok = HG.toHome() end
+            res = ("%s: %s; berth %d %d %d; at %d %d %d%s"):format(a[2], ok and "done" or "FAILED", hx, hy, hz,
+              pos.x, pos.y, pos.z, LN.why and ("; blocked by " .. LN.why) or "")
+            stop = not ok and a[2] == "leave"
+          end
+        elseif not had and swarm and swarm.LANE then
           base.lane = {}
           for k, v in pairs(swarm.LANE) do base.lane[k] = v end
         end
-        if not LN.on() then res, stop = "no lane known", true else
+        if a[2] == "berth" or a[2] == "leave" then
+          -- (done above)
+        elseif not LN.on() then res, stop = "no lane known", true else
           LN.why = nil
           local hx, hy, hz = LN.home()
           local ok
@@ -3179,6 +3284,7 @@ local function work()
   local L = LN.on() and base.lane
   local docked = L and pos.z == L.rackZ and pos.x >= L.west and pos.x <= L.east
   local laneOk = (LN.inside() or docked) and (pos.x ~= base.pad.x or pos.z ~= base.pad.z)
+  if HG.inside() then laneOk = true end              -- (in the new hangar: also in its place)
   -- inside the factory: a fit-out in hand carries on from where we stand (it
   -- knows the building); anything else walks out by the door. Never the sky.
   local inside, shellMap = false, nil
