@@ -607,6 +607,8 @@ end
 --   craft item=<id> n=<count>     ask the ME network to autocraft it
 --   stock items=<id>,<id>,...     say how many of each the network holds
 --   recipes items=<id>,<id>,...   say which of them the network has a pattern for
+--   cancel item=<id>              cancel the crafting jobs making it
+--   jobs                          list the crafting jobs now running
 -- A craft order watches its job for a few seconds and says how it went: under
 -- way, or why the network would not plan it (what it is short of).
 -- What came of the last few is kept in S.me and sent with every report
@@ -667,6 +669,20 @@ local function meOrder(cmd)
     elseif res == nil or res == false then how = "refused: " .. tostring(err or "no pattern or missing parts")
     else how = meJob(res, tonumber(cmd.wait) or 8) end
     return meSay(("craft %d %s: %s (in store before: %s)"):format(n, cmd.item, how, tostring(have)))
+  elseif cmd.cmd == "cancel" and type(cmd.item) == "string" then
+    local ok, n = pcall(b.cancelCraftingTasks, { name = cmd.item })
+    return meSay(("cancel %s: %s"):format(cmd.item, ok and (tostring(n) .. " job(s) cancelled") or ("error: " .. tostring(n))))
+  elseif cmd.cmd == "jobs" then
+    local ok, tasks = pcall(b.getCraftingTasks)
+    local out = {}
+    if ok and type(tasks) == "table" then
+      for _, t in pairs(tasks) do
+        local r = type(t) == "table" and t.resource
+        out[#out + 1] = tostring(type(r) == "table" and (r.name or r.displayName) or "?"):gsub("^.*:", "")
+          .. " " .. tostring(t.crafted or "?") .. "/" .. tostring(t.quantity or "?")
+      end
+    end
+    return meSay("jobs: " .. (ok and (#out > 0 and table.concat(out, ", ") or "none") or ("error: " .. tostring(tasks))))
   elseif cmd.cmd == "recipes" and type(cmd.items) == "string" then
     local out = {}
     for id in cmd.items:gmatch("[^,%s]+") do
@@ -917,7 +933,7 @@ local function orders()
       writeFile(POST_FILE, (cmd.name:gsub("_", " ")))
       sleep(1)
       os.reboot()
-    elseif cmd.cmd == "craft" or cmd.cmd == "stock" or cmd.cmd == "recipes" then
+    elseif cmd.cmd == "craft" or cmd.cmd == "stock" or cmd.cmd == "recipes" or cmd.cmd == "cancel" or cmd.cmd == "jobs" then
       local line = meOrder(cmd)
       if line then report("on", line) end
     elseif cmd.cmd == "ping" then

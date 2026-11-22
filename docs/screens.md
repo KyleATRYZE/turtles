@@ -252,7 +252,7 @@ cable up the inside of the wall at x -4455.
 
 ### Orders for the ME store (22 Nov)
 
-Any station with an ME Bridge touching it takes three orders, whatever its
+Any station with an ME Bridge touching it takes these orders, whatever its
 post. The foundry board (`FoundryBoard`) has one under it.
 
 | Order | What it does |
@@ -260,6 +260,8 @@ post. The foundry board (`FoundryBoard`) has one under it.
 | `craft item=<id> n=<count>` | asks the network to autocraft it, watches the job for a few seconds, and says whether it is under way or what the network is short of |
 | `stock items=<id>,<id>,...` | how many of each the network holds |
 | `recipes items=<id>,<id>,...` | which of them the network has a pattern for |
+| `cancel item=<id>` | cancels the crafting jobs making it |
+| `jobs` | lists the crafting jobs now running |
 
 What came of the last twelve is sent with the station's report, as the `me`
 list in the status file.
