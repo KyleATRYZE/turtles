@@ -1,18 +1,13 @@
 {
   "commands": [
     {
-      "id": 1795386972,
-      "issued": 1795386972000,
-      "cmd": "recipes",
+      "id": 1795387131,
+      "issued": 1795387131000,
+      "cmd": "craft",
       "target": "FoundryBoard",
-      "items": "alltheores:steel_block,ad_astra:tier_1_rocket,ad_astra:rocket_nose_cone,ad_astra:steel_engine,ad_astra:steel_tank,ad_astra:rocket_fin"
-    },
-    {
-      "id": 1795386973,
-      "issued": 1795386972000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "ad_astra:launch_pad,minecraft:lightning_rod,alltheores:steel_ingot,alltheores:steel_plate,minecraft:iron_ingot,minecraft:coal"
+      "item": "ad_astra:tier_1_rocket",
+      "n": 1,
+      "wait": 20
     }
   ]
 }
