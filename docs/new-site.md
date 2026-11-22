@@ -78,6 +78,35 @@ and along an aisle. So it needs:
 `rack.lua` (the ops board) has the same contiguous-x assumption in `R.homeAt`, and there
 are 27 named homes plus the builder's against 24 berths.
 
+## The hangar route (on this branch, opt-in)
+
+`helper.lua` now has `HG`: `HG.home()`, `HG.toHome()`, `HG.exit()`, `HG.inside()`. Nothing
+calls the route by itself. Two lab verbs do, for one helper at a time:
+
+- `dock|berth` : in through the gate to this helper's berth.
+- `dock|leave` : out of the gate and up.
+
+The route in: high over the back of the building, down outside the gate at x -4429, z 1520
+to y 79, south through the gate to the aisle (z 1524), along to the berth's column, to its
+row, three steps south. Out: north to the aisle, to y 81, along to x -4424, north out of the
+gate to z 1520. In and out use different columns and heights of the gate.
+
+Three hooks apply wherever a helper is, hangar mode or not, because they go by position:
+
+- `riseTo` leaves by the gate first when the helper is inside the hangar;
+- a helper that starts up inside the hangar counts as in its place, not lost in the factory;
+- `intoBuilding` leaves by the gate first.
+
+Berths go by the same name list as the old homes (16 names fill the two lower rows), and
+unnamed helpers take the top row by id.
+
+`test/hangartest.py` flies all 24 berths in and out in a model of the hangar with its
+lights, catwalks and pulley in the way, plus a taken berth and a shut gate. The two columns
+outside the gate (x -4429 and x -4424 at z 1520) were checked clear in the world up to y 230.
+
+Still not done: a rule for two helpers in the aisle at once, fuel and cargo at the berth
+barrels, `rack.lua`, and making the hangar the automatic home.
+
 ## Other stale coordinates in the programs
 
 | File | What | Why it is stale |
@@ -103,7 +132,7 @@ are 27 named homes plus the builder's against 24 berths.
 ## Order of work that would make it live
 
 1. A controller computer again (install, role controller), so orders and status work.
-2. The hangar route and home table in `helper.lua`, with its test world.
+2. The hangar route and home table in `helper.lua`, with its test world. (Done on this branch.)
 3. One helper sent to one berth in game, watched, and brought back out.
 4. Fuel from the berth barrel, tried with a full and an empty barrel.
 5. Only then `rebase` the rest of the fleet.
