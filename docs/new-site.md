@@ -136,3 +136,19 @@ barrels, `rack.lua`, and making the hangar the automatic home.
 3. One helper sent to one berth in game, watched, and brought back out.
 4. Fuel from the berth barrel, tried with a full and an empty barrel.
 5. Only then `rebase` the rest of the fleet.
+
+## What is live (22 Nov, evening)
+
+- **GPS** is back: four hosts, stations of kind `gps` in `screens.lua` (GpsA..GpsD), three buried under the floor at
+  the corners and one high in the service tower. A drone that restarts without GPS stops with "No GPS signal" and
+  does not try again by itself, so never reboot one before GPS answers.
+- **The hangar is the helpers' home.** The order `hangar on=1` puts `M.HANGAR` in a helper's `.base`; from then on it
+  waits in its berth, takes fuel from the barrel overhead and drops emptied buckets into the one below. All seven
+  helpers were moved in one at a time (reboot, then `hangar on=1`). Shut out by the gate, a helper waits just above it
+  on the inbound line and looks again every two minutes. The rear gate must stay open: drones cannot open it.
+- **The miners' drop-off** is where their saved state says it is: dock -4460 73 1521, a double chest under it, the
+  in-shaft at x -4459 and the out-shaft at x -4463 (z 1521) opened again through the new floor, an ME import bus
+  under the chest. Miners no longer throw rubble away (`KEEP_RUBBLE` in `miner.lua`).
+- **No loader drones are left**; the server force-loads the chunks x -280..-273, z 94..101 instead.
+- Still missing: crafter1's station (it hands out new plots and empty buckets), fuel reaching the berth barrels by
+  itself, a rule for two helpers meeting in the aisle, and `rack.lua` for the new berths.
