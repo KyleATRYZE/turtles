@@ -202,3 +202,22 @@ be seen to work. A door is told by its name:
 |---|---|---|---|
 | `LobbyDoorWest` | -4436, 69, 1544 | -4436, 69, 1545 | -4436, 69, 1543 |
 | `LobbyDoorEast` | -4422, 69, 1544 | -4422, 69, 1545 | -4422, 69, 1543 |
+
+(As built, a lobby door's computer is at z 1545, its relay at z 1544 and its
+detector at z 1546, with an ender modem buried beside the computer.)
+
+### The way through to the works hall
+
+The way from the ME hall into the works hall crosses the service chase
+between two walls, with a double door in each wall at z 1541..1542, under
+the belt. These are door posts too. Powering one leaf of a Create double
+door opens both (when the hinges are on the outer edges), so these have no
+relay: the computer sits under the south leaf.
+
+| Name | Door | Computer | Detector | Modem |
+|---|---|---|---|---|
+| `WorksDoorHall` | -4442, 71..72, 1541..1542 | -4442, 69, 1542 | -4442, 69, 1543 | -4441, 69, 1542 |
+| `WorksDoorWorks` | -4445, 71..72, 1541..1542 | -4445, 69, 1542 | -4445, 69, 1543 | -4446, 69, 1542 |
+
+The inscribers and their pattern providers stand along the wall at x -4441,
+z 1545..1549, in the room the lobby's west door opens into.
