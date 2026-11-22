@@ -1,11 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795386235,
-      "issued": 1795386235000,
-      "cmd": "cancel",
+      "id": 1795386328,
+      "issued": 1795386328000,
+      "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "alltheores:steel_ingot"
+      "item": "minecraft:lightning_rod",
+      "n": 1
     }
   ]
 }
