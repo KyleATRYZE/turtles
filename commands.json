@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795387463,
-      "issued": 1795387463000,
-      "cmd": "newjob",
-      "target": "miner1"
+      "id": 1795387525,
+      "issued": 1795387525000,
+      "cmd": "cancel",
+      "target": "FoundryBoard",
+      "item": "ad_astra:tier_1_rocket"
     }
   ]
 }
