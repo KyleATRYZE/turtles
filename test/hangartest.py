@@ -228,9 +228,21 @@ r, at, ps, bumps = run((-4426, 72, 1521), api.HG.goHome)
 check("going home from the old rack ends in the berth", r and at == HOME, (at, L.eval("API.LN.why")))
 L.execute('SOLID["-4437,78,1527"] = true')
 r, at, ps, bumps = run((-4420, 170, 1490), api.HG.goHome)
-check("a berth that is taken: three goes, then it is outside the building, not stuck in the aisle",
+check("a berth that is taken: it comes out again and is outside the building, not stuck in the aisle",
       not r and not (1522 <= at[2] <= 1527), at)
 L.execute('SOLID["-4437,78,1527"] = nil')
+# the gate shut: it waits just above it on the inbound line, and goes straight in from there when it opens
+for x in range(-4430, -4422):
+    for y in (78, 79, 80, 81):
+        L.execute('SOLID["%d,%d,1522"] = true' % (x, y))
+r, at, ps, bumps = run((-4420, 170, 1490), api.HG.goHome)
+check("the gate shut: it waits on the inbound line just above the gate", not r and at[0] == -4429 and at[2] == 1520 and 85 <= at[1] <= 95, at)
+for x in range(-4430, -4422):
+    for y in (78, 79, 80, 81):
+        L.execute('SOLID["%d,%d,1522"] = nil' % (x, y))
+L.execute("PATH = {}")
+r = api.HG.goHome()
+check("the gate open again: straight down and in from where it waited, no trip to the sky", r and pos() == HOME and max(p["y"] for p in path()) <= at[1], (pos(), max(p["y"] for p in path())))
 # fuel at the berth
 L.execute(r"""
 ABOVE, BELOW, INV, SEL, FUELV = {}, {}, {}, 1, 300

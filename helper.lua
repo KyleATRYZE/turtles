@@ -524,9 +524,13 @@ function HG.toHome()
   if HG.inside() then
     if not HG.toAisle() then return no("could not get back to the aisle") end
   else
-    riseTo(math.max(pos.y, highway()))
-    if not across(H.gate.west + 1, H.gate.z - 2, math.max(highway() + 12, pos.y + 40)) then
-      return no("no way over to the gate")
+    -- (already waiting on the inbound line above the gate: straight down)
+    local onLine = pos.x == H.gate.west + 1 and pos.z == H.gate.z - 2 and pos.y > H.gate.low
+    if not onLine then
+      riseTo(math.max(pos.y, highway()))
+      if not across(H.gate.west + 1, H.gate.z - 2, math.max(highway() + 12, pos.y + 40)) then
+        return no("no way over to the gate")
+      end
     end
     if not LN.toY(H.gate.low + 1) then return no("could not get down to the gate") end
     if not LN.go(1, H.aisle - pos.z) then return no("the gate is blocked") end
@@ -550,21 +554,27 @@ end
 -- (base.hangar): from then on a waiting helper lives in its berth, not in
 -- the old rack.
 function HG.on() return type(base) == "table" and type(base.hangar) == "table" end
--- Into the berth: three goes, a little apart (the gate and the aisle are one
--- drone wide, and whoever was in the way has usually gone by the next try).
+-- Into the berth: one go. If there is no way in it waits outside, and the
+-- waiting loop looks again two minutes later (HG.waitUntil).
 function HG.goHome()
-  for try = 1, 3 do
-    LN.why = nil
-    if HG.toHome() then return true end
-    print("Could not get into my berth (" .. tostring(LN.why or "?") .. "): "
-      .. (try < 3 and "trying again." or "waiting outside."))
-    report("home blocked: " .. tostring(LN.why or "?"))
-    if HG.inside() then HG.exit() end
-    if try < 3 then
-      riseTo(math.max(pos.y, highway()))
-      sleep(6 * try + (os.getComputerID() % 5))
-    end
+  local H = HG.geo()
+  LN.why = nil
+  if HG.toHome() then HG.waitUntil = nil return true end
+  print("Could not get into my berth (" .. tostring(LN.why or "?") .. "): waiting outside.")
+  report("home blocked: " .. tostring(LN.why or "?"))
+  if HG.inside() then
+    -- (stuck inside, the aisle or the berth taken: out by the gate's other
+    -- side and up, and round again later)
+    HG.exit()
+    riseTo(math.max(pos.y, highway()))
+  elseif H and pos.x == H.gate.west + 1 and pos.z >= H.gate.z - 2 and pos.z < H.gate.z then
+    -- The gate is shut: wait on the inbound line just above it, each helper
+    -- at a height of its own, and look again in two minutes. (Flying back up
+    -- to the sky for every look cost one helper two thirds of its tank.)
+    if pos.z > H.gate.z - 2 then LN.go(3, pos.z - (H.gate.z - 2)) end
+    LN.toY(H.gate.high + 4 + 2 * slot())
   end
+  HG.waitUntil = os.clock() + 120
   return false
 end
 -- In the berth: fuel comes from the barrel overhead, one piece at a time
@@ -632,11 +642,8 @@ end
 local escape     -- defined further down (a way out of a place with no way straight up)
 
 local function goHover()
-  if HG.on() then
-    -- (no way in after three goes: wait in the air outside, not in the old
-    -- rack; the waiting loop tries again from there)
-    if HG.goHome() then return true end
-  elseif LN.on() then
+  if HG.on() then return HG.goHome() end      -- (shut out: it waits by the gate, not in the old rack)
+  if LN.on() then
     -- (three goes, a little apart: the lane is one drone wide, and whoever
     -- was in the way has usually gone by the next try. No hovering overhead
     -- while there is still a way home.)
@@ -3441,7 +3448,7 @@ local function work()
     if not st.paused and not HG.on() and fuel() < FUEL_SPARE * 2 then
       pcall(supplyRun, function() return {} end, "fuel while waiting", true)
     end
-    if not st.paused and (HG.on() or LN.on()) and not atHome then
+    if not st.paused and (HG.on() or LN.on()) and not atHome and os.clock() >= (HG.waitUntil or 0) then
       LN.why = nil
       if goHover() then
         local hx, hy, hz = hover()
