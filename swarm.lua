@@ -553,6 +553,17 @@ M.LANE = { y = 73, back = 1519, front = 1520, west = -4448, east = -4404,
   westIn = { x = -4451, z = 1520 }, eastIn = { x = -4402, z = 1519 }, eastOut = { x = -4402, z = 1520 },
   rackX = -4429, rackZ = 1521, low = 72, high = 74, perRow = 8,
   rows = { 72, 74, 76, 78 } }   -- (rack 1: 4 rows of 8, surveyed 18 Nov; shelf modems at 73 and 77)
+
+-- The new factory's hangar (surveyed 22 Nov after the rebuild; docs/new-site.md).
+-- NOT used by any program yet: M.LANE above still describes the old rack, which is
+-- where the fleet is parked. The hangar is one floor up behind a gate in the back
+-- wall: a drone comes in through the gate, flies the aisle to its column, goes to
+-- its row and steps south into its berth (a barrel above for fuel, one below for
+-- cargo). Homes: cols[i % perRow + 1], rows[floor(i / perRow) + 1], at z rackZ.
+M.HANGAR = { gate = { west = -4430, east = -4423, low = 78, high = 81, z = 1522 },
+  aisle = 1524,                                       -- z clear from y 78 to 89, x -4440 to -4413
+  rackZ = 1527, perRow = 8, rows = { 78, 83, 88 },
+  cols = { -4439, -4437, -4435, -4433, -4420, -4418, -4416, -4414 } }
 local STATE_FILES = { "miner.state", "helper.state", "loader.state", "builder.state" }
 
 local function readTable(file)
