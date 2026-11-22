@@ -36,6 +36,18 @@ local POSTS = {
   -- a station put down at the storage desk becomes the storage computer
   { name = "storage desk", kind = "storage", at = { 13, 2, 29 }, label = "Sortnado" },
 }
+-- The rebuilt factory's sign boards (docs/screens.md, "The rebuilt factory").
+-- They have no place in the old plan, so GPS does not tell them: a board is
+-- told by the name its station was given when it was put in, or failing
+-- that by the size of its monitor.
+local BOARDS = {
+  { name = "works board",   kind = "board", label = "WorksBoard",   title = "WORKS" },
+  { name = "front board",   kind = "board", label = "FrontBoard",   title = "FACTORY" },
+  { name = "me board",      kind = "board", label = "MEBoard",      title = "ME HALL" },
+  { name = "foundry board", kind = "board", label = "FoundryBoard", title = "FOUNDRY" },
+  -- a 5 x 1 whose station has no name of its own
+  { name = "floor board",   kind = "board", label = "FloorBoard",   title = "FACTORY" },
+}
 local SITE = { -4448, 1518, -4404, 1548, layers = 37 }   -- the building, for the map
 local HUT = { -4464, 1518, -4458, 1532 }
 local MAPS = { "factory_site", "meadow", "ground" }
@@ -59,6 +71,13 @@ local S = {
 ---------------------------------------------------------------- which post
 local function byName(name)
   for _, p in ipairs(POSTS) do if p.name == name then return p end end
+  for _, p in ipairs(BOARDS) do if p.name == name then return p end end
+end
+
+-- the board whose station carries this name (boards only: no other post
+-- is ever taken on the strength of a label)
+local function boardByLabel(label)
+  for _, p in ipairs(BOARDS) do if p.label == label then return p end end
 end
 
 -- world position -> the post standing there (or nil)
@@ -78,6 +97,8 @@ local function postBySize(w, h)
   if h >= 20 and h <= 26 and w >= 50 and w <= 60 then return byName("tower panel") end
   if h >= 20 and h <= 26 and w >= 30 and w <= 40 then return byName("bay panel") end
   if h <= 12 and w >= 30 and w <= 40 then return byName("west gate") end
+  if h <= 12 and w >= 50 and w <= 60 then return byName("foundry board") end    -- 3 x 1
+  if h <= 12 and w >= 90 and w <= 110 then return byName("floor board") end     -- 5 x 1
 end
 
 local function readFile(name)
@@ -94,7 +115,7 @@ local function writeFile(name, text)
   h.close()
 end
 
--- Returns the post and how it was told ("file", "gps", "monitor"), or nil.
+-- Returns the post and how it was told ("file", "gps", "label", "monitor"), or nil.
 local function identify(mon)
   local saved = readFile(POST_FILE)
   saved = saved and byName((saved:gsub("^%s+", ""):gsub("%s+$", "")))
@@ -106,6 +127,8 @@ local function identify(mon)
       if p then return p, "gps" end
     end
   end
+  local named = os.getComputerLabel and boardByLabel(os.getComputerLabel())
+  if named then return named, "label" end
   if mon then
     mon.setTextScale(0.5)
     local w, h = mon.getSize()
@@ -375,6 +398,24 @@ local function panelView(post)
   }
 end
 
+---------------------------------------------------------------- the sign boards
+-- A hall's name, the time, the fleet counted in words, and one drone at a
+-- time underneath (a new one every four seconds). Nothing to tap.
+local function boardView(post)
+  local working, resting, silent, low = counts()
+  local c = { { working, "working", "amber" }, { resting, "resting", "dim" } }
+  if silent > 0 then c[#c + 1] = { silent, "silent", "red" } end
+  if low > 0 then c[#c + 1] = { low, "low fuel", "red" } end
+  local list, line = fleetList(), nil
+  if #list > 0 then
+    local u = list[math.floor(os.clock() / 4) % #list + 1]
+    local said = type(u.log) == "table" and u.log[#u.log]
+    line = tostring(u.label or "?") .. "  " .. tostring(u.state or "")
+    if said and said ~= u.state then line = line .. "  " .. tostring(said) end
+  end
+  return { title = post.title or "FACTORY", clock = clock(), counts = c, line = line, stale = staleWords() }
+end
+
 ---------------------------------------------------------------- taps
 -- A button asks the controller; only the controller gives orders. Every
 -- button has to be tapped twice within six seconds.
@@ -441,6 +482,8 @@ local function draw(post, mon)
     return dash.rack(mon, rackSlots(), nowMs())
   elseif post.kind == "panel" then
     return dash.panel(mon, panelView(post), S.frame)
+  elseif post.kind == "board" then
+    return dash.board(mon, boardView(post), S.frame)
   end
   return {}
 end
@@ -454,7 +497,7 @@ end
 
 ---------------------------------------------------------------- for the tests
 if _G.SCREENS_TEST then
-  return { S = S, POSTS = POSTS, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
+  return { S = S, POSTS = POSTS, BOARDS = BOARDS, byName = byName, boardView = boardView, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
     hear = hear, loadStatusFile = loadStatusFile, staleWords = staleWords, draw = draw, tap = tap,
     zoneAt = zoneAt, answer = answer, wallData = wallData, gateView = gateView, rackSlots = rackSlots,
     panelView = panelView, counts = counts }

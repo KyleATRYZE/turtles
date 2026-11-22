@@ -133,3 +133,31 @@ Pictures: `python3 test/screenshots.py <status.json> <maps dir> <out dir>`.
 - The modem sticks to the computer when the computer is straight beyond it.
 - A computer with an ender modem gets a GPS fix (if not: monitor size).
 - `orientation` is the name of the block state that says a monitor lies flat.
+
+## The rebuilt factory (22 Nov)
+
+The building this page describes was cleared on 21 Nov and rebuilt from the
+`shop-full` blueprint. The posts above are the old building's. The new one
+has five screens (world coordinates):
+
+| Screen | Where | Size | Faces | Post |
+|---|---|---|---|---|
+| Map wall | tower, -4425..-4417, 100..103, 1538 | 9 x 4 | south | `wall` (told by its size) |
+| Works board | -4461..-4457, 76, 1531 | 5 x 1 | south | `works board` |
+| Front board | over the front gate, -4431..-4427, 81, 1552 | 5 x 1 | south | `front board` |
+| ME hall board | over the ME desk, -4426..-4422, 73, 1545 | 5 x 1 | south | `me board` |
+| Foundry board | -4384, 73, 1548..1550 | 3 x 1 | west | `foundry board` |
+
+The four boards are a new kind of post, `board` (`dash.board`): the hall's
+name in big letters, the time, the fleet counted in words, and one drone at
+a time underneath. Nothing to tap.
+
+There is no GPS at the new site, and three of the boards are the same size,
+so **a board is told by its station's name**: `WorksBoard`, `FrontBoard`,
+`MEBoard`, `FoundryBoard`. With any other name a 3 x 1 is taken for the
+foundry board and a 5 x 1 for a plain `floor board` (titled FACTORY). A
+`.post` file or a GPS fix on an old post still comes first, and no post
+other than a board is ever taken on a name alone.
+
+The map wall still draws the old building's map: `ORIGIN`, `SITE` and
+`HUT` in `screens.lua` have not been moved.

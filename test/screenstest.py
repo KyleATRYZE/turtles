@@ -197,6 +197,47 @@ t = rack.text()
 check("the rack board names the drones (not the factory or the builder)",
       "DigA" in t and "LoadB" in t and "HelpA" in t and "Forge" not in t and "Mason" not in t)
 
+# ---------------------------------------------------------------- the rebuilt factory's sign boards
+L = fresh()
+p, how = L.eval("{SCR.identify(makeMon(3, 1))}").values()
+check("a 3 x 1 with no name is the foundry board", p.name == "foundry board" and how == "monitor")
+p, how = L.eval("{SCR.identify(makeMon(5, 1))}").values()
+check("a 5 x 1 with no name is a plain floor board", p.name == "floor board" and how == "monitor")
+ok = True
+for label, name in (("WorksBoard", "works board"), ("FrontBoard", "front board"), ("MEBoard", "me board"),
+                    ("FoundryBoard", "foundry board")):
+    L.execute('LABEL = "%s"' % label)
+    p, how = L.eval("{SCR.identify(makeMon(5, 1))}").values()
+    ok = ok and p.name == name and how == "label"
+check("a board is told by the name its station was given (three look the same)", ok)
+L.execute('LABEL = "WallScreen"')
+p, how = L.eval("{SCR.identify(makeMon(2, 1))}").values()
+check("no other post is taken on a label alone", p.name == "west gate" and how == "monitor")
+L.execute('LABEL = "MEBoard"')
+at(L, "wall")
+p, how = L.eval("{SCR.identify(makeMon(5, 1))}").values()
+check("a GPS fix on an old post still comes first", p.name == "wall" and how == "gps")
+L.execute("GPS = nil")
+for size, cells in (((5, 1), (100, 10)), ((3, 1), (57, 10))):
+    L = fresh()
+    board = L.eval("makeMon(%d, %d)" % size)
+    post = L.globals().SCR.byName("foundry board" if size[0] == 3 else "me board")
+    zones = L.globals().SCR.draw(post, board)
+    t = board.text()
+    check("a %d x %d board is %d x %d and fills every row" % (size + cells),
+          tuple(board.getSize()) == cells and len(board.rows) == 10 and all(len(board.rows[y]) == cells[0] for y in range(1, 11)))
+    check("  nothing heard: it says so in words, and has nothing to tap",
+          "WAITING FOR THE SWARM" in t and "0 working" in t and len(list(zones.values())) == 0)
+    hear_all(L)
+    L.globals().SCR.draw(post, board)
+    t = board.text()
+    check("  with reports: the fleet counted, and one drone named with what it is doing",
+          "working" in t and "resting" in t and "WAITING" not in t
+          and any(n in t for n in ("DigA", "DigB", "LoadA", "LoadB", "HelpA", "Mason", "Forge")))
+    L.execute("CLOCK = CLOCK + 200 NOW = NOW + 200000")
+    L.globals().SCR.draw(post, board)
+    check("  gone quiet: NO SIGNAL SINCE", "NO SIGNAL SINCE 23:10" in board.text())
+
 # ---------------------------------------------------------------- panels and their buttons
 for idx, size, title in ((4, (2, 2), "LAUNCH BAY"), (6, (3, 2), "CONTROL")):
     L = fresh()

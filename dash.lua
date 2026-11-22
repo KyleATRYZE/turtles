@@ -11,6 +11,7 @@
 --   dash.rack(mon, slots)           -- the name board over the drone rack
 --   dash.store(mon, view)           -- the storage room's touch screen
 --   dash.panel(mon, view)           -- a touch panel: a few safe buttons
+--   dash.board(mon, view)           -- a hall's sign board (5 x 1 or 3 x 1)
 --   dash.notice(mon, lines)         -- plain words on any screen (no data yet)
 --
 -- Every screen returns the touch zones it drew ({x1, y1, x2, y2, id}), so
@@ -881,6 +882,42 @@ function D.panel(mon, view, frame)
   end
   fillCells(s, 1, H, W, H, C.panel)
   text(s, 2, H, pad(view.note or "", W - 2), C[view.noteColour or "dim"] or C.dim, C.panel)
+  return show(mon, s)
+end
+
+---------------------------------------------------------------- a hall's sign board
+-- A wide, one-block-high screen (5 x 1 or 3 x 1): the hall's name in big
+-- letters, the time, the fleet in one line of words, and one more line
+-- (a drone and what it is doing, or why nothing is heard).
+-- view = { title, clock, counts = { { n, word, colour }, ... }, line, stale }
+function D.board(mon, view, frame)
+  frame = frame or 0
+  mon.setTextScale(0.5)
+  local W, H = mon.getSize()
+  local s = newScreen(W, H, C.night)
+  hazard(s, 1, 1, W, -frame)
+  local title = view.title or "FACTORY"
+  local hc = canvas(W * 2, 12, C.night)
+  big(hc, 2, 1, title, C.text, 2)
+  local clock = view.clock or ""
+  local cw = bigWidth(clock, 2)
+  if clock ~= "" and 2 + bigWidth(title, 2) + 6 + cw + 2 <= W * 2 then
+    big(hc, W * 2 - cw - 2, 1, clock, C.cyan, 2)
+  end
+  put(s, hc, 1, 3)
+  local x = 2
+  for _, c in ipairs(view.counts or {}) do
+    local t = tostring(c[1]) .. " " .. c[2]
+    if x + #t > W then break end
+    text(s, x, 8, t, C[c[3] or "text"] or C.text)
+    x = x + #t + 2
+  end
+  if view.stale then
+    text(s, 2, 9, pad(view.stale, W - 2), (frame % 4 < 2) and C.red or C.amber)
+  elseif view.line then
+    text(s, 2, 9, pad(view.line, W - 2), C.dim)
+  end
+  hazard(s, 1, H, W, frame)
   return show(mon, s)
 end
 
