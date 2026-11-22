@@ -1,17 +1,34 @@
 {
   "commands": [
     {
-      "id": 1795390493,
-      "issued": 1795390493000,
-      "cmd": "stock",
+      "id": 1795391076,
+      "issued": 1795391076000,
+      "cmd": "recipes",
       "target": "FoundryBoard",
-      "items": "ae2:silicon_press,ae2:logic_processor_press,ae2:calculation_processor_press,ae2:engineering_processor_press,ae2:silicon,ae2:certus_quartz_crystal,ae2:charged_certus_quartz_crystal,ae2:fluix_crystal,ae2:logic_processor,ae2:calculation_processor,ae2:engineering_processor,ae2:printed_silicon,minecraft:redstone,minecraft:gold_ingot,minecraft:diamond,minecraft:quartz,mekanism:alloy_infused,mekanism:basic_control_circuit,alltheores:osmium_ingot,mekanism:enriched_carbon,mekanism:enriched_redstone"
+      "items": "ae2:fluix_glass_cable,ae2:pattern_provider,ae2:interface,ae2:molecular_assembler,ae2:drive,ae2:item_storage_cell_4k,ae2:import_bus,extendedae:ex_pattern_provider,mekanism:energized_smelter,mekanism:basic_universal_cable,mekanism:steel_casing,computercraft:computer_normal,computercraft:cable,advancedperipherals:me_bridge,pipez:item_pipe,simplylight:lamp_post,ad_astra:oxygen_loader,ad_astra:fuel_refinery,create:shaft,create:cogwheel,create:gearshift,create:sequenced_gearshift,minecraft:piston,minecraft:glowstone"
     },
     {
-      "id": 1795390494,
-      "issued": 1795390493000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
+      "id": 1795391077,
+      "issued": 1795391076000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "computercraft:cable",
+      "n": 6
+    },
+    {
+      "id": 1795391078,
+      "issued": 1795391076000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "minecraft:piston",
+      "n": 1
+    },
+    {
+      "id": 1795391079,
+      "issued": 1795391076000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "ae2:silicon_press,ae2:logic_processor_press,ae2:calculation_processor_press,ae2:engineering_processor_press,ae2:silicon,ae2:certus_quartz_crystal,ae2:fluix_crystal,ae2:logic_processor,ae2:calculation_processor,ae2:engineering_processor,minecraft:redstone,minecraft:gold_ingot,minecraft:diamond,alltheores:osmium_ingot,computercraft:cable,minecraft:piston"
     }
   ]
 }
