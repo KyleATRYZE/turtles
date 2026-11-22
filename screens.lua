@@ -64,6 +64,12 @@ local BOARDS = {
   -- the way through to the works hall: a door in each of the two walls
   { name = "works door hall side",  kind = "door", label = "WorksDoorHall" },
   { name = "works door works side", kind = "door", label = "WorksDoorWorks" },
+  -- the two street gates: a leaf on a rope pulley. The computer touches the
+  -- gate's sequenced gearshift and a player detector; `box` is the ground a
+  -- player stands on to be let through (world x, y, z of two corners),
+  -- `down` the gearshift's direction that lowers the leaf.
+  { name = "front gate", kind = "hoist", label = "FrontGate", box = { -4434, 70, 1545, -4424, 75, 1555 }, down = -1, travel = 9 },
+  { name = "works gate", kind = "hoist", label = "WorksGate", box = { -4466, 70, 1543, -4455, 75, 1555 }, down = -1, travel = 9 },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }
@@ -587,11 +593,57 @@ local function doorLoop(report)
   end
 end
 
+---------------------------------------------------------------- a gate that lifts by itself
+-- A hoist post drives a gate's sequenced gearshift directly: "up" while a
+-- player stands in its box (and for door.hold seconds after), "down"
+-- otherwise. Both orders are safe to repeat: the leaf stops at the top and
+-- on the floor. It goes up once as it starts, so the drive can be seen to
+-- work and the gate is in a known place.
+local function hoistNear(det, post, range)
+  local b = post.box
+  if b then
+    local one, two = { x = b[1], y = b[2], z = b[3] }, { x = b[4], y = b[5], z = b[6] }
+    local ok, res = pcall(det.isPlayersInCoords, one, two)
+    if ok and type(res) == "boolean" then return res end
+    ok, res = pcall(det.getPlayersInCoords, one, two)
+    if ok and type(res) == "table" then return #res > 0 end
+  end
+  return doorNear(det, range)
+end
+
+local function hoistLoop(post, report)
+  local hold = tonumber((settings.get("door.hold"))) or 2
+  local range = tonumber((settings.get("door.range"))) or 12
+  local is, last, told = nil, os.clock(), -60
+  while true do
+    local gear = peripheral.find("Create_SequencedGearshift")
+    local det = peripheral.find("player_detector") or peripheral.find("playerDetector")
+    if not (gear and det) then
+      local why = gear and "No player detector touching me." or "No sequenced gearshift touching me."
+      if os.clock() - told >= 60 then told = os.clock() print(why) report(gear and "no detector" or "no gearshift", why) end
+      sleep(5)
+    else
+      local near = is == nil or hoistNear(det, post, range)
+      if near then last = os.clock() end
+      local want = (near or os.clock() - last < hold) and "up" or "down"
+      local okRun, running = pcall(gear.isRunning)
+      if want ~= is and not (okRun and running) then
+        local down = post.down or -1
+        local ok, err = pcall(gear.move, post.travel or 9, want == "up" and -down or down)
+        if ok then is = want else print("gearshift: " .. tostring(err)) end
+        told = -60
+      end
+      if os.clock() - told >= 60 then told = os.clock() report(is or "starting", "Gate " .. tostring(is or "starting") .. ".") end
+      sleep(0.25)
+    end
+  end
+end
+
 if _G.SCREENS_TEST then
   return { S = S, POSTS = POSTS, BOARDS = BOARDS, byName = byName, boardView = boardView, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
     hear = hear, loadStatusFile = loadStatusFile, staleWords = staleWords, draw = draw, tap = tap,
     zoneAt = zoneAt, answer = answer, wallData = wallData, gateView = gateView, rackSlots = rackSlots,
-    panelView = panelView, counts = counts, doorLoop = doorLoop }
+    panelView = panelView, counts = counts, doorLoop = doorLoop, hoistLoop = hoistLoop }
 end
 
 ---------------------------------------------------------------- running
@@ -696,6 +748,7 @@ local zones = {}
 local function painter()
   local mon = setUp()
   if post.kind == "door" then return doorLoop(report) end
+  if post.kind == "hoist" then return hoistLoop(post, report) end
   local hadMonitor = mon ~= nil
   if post.kind == "wall" then pcall(fetchMaps) end
   if not radio then pcall(loadStatusFile) end
