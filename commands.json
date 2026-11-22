@@ -1,12 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795387893,
-      "issued": 1795387893000,
+      "id": 1795387931,
+      "issued": 1795387931000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "minecraft:glass",
-      "n": 2
+      "item": "minecraft:iron_block",
+      "n": 1
     }
   ]
 }
