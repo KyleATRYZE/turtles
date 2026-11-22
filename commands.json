@@ -1,48 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795388655,
-      "issued": 1795388655000,
-      "cmd": "recipes",
-      "target": "FoundryBoard",
-      "items": "minecraft:glowstone,minecraft:hay_block,minecraft:polished_andesite,minecraft:stone_bricks,minecraft:piston,minecraft:observer,minecraft:barrel,minecraft:ladder,minecraft:rail,minecraft:paper,minecraft:bow,minecraft:iron_pickaxe,minecraft:spyglass,minecraft:bookshelf"
-    },
-    {
-      "id": 1795388656,
-      "issued": 1795388655000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "minecraft:glass",
-      "n": 16
-    },
-    {
-      "id": 1795388657,
-      "issued": 1795388655000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "minecraft:piston",
-      "n": 1
-    },
-    {
-      "id": 1795388658,
-      "issued": 1795388655000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "minecraft:stone_bricks",
-      "n": 4
-    },
-    {
-      "id": 1795388659,
-      "issued": 1795388655000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
-    },
-    {
-      "id": 1795388660,
-      "issued": 1795388655000,
+      "id": 1795390493,
+      "issued": 1795390493000,
       "cmd": "stock",
       "target": "FoundryBoard",
-      "items": "minecraft:piston,minecraft:stone_bricks,minecraft:glass"
+      "items": "ae2:silicon_press,ae2:logic_processor_press,ae2:calculation_processor_press,ae2:engineering_processor_press,ae2:silicon,ae2:certus_quartz_crystal,ae2:charged_certus_quartz_crystal,ae2:fluix_crystal,ae2:logic_processor,ae2:calculation_processor,ae2:engineering_processor,ae2:printed_silicon,minecraft:redstone,minecraft:gold_ingot,minecraft:diamond,minecraft:quartz,mekanism:alloy_infused,mekanism:basic_control_circuit,alltheores:osmium_ingot,mekanism:enriched_carbon,mekanism:enriched_redstone"
+    },
+    {
+      "id": 1795390494,
+      "issued": 1795390493000,
+      "cmd": "jobs",
+      "target": "FoundryBoard"
     }
   ]
 }
