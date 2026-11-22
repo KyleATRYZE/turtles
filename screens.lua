@@ -601,6 +601,47 @@ local function doorLoop(report)
   end
 end
 
+---------------------------------------------------------------- the ME store, by order
+-- A station with an ME Bridge (Advanced Peripherals) touching it takes two
+-- orders, whatever its post:
+--   craft item=<id> n=<count>     ask the ME network to autocraft it
+--   stock items=<id>,<id>,...     say how many of each the network holds
+-- What came of the last few is kept in S.me and sent with every report
+-- (the status file's `me` list), so it can be read from outside the game.
+local function meBridge() return peripheral.find("me_bridge") or peripheral.find("meBridge") end
+local function meSay(line)
+  S.me = S.me or {}
+  S.me[#S.me + 1] = (os.date and os.date("%H:%M:%S ") or "") .. line
+  while #S.me > 12 do table.remove(S.me, 1) end
+  return line
+end
+local function meCount(b, id)
+  local ok, it = pcall(b.getItem, { name = id })
+  if not ok or type(it) ~= "table" then return nil end
+  return tonumber(it.count) or tonumber(it.amount) or 0
+end
+local function meOrder(cmd)
+  local b = meBridge()
+  if not b then return meSay(tostring(cmd.cmd) .. ": no ME bridge touching me") end
+  if cmd.cmd == "craft" and type(cmd.item) == "string" then
+    local n = math.max(1, math.floor(tonumber(cmd.n) or 1))
+    local have = meCount(b, cmd.item)
+    local ok, res, err = pcall(b.craftItem, { name = cmd.item, count = n })
+    local how
+    if not ok then how = "error: " .. tostring(res)
+    elseif res == nil or res == false then how = "refused: " .. tostring(err or "no pattern or missing parts")
+    else how = "started" end
+    return meSay(("craft %d %s: %s (in store before: %s)"):format(n, cmd.item, how, tostring(have)))
+  elseif cmd.cmd == "stock" and type(cmd.items) == "string" then
+    local out = {}
+    for id in cmd.items:gmatch("[^,%s]+") do
+      local n = meCount(b, id)
+      out[#out + 1] = (id:gsub("^.*:", "")) .. "=" .. tostring(n == nil and "?" or n)
+    end
+    return meSay("stock " .. table.concat(out, " "))
+  end
+end
+
 ---------------------------------------------------------------- a GPS host
 -- Answers GPS pings with where it stands (the stock `gps host`), for good.
 local function gpsHost(post, report)
@@ -668,7 +709,7 @@ if _G.SCREENS_TEST then
   return { S = S, POSTS = POSTS, BOARDS = BOARDS, byName = byName, boardView = boardView, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
     hear = hear, loadStatusFile = loadStatusFile, staleWords = staleWords, draw = draw, tap = tap,
     zoneAt = zoneAt, answer = answer, wallData = wallData, gateView = gateView, rackSlots = rackSlots,
-    panelView = panelView, counts = counts, doorLoop = doorLoop, hoistLoop = hoistLoop, gpsHost = gpsHost }
+    panelView = panelView, counts = counts, doorLoop = doorLoop, hoistLoop = hoistLoop, gpsHost = gpsHost, meOrder = meOrder }
 end
 
 ---------------------------------------------------------------- running
@@ -720,7 +761,7 @@ local radio = false
 local function report(state, line)
   if not (swarm and radio) then return end
   pcall(swarm.report, { role = "screen", state = state, post = post and post.name,
-    log = { line or state } })
+    log = { line or state }, me = S.me })
 end
 
 local function setUp()
@@ -834,6 +875,9 @@ local function orders()
       writeFile(POST_FILE, (cmd.name:gsub("_", " ")))
       sleep(1)
       os.reboot()
+    elseif cmd.cmd == "craft" or cmd.cmd == "stock" then
+      local line = meOrder(cmd)
+      if line then report("on", line) end
     elseif cmd.cmd == "ping" then
       report("on", "Here.")
     end

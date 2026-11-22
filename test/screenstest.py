@@ -329,6 +329,24 @@ L.execute("pcall(SCR.doorLoop, function() end)")
 log = [tuple(v.values()) for v in L.eval("LOG").values()]
 check("no detector: the door stays shut after its opening look", not any(l[0] or l[1] for l in log[1:]))
 
+# ---------------------------------------------------------------- orders for the ME store
+L = fresh()
+L.execute(r'''
+ASKED, STORE = {}, { ["minecraft:iron_ingot"] = 12, ["ad_astra:steel_plate"] = 0 }
+BRIDGE = { getItem = function(f) return STORE[f.name] and { name = f.name, count = STORE[f.name] } or nil end,
+  craftItem = function(f) ASKED[#ASKED + 1] = f.name .. " x" .. f.count if f.name == "minecraft:bedrock" then return false, "no pattern" end return true end }
+peripheral = { find = function(t) if t == "me_bridge" then return BRIDGE end end }
+''')
+line = L.eval('SCR.meOrder({ cmd = "craft", item = "ad_astra:steel_plate", n = 4 })')
+check("a craft order asks the ME bridge and says it started", list(L.eval("ASKED").values()) == ["ad_astra:steel_plate x4"] and "started" in line and "before: 0" in line)
+line = L.eval('SCR.meOrder({ cmd = "craft", item = "minecraft:bedrock", n = 1 })')
+check("a craft the network refuses says why", "refused: no pattern" in line)
+line = L.eval('SCR.meOrder({ cmd = "stock", items = "minecraft:iron_ingot,ad_astra:steel_plate,minecraft:dirt" })')
+check("a stock order counts each thing asked about", line == "stock iron_ingot=12 steel_plate=0 dirt=?")
+check("what came of them is kept for the report", L.eval("#SCR.S.me") == 3)
+L.execute("peripheral.find = function() end")
+check("no bridge: it says so", "no ME bridge" in L.eval('SCR.meOrder({ cmd = "craft", item = "x:y" })'))
+
 # ---------------------------------------------------------------- the GPS hosts
 L = fresh()
 ok = True
