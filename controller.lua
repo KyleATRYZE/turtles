@@ -960,6 +960,113 @@ do
   if not label or label == "controller" then os.setComputerLabel("CommandBlock") end
 end
 
+---------------------------------------------------------------- plots for the miners
+-- PLOTS BEGIN
+-- The factory computer used to hand each miner its plot. Since the rebuild
+-- there is none, so the controller does it. A miner with nothing to dig
+-- broadcasts need_job; it is sent the next plot nobody has had. When it says
+-- job_done it is free to ask again. Which plots have gone out is kept in
+-- .plots, so a restart never hands the same plot out twice.
+--
+-- The plots are the old factory's grid (8 x 8 squares, in rings around its
+-- first spot). Only squares that lie wholly inside the chunks kept loaded
+-- for the miners are given out: that box stops south of the mountain base and
+-- well short of anyone else's base. Rings 0 to 5, and ring 6 as far as its
+-- second column east of the origin, were dug before the rebuild.
+local PLOTS = {
+  file = ".plots", protocol = "swarm_job",
+  origin = { x = -4437, z = 1521 }, size = 8, topY = 50, bottom = -58,
+  box = { x1 = -4480, x2 = -4353, z1 = 1512, z2 = 1631 },
+  firstRing = 6, lastRing = 24,
+  dock = { x = -4460, y = 73, z = 1521 },
+  exit1 = { x = -4461, y = 73, z = 1521 },
+  exit2 = { x = -4462, y = 73, z = 1521 },
+}
+local plotList
+local function plotCells()
+  if plotList then return plotList end
+  local P, out = PLOTS, {}
+  for r = P.firstRing, P.lastRing do
+    for gx = -r, r do
+      for gz = -r, r do
+        if math.max(math.abs(gx), math.abs(gz)) == r then
+          local x0, z0 = P.origin.x + gx * P.size, P.origin.z + gz * P.size
+          local dug = r == 6 and gx <= 1
+          if not dug and x0 >= P.box.x1 and x0 + P.size - 1 <= P.box.x2
+            and z0 >= P.box.z1 and z0 + P.size - 1 <= P.box.z2 then
+            out[#out + 1] = { x0 = x0, z0 = z0 }
+          end
+        end
+      end
+    end
+  end
+  plotList = out
+  return out
+end
+local plotState
+local function plotLoad()
+  if plotState then return plotState end
+  local s
+  if fs.exists(PLOTS.file) then
+    local h = fs.open(PLOTS.file, "r")
+    s = textutils.unserialize(h.readAll() or "")
+    h.close()
+  end
+  if type(s) ~= "table" then s = {} end
+  s.next = tonumber(s.next) or 1
+  s.done = tonumber(s.done) or 0
+  if type(s.byId) ~= "table" then s.byId = {} end
+  plotState = s
+  return s
+end
+local function plotSave()
+  local h = fs.open(PLOTS.file, "w")
+  h.write(textutils.serialize(plotState))
+  h.close()
+end
+-- The job message for miner `id`: the plot it already has, or the next one.
+-- nil when every plot in the box has gone out.
+local function plotJob(id)
+  local s, cells, key = plotLoad(), plotCells(), tostring(id)
+  local index = s.byId[key]
+  if not index then
+    if s.next > #cells then return nil end
+    index = s.next
+    s.next = index + 1
+    s.byId[key] = index
+    plotSave()
+  end
+  local c = cells[index]
+  if not c then return nil end
+  return { type = "job", forId = id, index = index, x0 = c.x0, z0 = c.z0, size = PLOTS.size,
+    topY = PLOTS.topY, bottom = PLOTS.bottom, cruise = 118 + ((index - 1) % 40),
+    dock = PLOTS.dock, exit1 = PLOTS.exit1, exit2 = PLOTS.exit2 }
+end
+local function plotDone(id, index)
+  local s, key = plotLoad(), tostring(id)
+  if s.byId[key] ~= nil and s.byId[key] == index then
+    s.byId[key] = nil
+    s.done = s.done + 1
+    plotSave()
+    return true
+  end
+  return false
+end
+local function plotServer()
+  while true do
+    local id, msg = rednet.receive(PLOTS.protocol)
+    if type(msg) == "table" and type(id) == "number" then
+      if msg.type == "need_job" then
+        local job = plotJob(id)
+        if job then rednet.send(id, job, PLOTS.protocol) end
+      elseif msg.type == "job_done" then
+        plotDone(id, msg.index)
+      end
+    end
+  end
+end
+-- PLOTS END
+
 if not http then
   print("HTTP is disabled on this server, so I cannot upload.")
   return
@@ -981,4 +1088,4 @@ local function safe(fn)
     end
   end
 end
-parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, storeReplies, maps, mapListener, safe(wall), safe(wallTouch), safe(panelOrders))
+parallel.waitForAny(receiver, uploader, orders, chatter, chatOrders, storeReplies, maps, mapListener, safe(wall), safe(wallTouch), safe(panelOrders), safe(plotServer))
