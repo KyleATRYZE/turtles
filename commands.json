@@ -1,25 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795387847,
-      "issued": 1795387847000,
-      "cmd": "recipes",
+      "id": 1795387893,
+      "issued": 1795387893000,
+      "cmd": "craft",
       "target": "FoundryBoard",
-      "items": "minecraft:glass,minecraft:stone,minecraft:smooth_stone,minecraft:iron_ingot,minecraft:copper_ingot,minecraft:gold_ingot,minecraft:brick,minecraft:charcoal,alltheores:tin_ingot,alltheores:lead_ingot,alltheores:silver_ingot,alltheores:nickel_ingot,alltheores:osmium_ingot,alltheores:uranium_ingot,alltheores:zinc_ingot,alltheores:aluminum_ingot,alltheores:platinum_ingot"
-    },
-    {
-      "id": 1795387848,
-      "issued": 1795387847000,
-      "cmd": "recipes",
-      "target": "FoundryBoard",
-      "items": "minecraft:iron_block,minecraft:gold_block,minecraft:copper_block,minecraft:diamond_block,minecraft:emerald_block,minecraft:redstone_block,minecraft:lapis_block,minecraft:coal_block,minecraft:stick,minecraft:crafting_table,minecraft:furnace,minecraft:bucket,minecraft:redstone_torch,minecraft:chest,minecraft:torch,minecraft:oak_planks,minecraft:hopper,minecraft:iron_bars"
-    },
-    {
-      "id": 1795387849,
-      "issued": 1795387847000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "ad_astra:tier_1_rocket,minecraft:sand,minecraft:iron_ingot,minecraft:glass"
+      "item": "minecraft:glass",
+      "n": 2
     }
   ]
 }
