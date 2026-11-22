@@ -20,7 +20,10 @@ if not okSwarm then swarm = nil end
 local dash = require("dash")
 
 local REPO = "KyleATRYZE/turtles"
-local ORIGIN = { x = -4448, y = 71, z = 1518 }      -- the factory building's corner (plan 0, 0, 0)
+-- The old building's corner (plan 0, 0, 0). The building is gone, but the old
+-- posts, the gate lights and the rack homes on the back lane are still told
+-- by it; the new building is dash.SITE.
+local ORIGIN = { x = -4448, y = 71, z = 1518 }
 local PANEL_PROTOCOL = swarm and swarm.PANEL_PROTOCOL or "swarm_panel"
 local POST_FILE = ".post"
 
@@ -48,8 +51,7 @@ local BOARDS = {
   -- a 5 x 1 whose station has no name of its own
   { name = "floor board",   kind = "board", label = "FloorBoard",   title = "FACTORY" },
 }
-local SITE = { -4448, 1518, -4404, 1548, layers = 37 }   -- the building, for the map
-local HUT = { -4464, 1518, -4458, 1532 }
+local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }
 local PLOT, KEEP_OUT, HUNT_RANGE = 8, 24, 128
 local DOCKS = 16                                    -- homes in the rack: 8 across, 2 high
@@ -317,8 +319,9 @@ local function wallData()
   end
   return {
     units = S.units, maps = S.maps, base = { x = f.x, y = f.y, z = f.z },
-    site = { SITE[1], SITE[2], SITE[3], SITE[4], progress = 1, layers = SITE.layers },
-    hut = HUT, plots = plots,
+    site = { SITE[1], SITE[2], SITE[3], SITE[4], progress = 1, layers = SITE.layers,
+      parts = SITE.parts, tower = SITE.tower, lane = SITE.lane },
+    plots = plots,
     factory = { coal = have("minecraft:coal") + have("minecraft:charcoal"),
       used = store.used, slots = store.slots, free = store.free },
     lines = lines, pick = pick,

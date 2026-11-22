@@ -687,8 +687,7 @@ end
 local okDash, dash = pcall(require, "dash")
 if not okDash then dash = nil end
 local WALL = {
-  site = { -4448, 1518, -4404, 1548, layers = 37 },   -- the factory building
-  hut = { -4464, 1518, -4458, 1532 },
+  site = dash and dash.SITE or { -4468, 1522, -4382, 1557, layers = 37 },   -- the factory building (the hut is gone)
   maps = { "factory_site", "meadow", "ground" },
   plot = 8, keepOut = 24, huntRange = 128,
 }
@@ -772,8 +771,9 @@ local function wallData()
   return {
     units = units, maps = wallMaps, base = { x = f.x, y = f.y, z = f.z },
     site = { s[1], s[2], s[3], s[4], progress = (done and total and total > 0) and math.min(1, done / total) or 0,
-      layer = layer, layers = s.layers, done = done, total = total },
-    hut = WALL.hut, plots = plots,
+      layer = layer, layers = s.layers, done = done, total = total,
+      parts = s.parts, tower = s.tower, lane = s.lane },
+    plots = plots,
     factory = { coal = (inv["minecraft:coal"] or 0) + (inv["minecraft:charcoal"] or 0),
       used = store.used, slots = store.slots, free = store.free },
     clock = os.date("%H:%M"), now = os.epoch("utc"), updated = uploadNote,

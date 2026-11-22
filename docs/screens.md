@@ -159,5 +159,9 @@ foundry board and a 5 x 1 for a plain `floor board` (titled FACTORY). A
 `.post` file or a GPS fix on an old post still comes first, and no post
 other than a board is ever taken on a name alone.
 
-The map wall still draws the old building's map: `ORIGIN`, `SITE` and
-`HUT` in `screens.lua` have not been moved.
+The map wall draws the rebuilt building: `dash.SITE` holds its outer box,
+its four masses (works hall, main block, service tower, foundry), the raised
+roof over the control room and the drone lane, which is still behind the
+building at z 1519..1520. The hut is gone from the map. `ORIGIN` in
+`screens.lua` is still the old plan's corner, because the old posts and the
+rack homes on the back lane are told by it.

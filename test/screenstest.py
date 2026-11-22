@@ -132,6 +132,10 @@ check("stock, foundry and loaders each get a line",
       "lava 9" in t and "redstone 1058" in t and "chamber + smelter" in t and "raw iron" in t
       and "1 at base  1 out with DigA" in t)
 check("no stale banner while reports are coming in", "NO SIGNAL" not in t and "WAITING" not in t)
+site = L.globals().SCR.wallData().site
+check("the map shows the rebuilt building: four masses, the lane behind them, no hut",
+      (site[1], site[2], site[3], site[4]) == (-4468, 1522, -4382, 1557) and len(list(site.parts.values())) == 4
+      and site.lane[2] == 1519 and L.globals().SCR.wallData().hut is None and "HUT" not in t and "FACTORY" in t)
 unit_zone = [z for z in zones.values() if z[5] == "unit:DigA"]
 check("a drone in the list can be tapped", len(unit_zone) >= 1)
 z = unit_zone[0]

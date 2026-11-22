@@ -337,8 +337,11 @@ end
 --   units  = { [id] = unit status, ... },   -- as CommandBlock keeps them
 --   maps   = { map, ... },                  -- mapper1's ground scans
 --   base   = { x, y, z },                   -- crafter1 (the pit stop)
---   site   = { x1, z1, x2, z2, progress, layer, layers, done, total },
---   hut    = { x1, z1, x2, z2 },
+--   site   = { x1, z1, x2, z2, progress, layer, layers, done, total,
+--              parts = { { x1, z1, x2, z2 }, ... },   -- the building's masses (else: the one box)
+--              tower = { x1, z1, x2, z2 } or false,   -- an outline of its own (else: the old tower's)
+--              lane = { x1, z, x2 } },                -- the drone lane (else: along the back)
+--   hut    = { x1, z1, x2, z2 },             -- (or nil: no hut)
 --   plots  = { size, done = { {x, z}, ... }, active = { {x, z}, ... } },
 --   trails = { [label] = { {x, z}, ... } }, -- where each drone has just been
 --   clock, now, updated, events, huntRange,
@@ -346,6 +349,21 @@ end
 -- frame counts up four times a second and drives everything that moves:
 -- the radar sweep, pings, marching lines, the scrolling hazard strip.
 local landCache = {}
+
+-- The factory as it stands since the rebuild of 21 Nov (world x and z): its
+-- outer box, then what the map needs to draw it. One copy, for the stations
+-- and the controller.
+D.SITE = {
+  -4468, 1522, -4382, 1557, layers = 37,
+  parts = {
+    { -4468, 1523, -4442, 1549 },     -- works hall
+    { -4441, 1522, -4400, 1552 },     -- main block: ME hall, hangar, control room
+    { -4397, 1529, -4385, 1543 },     -- service tower
+    { -4399, 1544, -4382, 1557 },     -- foundry
+  },
+  tower = { -4435, 1527, -4408, 1548 },   -- the raised roof over the control room
+  lane = { -4448, 1519, -4404 },          -- the drone lane, still behind the building
+}
 
 function D.wall(mon, data, frame)
   frame = frame or 0
@@ -433,13 +451,24 @@ function D.wall(mon, data, frame)
         end
       end
     end
-    box(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.line)
-    outline(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.dim)
-    box(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.raised)
+    if hut then
+      box(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.line)
+      outline(c, px(hut[1]), pz(hut[2]), px(hut[3]), pz(hut[4]), C.dim)
+    end
+    -- the building: each of its masses, filled from the south as it is built
     local built = floor((pz(f[4]) - pz(f[2])) * (f.progress or 0))
-    box(c, px(f[1]), pz(f[4]) - built, px(f[3]), pz(f[4]), C.line)
-    outline(c, px(f[1]), pz(f[2]), px(f[3]), pz(f[4]), C.dim)
-    outline(c, px(f[3]) + 1, pz(f[4]) - 10, px(f[3]) + 11, pz(f[4]), C.dim)
+    for _, p in ipairs(f.parts or { f }) do
+      box(c, px(p[1]), pz(p[2]), px(p[3]), pz(p[4]), C.raised)
+      local from = max(pz(p[2]), pz(f[4]) - built)
+      if from <= pz(p[4]) and built > 0 then box(c, px(p[1]), from, px(p[3]), pz(p[4]), C.line) end
+      outline(c, px(p[1]), pz(p[2]), px(p[3]), pz(p[4]), C.dim)
+    end
+    local t = f.tower
+    if t then
+      outline(c, px(t[1]), pz(t[2]), px(t[3]), pz(t[4]), C.dim)
+    elseif t == nil then
+      outline(c, px(f[3]) + 1, pz(f[4]) - 10, px(f[3]) + 11, pz(f[4]), C.dim)
+    end
     landCache.key, landCache.px = key, c.px
   end
   local c = canvas(MW * 2, MH * 3)
@@ -447,9 +476,10 @@ function D.wall(mon, data, frame)
 
   local bx, bz = px(data.base.x), pz(data.base.z)
   -- the drone lane's stripes run along the back of the factory
-  for wx = f[1], f[3] do
-    set(c, px(wx), pz(f[2]) + 1, (((wx + frame) % 4) < 2) and C.copper or C.night)
-    set(c, px(wx), pz(f[2]) + 2, (((wx + frame + 1) % 4) < 2) and C.copper or C.night)
+  local lane = f.lane or { f[1], f[2] + 1, f[3] }
+  for wx = lane[1], lane[3] do
+    set(c, px(wx), pz(lane[2]), (((wx + frame) % 4) < 2) and C.copper or C.night)
+    set(c, px(wx), pz(lane[2]) + 1, (((wx + frame + 1) % 4) < 2) and C.copper or C.night)
   end
   -- plots being dug: the outline marches round
   for _, p in ipairs(data.plots.active or {}) do
@@ -500,7 +530,9 @@ function D.wall(mon, data, frame)
   put(s, c, MX, MY)
   text(s, MX + 21, MY + MH - 2, " 32 blocks ", C.dim, C.panel)
   text(s, MX + 1, MY + 1, " N " .. string.char(24) .. " ", C.dim, C.panel)
-  text(s, MX + floor((px(hut[1]) + px(hut[3])) / 4) - 1, MY + floor(pz(hut[2]) / 3) - 1, "HUT", C.text, C.panel)
+  if hut then
+    text(s, MX + floor((px(hut[1]) + px(hut[3])) / 4) - 1, MY + floor(pz(hut[2]) / 3) - 1, "HUT", C.text, C.panel)
+  end
   text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 2, "FACTORY", C.text, C.raised)
   text(s, MX + floor(px(f[1]) / 2) + 2, MY + floor(pz(f[2]) / 3) + 3,
        floor((f.progress or 0) * 100) .. "% built", C.cyan, C.raised)
