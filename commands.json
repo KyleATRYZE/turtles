@@ -1,11 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795381026,
-      "issued": 1795381026000,
-      "cmd": "hangar",
-      "target": "survey1",
-      "on": 1
+      "id": 1795381175,
+      "issued": 1795381175000,
+      "cmd": "reboot",
+      "target": "miner2"
     }
   ]
 }
