@@ -221,3 +221,31 @@ relay: the computer sits under the south leaf.
 
 The inscribers and their pattern providers stand along the wall at x -4441,
 z 1545..1549, in the room the lobby's west door opens into.
+
+### The two street gates
+
+Each street gate is a leaf on a rope pulley, driven through a Create
+sequenced gearshift. A station of kind `hoist` touches that gearshift and a
+player detector, and orders the leaf directly: up while a player stands in
+the gate's box of ground (`box` in the post table, world coordinates), down
+`door.hold` seconds after the last one leaves. There are no buttons: with a
+computer attached the gearshift ignores redstone.
+
+- The gearshift is driven as the peripheral `Create_SequencedGearshift`
+  (`move(blocks, modifier)`; modifier -1 lowers at both gates).
+- An order given while the leaf is moving stops it where it is and it does
+  not start again, so the next order waits until the last has had time to
+  finish (`travel` blocks at about 1.2 a second, plus one).
+- A gearshift left waiting in a program of its own never reads as idle, so
+  `isRunning` is not used.
+- It goes up once as it starts.
+
+| Name | Gate | Gearshift | Computer | Detector | Modem |
+|---|---|---|---|---|---|
+| `FrontGate` | x -4433..-4425, z 1548 | -4427, 82, 1548 | -4427, 82, 1549 | -4428, 82, 1549 | -4427, 83, 1549 |
+| `WorksGate` | x -4464..-4457, z 1547 | -4459, 85, 1547 | -4459, 86, 1547 | -4460, 86, 1547 | -4458, 86, 1547 |
+
+The works gate (22 Nov) is new: an 8 x 7 leaf of gray concrete and framed
+glass behind the works hall's street opening, parked behind the wall above
+it when up; pulley at -4461, 85, 1547, motor at -4458, 85, 1547, fed by a
+cable up the inside of the wall at x -4455.
