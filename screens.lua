@@ -68,8 +68,8 @@ local BOARDS = {
   -- gate's sequenced gearshift and a player detector; `box` is the ground a
   -- player stands on to be let through (world x, y, z of two corners),
   -- `down` the gearshift's direction that lowers the leaf.
-  { name = "front gate", kind = "hoist", label = "FrontGate", box = { -4434, 70, 1545, -4424, 75, 1555 }, down = -1, travel = 9 },
-  { name = "works gate", kind = "hoist", label = "WorksGate", box = { -4466, 70, 1543, -4455, 75, 1555 }, down = -1, travel = 9 },
+  { name = "front gate", kind = "hoist", label = "FrontGate", box = { -4434, 70, 1545, -4424, 75, 1555 }, down = -1, travel = 7 },
+  { name = "works gate", kind = "hoist", label = "WorksGate", box = { -4466, 70, 1543, -4455, 75, 1555 }, down = -1, travel = 8 },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
 local MAPS = { "factory_site", "meadow", "ground" }
@@ -596,8 +596,8 @@ end
 ---------------------------------------------------------------- a gate that lifts by itself
 -- A hoist post drives a gate's sequenced gearshift directly: "up" while a
 -- player stands in its box (and for door.hold seconds after), "down"
--- otherwise. Both orders are safe to repeat and to give mid-way: the leaf
--- stops at the top and on the floor. It goes up once as it starts, so the drive can be seen to
+-- otherwise. Both orders are safe to repeat: the leaf stops at the top and
+-- on the floor. It goes up once as it starts, so the drive can be seen to
 -- work and the gate is in a known place.
 local function hoistNear(det, post, range)
   local b = post.box
@@ -614,7 +614,8 @@ end
 local function hoistLoop(post, report)
   local hold = tonumber((settings.get("door.hold"))) or 2
   local range = tonumber((settings.get("door.range"))) or 12
-  local is, last, told = nil, os.clock(), -60
+  local travel, speed = post.travel or 7, post.speed or 1.2      -- blocks, and blocks a second
+  local is, last, told, doneAt = nil, os.clock(), -60, 0
   while true do
     local gear = peripheral.find("Create_SequencedGearshift")
     local det = peripheral.find("player_detector") or peripheral.find("playerDetector")
@@ -626,13 +627,14 @@ local function hoistLoop(post, report)
       local near = is == nil or hoistNear(det, post, range)
       if near then last = os.clock() end
       local want = (near or os.clock() - last < hold) and "up" or "down"
-      -- (a new order replaces the one in hand, so a leaf on its way down turns
-      -- back at once; a gearshift left waiting in a program of its own never
-      -- reads as idle, so idleness is not waited for)
-      if want ~= is then
+      -- An order given while the leaf is moving stops it where it is and it
+      -- does not start again (seen in the world), so the next order waits
+      -- until the last has had time to finish. A gearshift left waiting in a
+      -- program of its own never reads as idle, so that is not asked.
+      if want ~= is and os.clock() >= doneAt then
         local down = post.down or -1
-        local ok, err = pcall(gear.move, post.travel or 9, want == "up" and -down or down)
-        if ok then is = want else print("gearshift: " .. tostring(err)) end
+        local ok, err = pcall(gear.move, travel, want == "up" and -down or down)
+        if ok then is = want doneAt = os.clock() + travel / speed + 1 else print("gearshift: " .. tostring(err)) end
         told = -60
       end
       if os.clock() - told >= 60 then told = os.clock() report(is or "starting", "Gate " .. tostring(is or "starting") .. ".") end
