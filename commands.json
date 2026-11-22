@@ -1,10 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795381291,
-      "issued": 1795381291000,
-      "cmd": "resume",
-      "target": "miner3"
+      "id": 1795384084,
+      "issued": 1795384084000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "minecraft:iron_ingot,alltheores:steel_ingot,minecraft:raw_iron,minecraft:coal,minecraft:cobblestone"
     }
   ]
 }
