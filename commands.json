@@ -1,18 +1,48 @@
 {
   "commands": [
     {
-      "id": 1795388403,
-      "issued": 1795388403000,
+      "id": 1795388655,
+      "issued": 1795388655000,
       "cmd": "recipes",
       "target": "FoundryBoard",
-      "items": "minecraft:andesite_slab,minecraft:bookshelf,minecraft:bricks,minecraft:chiseled_stone_bricks,minecraft:cobblestone_stairs,minecraft:clay,minecraft:piston"
+      "items": "minecraft:glowstone,minecraft:hay_block,minecraft:polished_andesite,minecraft:stone_bricks,minecraft:piston,minecraft:observer,minecraft:barrel,minecraft:ladder,minecraft:rail,minecraft:paper,minecraft:bow,minecraft:iron_pickaxe,minecraft:spyglass,minecraft:bookshelf"
     },
     {
-      "id": 1795388404,
-      "issued": 1795388403000,
+      "id": 1795388656,
+      "issued": 1795388655000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "minecraft:glass",
+      "n": 16
+    },
+    {
+      "id": 1795388657,
+      "issued": 1795388655000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "minecraft:piston",
+      "n": 1
+    },
+    {
+      "id": 1795388658,
+      "issued": 1795388655000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "minecraft:stone_bricks",
+      "n": 4
+    },
+    {
+      "id": 1795388659,
+      "issued": 1795388655000,
+      "cmd": "jobs",
+      "target": "FoundryBoard"
+    },
+    {
+      "id": 1795388660,
+      "issued": 1795388655000,
       "cmd": "stock",
       "target": "FoundryBoard",
-      "items": "minecraft:cobblestone_slab,minecraft:cobblestone"
+      "items": "minecraft:piston,minecraft:stone_bricks,minecraft:glass"
     }
   ]
 }
