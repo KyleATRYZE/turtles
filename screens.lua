@@ -596,8 +596,8 @@ end
 ---------------------------------------------------------------- a gate that lifts by itself
 -- A hoist post drives a gate's sequenced gearshift directly: "up" while a
 -- player stands in its box (and for door.hold seconds after), "down"
--- otherwise. Both orders are safe to repeat: the leaf stops at the top and
--- on the floor. It goes up once as it starts, so the drive can be seen to
+-- otherwise. Both orders are safe to repeat and to give mid-way: the leaf
+-- stops at the top and on the floor. It goes up once as it starts, so the drive can be seen to
 -- work and the gate is in a known place.
 local function hoistNear(det, post, range)
   local b = post.box
@@ -626,8 +626,10 @@ local function hoistLoop(post, report)
       local near = is == nil or hoistNear(det, post, range)
       if near then last = os.clock() end
       local want = (near or os.clock() - last < hold) and "up" or "down"
-      local okRun, running = pcall(gear.isRunning)
-      if want ~= is and not (okRun and running) then
+      -- (a new order replaces the one in hand, so a leaf on its way down turns
+      -- back at once; a gearshift left waiting in a program of its own never
+      -- reads as idle, so idleness is not waited for)
+      if want ~= is then
         local down = post.down or -1
         local ok, err = pcall(gear.move, post.travel or 9, want == "up" and -down or down)
         if ok then is = want else print("gearshift: " .. tostring(err)) end

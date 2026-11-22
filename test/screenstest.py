@@ -340,7 +340,7 @@ check("a gate computer is told by its name", ok)
 L.execute(r'''
 MOVES, NEAR, STEPS, RUN, BOX, SAID = {}, false, 0, 0, nil, {}
 settings = { get = function() end }
-GEAR = { move = function(d, m) MOVES[#MOVES + 1] = { d, m, CLOCK } RUN = 6 end, isRunning = function() return RUN > 0 end }
+GEAR = { move = function(d, m) MOVES[#MOVES + 1] = { d, m, CLOCK } RUN = 6 end, isRunning = function() return true end }
 DET = { isPlayersInCoords = function(a, b) BOX = { a.x, a.y, a.z, b.x, b.y, b.z } return NEAR end }
 peripheral = { find = function(t) if t == "Create_SequencedGearshift" then return GEAR elseif t == "player_detector" then return DET end end }
 SCRIPT = {}
@@ -361,7 +361,7 @@ L.execute('pcall(SCR.hoistLoop, SCR.byName("front gate"), function(state) SAID[#
 moves = [tuple(v.values()) for v in L.eval("MOVES").values()]
 check("it goes up as it starts, and down again with nobody there", moves[0][:2] == (9, 1) and moves[1][:2] == (9, -1) and 1.9 <= moves[1][2] - moves[0][2] <= 3)
 check("someone in its box: up; a moment out of it does not send it down", moves[2][:2] == (9, 1) and len(moves) == 4)
-check("they leave: down after the hold, and never a new order while the leaf is moving",
+check("they leave: down after the hold (a gearshift that never reads idle does not stop it)",
       moves[3][:2] == (9, -1) and all(b[2] - a[2] >= 1.5 for a, b in zip(moves, moves[1:])))
 check("it asks about its own box of ground", list(L.eval("BOX").values()) == [-4434, 70, 1545, -4424, 75, 1555])
 check("it says what it did", list(L.eval("SAID").values())[:2] == ["up", "down"])
