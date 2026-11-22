@@ -1,11 +1,19 @@
 {
   "commands": [
     {
-      "id": 1795384084,
-      "issued": 1795384084000,
+      "id": 1795385433,
+      "issued": 1795385433000,
       "cmd": "stock",
       "target": "FoundryBoard",
-      "items": "minecraft:iron_ingot,alltheores:steel_ingot,minecraft:raw_iron,minecraft:coal,minecraft:cobblestone"
+      "items": "minecraft:iron_ingot,minecraft:coal,alltheores:steel_ingot,ad_astra:steel_ingot,alltheores:steel_plate,alltheores:iron_plate,minecraft:copper_ingot,minecraft:glass,minecraft:glass_pane,minecraft:white_wool,minecraft:lightning_rod,minecraft:sand,minecraft:raw_copper,minecraft:string"
+    },
+    {
+      "id": 1795385434,
+      "issued": 1795385433000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "alltheores:steel_ingot",
+      "n": 1
     }
   ]
 }
