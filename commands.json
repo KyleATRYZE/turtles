@@ -1,11 +1,12 @@
 {
   "commands": [
     {
-      "id": 1795387525,
-      "issued": 1795387525000,
-      "cmd": "cancel",
+      "id": 1795387587,
+      "issued": 1795387587000,
+      "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "ad_astra:tier_1_rocket"
+      "item": "ad_astra:tier_1_rocket",
+      "n": 1
     }
   ]
 }
