@@ -877,8 +877,14 @@ end
 -- cobble and cobbled deepslate the building needs and its chests are
 -- nearly full, so for now nothing extra comes home.
 local HAUL = {}
+-- 22 Nov: the drop-off chest now empties into the ME store, which takes
+-- everything, so nothing is thrown away any more: cobble and the rest of
+-- the rubble come home with the ore. (false = as before: rubble is dropped
+-- in the mine when the inventory fills.)
+local KEEP_RUBBLE = true
 
 local function dropJunk()
+  if KEEP_RUBBLE then return end
   local kept = {}
   for s = 1, 16 do
     local d = turtle.getItemDetail(s)
