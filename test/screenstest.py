@@ -329,6 +329,25 @@ L.execute("pcall(SCR.doorLoop, function() end)")
 log = [tuple(v.values()) for v in L.eval("LOG").values()]
 check("no detector: the door stays shut after its opening look", not any(l[0] or l[1] for l in log[1:]))
 
+# ---------------------------------------------------------------- the GPS hosts
+L = fresh()
+ok = True
+for label, at in (("GpsA", (-4462, 68, 1528)), ("GpsB", (-4388, 68, 1551)), ("GpsC", (-4428, 68, 1553)), ("GpsD", (-4391, 129, 1533))):
+    L.execute('LABEL = "%s"' % label)
+    p, how = L.eval("{SCR.identify(nil)}").values()
+    ok = ok and p.kind == "gps" and how == "label" and tuple(p.at.values()) == at
+check("a GPS host is told by its name and knows where it stands", ok)
+hosts = [tuple(p.at.values()) for p in L.eval("SCR.BOARDS").values() if p.kind == "gps"]
+import itertools
+def vol(a, b, c, d):
+    u, v, w = [[q[i] - a[i] for i in range(3)] for q in (b, c, d)]
+    return abs(u[0] * (v[1] * w[2] - v[2] * w[1]) - u[1] * (v[0] * w[2] - v[2] * w[0]) + u[2] * (v[0] * w[1] - v[1] * w[0]))
+check("four hosts, far apart and not in one plane (or a fix has two answers)", len(hosts) == 4 and vol(*hosts) > 50000
+      and all(sum((a[i] - b[i]) ** 2 for i in range(3)) > 30 ** 2 for a, b in itertools.combinations(hosts, 2)))
+L.execute('RAN = {} shell = { run = function(...) RAN[#RAN + 1] = table.concat({ ... }, " ") end } sleep = function() error("done", 0) end')
+L.execute('pcall(SCR.gpsHost, SCR.byName("gps host d"), function() end)')
+check("it runs the stock host program with its own position", list(L.eval("RAN").values()) == ["gps host -4391 129 1533"])
+
 # ---------------------------------------------------------------- the street gates
 L = fresh()
 ok = True

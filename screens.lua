@@ -69,6 +69,14 @@ local BOARDS = {
   -- player stands on to be let through (world x, y, z of two corners),
   -- `down` the gearshift's direction that lowers the leaf.
   { name = "front gate", kind = "hoist", label = "FrontGate", box = { -4434, 70, 1545, -4424, 75, 1555 }, down = -1, travel = 7 },
+  -- GPS for the rebuilt site: four hosts buried in the building (three under
+  -- the floor at the corners, one high in the service tower). The old four
+  -- stood in the old works hut and went with it; without GPS a drone that
+  -- restarts stops with "No GPS signal". `at` is where the computer is.
+  { name = "gps host a", kind = "gps", label = "GpsA", at = { -4462, 68, 1528 } },
+  { name = "gps host b", kind = "gps", label = "GpsB", at = { -4388, 68, 1551 } },
+  { name = "gps host c", kind = "gps", label = "GpsC", at = { -4428, 68, 1553 } },
+  { name = "gps host d", kind = "gps", label = "GpsD", at = { -4391, 129, 1533 } },
   { name = "works gate", kind = "hoist", label = "WorksGate", box = { -4466, 70, 1543, -4455, 75, 1555 }, down = -1, travel = 8 },
 }
 local SITE = dash.SITE                              -- the building, for the map (the hut is gone)
@@ -593,6 +601,19 @@ local function doorLoop(report)
   end
 end
 
+---------------------------------------------------------------- a GPS host
+-- Answers GPS pings with where it stands (the stock `gps host`), for good.
+local function gpsHost(post, report)
+  local a = post.at
+  print(("GPS host at %d %d %d."):format(a[1], a[2], a[3]))
+  report("hosting", ("GPS host at %d %d %d."):format(a[1], a[2], a[3]))
+  while true do
+    shell.run("gps", "host", tostring(a[1]), tostring(a[2]), tostring(a[3]))
+    report("stopped", "The GPS host program ended; starting it again.")
+    sleep(10)
+  end
+end
+
 ---------------------------------------------------------------- a gate that lifts by itself
 -- A hoist post drives a gate's sequenced gearshift directly: "up" while a
 -- player stands in its box (and for door.hold seconds after), "down"
@@ -647,7 +668,7 @@ if _G.SCREENS_TEST then
   return { S = S, POSTS = POSTS, BOARDS = BOARDS, byName = byName, boardView = boardView, ORIGIN = ORIGIN, postAt = postAt, postBySize = postBySize, identify = identify,
     hear = hear, loadStatusFile = loadStatusFile, staleWords = staleWords, draw = draw, tap = tap,
     zoneAt = zoneAt, answer = answer, wallData = wallData, gateView = gateView, rackSlots = rackSlots,
-    panelView = panelView, counts = counts, doorLoop = doorLoop, hoistLoop = hoistLoop }
+    panelView = panelView, counts = counts, doorLoop = doorLoop, hoistLoop = hoistLoop, gpsHost = gpsHost }
 end
 
 ---------------------------------------------------------------- running
@@ -753,6 +774,7 @@ local function painter()
   local mon = setUp()
   if post.kind == "door" then return doorLoop(report) end
   if post.kind == "hoist" then return hoistLoop(post, report) end
+  if post.kind == "gps" then return gpsHost(post, report) end
   local hadMonitor = mon ~= nil
   if post.kind == "wall" then pcall(fetchMaps) end
   if not radio then pcall(loadStatusFile) end
