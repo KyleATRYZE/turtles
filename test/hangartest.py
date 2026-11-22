@@ -89,6 +89,7 @@ local OVER_SITE = 36
 function SET(b, x, y, z) base = b pos.x, pos.y, pos.z = x, y, z T.x, T.y, T.z = x, y, z heading = 0 T.d = 0 PATH = {} BUMPS = 0 end
 function POS() return pos.x, pos.y, pos.z end
 API = { LN = LN, HG = HG, riseTo = riseTo, highway = highway }
+function GOBASE(b) base = b end
 ''')
 
 BASE = '''{ f = { x = -4442, y = 73, z = 1519 }, pad = { x = -4441, y = 73, z = 1519 },
@@ -217,5 +218,41 @@ check("no hangar known: HG.inside() is false", L.eval("API.HG.inside()") is Fals
 L.execute("API.LN.why = nil")
 check("  and HG.toHome() says so", L.eval("API.HG.toHome()") is False and L.eval("API.LN.why") == "no hangar known",
       L.eval("API.LN.why"))
+
+# ---- the hangar as home
+L.execute("GOBASE(%s)" % BASE)
+check("with the hangar in .base it is the home", L.eval("API.HG.on()") is True)
+L.execute("GOBASE({ f = { x = -4442, y = 73, z = 1519 }, pad = { x = -4441, y = 73, z = 1519 } })")
+check("without it, it is not", L.eval("API.HG.on()") is False)
+r, at, ps, bumps = run((-4426, 72, 1521), api.HG.goHome)
+check("going home from the old rack ends in the berth", r and at == HOME, (at, L.eval("API.LN.why")))
+L.execute('SOLID["-4437,78,1527"] = true')
+r, at, ps, bumps = run((-4420, 170, 1490), api.HG.goHome)
+check("a berth that is taken: three goes, then it is outside the building, not stuck in the aisle",
+      not r and not (1522 <= at[2] <= 1527), at)
+L.execute('SOLID["-4437,78,1527"] = nil')
+# fuel at the berth
+L.execute(r"""
+ABOVE, BELOW, INV, SEL, FUELV = {}, {}, {}, 1, 300
+function fuel() return FUELV end
+turtle.getItemCount = function(s) return INV[s] and INV[s].count or 0 end
+turtle.getItemDetail = function(s) return INV[s or SEL] end
+turtle.select = function(s) SEL = s end
+turtle.suckUp = function(n) local it = table.remove(ABOVE, 1) if not it then return false end INV[SEL] = { name = it, count = 1 } return true end
+turtle.dropDown = function() if INV[SEL] then BELOW[#BELOW + 1] = INV[SEL].name INV[SEL] = nil return true end return false end
+turtle.refuel = function()
+  local it = INV[SEL]
+  if it.name == "minecraft:lava_bucket" then FUELV = FUELV + 1000 INV[SEL] = { name = "minecraft:bucket", count = 1 }
+  elseif it.name == "minecraft:coal" then FUELV = FUELV + 80 INV[SEL] = nil end
+  return true
+end
+""")
+L.execute('INV[1] = { name = "minecraft:diamond_pickaxe", count = 1 } ABOVE = { "minecraft:coal", "minecraft:cobblestone", "minecraft:lava_bucket", "minecraft:lava_bucket", "minecraft:lava_bucket" }')
+got = L.eval("API.HG.service(1800)")
+check("in the berth: fuel from the barrel overhead until the tank is at its mark", got == 2080 and L.eval("FUELV") == 2380 and L.eval("#ABOVE") == 1, (got, L.eval("FUELV")))
+check("  the empty buckets and what was not fuel go into the barrel below", list(L.eval("BELOW").values()) == ["minecraft:cobblestone", "minecraft:bucket", "minecraft:bucket"], list(L.eval("BELOW").values()))
+check("  what it was carrying is still there, and nothing else", L.eval("INV[1].name") == "minecraft:diamond_pickaxe" and L.eval("INV[2]") is None)
+L.execute("ABOVE = {} FUELV = 100")
+check("an empty barrel: nothing happens", L.eval("API.HG.service(1800)") == 0)
 
 print("PASS" if not fails else "FAILED: %d" % len(fails))

@@ -546,6 +546,56 @@ function HG.exit()
   return LN.go(3, pos.z - (H.gate.z - 2))
 end
 
+-- The hangar as home. An order `hangar on=1` puts the hangar in .base
+-- (base.hangar): from then on a waiting helper lives in its berth, not in
+-- the old rack.
+function HG.on() return type(base) == "table" and type(base.hangar) == "table" end
+-- Into the berth: three goes, a little apart (the gate and the aisle are one
+-- drone wide, and whoever was in the way has usually gone by the next try).
+function HG.goHome()
+  for try = 1, 3 do
+    LN.why = nil
+    if HG.toHome() then return true end
+    print("Could not get into my berth (" .. tostring(LN.why or "?") .. "): "
+      .. (try < 3 and "trying again." or "waiting outside."))
+    report("home blocked: " .. tostring(LN.why or "?"))
+    if HG.inside() then HG.exit() end
+    if try < 3 then
+      riseTo(math.max(pos.y, highway()))
+      sleep(6 * try + (os.getComputerID() % 5))
+    end
+  end
+  return false
+end
+-- In the berth: fuel comes from the barrel overhead, one piece at a time
+-- until the tank is at `target`. An emptied bucket goes into the barrel
+-- underneath, and so does anything in the fuel barrel that is not fuel (the
+-- pipes behind the rack fill the one barrel and empty the other). Nothing
+-- the helper was already carrying is touched. Returns the fuel gained.
+local BERTH_FUEL = { ["minecraft:lava_bucket"] = true, ["minecraft:coal"] = true, ["minecraft:charcoal"] = true }
+function HG.service(target)
+  target = target or 1800
+  local before = fuel()
+  for _ = 1, 24 do
+    if fuel() >= target then break end
+    local slot
+    for s = 1, 16 do if turtle.getItemCount(s) == 0 then slot = s break end end
+    if not slot then break end
+    turtle.select(slot)
+    if not turtle.suckUp(1) then break end
+    local d = turtle.getItemDetail(slot)
+    if d and BERTH_FUEL[d.name] then
+      turtle.refuel()
+      local left = turtle.getItemDetail(slot)
+      if left then turtle.dropDown() end                 -- (the empty bucket)
+    elseif d then
+      turtle.dropDown()
+    end
+  end
+  turtle.select(1)
+  return fuel() - before
+end
+
 -- The loading bay: docked in its home, the helper touches the shelf's
 -- wired modem (above a low home, below a high one) and so is on the cable
 -- as turtle_<id>. crafter1 pushes its load straight in. Nil if the modem is
@@ -574,6 +624,7 @@ function LN.bay()
 end
 
 local function hover()
+  if HG.on() then return HG.home() end
   if LN.on() then return LN.home() end
   return hoverAir()
 end
@@ -581,7 +632,11 @@ end
 local escape     -- defined further down (a way out of a place with no way straight up)
 
 local function goHover()
-  if LN.on() then
+  if HG.on() then
+    -- (no way in after three goes: wait in the air outside, not in the old
+    -- rack; the waiting loop tries again from there)
+    if HG.goHome() then return true end
+  elseif LN.on() then
     -- (three goes, a little apart: the lane is one drone wide, and whoever
     -- was in the way has usually gone by the next try. No hovering overhead
     -- while there is still a way home.)
@@ -3373,23 +3428,29 @@ local function work()
   -- stopped), top up fuel before it is short, and say plainly where it is.
   while true do
     local atHome = false
-    if LN.on() then
-      local hx, hy, hz = LN.home()
+    if HG.on() or LN.on() then
+      local hx, hy, hz = hover()
       atHome = pos.x == hx and pos.y == hy and pos.z == hz
     end
-    if not st.paused and fuel() < FUEL_SPARE * 2 then
+    -- in its berth: fuel from the barrel overhead (and no trip to the
+    -- factory for it: the berth is where a hangar helper's fuel comes from)
+    if HG.on() and atHome and not st.paused and fuel() < FULL_TANK then
+      local got = HG.service(FULL_TANK)
+      if got > 0 then print(("Fuel from my berth: +%d."):format(got)) end
+    end
+    if not st.paused and not HG.on() and fuel() < FUEL_SPARE * 2 then
       pcall(supplyRun, function() return {} end, "fuel while waiting", true)
     end
-    if not st.paused and LN.on() and not atHome then
+    if not st.paused and (HG.on() or LN.on()) and not atHome then
       LN.why = nil
       if goHover() then
-        local hx, hy, hz = LN.home()
+        local hx, hy, hz = hover()
         atHome = pos.x == hx and pos.y == hy and pos.z == hz
       end
     end
     if st.paused then report("stopped")
     elseif atHome then report("docked")
-    elseif LN.on() then report("idle (not home: " .. tostring(LN.why or "?") .. ")")
+    elseif HG.on() or LN.on() then report("idle (not home: " .. tostring(LN.why or "?") .. ")")
     else report("idle") end
     sleep(60)
   end
@@ -3468,6 +3529,20 @@ while true do
   elseif cmd.cmd == "resume" then
     st.paused = nil
     save()
+    task = guarded(work)
+  elseif cmd.cmd == "hangar" then
+    -- hangar on=1: live in the new hangar (swarm.lua M.HANGAR) from now on;
+    -- on=0: back to the old rack. Kept in .base, so it holds over restarts.
+    local on = not (cmd.on == 0 or cmd.on == "0" or cmd.on == false or cmd.on == "off")
+    base.hangar = nil
+    if on and swarm and swarm.HANGAR then
+      base.hangar = {}
+      for k, v in pairs(swarm.HANGAR) do base.hangar[k] = v end
+    end
+    local h = fs.open(BASE_FILE, "w")
+    h.write(textutils.serialize(base))
+    h.close()
+    print(base.hangar and "My home is now my berth in the hangar." or "My home is the old rack again.")
     task = guarded(work)
   elseif cmd.cmd == "lab" and type(cmd.ops) == "string" then
     st.lab = { ops = cmd.ops }
