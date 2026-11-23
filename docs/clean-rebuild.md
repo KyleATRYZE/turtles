@@ -1,4 +1,4 @@
-# The clean rebuild (branch `clean-rebuild`)
+# The clean rebuild (merged into `main` on 23 Nov 2026)
 
 The plant was rebuilt around an ME network, and most of the old programs served machines
 that no longer exist. This branch starts the turtle side again on a small set of tested

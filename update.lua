@@ -6,7 +6,7 @@
 -- A machine's job is in .role. The old jobs that no longer exist (helper, builder,
 -- loader, factory, storage, rack, works) all become "parked".
 local REPO = "KyleATRYZE/turtles"
-local BRANCH = "clean-rebuild"     -- the branch this copy follows ("main" once merged)
+local BRANCH = "main"              -- the branch this copy follows
 
 local function readFile(name)
   if not fs.exists(name) then return nil end
