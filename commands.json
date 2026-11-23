@@ -28,6 +28,19 @@
       "cmd": "stock",
       "target": "FoundryBoard",
       "items": "mekanism:ultimate_control_circuit,mekanism:robit"
+    },
+    {
+      "id": 1795395620,
+      "issued": 1795395620000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "mekanism:ultimate_control_circuit,mekanism:alloy_atomic,mekanism:elite_control_circuit"
+    },
+    {
+      "id": 1795395621,
+      "issued": 1795395620000,
+      "cmd": "jobs",
+      "target": "FoundryBoard"
     }
   ]
 }
