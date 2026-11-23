@@ -97,19 +97,72 @@ test("a full inventory sends it home, then it carries on where it was", function
   ok(plotClear(), "plot finished after the trip")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
-test("low on fuel: it takes coal from the barrel overhead, only what it needs", function()
+test("low on fuel: it burns lava from the barrel overhead and keeps one empty bucket", function()
   world()
-  SIM.stockAt(9, 70, 5, "minecraft:coal", 64)
+  SIM.stockAt(9, 70, 5, "minecraft:coal", 64)                 -- coal left lying in the fuel barrel
+  SIM.stockAt(9, 70, 5, "minecraft:coal", 30)
+  for _ = 1, 3 do SIM.stockAt(9, 70, 5, "minecraft:lava_bucket", 1) end
+  SIM.give(1, "minecraft:coal", 10)                            -- and some it dug
   saved({ phase = "dock" })
   local m = miner({ fuelTarget = 2000, fuelLow = 50 })
   start(9, 69, 5)                                              -- in the berth
   m.work(1)                                                    -- unload, refuel
-  ok(SIM.t.fuel >= 2000, "refuelled: " .. SIM.t.fuel)
-  eq(SIM.stock["9,70,5"][1].count, 64 - 20, "took 20 coal for 1600 fuel")
-  eq(turtle.getItemCount(1), 0, "carries no coal away")
+  eq(SIM.t.fuel, 2400, "two buckets of lava, and no coal burnt")
+  eq(#SIM.stock["9,70,5"], 1, "one lava bucket left in the barrel")
+  local buckets, other = 0, 0
+  for slot = 1, 16 do
+    local it = turtle.getItemDetail(slot)
+    if it and it.name == "minecraft:bucket" then buckets = buckets + it.count elseif it then other = other + it.count end
+  end
+  eq(buckets, 1, "keeps one empty bucket")
+  eq(other, 0, "and nothing else")
+  local coal, empties = 0, 0
+  for _, d in ipairs(SIM.dropped) do
+    if d.name == "minecraft:coal" then coal = coal + d.count end
+    if d.name == "minecraft:bucket" then empties = empties + d.count end
+  end
+  eq(coal, 104, "all the coal went down to the store")
+  eq(empties, 1, "with the other empty bucket")
   m.work(1)                                                    -- leave
   ok(at(7, 52, 0), "at the foot of the out-shaft")
 end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
+
+test("no lava in the barrel: it burns the coal it brought, then gives the rest up", function()
+  world()
+  SIM.give(1, "minecraft:coal", 64)
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 2000, fuelLow = 50 })
+  start(9, 69, 5)
+  m.work(1)
+  eq(SIM.t.fuel, 2000, "20 coal burnt")
+  eq(droppedDown(), 44, "the rest unloaded")
+end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
+
+test("lava over or under its path is scooped up and burnt", function()
+  world()
+  SIM.block(21, 47, 4, "minecraft:lava")                       -- under a cell of the first layer
+  SIM.block(20, 46, 5, "minecraft:lava")                       -- over a cell of the second
+  SIM.block(21, 44, 5, "minecraft:lava") SIM.flowing["21,44,5"] = true   -- flowing: nothing to take
+  SIM.give(16, "minecraft:bucket", 1)
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(7, 52, 0)
+  m.work(2)
+  ok(SIM.t.fuel > 5000 + 1500, "two buckets' worth gained: " .. SIM.t.fuel)
+  eq(turtle.getItemDetail(16).name, "minecraft:bucket", "the bucket is empty again, in its slot")
+  eq(SIM.getBlock(21, 47, 4), nil, "the source is gone")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("a full tank leaves lava where it is; so does a miner with no bucket", function()
+  world()
+  SIM.block(21, 47, 4, "minecraft:lava")
+  SIM.give(16, "minecraft:bucket", 1)
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100, scoopTo = 5000 })
+  start(7, 52, 0)
+  m.work(2)
+  ok(SIM.t.fuel < 5000, "nothing gained")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
 test("an empty fuel barrel only holds it up for a while", function()
   world()

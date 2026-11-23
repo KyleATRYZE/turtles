@@ -14,7 +14,12 @@
 --   in road   (topY + 6):  plot -> base      up the plot's shaft, along, up the IN shaft
 --
 -- At the berth there is a barrel below (everything it carries goes in; a conveyor takes it
--- to the store) and a barrel above (coal, kept filled by the store).
+-- to the store) and a barrel above (lava buckets, kept filled by the store).
+--
+-- Fuel is lava. At the berth it burns lava buckets from the barrel overhead and sends the
+-- empties down with the cargo, all but one: with that one it scoops up any lava it finds
+-- over or under its path in the plot. Coal it digs goes to the store; it only burns coal
+-- when there is no lava to be had.
 --
 -- A plot is size x size columns from (x0, z0), dug in layers three blocks high from topY
 -- down to bottom. Progress is saved after every cell, so a restart carries on where it was.
@@ -39,15 +44,20 @@ local M = {}
 M.cfg = {
   jobFile = "/.miner",
   fuelTarget = 3000,     -- fill up to this at the base
+  scoopTo = 20000,       -- lava found while digging is scooped up until the tank holds this
   fuelLow = 600,         -- spare kept on top of the trip home; below it, go and refuel
   reportEvery = 20,      -- seconds between routine reports
-  coalWait = 120,        -- seconds to wait at the berth for coal before carrying on
+  coalWait = 120,        -- seconds to wait at the berth for fuel, when it has too little to work on
   cellWaits = 3,         -- waits on a protected block in the plot before that cell is left
   patience = math.huge,  -- waits on a blocked path before a leg gives up (tests lower it)
 }
 
--- never dropped at the dock
-local KEEP = { "*pickaxe*", "advancedperipherals:*", "computercraft:*" }
+-- never dropped at the berth (of the empty buckets it keeps one: see spareBuckets)
+local BUCKET, LAVA = "minecraft:bucket", "minecraft:lava_bucket"
+local KEEP = { "*pickaxe*", "advancedperipherals:*", "computercraft:*", BUCKET }
+-- held back while it refuels, in case there is no lava
+local HOLD = { "*pickaxe*", "advancedperipherals:*", "computercraft:*", BUCKET, LAVA,
+  "minecraft:coal", "minecraft:charcoal", "minecraft:coal_block" }
 -- never dug, wherever it is met
 local PROTECT = {
   "^computercraft:", "^advancedperipherals:", "chest", "barrel", "shulker_box", "hopper",
@@ -66,6 +76,7 @@ local J = {}                 -- the job in hand (saved in cfg.jobFile); J.index 
 local parked, abandon, rebootWanted = false, false, false
 local jumpTo = nil           -- a layer to carry on from, by order
 local lastReport, lastState = -1e9, nil
+local scooped = 0            -- lava sources scooped up since it started
 
 -- ---------------------------------------------------------------- geometry
 
@@ -254,16 +265,15 @@ local function toBerth()
   follow(way, k)
 end
 
---- Drop everything but tools into the barrel under the berth. Waits while it is full.
-local function unload()
-  inv.refuel(M.cfg.fuelTarget)                        -- burn mined coal first: it is free
+--- Drop everything not in `keep` into the barrel under the berth. Waits while it is full.
+local function unload(keep)
   local tries = 0
   while true do
-    inv.dropAllExcept(KEEP, "down")
+    inv.dropAllExcept(keep, "down")
     local left = 0
     for s = 1, inv.SLOTS do
       local it = turtle.getItemDetail(s)
-      if it and not inv.matches(it, KEEP) then left = left + it.count end
+      if it and not inv.matches(it, keep) then left = left + it.count end
     end
     if left == 0 then return true end
     tries = tries + 1
@@ -278,36 +288,60 @@ local function fuelShort()
   return f ~= "unlimited" and f < M.cfg.fuelTarget
 end
 
---- Coal from the barrel over the berth, only as much as fills the tank.
+--- Fill the tank at the berth: lava buckets from the barrel overhead first. Whatever else
+-- comes out of that barrel is held and goes down with the cargo. With no lava there, the
+-- coal it carries is burnt; with too little to work on, it waits a while for the barrel.
 local function takeFuel()
-  local waited = 0
-  while fuelShort() and waited < M.cfg.coalWait do
-    local before = turtle.getFuelLevel()
-    local want = math.min(64, math.ceil((M.cfg.fuelTarget - before) / 80))
-    if turtle.suckUp and turtle.suckUp(want) then
-      inv.refuel(M.cfg.fuelTarget)
-      if turtle.getFuelLevel() <= before then break end   -- not fuel: it goes out with the next load
-    else
-      report("refuelling: no coal in the barrel yet", waited == 0)
-      sleep(5)
-      waited = waited + 5
-    end
+  while fuelShort() and inv.freeSlots() > 1 do
+    if not (turtle.suckUp and turtle.suckUp()) then break end
+    inv.refuel(M.cfg.fuelTarget, { LAVA })
   end
-  local stuck = 0
-  while turtle.getFuelLevel() ~= "unlimited" and turtle.getFuelLevel() < 300 do
+  if fuelShort() then inv.refuel(M.cfg.fuelTarget) end
+  local function low(limit)
+    local f = turtle.getFuelLevel()
+    return f ~= "unlimited" and f < limit
+  end
+  local waited, stuck = 0, 0
+  while low(M.cfg.fuelLow + 400) and waited < M.cfg.coalWait do
+    report("refuelling: nothing in the fuel barrel yet", waited == 0)
+    sleep(5)
+    waited = waited + 5
+    if turtle.suckUp and turtle.suckUp() then inv.refuel(M.cfg.fuelTarget) end
+  end
+  while low(300) do
     stuck = stuck + 1
     if stuck > M.cfg.patience then error("no fuel at the base", 0) end
     report("needs fuel", stuck == 1)
     sleep(10)
-    if turtle.suckUp then turtle.suckUp(8) end
+    if turtle.suckUp then turtle.suckUp() end
     inv.refuel(M.cfg.fuelTarget)
   end
 end
 
---- At the berth: unload, then fill up.
+--- Of the empty buckets it now carries, one stays (for scooping); the rest go down to be refilled.
+local function spareBuckets()
+  local kept = false
+  for s = 1, inv.SLOTS do
+    local it = turtle.getItemDetail(s)
+    if it and it.name == BUCKET then
+      turtle.select(s)
+      if kept then
+        turtle.dropDown()
+      else
+        kept = true
+        if it.count > 1 then turtle.dropDown(it.count - 1) end
+      end
+    end
+  end
+  turtle.select(1)
+end
+
+--- At the berth: unload, fill up, send the empties and the rest down.
 local function service()
-  if not unload() then error("the cargo barrel stays full", 0) end
+  if not unload(HOLD) then error("the cargo barrel stays full", 0) end
   takeFuel()
+  spareBuckets()
+  if not unload(KEEP) then error("the cargo barrel stays full", 0) end
 end
 
 --- From the berth (or anywhere on the way out) to the foot of the out-shaft.
@@ -336,6 +370,27 @@ end
 
 -- ---------------------------------------------------------------- mining
 
+--- A lava source right over or under it: scoop it up and burn it, while the tank has room.
+local function scoop(dir)
+  local f = turtle.getFuelLevel()
+  if f == "unlimited" or f + 1000 > math.min(turtle.getFuelLimit(), M.cfg.scoopTo) then return false end
+  local sfx = dir == "up" and "Up" or "Down"
+  local present, b = turtle["inspect" .. sfx]()
+  if not (present and type(b) == "table" and b.name == "minecraft:lava") then return false end
+  if type(b.state) == "table" and (b.state.level or 0) ~= 0 then return false end   -- flowing: nothing to take
+  local slot = inv.find(BUCKET)
+  if not slot then return false end
+  turtle.select(slot)
+  local ok = turtle["place" .. sfx]()
+  if ok then
+    inv.refuel(M.cfg.scoopTo, { LAVA })
+    scooped = scooped + 1
+    if scooped == 1 or scooped % 10 == 0 then log.info("lava scooped up %d times, fuel %d", scooped, turtle.getFuelLevel()) end
+  end
+  turtle.select(1)
+  return ok and true or false
+end
+
 local function housekeeping()
   if inv.freeSlots() <= 1 then
     inv.compact()
@@ -363,6 +418,8 @@ local function mine()
       local x, z = cellPos(J.layer, J.cell + 1)
       local ok, why = go(x, y, z, nil, M.cfg.cellWaits)
       if ok then
+        scoop("up")
+        scoop("down")
         local _, up = move.dig("up")
         local _, down = move.dig("down")
         if up or down then log.warn("left alone at %d,%d,%d: %s", x, y, z, tostring(up or down)) end

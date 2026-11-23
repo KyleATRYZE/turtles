@@ -52,6 +52,7 @@ function SIM.reset(opts)
   SIM.inbox = {}                  -- rednet: { from, msg, protocol }
   SIM.sent = {}                   -- rednet: { to, msg, protocol }
   SIM.stock = {}                  -- container contents: key -> { { name, count }, ... }
+  SIM.flowing = {}                -- key -> true: the fluid there is flowing, not a source
   SIM.dropped = {}                -- items dropped: { where, name, count }
   SIM.peripherals = {}            -- name -> { types = {...}, methods = { name = fn } }
   SIM.rebooted = false
@@ -159,7 +160,9 @@ local function detect(dir) return solid(target(dir)) end
 local function inspect(dir)
   local b = SIM.blocks[key(target(dir))]
   if not b then return false, "No block to inspect" end
-  return true, { name = b, state = {}, tags = {} }
+  local state = {}
+  if SIM.FLUIDS[b] then state.level = SIM.flowing[key(target(dir))] and 3 or 0 end
+  return true, { name = b, state = state, tags = {} }
 end
 
 local function attack(dir)
@@ -178,6 +181,20 @@ local function drop(where, count)
   SIM.dropped[#SIM.dropped + 1] = { where = where, name = s.name, count = n }
   s.count = s.count - n
   if s.count == 0 then SIM.t.inv[SIM.t.sel] = nil end
+  return true
+end
+
+--- Only what tests need of placing: an empty bucket on a fluid source fills it.
+local function place(dir)
+  local s = SIM.t.inv[SIM.t.sel]
+  if not s then return false, "No items to place" end
+  local k = key(target(dir))
+  local b = SIM.blocks[k]
+  if s.name ~= "minecraft:bucket" or not (b and SIM.FLUIDS[b]) or SIM.flowing[k] then return false, "Cannot place item here" end
+  SIM.blocks[k] = nil
+  local full = b == "minecraft:lava" and "minecraft:lava_bucket" or "minecraft:water_bucket"
+  s.count = s.count - 1
+  if s.count == 0 then SIM.t.inv[SIM.t.sel] = { name = full, count = 1 } else addItem(full, 1) end
   return true
 end
 
@@ -252,6 +269,9 @@ turtle = {
   drop = function(n) return drop("front", n) end,
   dropUp = function(n) return drop("up", n) end,
   dropDown = function(n) return drop("down", n) end,
+  place = function() return place("forward") end,
+  placeUp = function() return place("up") end,
+  placeDown = function() return place("down") end,
   suck = function(n) return suck("forward", n) end,
   suckUp = function(n) return suck("up", n) end,
   suckDown = function(n) return suck("down", n) end,

@@ -71,8 +71,10 @@ new updater up on its next boot and its job's files on the one after.
   mods add (Create's scoria, limestone and the like) are dug like any other.
 - Progress is saved after every cell. GPS is the truth about position after a restart.
 - Cargo: everything it carries goes into the barrel under the berth; a belt takes it to the store.
-- Fuel: it burns the coal it digs; at the berth it takes coal from the barrel overhead, which
-  the store keeps filled, and only as much as fills its tank.
+- Fuel is lava: at the berth it burns lava buckets from the barrel overhead, which
+  the store keeps filled, and sends the empties down, all but one. With that one it scoops up
+  lava it finds over or under its path. Coal it digs goes to the store; it burns coal only
+  when there is no lava.
 - Orders: `stop`, `resume`, `newjob`, `reboot` (with `rev`), `ping`.
 
 Not tried in the game yet. The simulator has no `parallel`, no real peripherals and no lag.
