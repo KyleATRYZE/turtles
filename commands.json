@@ -1,18 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795469946,
-      "issued": 1795469946000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "mekanism:dust_fluorite,alltheores:fluorite_dust,alltheores:uranium_ingot"
-    },
-    {
-      "id": 1795469947,
-      "issued": 1795469946000,
+      "id": 1795471188,
+      "issued": 1795471188000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:dust_fluorite,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:sulfur,alltheores:fluorite"
+      "items": "mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:pellet_antimatter,mekanism:pellet_polonium,mekanism:ultimate_induction_cell,allthemodium:unobtainium_helmet,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,allthemodium:unobtainium_ingot,mekanism:dust_lithium,alltheores:sulfur"
+    },
+    {
+      "id": 1795471189,
+      "issued": 1795471188000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:ultimate_induction_cell,allthemodium:unobtainium_helmet,mekanism:dust_lithium"
     }
   ]
 }
