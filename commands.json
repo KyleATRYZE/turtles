@@ -1,18 +1,35 @@
 {
   "commands": [
     {
-      "id": 1795395181,
-      "issued": 1795395181000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "minecraft:obsidian,alltheores:osmium_ingot,alltheores:raw_osmium,minecraft:diamond,mekanism:enriched_diamond,mekanism:alloy_infused,mekanism:alloy_reinforced,alltheores:steel_ingot,minecraft:iron_ingot,minecraft:gold_ingot,minecraft:redstone,minecraft:netherite_helmet,minecraft:netherite_ingot,alltheores:tin_ingot,alltheores:bronze_nugget,alltheores:fluorite_dust,mekanism:hdpe_sheet,mekanism:pellet_polonium,mekanism:bio_fuel,alltheores:uranium_ingot"
-    },
-    {
-      "id": 1795395182,
-      "issued": 1795395181000,
+      "id": 1795395367,
+      "issued": 1795395367000,
       "cmd": "recipes",
       "target": "FoundryBoard",
-      "items": "mekanism:energy_tablet,mekanism:personal_chest,mekanism:basic_induction_cell,mekanism:ultimate_control_circuit,mekanism:configurator,mekanism:robit,mekanism:hdpe_sheet,mekanism:electrolytic_separator,mekanism:pressurized_reaction_chamber,mekanism:rotary_condensentrator,mekanism:osmium_compressor,mekanism:solar_neutron_activator"
+      "items": "mekanism:robit,mekanism:energy_tablet,mekanism:alloy_atomic,mekanism:ingot_refined_obsidian,mekanism:ultimate_control_circuit,mekanism:mekasuit_helmet,mekanism:mekasuit_bodyarmor,mekanism:mekasuit_pants,mekanism:mekasuit_boots,mekanism:meka_tool,mekanism:basic_induction_cell,mekanism:pressurized_reaction_chamber,mekanism:rotary_condensentrator,mekanism:solar_neutron_activator,mekanism:module_base,mekanism:atomic_disassembler"
+    },
+    {
+      "id": 1795395368,
+      "issued": 1795395367000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "mekanism:enriched_refined_obsidian",
+      "n": 4,
+      "wait": 20
+    },
+    {
+      "id": 1795395369,
+      "issued": 1795395367000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "mekanism:robit",
+      "n": 1,
+      "wait": 25
+    },
+    {
+      "id": 1795395370,
+      "issued": 1795395367000,
+      "cmd": "jobs",
+      "target": "FoundryBoard"
     }
   ]
 }
