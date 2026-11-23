@@ -1,11 +1,20 @@
 {
   "commands": [
     {
-      "id": 1795477027,
-      "issued": 1795477027000,
-      "cmd": "stock",
+      "id": 1795477162,
+      "issued": 1795477162000,
+      "cmd": "craft",
       "target": 56,
-      "items": "mekanism:dust_lithium,minecraft:bucket,minecraft:lava_bucket,alltheores:sulfur,alltheores:sulfur_ore,alltheores:raw_uranium,minecraft:raw_gold,mekanism:ultimate_control_circuit,industrialforegoing:lime_laser_lens,minecraft:lime_dye"
+      "item": "industrialforegoing:lime_laser_lens",
+      "n": 6
+    },
+    {
+      "id": 1795477163,
+      "issued": 1795477162000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "alltheores:uranium_ingot",
+      "n": 300
     }
   ]
 }
