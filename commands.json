@@ -1,11 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795394885,
-      "issued": 1795394885000,
-      "cmd": "reboot",
-      "target": 11,
-      "rev": "c8b4528b0925bf68e12f1e6891c5f3c4f11f2889"
+      "id": 1795395181,
+      "issued": 1795395181000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "minecraft:obsidian,alltheores:osmium_ingot,alltheores:raw_osmium,minecraft:diamond,mekanism:enriched_diamond,mekanism:alloy_infused,mekanism:alloy_reinforced,alltheores:steel_ingot,minecraft:iron_ingot,minecraft:gold_ingot,minecraft:redstone,minecraft:netherite_helmet,minecraft:netherite_ingot,alltheores:tin_ingot,alltheores:bronze_nugget,alltheores:fluorite_dust,mekanism:hdpe_sheet,mekanism:pellet_polonium,mekanism:bio_fuel,alltheores:uranium_ingot"
+    },
+    {
+      "id": 1795395182,
+      "issued": 1795395181000,
+      "cmd": "recipes",
+      "target": "FoundryBoard",
+      "items": "mekanism:energy_tablet,mekanism:personal_chest,mekanism:basic_induction_cell,mekanism:ultimate_control_circuit,mekanism:configurator,mekanism:robit,mekanism:hdpe_sheet,mekanism:electrolytic_separator,mekanism:pressurized_reaction_chamber,mekanism:rotary_condensentrator,mekanism:osmium_compressor,mekanism:solar_neutron_activator"
     }
   ]
 }
