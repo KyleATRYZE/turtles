@@ -1,18 +1,28 @@
 {
   "commands": [
     {
-      "id": 1795471188,
-      "issued": 1795471188000,
-      "cmd": "stock",
+      "id": 1795471450,
+      "issued": 1795471450000,
+      "cmd": "craft",
       "target": 56,
-      "items": "mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:pellet_antimatter,mekanism:pellet_polonium,mekanism:ultimate_induction_cell,allthemodium:unobtainium_helmet,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,allthemodium:unobtainium_ingot,mekanism:dust_lithium,alltheores:sulfur"
+      "item": "mekanism:hdpe_sheet",
+      "n": 7
     },
     {
-      "id": 1795471189,
-      "issued": 1795471188000,
-      "cmd": "recipes",
+      "id": 1795471451,
+      "issued": 1795471450000,
+      "cmd": "craft",
       "target": 56,
-      "items": "mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:ultimate_induction_cell,allthemodium:unobtainium_helmet,mekanism:dust_lithium"
+      "item": "mekanism:ultimate_control_circuit",
+      "n": 6
+    },
+    {
+      "id": 1795471452,
+      "issued": 1795471450000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "mekanism:ultimate_induction_cell",
+      "n": 4
     }
   ]
 }
