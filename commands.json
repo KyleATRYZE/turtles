@@ -1,19 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795474627,
-      "issued": 1795474627000,
-      "cmd": "craft",
+      "id": 1795474747,
+      "issued": 1795474747000,
+      "cmd": "stock",
       "target": 56,
-      "item": "industrialforegoing:yellow_laser_lens",
-      "n": 4
-    },
-    {
-      "id": 1795474628,
-      "issued": 1795474627000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "minecraft:green_dye,minecraft:lime_dye,minecraft:cactus"
+      "items": "mekanism:pellet_polonium,industrialforegoing:yellow_laser_lens,mekanism:hdpe_sheet,mekanism:ultimate_control_circuit,alltheores:sulfur,alltheores:raw_uranium,minecraft:oak_log,minecraft:yellow_dye"
     }
   ]
 }
