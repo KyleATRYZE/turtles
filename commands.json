@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795474747,
-      "issued": 1795474747000,
+      "id": 1795475322,
+      "issued": 1795475322000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:pellet_polonium,industrialforegoing:yellow_laser_lens,mekanism:hdpe_sheet,mekanism:ultimate_control_circuit,alltheores:sulfur,alltheores:raw_uranium,minecraft:oak_log,minecraft:yellow_dye"
+      "items": "mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:pellet_polonium,mekanism:ultimate_induction_cell,mekanism:energy_tablet,minecraft:raw_gold,minecraft:gold_ingot,minecraft:raw_iron,minecraft:raw_copper,minecraft:sand,minecraft:netherite_ingot,minecraft:diamond,alltheores:sulfur,alltheores:fluorite,alltheores:raw_uranium,minecraft:lime_dye"
     }
   ]
 }
