@@ -927,8 +927,13 @@ local function orders()
       if type(cmd) == "table" and type(cmd.issued) == "number"
         and now - cmd.issued < ORDER_LIFE then
         if cmd.cmd == "reboot" and cmd.id then
-          if not revForOrder[cmd.id] then revForOrder[cmd.id] = latestRev() end
-          cmd.rev = revForOrder[cmd.id]
+          -- an order may name the exact commit to load (a branch on trial); otherwise
+          -- everyone gets the newest main
+          local pinned = type(cmd.rev) == "string" and #cmd.rev == 40 and cmd.rev:match("^%x+$")
+          if not pinned then
+            if not revForOrder[cmd.id] then revForOrder[cmd.id] = latestRev() end
+            cmd.rev = revForOrder[cmd.id]
+          end
         end
         rednet.broadcast(cmd, swarm.CMD_PROTOCOL)
         orderNote = ("#%d %s -> %s"):format(
