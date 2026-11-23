@@ -1,46 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795395501,
-      "issued": 1795395501000,
+      "id": 1795395958,
+      "issued": 1795395958000,
       "cmd": "stock",
       "target": "FoundryBoard",
-      "items": "mekanism:robit,mekanism:alloy_atomic,mekanism:ingot_refined_obsidian,mekanism:enriched_refined_obsidian,mekanism:energy_tablet,minecraft:iron_ingot,minecraft:raw_iron,alltheores:steel_ingot,alltheores:osmium_ingot,minecraft:diamond,minecraft:obsidian"
-    },
-    {
-      "id": 1795395502,
-      "issued": 1795395501000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
-    },
-    {
-      "id": 1795395546,
-      "issued": 1795395546000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "mekanism:ultimate_control_circuit",
-      "n": 1,
-      "wait": 30
-    },
-    {
-      "id": 1795395547,
-      "issued": 1795395546000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "mekanism:ultimate_control_circuit,mekanism:robit"
-    },
-    {
-      "id": 1795395620,
-      "issued": 1795395620000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "mekanism:ultimate_control_circuit,mekanism:alloy_atomic,mekanism:elite_control_circuit"
-    },
-    {
-      "id": 1795395621,
-      "issued": 1795395620000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
+      "items": "mekanism:bio_fuel,minecraft:oak_leaves,minecraft:spruce_leaves,minecraft:oak_sapling,minecraft:spruce_sapling,minecraft:wheat_seeds,minecraft:wheat,minecraft:short_grass,minecraft:sugar_cane,minecraft:bamboo,minecraft:kelp,minecraft:melon_slice,minecraft:pumpkin,minecraft:rotten_flesh,minecraft:carrot,minecraft:potato,minecraft:moss_block,minecraft:apple,minecraft:bread,minecraft:dandelion,minecraft:poppy,minecraft:fern,minecraft:brown_mushroom,minecraft:red_mushroom,minecraft:beetroot_seeds,minecraft:sweet_berries,minecraft:cactus,minecraft:vine,minecraft:nether_wart"
     }
   ]
 }
