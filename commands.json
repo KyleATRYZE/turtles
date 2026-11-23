@@ -1,20 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795393309,
-      "issued": 1795393309000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "mekanism:elite_control_circuit",
-      "n": 1,
-      "wait": 25
-    },
-    {
-      "id": 1795393310,
-      "issued": 1795393309000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "mekanism:elite_control_circuit,mekanism:alloy_reinforced,mekanism:advanced_control_circuit"
+      "id": 1795394697,
+      "issued": 1795394697000,
+      "cmd": "reboot",
+      "target": 11,
+      "rev": "4f8233151874afa14f7d779fb6038e6caf74153f"
     }
   ]
 }
