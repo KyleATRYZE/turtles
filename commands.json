@@ -1,11 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795473767,
-      "issued": 1795473767000,
+      "id": 1795474034,
+      "issued": 1795474034000,
       "cmd": "stock",
       "target": 56,
-      "items": "alltheores:raw_uranium,alltheores:raw_iridium,alltheores:raw_nickel,alltheores:raw_tin,minecraft:redstone_ore,minecraft:coal_ore,minecraft:lapis_ore,alltheores:raw_osmium,minecraft:raw_gold,minecraft:raw_iron,minecraft:coal"
+      "items": "minecraft:glass_pane,minecraft:glass,minecraft:sand,minecraft:lime_dye,minecraft:yellow_dye,minecraft:light_gray_dye,minecraft:brown_dye,minecraft:orange_dye,minecraft:red_dye,minecraft:light_blue_dye,minecraft:white_dye,minecraft:purple_dye,minecraft:green_dye,minecraft:bone_meal,minecraft:acacia_log,minecraft:oak_log,minecraft:spruce_log,minecraft:birch_log,minecraft:dark_oak_log,minecraft:jungle_log,minecraft:cobblestone"
+    },
+    {
+      "id": 1795474035,
+      "issued": 1795474034000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:glass_pane,minecraft:glass,minecraft:lime_dye,minecraft:yellow_dye,minecraft:light_gray_dye"
     }
   ]
 }
