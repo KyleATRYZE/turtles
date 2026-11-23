@@ -1,18 +1,31 @@
 -- miner.lua in the simulator: a small base and a small plot.
 --
---   row at y 73, z 0:   OUT shaft x 7 | exit2 x 8 (fuel pad at y 72) | exit1 x 9 | dock x 10 | IN shaft x 11
+--   shafts at z 0:  OUT x 7 (open from the out road up), IN x 11 (open from the in road up)
+--   way in :  up the in-shaft to y 70, south to z 3, west to x 9, down to y 69, south into the berth (9, 69, 5)
+--   way out:  berth, north to z 3, up to y 71, west to x 7, north to z 0, down the out-shaft
+--   cargo barrel under the berth, fuel barrel over it
 --   plot: 2 x 2 columns from (20, 4), top 50, bottom 40  ->  3 layers at y 48, 45, 42
 --   out road y 52, in road y 56
 
-local DOCK, E1, E2 = { x = 10, y = 73, z = 0 }, { x = 9, y = 73, z = 0 }, { x = 8, y = 73, z = 0 }
+local function c(x, y, z) return { x = x, y = y, z = z } end
+local IN = { c(11, 70, 0), c(11, 70, 3), c(9, 70, 3), c(9, 69, 3), c(9, 69, 5) }
+local OUT = { c(9, 69, 5), c(9, 69, 3), c(9, 71, 3), c(7, 71, 3), c(7, 71, 0) }
 local JOB = { type = "job", forId = 1, index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40,
-  dock = DOCK, exit1 = E1, exit2 = E2 }
+  inbound = IN, outbound = OUT }
+
+local function saved(extra)
+  local j = { index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40, inbound = IN, outbound = OUT,
+    layer = 1, cell = 0, phase = "mine" }
+  for k, v in pairs(extra or {}) do j[k] = v end
+  SIM.files[".miner"] = textutils.serialize(j)
+end
 
 local function world()
   SIM.fill(0, 36, -4, 30, 64, 12, "minecraft:stone")         -- rock to well above the roads
   for y = 52, 64 do SIM.block(7, y, 0, nil) end              -- the out-shaft is open, as at the base
   for y = 57, 64 do SIM.block(11, y, 0, nil) end             -- and the in-shaft above the in road
-  SIM.block(10, 72, 0, "minecraft:chest")                    -- the drop-off under the dock
+  SIM.block(9, 68, 5, "minecraft:barrel")                    -- cargo, under the berth
+  SIM.block(9, 70, 5, "minecraft:barrel")                    -- fuel, over it
   SIM.peripherals.right = { types = { "modem" }, methods = { isWireless = function() return true end } }
 end
 
@@ -50,7 +63,9 @@ local function droppedDown()
   return n
 end
 
-test("takes a plot, digs all of it, unloads at the dock and says it is done", function()
+local function at(x, y, z) return SIM.t.x == x and SIM.t.y == y and SIM.t.z == z end
+
+test("takes a plot, digs all of it, unloads in its berth and says it is done", function()
   world()
   SIM.receive(99, JOB, "swarm_job")
   local m = miner({ fuelTarget = 100 })
@@ -58,15 +73,15 @@ test("takes a plot, digs all of it, unloads at the dock and says it is done", fu
   m.work(6)
   local clear, where = plotClear()
   ok(clear, "plot dug (left: " .. tostring(where) .. ")")
-  ok(droppedDown() >= 36, "everything dug went into the chest: " .. droppedDown())
+  ok(droppedDown() >= 36, "everything dug went into the cargo barrel: " .. droppedDown())
   eq(#sent("job_done"), 1, "job_done sent")
   eq(sent("job_done")[1].index, 7)
-  eq(SIM.getBlock(10, 72, 0), "minecraft:chest", "the chest is still there")
-  eq(SIM.t.y, 52, "waiting on the out road")
-  ok(SIM.t.x == 7 and SIM.t.z >= 2, "in its pocket, clear of the shaft")
+  eq(SIM.getBlock(9, 68, 5), "minecraft:barrel", "the cargo barrel is still there")
+  eq(SIM.getBlock(9, 70, 5), "minecraft:barrel", "and the fuel barrel")
+  ok(at(9, 69, 5), "waiting in its berth for the next plot")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
-test("a full inventory sends it to the dock, then it carries on where it was", function()
+test("a full inventory sends it home, then it carries on where it was", function()
   world()
   SIM.receive(99, JOB, "swarm_job")
   for s = 1, 15 do SIM.give(s, "minecraft:thing" .. s, 64) end -- one free slot
@@ -77,41 +92,84 @@ test("a full inventory sends it to the dock, then it carries on where it was", f
   eq(job.phase, "leave", "unloaded and about to leave")
   ok(job.cell >= 1 and job.layer == 1, "stopped part way: cell " .. tostring(job.cell))
   ok(droppedDown() >= 15 * 64, "unloaded")
+  ok(at(9, 69, 5), "in the berth")
   m.work(8)
   ok(plotClear(), "plot finished after the trip")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
-test("low on fuel: it sits on the pad until the coal arrives, then goes back", function()
+test("low on fuel: it takes coal from the barrel overhead, only what it needs", function()
   world()
-  SIM.receive(99, JOB, "swarm_job")
+  SIM.stockAt(9, 70, 5, "minecraft:coal", 64)
+  saved({ phase = "dock" })
   local m = miner({ fuelTarget = 2000, fuelLow = 50 })
-  start(10, 73, 0)                                             -- on the dock
-  local realSleep, fed = sleep, 0
-  sleep = function(s)                                          -- the export bus under the pad
-    if SIM.t.x == 8 and SIM.t.y == 72 and SIM.t.z == 0 then
-      SIM.addItem("minecraft:coal", 16)
-      fed = fed + 1
-    end
-    return realSleep(s)
-  end
-  local job = { index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40, dock = DOCK, exit1 = E1, exit2 = E2,
-    layer = 1, cell = 0, phase = "leave" }
-  SIM.files[".miner"] = textutils.serialize(job)
-  m = miner({ fuelTarget = 2000, fuelLow = 50 })
-  m.work(1)                                                    -- leave the dock
-  ok(fed >= 1, "waited on the pad")
+  start(9, 69, 5)                                              -- in the berth
+  m.work(1)                                                    -- unload, refuel
   ok(SIM.t.fuel >= 2000, "refuelled: " .. SIM.t.fuel)
-  eq(SIM.t.x, 7) eq(SIM.t.y, 52)
-end, { x = 10, y = 73, z = 0, f = 0, fuel = 400 })
+  eq(SIM.stock["9,70,5"][1].count, 64 - 20, "took 20 coal for 1600 fuel")
+  eq(turtle.getItemCount(1), 0, "carries no coal away")
+  m.work(1)                                                    -- leave
+  ok(at(7, 52, 0), "at the foot of the out-shaft")
+end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
+
+test("an empty fuel barrel only holds it up for a while", function()
+  world()
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 2000, fuelLow = 50, coalWait = 20 })
+  start(9, 69, 5)
+  m.work(2)
+  ok(at(7, 52, 0), "left with what it had")
+  ok(#sent("report") >= 1, "and said it was waiting for coal")
+end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
+
+test("a plot taken before the berths existed: it asks the controller the way home", function()
+  world()
+  SIM.files[".miner"] = textutils.serialize({ index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40,
+    dock = c(10, 73, 0), exit1 = c(9, 73, 0), exit2 = c(8, 73, 0), layer = 3, cell = 4, phase = "dock" })
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(20, 42, 4)                                             -- down in its plot
+  for x = 20, 21 do for z = 4, 5 do for y = 41, 49 do SIM.block(x, y, z, nil) end end end
+  m.work(1)
+  local job = textutils.unserialize(SIM.files[".miner"])
+  eq(job.dock, nil, "the old dock is forgotten")
+  eq(job.inbound[5].z, 5, "the way in is kept")
+  eq(job.layer, 3, "its place in the plot is kept")
+  ok(at(9, 69, 5), "and it came home to the berth")
+end, { x = 20, y = 42, z = 4, f = 0, fuel = 5000 })
+
+test("restarted on the way in, it goes on in; on the way out, on out", function()
+  world()
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 100 })
+  start(10, 70, 3)                                             -- in the aisle, inbound
+  m.work(1)
+  ok(at(9, 69, 5), "reached the berth")
+  saved({ phase = "leave" })
+  m = miner({ fuelTarget = 100 })
+  SIM.t.x, SIM.t.y, SIM.t.z, SIM.t.f = 8, 71, 3, 0             -- in the aisle, outbound, facing north
+  start(8, 71, 3)
+  local before = SIM.t.moves
+  m.work(1)
+  ok(at(7, 52, 0), "reached the foot of the out-shaft")
+  eq(SIM.t.moves - before, 1 + 3 + 19, "straight there")
+end, { x = 10, y = 70, z = 3, f = 0, fuel = 5000 })
+
+test("sent home while it is on the way out, it goes round: the ways are one-way", function()
+  world()
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 100 })
+  start(7, 71, 2)                                              -- outbound, nearly at the out-shaft
+  m.work(1)
+  ok(at(9, 69, 5), "home")
+  ok(SIM.t.moves > 60, "by the out-shaft, the roads and the in-shaft: " .. SIM.t.moves .. " moves")
+end, { x = 7, y = 71, z = 2, f = 0, fuel = 5000 })
 
 test("after a restart in the middle of a layer it finishes the plot", function()
   world()
   for x = 20, 21 do for z = 4, 5 do for y = 47, 49 do SIM.block(x, y, z, nil) end end end   -- layer 1 already dug
   -- layer 2 runs layer 1's path backwards, so its first cell is the column layer 1 ended in
   SIM.block(20, 46, 5, nil) SIM.block(20, 45, 5, nil) SIM.block(20, 44, 5, nil)
-  local job = { index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40, dock = DOCK, exit1 = E1, exit2 = E2,
-    layer = 2, cell = 1, phase = "mine" }
-  SIM.files[".miner"] = textutils.serialize(job)
+  saved({ layer = 2, cell = 1 })
   local m = miner({ fuelTarget = 100 })
   ok(m.locateSelf(), "found itself by GPS")
   m.work(1)
@@ -119,15 +177,42 @@ test("after a restart in the middle of a layer it finishes the plot", function()
   eq(textutils.unserialize(SIM.files[".miner"]).phase, "finish")
 end, { x = 20, y = 45, z = 5, f = 2, fuel = 5000 })
 
-test("a machine in the plot is left alone", function()
+test("a machine in the plot is left alone, and the rest of the plot is still dug", function()
   world()
   SIM.block(21, 45, 4, "ae2:cable_bus")
   SIM.receive(99, JOB, "swarm_job")
-  local m = miner({ fuelTarget = 100, patience = 2 })
+  local m = miner({ fuelTarget = 100 })                        -- patience as in the field: it must not wait for ever
+  m.cfg.patience = math.huge
   start(7, 52, 0)
   m.work(2)
   eq(SIM.getBlock(21, 45, 4), "ae2:cable_bus", "not dug")
   eq(textutils.unserialize(SIM.files[".miner"]).phase, "finish", "the rest of the plot was still done")
+  eq(SIM.getBlock(20, 42, 4), nil, "down to the last layer")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("plain rock and ores that mods add are dug like any other", function()
+  world()
+  SIM.block(21, 45, 4, "create:scoria")
+  SIM.block(20, 45, 4, "create:deepslate_zinc_ore")
+  SIM.block(20, 45, 5, "mekanism:osmium_ore")
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(7, 52, 0)
+  m.work(2)
+  ok(plotClear(), "all of it dug")
+  local got = {}
+  for _, b in ipairs(SIM.dug) do got[b] = true end
+  ok(got["create:scoria"] and got["create:deepslate_zinc_ore"] and got["mekanism:osmium_ore"], "and kept")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("but what is built from that rock is not", function()
+  world()
+  SIM.block(21, 45, 4, "create:cut_scoria_bricks")
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(7, 52, 0)
+  m.work(2)
+  eq(SIM.getBlock(21, 45, 4), "create:cut_scoria_bricks", "left alone")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
 test("near the surface it never digs: a miner set down in the factory waits", function()
@@ -135,25 +220,48 @@ test("near the surface it never digs: a miner set down in the factory waits", fu
   SIM.fill(0, 69, -4, 30, 69, 12, "minecraft:gray_concrete")  -- a factory floor
   SIM.receive(99, JOB, "swarm_job")
   local m = miner({ fuelTarget = 100, patience = 1 })
-  start(15, 70, 3)
+  start(15, 70, 8)
   local okRun, err = pcall(m.work, 2)
   eq(okRun, false, "gave up (with patience 1)")
   has(tostring(err), "protected:minecraft:gray_concrete", "said why")
-  eq(SIM.getBlock(15, 69, 3), "minecraft:gray_concrete", "floor untouched")
+  eq(SIM.getBlock(15, 69, 8), "minecraft:gray_concrete", "floor untouched")
   eq(#SIM.dug, 0, "nothing dug at all")
-end, { x = 15, y = 70, z = 3, f = 0, fuel = 5000 })
+end, { x = 15, y = 70, z = 8, f = 0, fuel = 5000 })
 
 test("even plain stone is not dug up there", function()
   world()
   SIM.fill(0, 69, -4, 30, 69, 12, "minecraft:stone")
   SIM.receive(99, JOB, "swarm_job")
   local m = miner({ fuelTarget = 100, patience = 1 })
-  start(15, 70, 3)
+  start(15, 70, 8)
   local okRun, err = pcall(m.work, 2)
   eq(okRun, false)
   has(tostring(err), "blocked:minecraft:stone", "said why")
   eq(#SIM.dug, 0, "nothing dug at all")
-end, { x = 15, y = 70, z = 3, f = 0, fuel = 5000 })
+end, { x = 15, y = 70, z = 8, f = 0, fuel = 5000 })
+
+test("a shut gate on the way in: it waits and says why, and digs nothing", function()
+  world()
+  SIM.block(11, 70, 2, "create:metal_girder")                 -- the gate leaf, across the way in
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 100, patience = 2 })
+  start(11, 70, 0)
+  local okRun, err = pcall(m.work, 1)
+  eq(okRun, false)
+  has(tostring(err), "protected:create:metal_girder")
+  eq(SIM.getBlock(11, 70, 2), "create:metal_girder", "gate untouched")
+end, { x = 11, y = 70, z = 0, f = 0, fuel = 5000 })
+
+test("a job without a way home is not taken", function()
+  world()
+  SIM.receive(99, { type = "job", forId = 1, index = 7, x0 = 20, z0 = 4, size = 2, topY = 50, bottom = 40,
+    dock = c(10, 73, 0), exit1 = c(9, 73, 0), exit2 = c(8, 73, 0) }, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(7, 52, 0)
+  m.work(1)
+  eq(SIM.files[".miner"], nil, "nothing saved")
+  eq(SIM.t.moves, 0, "it stayed where it was")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
 test("orders only set flags; the loop acts on them between steps", function()
   world()
@@ -202,7 +310,7 @@ test("a miner left underground off the roads finds its way round by the base", f
   start(26, 60, 9)                                             -- in rock, above the roads
   m.work(2)                                                    -- take the job; go round; dig the plot
   ok(plotClear(), "plot dug")
-  ok(droppedDown() > 0, "it passed the dock on the way")
+  ok(droppedDown() > 0, "it passed its berth on the way")
 end, { x = 26, y = 60, z = 9, f = 0, fuel = 5000 })
 
 test("a road pier on the way is never dug: it waits and says why", function()

@@ -110,7 +110,7 @@ function M.pinVersion(cmd)
 end
 
 --- Ask the controller for a plot. Returns the job message, or nil if none came in `wait` seconds.
----@return table? job { index, x0, z0, size, topY, bottom, dock, exit1, exit2 }
+---@return table? job { index, x0, z0, size, topY, bottom, inbound, outbound }
 function M.requestJob(wait)
   if not M.open() then return nil end
   local me = os.getComputerID()

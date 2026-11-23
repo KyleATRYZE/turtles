@@ -1,22 +1,28 @@
---- miner.lua: dig the plot the controller hands out, bring everything to the drop-off,
--- refuel, go back, and ask for the next plot when it is done.
+--- miner.lua: dig the plot the controller hands out, bring everything home to its berth
+-- in the hangar, refuel there, go back, and ask for the next plot when it is done.
 --
 -- Built only from lib/ (move, inv, state, log, net). What it knows about the base comes
--- with the job: the drop-off chest (dock), the two cells beside it (exit1, exit2), and
--- from those the two shafts. Travel is underground on two one-way roads, as before:
+-- with the job, as two lists of corners to fly through, one after the other:
+--
+--   inbound  : top of the IN shaft ... its berth       (the shaft's foot is on the in road)
+--   outbound : its berth ... top of the OUT shaft      (the shaft's foot is on the out road)
+--
+-- Both are one-way, so two miners never meet head on. Under ground it travels on two
+-- one-way roads, as before:
 --
 --   out road  (topY + 2):  base -> plot      down the OUT shaft, along, down the plot's shaft
 --   in road   (topY + 6):  plot -> base      up the plot's shaft, along, up the IN shaft
 --
---   IN shaft | dock | exit1 | exit2 (fuel pad one below) | OUT shaft        (one row, y = dock.y)
+-- At the berth there is a barrel below (everything it carries goes in; a conveyor takes it
+-- to the store) and a barrel above (coal, kept filled by the store).
 --
 -- A plot is size x size columns from (x0, z0), dug in layers three blocks high from topY
 -- down to bottom. Progress is saved after every cell, so a restart carries on where it was.
 --
 -- Rules it keeps:
---   * it never digs higher than 12 above the plot tops: up there the shafts and the dock
---     row are already open, and anything else is the factory or a road
---   * it never digs a protected block (machines, cables, chests, other turtles): it waits
+--   * it never digs higher than 12 above the plot tops: up there everything is the factory
+--   * it never digs a protected block (machines, cables, chests, other turtles). On the way
+--     somewhere it waits for it to go; in its plot it leaves that one cell and carries on
 --   * every wait is reported with its reason; a crash is reported, then startup restarts it
 --
 -- Orders (from the controller): stop, resume, newjob, reboot (rev = a commit to load), ping,
@@ -35,7 +41,8 @@ M.cfg = {
   fuelTarget = 3000,     -- fill up to this at the base
   fuelLow = 600,         -- spare kept on top of the trip home; below it, go and refuel
   reportEvery = 20,      -- seconds between routine reports
-  coalWait = 120,        -- seconds to wait on the fuel pad for coal before carrying on
+  coalWait = 120,        -- seconds to wait at the berth for coal before carrying on
+  cellWaits = 3,         -- waits on a protected block in the plot before that cell is left
   patience = math.huge,  -- waits on a blocked path before a leg gives up (tests lower it)
 }
 
@@ -48,6 +55,11 @@ local PROTECT = {
   "^immersiveengineering:", "^simplylight:", "^functionalstorage:", "^sophisticated",
   "concrete", "glass", "spawner", "_door", "ladder", "polished_", "smooth_stone", "_slab", "_stairs", "_wall",
 }
+-- ...except these, which the patterns above would catch: ores and the plain rock mods add
+local NATURAL = {
+  "_ore$", "^create:scoria$", "^create:scorchia$", "^create:limestone$", "^create:asurine$",
+  "^create:crimsite$", "^create:ochrum$", "^create:veridium$",
+}
 local DIG_CEILING = 12       -- no digging higher than this above the plot tops (see go)
 
 local J = {}                 -- the job in hand (saved in cfg.jobFile); J.index nil = none
@@ -57,13 +69,34 @@ local lastReport, lastState = -1e9, nil
 
 -- ---------------------------------------------------------------- geometry
 
-local function geo()
-  local d, e1, e2 = J.dock, J.exit1, J.exit2
-  return {
-    inX = 2 * d.x - e1.x, inZ = 2 * d.z - e1.z,        -- the in-shaft: one step beyond the dock
-    outX = 2 * e2.x - e1.x, outZ = 2 * e2.z - e1.z,    -- the out-shaft: one step beyond exit2
-    outY = J.topY + 2, inY = J.topY + 6, padY = e2.y - 1,
-  }
+local function outY() return J.topY + 2 end
+local function inY() return J.topY + 6 end
+
+--- The whole way in: foot of the in-shaft, then the job's corners, ending in the berth.
+local function wayIn()
+  local w = { { x = J.inbound[1].x, y = inY(), z = J.inbound[1].z } }
+  for _, c in ipairs(J.inbound) do w[#w + 1] = c end
+  return w
+end
+
+--- The whole way out: the berth, the job's corners, then the foot of the out-shaft.
+local function wayOut()
+  local w = {}
+  for _, c in ipairs(J.outbound) do w[#w + 1] = c end
+  w[#w + 1] = { x = w[#w].x, y = outY(), z = w[#w].z }
+  return w
+end
+
+local function between(v, a, b) return v >= math.min(a, b) and v <= math.max(a, b) end
+
+--- Standing on this way? Returns the number of the corner to make for next, or nil.
+local function onWay(way)
+  local p = move.pos
+  for i = 1, #way - 1 do
+    local a, b = way[i], way[i + 1]
+    if between(p.x, a.x, b.x) and between(p.y, a.y, b.y) and between(p.z, a.z, b.z) then return i + 1 end
+  end
+  return nil
 end
 
 local function layerCount() return math.floor((J.topY - 2 - J.bottom) / 3) + 1 end
@@ -84,23 +117,13 @@ local function inPlot()
   return p.y <= J.topY and p.x >= J.x0 and p.x < J.x0 + J.size and p.z >= J.z0 and p.z < J.z0 + J.size
 end
 
---- On the row at the base (dock, exits, pad, shaft heads)?
-local function onRow()
-  local g, p = geo(), move.pos
-  local lo, hi = math.min(g.inX, g.outX), math.max(g.inX, g.outX)
-  return p.z == J.dock.z and p.y >= g.padY and p.x >= lo and p.x <= hi
-end
-
---- On the dock or the in-shaft side of it?
-local function inSide()
-  local g, p = geo(), move.pos
-  if g.inX > J.dock.x then return p.x >= J.dock.x end
-  return p.x <= J.dock.x
-end
-
 local function tripHome()
-  local g, p = geo(), move.pos
-  return math.abs(p.x - g.inX) + math.abs(p.z - g.inZ) + math.abs(g.inY - p.y) + (J.dock.y - g.inY) + 10
+  local way, p = wayIn(), move.pos
+  local n = math.abs(p.x - way[1].x) + math.abs(p.z - way[1].z) + math.abs(way[1].y - p.y) + 10
+  for i = 1, #way - 1 do
+    n = n + math.abs(way[i + 1].x - way[i].x) + math.abs(way[i + 1].y - way[i].y) + math.abs(way[i + 1].z - way[i].z)
+  end
+  return n
 end
 
 -- ---------------------------------------------------------------- reports, orders
@@ -178,7 +201,8 @@ M.ensureTool = ensureTool
 --- Go to x, y, z (x, then z, then y unless `order` says otherwise). Waits out anything that
 -- can clear by itself (another turtle, a sleeping chunk, no fuel) and says why it waits.
 -- Returns false + reason only for a block it will never dig, or when patience runs out.
-local function go(x, y, z, order)
+-- `giveUp`: stop waiting on a protected block after that many waits (cells of the plot).
+local function go(x, y, z, order, giveUp)
   local waits = 0
   while true do
     checkpoint()
@@ -194,6 +218,7 @@ local function go(x, y, z, order)
     if why:find("^undiggable") and not noTool then return false, why end
     waits = waits + 1
     if waits > M.cfg.patience then return false, why end
+    if giveUp and waits >= giveUp and (why:find("^protected") or why:find("^blocked")) then return false, why end
     if why == "no fuel" then inv.refuel(M.cfg.fuelLow) end
     if waits == 1 or waits % 12 == 0 then log.warn("on the way to %d,%d,%d: %s", x, y, z, why) end
     report("waiting: " .. why, waits == 1)
@@ -205,32 +230,33 @@ local function must(ok, why)
   if not ok then error("cannot get there: " .. tostring(why), 0) end
 end
 
---- From anywhere to the dock, always the right way along the one-way roads.
-local function toDock()
-  local g, d = geo(), J.dock
-  local p = move.pos
-  local inShaftAbove = p.x == g.inX and p.z == g.inZ and p.y >= g.inY
-  if not ((onRow() and inSide()) or inShaftAbove) then
-    if onRow() or (p.x == g.outX and p.z == g.outZ and p.y > g.outY) then
-      -- on the way out: finish leaving, then come round
-      must(go(g.outX, p.y, g.outZ))
-      must(go(g.outX, g.outY, g.outZ))
-    end
-    if inPlot() then
-      must(go(J.x0, move.pos.y, J.z0))              -- to the plot's own shaft, on this layer
-    elseif move.pos.y == g.outY then
-      must(go(J.x0, g.outY, J.z0))                  -- along the out road to the plot's shaft
-    end
-    must(go(move.pos.x, g.inY, move.pos.z))         -- to the in road
-    must(go(g.inX, g.inY, g.inZ))                   -- along it
-  end
-  must(go(move.pos.x, d.y, move.pos.z))             -- up the in-shaft (or already on the row)
-  must(go(d.x, d.y, d.z))
+local function follow(way, from)
+  for i = from, #way do must(go(way[i].x, way[i].y, way[i].z)) end
 end
 
---- Drop everything but tools into the chest under the dock. Waits while the chest is full.
+--- From anywhere to the berth, always the right way along the one-way roads.
+local function toBerth()
+  local way = wayIn()
+  local k = onWay(way)
+  if not k then
+    local out = wayOut()
+    local ko = onWay(out)
+    if ko then follow(out, ko) end                    -- on the way out: finish leaving, then come round
+    if inPlot() then
+      must(go(J.x0, move.pos.y, J.z0))                -- to the plot's own shaft, on this layer
+    elseif move.pos.y == outY() then
+      must(go(J.x0, outY(), J.z0))                    -- along the out road to the plot's shaft
+    end
+    must(go(move.pos.x, inY(), move.pos.z))           -- to the in road
+    must(go(way[1].x, inY(), way[1].z))               -- along it to the foot of the in-shaft
+    k = 2
+  end
+  follow(way, k)
+end
+
+--- Drop everything but tools into the barrel under the berth. Waits while it is full.
 local function unload()
-  inv.refuel(M.cfg.fuelTarget)                      -- burn mined coal first: it is free
+  inv.refuel(M.cfg.fuelTarget)                        -- burn mined coal first: it is free
   local tries = 0
   while true do
     inv.dropAllExcept(KEEP, "down")
@@ -242,7 +268,7 @@ local function unload()
     if left == 0 then return true end
     tries = tries + 1
     if tries > M.cfg.patience then return false end
-    report("drop-off full", tries == 1)
+    report("cargo barrel full", tries == 1)
     sleep(10)
   end
 end
@@ -252,30 +278,19 @@ local function fuelShort()
   return f ~= "unlimited" and f < M.cfg.fuelTarget
 end
 
---- From the dock: past the exits, onto the fuel pad if fuel is wanted, down the out-shaft.
-local function leaveDock()
-  local g, e2 = geo(), J.exit2
-  local toward = (g.outX < J.dock.x) and -1 or 1
-  if (move.pos.x - e2.x) * toward < 0 then          -- still on the dock side of exit2
-    must(go(e2.x, e2.y, e2.z, "yxz"))
-  end
-  if fuelShort() and move.pos.x == e2.x and move.pos.z == e2.z then
-    local onPad = move.pos.y == g.padY               -- (a restart can find it sitting there)
-    if not onPad then
-      local present, below = turtle.inspectDown()
-      local taken = present and type(below) == "table" and tostring(below.name):find("turtle", 1, true)
-      onPad = not taken and go(e2.x, g.padY, e2.z)
-    end
-    if onPad then
-      -- the ME export bus under the pad pushes coal into whoever sits here
-      local waited = 0
-      while fuelShort() and waited < M.cfg.coalWait do
-        inv.refuel(M.cfg.fuelTarget)
-        if not fuelShort() then break end
-        report("refuelling", waited == 0)
-        sleep(2)
-        waited = waited + 2
-      end
+--- Coal from the barrel over the berth, only as much as fills the tank.
+local function takeFuel()
+  local waited = 0
+  while fuelShort() and waited < M.cfg.coalWait do
+    local before = turtle.getFuelLevel()
+    local want = math.min(64, math.ceil((M.cfg.fuelTarget - before) / 80))
+    if turtle.suckUp and turtle.suckUp(want) then
+      inv.refuel(M.cfg.fuelTarget)
+      if turtle.getFuelLevel() <= before then break end   -- not fuel: it goes out with the next load
+    else
+      report("refuelling: no coal in the barrel yet", waited == 0)
+      sleep(5)
+      waited = waited + 5
     end
   end
   local stuck = 0
@@ -284,25 +299,38 @@ local function leaveDock()
     if stuck > M.cfg.patience then error("no fuel at the base", 0) end
     report("needs fuel", stuck == 1)
     sleep(10)
+    if turtle.suckUp then turtle.suckUp(8) end
     inv.refuel(M.cfg.fuelTarget)
   end
-  must(go(g.outX, move.pos.y, g.outZ))
-  must(go(g.outX, g.outY, g.outZ))
+end
+
+--- At the berth: unload, then fill up.
+local function service()
+  if not unload() then error("the cargo barrel stays full", 0) end
+  takeFuel()
+end
+
+--- From the berth (or anywhere on the way out) to the foot of the out-shaft.
+local function leaveBerth()
+  local way = wayOut()
+  local k = onWay(way)
+  if k then follow(way, k) end
 end
 
 --- To the plot's layer at height y: down its own shaft if coming from outside.
 local function toPlot(y)
-  local g = geo()
   if inPlot() then
     must(go(move.pos.x, y, move.pos.z))
     return
   end
-  if move.pos.y ~= g.outY then                       -- not on the out road: come round by the base
-    toDock()
-    unload()
-    leaveDock()
+  if onWay(wayOut()) then
+    leaveBerth()                                      -- at the berth, or part way out
+  elseif move.pos.y ~= outY() then                    -- anywhere else: come round by the berth
+    toBerth()
+    service()
+    leaveBerth()
   end
-  must(go(J.x0, g.outY, J.z0))
+  must(go(J.x0, outY(), J.z0))
   must(go(J.x0, y, J.z0))
 end
 
@@ -333,7 +361,7 @@ local function mine()
       if abandon then return "abandon" end
       if jumpTo then break end
       local x, z = cellPos(J.layer, J.cell + 1)
-      local ok, why = go(x, y, z)
+      local ok, why = go(x, y, z, nil, M.cfg.cellWaits)
       if ok then
         local _, up = move.dig("up")
         local _, down = move.dig("down")
@@ -362,13 +390,38 @@ local function mine()
   return "finished"
 end
 
+--- A job is only usable if it says how to get to a berth.
+local function hasWays(job)
+  return type(job.inbound) == "table" and type(job.outbound) == "table" and #job.inbound >= 2 and #job.outbound >= 2
+end
+
 local function takeJob(job)
   J = {
     index = job.index, x0 = job.x0, z0 = job.z0, size = job.size, topY = job.topY, bottom = job.bottom,
-    dock = job.dock, exit1 = job.exit1, exit2 = job.exit2, layer = 1, cell = 0, phase = "mine",
+    inbound = job.inbound, outbound = job.outbound, layer = 1, cell = 0, phase = "mine",
   }
   save()
   log.info("plot #%d at %d, %d", J.index, J.x0, J.z0)
+end
+
+--- A plot taken before the berths existed has no way home in it: ask the controller.
+local function learnWays()
+  local tries = 0
+  while not (J.inbound and J.outbound) do
+    local job = net.requestJob()
+    if job and hasWays(job) then
+      J.inbound, J.outbound = job.inbound, job.outbound
+      J.dock, J.exit1, J.exit2 = nil, nil, nil
+      save()
+      local b = J.inbound[#J.inbound]
+      log.info("berth at %d, %d, %d", b.x, b.y, b.z)
+      return
+    end
+    tries = tries + 1
+    if tries > M.cfg.patience then error("the controller gives no berth", 0) end
+    report("waiting: asking the controller for my berth", tries == 1)
+    sleep(15)
+  end
 end
 
 --- The work loop. Each turn of it is one leg; `maxLegs` stops it (tests).
@@ -377,25 +430,19 @@ function M.work(maxLegs)
   while not maxLegs or legs < maxLegs do
     legs = legs + 1
     checkpoint()
-    if J.phase == "leave" then
-      if onRow() then leaveDock() end
-      if J.idle then
-        -- nothing to dig: wait in a pocket off the out road, clear of the shaft
-        local g = geo()
-        if move.pos.y == g.outY then go(g.outX, g.outY, g.outZ + 2 + os.getComputerID() % 5) end
-        J = {}
-      else
-        J.phase = "mine"
-      end
-      save()
-    elseif not J.index then
+    if J.index and not (J.inbound and J.outbound) then learnWays() end
+    if not J.index then
       local job = net.requestJob()
-      if job then
+      if job and hasWays(job) then
         takeJob(job)
       else
-        report("waiting for a plot")
+        report(job and "waiting: the controller gives no berth" or "waiting for a plot")
         sleep(20)
       end
+    elseif J.phase == "leave" then
+      leaveBerth()
+      J.phase = "mine"
+      save()
     elseif J.phase == "mine" then
       local r = mine()
       if r == "abandon" then
@@ -407,22 +454,16 @@ function M.work(maxLegs)
       else
         J.phase = (r == "finished") and "finish" or "dock"
         save()
-        log.info("plot #%d: %s, going to the base", J.index, r)
+        log.info("plot #%d: %s, going home", J.index, r)
       end
     elseif J.phase == "dock" or J.phase == "finish" then
-      report("flying to base", true)
-      toDock()
-      if not unload() then error("the drop-off chest stays full", 0) end
+      report("flying home", true)
+      toBerth()
+      service()
       if J.phase == "finish" then
         net.jobDone(J.index)
         log.info("plot #%d finished", J.index)
-        local nextJob = net.requestJob()
-        if nextJob then
-          takeJob(nextJob)
-          J.phase = "leave"
-        else
-          J = { dock = J.dock, exit1 = J.exit1, exit2 = J.exit2, topY = J.topY, phase = "leave", idle = true }
-        end
+        J = {}                                        -- it waits in its berth for the next plot
       else
         J.phase = "leave"
       end
@@ -481,6 +522,7 @@ function M.setup()
   })
   move.setup({
     protect = PROTECT,
+    natural = NATURAL,
     refuel = function() return inv.refuel(M.cfg.fuelLow) > 0 end,
     -- keep reporting on long trips too (report() itself spaces them out)
     onMove = function() report(lastState or "moving") end,

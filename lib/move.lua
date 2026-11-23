@@ -33,6 +33,7 @@ local cfg = {
   attack = true,          -- hit mobs in the way
   tries = 30,             -- attempts per single step (gravel, mobs...)
   protect = { "^computercraft:", "chest", "barrel", "shulker_box" }, -- Lua patterns, never dug
+  natural = {},           -- Lua patterns that are never protected, whatever `protect` says (ores, plain rock)
   protectWaits = 4,       -- waits (1-4 s each) on a protected block before giving up
   refuel = nil,           -- function() -> boolean, called when fuel hits 0
   onMove = nil,           -- function(pos) after every successful step
@@ -169,6 +170,9 @@ local function hasFuel()
 end
 
 local function isProtected(name)
+  for _, p in ipairs(cfg.natural or {}) do
+    if name:find(p) then return false end
+  end
   for _, p in ipairs(cfg.protect) do
     if name:find(p) then return true end
   end

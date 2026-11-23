@@ -60,13 +60,19 @@ new updater up on its next boot and its job's files on the one after.
 ## The miner's rules
 
 - Roads are one-way and underground: out at two above the plot tops, in at six above.
-- It never digs higher than twelve above the plot tops. The shafts and the dock row are open
-  already; anything else up there is the factory or a road.
+- Home is a berth in the hangar, one per miner, for good. The job carries two lists of corners:
+  the way in (up the in-shaft, along the back of the building, in by the rear gate, along the
+  aisle, into the berth) and the way out (one level higher, by the other side of the gate, to
+  the out-shaft). Both are one-way. A miner with no plot waits in its berth.
+- It never digs higher than twelve above the plot tops: everything up there is the factory.
 - It never digs machines, cables, chests, other turtles, concrete, glass, or polished,
-  slab, stair and wall blocks. It waits, and its report says what is in the way.
+  slab, stair and wall blocks. On the way somewhere it waits, and its report says what is in
+  the way; in its plot it leaves that one cell and carries on. Ores and the plain rock that
+  mods add (Create's scoria, limestone and the like) are dug like any other.
 - Progress is saved after every cell. GPS is the truth about position after a restart.
-- Fuel: it burns the coal it digs; at the base it sits on the pad beside the dock, where an ME
-  export bus feeds it coal.
+- Cargo: everything it carries goes into the barrel under the berth; a belt takes it to the store.
+- Fuel: it burns the coal it digs; at the berth it takes coal from the barrel overhead, which
+  the store keeps filled, and only as much as fills its tank.
 - Orders: `stop`, `resume`, `newjob`, `reboot` (with `rev`), `ping`.
 
 Not tried in the game yet. The simulator has no `parallel`, no real peripherals and no lag.

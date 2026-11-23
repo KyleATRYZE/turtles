@@ -978,14 +978,22 @@ end
 -- for the miners are given out: that box stops south of the mountain base and
 -- well short of anyone else's base. Rings 0 to 5, and ring 6 as far as its
 -- second column east of the origin, were dug before the rebuild.
+--
+-- Each miner also gets a berth in the hangar, for good, and the two one-way
+-- ways to it: up the in-shaft behind the works hall, along the back of the
+-- building, in by the rear gate, along the aisle, down into the berth; and
+-- out one level higher by the other side of the gate to the out-shaft.
 local PLOTS = {
   file = ".plots", protocol = "swarm_job",
   origin = { x = -4437, z = 1521 }, size = 8, topY = 50, bottom = -58,
   box = { x1 = -4480, x2 = -4353, z1 = 1512, z2 = 1631 },
   firstRing = 6, lastRing = 24,
-  dock = { x = -4460, y = 73, z = 1521 },
-  exit1 = { x = -4461, y = 73, z = 1521 },
-  exit2 = { x = -4462, y = 73, z = 1521 },
+  shaftIn = { x = -4459, z = 1521 }, shaftOut = { x = -4463, z = 1521 },
+  laneZ = 1521, aisleZ = 1524, inY = 79, outY = 80, gateInX = -4429, gateOutX = -4424,
+  berths = {
+    { x = -4439, y = 78, z = 1527 }, { x = -4435, y = 78, z = 1527 },
+    { x = -4420, y = 78, z = 1527 }, { x = -4418, y = 78, z = 1527 },
+  },
 }
 local plotList
 local function plotCells()
@@ -1021,6 +1029,7 @@ local function plotLoad()
   s.next = tonumber(s.next) or 1
   s.done = tonumber(s.done) or 0
   if type(s.byId) ~= "table" then s.byId = {} end
+  if type(s.berths) ~= "table" then s.berths = {} end
   plotState = s
   return s
 end
@@ -1029,9 +1038,39 @@ local function plotSave()
   h.write(textutils.serialize(plotState))
   h.close()
 end
+-- The berth of miner `id` (kept for good), or nil when every berth is taken.
+local function plotBerth(id)
+  local s, key = plotLoad(), tostring(id)
+  if not s.berths[key] then
+    local taken = {}
+    for _, n in pairs(s.berths) do taken[n] = true end
+    for n = 1, #PLOTS.berths do
+      if not taken[n] then
+        s.berths[key] = n
+        plotSave()
+        break
+      end
+    end
+  end
+  return PLOTS.berths[s.berths[key]]
+end
+-- The corners of the way in to berth b, and of the way out of it.
+local function plotWays(b)
+  local P = PLOTS
+  local function c(x, y, z) return { x = x, y = y, z = z } end
+  return {
+    c(P.shaftIn.x, P.inY, P.shaftIn.z), c(P.gateInX, P.inY, P.laneZ), c(P.gateInX, P.inY, P.aisleZ),
+    c(b.x, P.inY, P.aisleZ), c(b.x, b.y, P.aisleZ), c(b.x, b.y, b.z),
+  }, {
+    c(b.x, b.y, b.z), c(b.x, b.y, P.aisleZ), c(b.x, P.outY, P.aisleZ),
+    c(P.gateOutX, P.outY, P.aisleZ), c(P.gateOutX, P.outY, P.laneZ), c(P.shaftOut.x, P.outY, P.shaftOut.z),
+  }
+end
 -- The job message for miner `id`: the plot it already has, or the next one.
--- nil when every plot in the box has gone out.
+-- nil when every plot in the box has gone out, or there is no berth left for it.
 local function plotJob(id)
+  local berth = plotBerth(id)
+  if not berth then return nil end
   local s, cells, key = plotLoad(), plotCells(), tostring(id)
   local index = s.byId[key]
   if not index then
@@ -1043,9 +1082,9 @@ local function plotJob(id)
   end
   local c = cells[index]
   if not c then return nil end
+  local inbound, outbound = plotWays(berth)
   return { type = "job", forId = id, index = index, x0 = c.x0, z0 = c.z0, size = PLOTS.size,
-    topY = PLOTS.topY, bottom = PLOTS.bottom, cruise = 118 + ((index - 1) % 40),
-    dock = PLOTS.dock, exit1 = PLOTS.exit1, exit2 = PLOTS.exit2 }
+    topY = PLOTS.topY, bottom = PLOTS.bottom, inbound = inbound, outbound = outbound }
 end
 local function plotDone(id, index)
   local s, key = plotLoad(), tostring(id)

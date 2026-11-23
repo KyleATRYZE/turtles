@@ -51,6 +51,7 @@ function SIM.reset(opts)
   SIM.events = {}                 -- queued events: { "name", args... }
   SIM.inbox = {}                  -- rednet: { from, msg, protocol }
   SIM.sent = {}                   -- rednet: { to, msg, protocol }
+  SIM.stock = {}                  -- container contents: key -> { { name, count }, ... }
   SIM.dropped = {}                -- items dropped: { where, name, count }
   SIM.peripherals = {}            -- name -> { types = {...}, methods = { name = fn } }
   SIM.rebooted = false
@@ -61,6 +62,12 @@ end
 function SIM.block(x, y, z, name) SIM.blocks[key(x, y, z)] = name end
 function SIM.getBlock(x, y, z) return SIM.blocks[key(x, y, z)] end
 function SIM.mob(x, y, z) SIM.entities[key(x, y, z)] = true end
+--- Put items in a container block, for turtle.suck to take (first in, first out).
+function SIM.stockAt(x, y, z, name, count)
+  local k = key(x, y, z)
+  SIM.stock[k] = SIM.stock[k] or {}
+  table.insert(SIM.stock[k], { name = name, count = count or 1 })
+end
 function SIM.give(slot, name, count) SIM.t.inv[slot] = { name = name, count = count or 1 } end
 function SIM.queue(...) SIM.events[#SIM.events + 1] = { ... } end
 function SIM.receive(from, msg, protocol) SIM.inbox[#SIM.inbox + 1] = { from, msg, protocol } end
@@ -174,6 +181,17 @@ local function drop(where, count)
   return true
 end
 
+local function suck(where, count)
+  local box = SIM.stock[key(target(where))]
+  local s = box and box[1]
+  if not s then return false, "No items to take" end
+  local n = math.min(count or 64, s.count)
+  addItem(s.name, n)
+  s.count = s.count - n
+  if s.count == 0 then table.remove(box, 1) end
+  return true
+end
+
 turtle = {
   forward = function() return moveTo("forward") end,
   back = function() return moveTo("back") end,
@@ -234,6 +252,9 @@ turtle = {
   drop = function(n) return drop("front", n) end,
   dropUp = function(n) return drop("up", n) end,
   dropDown = function(n) return drop("down", n) end,
+  suck = function(n) return suck("forward", n) end,
+  suckUp = function(n) return suck("up", n) end,
+  suckDown = function(n) return suck("down", n) end,
 }
 
 -- ---------------------------------------------------------------- gps, os, sleep
