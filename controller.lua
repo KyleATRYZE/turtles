@@ -993,7 +993,13 @@ local PLOTS = {
   berths = {
     { x = -4439, y = 78, z = 1527 }, { x = -4435, y = 78, z = 1527 },
     { x = -4420, y = 78, z = 1527 }, { x = -4418, y = 78, z = 1527 },
+    -- berths 5 to 11: the hangar's other turtles, each kept where it already stands
+    { x = -4437, y = 78, z = 1527 }, { x = -4433, y = 78, z = 1527 },
+    { x = -4416, y = 78, z = 1527 }, { x = -4414, y = 78, z = 1527 },
+    { x = -4439, y = 83, z = 1527 }, { x = -4437, y = 83, z = 1527 }, { x = -4435, y = 83, z = 1527 },
   },
+  -- computer number -> berth it must get (it is standing in it)
+  fixed = { ["19"] = 5, ["23"] = 6, ["15"] = 7, ["39"] = 8, ["16"] = 9, ["10"] = 10, ["5"] = 11 },
 }
 local plotList
 local function plotCells()
@@ -1044,7 +1050,10 @@ local function plotBerth(id)
   if not s.berths[key] then
     local taken = {}
     for _, n in pairs(s.berths) do taken[n] = true end
-    for n = 1, #PLOTS.berths do
+    for _, n in pairs(PLOTS.fixed) do taken[n] = true end
+    local want = PLOTS.fixed[key]
+    if want then taken[want] = nil end
+    for n = want or 1, #PLOTS.berths do
       if not taken[n] then
         s.berths[key] = n
         plotSave()

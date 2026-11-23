@@ -48,14 +48,16 @@ M.cfg = {
   fuelLow = 600,         -- spare kept on top of the trip home; below it, go and refuel
   reportEvery = 20,      -- seconds between routine reports
   coalWait = 120,        -- seconds to wait at the berth for fuel, when it has too little to work on
+  coalReserve = 64,      -- coal kept on board when the berth's barrel gave no lava (a berth with no lava feed)
   cellWaits = 3,         -- waits on a protected block in the plot before that cell is left
   clearZ = { 1522, 1568 }, -- no road runs east-west between these z: the reactor hall is under the building
   patience = math.huge,  -- waits on a blocked path before a leg gives up (tests lower it)
 }
 
 -- never dropped at the berth (of the empty buckets it keeps one: see spareBuckets)
-local BUCKET, LAVA = "minecraft:bucket", "minecraft:lava_bucket"
+local BUCKET, LAVA, COAL = "minecraft:bucket", "minecraft:lava_bucket", "minecraft:coal"
 local KEEP = { "*pickaxe*", "advancedperipherals:*", "computercraft:*", BUCKET }
+local KEEP_COAL = { "*pickaxe*", "advancedperipherals:*", "computercraft:*", BUCKET, COAL }
 -- held back while it refuels, in case there is no lava
 local HOLD = { "*pickaxe*", "advancedperipherals:*", "computercraft:*", BUCKET, LAVA,
   "minecraft:coal", "minecraft:charcoal", "minecraft:coal_block" }
@@ -303,8 +305,10 @@ end
 -- comes out of that barrel is held and goes down with the cargo. With no lava there, the
 -- coal it carries is burnt; with too little to work on, it waits a while for the barrel.
 local function takeFuel()
+  local lava = false
   while fuelShort() and inv.freeSlots() > 1 do
     if not (turtle.suckUp and turtle.suckUp()) then break end
+    if inv.count({ LAVA }) > 0 then lava = true end
     inv.refuel(M.cfg.fuelTarget, { LAVA })
   end
   if fuelShort() then inv.refuel(M.cfg.fuelTarget) end
@@ -327,6 +331,24 @@ local function takeFuel()
     if turtle.suckUp then turtle.suckUp() end
     inv.refuel(M.cfg.fuelTarget)
   end
+  return lava
+end
+
+--- A miner whose berth has no lava lives on the coal it digs: all but `reserve` of it goes down.
+local function trimCoal(reserve)
+  local have = 0
+  for s = 1, inv.SLOTS do
+    local it = turtle.getItemDetail(s)
+    if it and it.name == COAL then
+      local keep = math.max(0, math.min(it.count, reserve - have))
+      have = have + keep
+      if it.count > keep then
+        turtle.select(s)
+        turtle.dropDown(it.count - keep)
+      end
+    end
+  end
+  turtle.select(1)
 end
 
 --- Of the empty buckets it now carries, one stays (for scooping); the rest go down to be refilled.
@@ -350,8 +372,13 @@ end
 --- At the berth: unload, fill up, send the empties and the rest down.
 local function service()
   if not unload(HOLD) then error("the cargo barrel stays full", 0) end
-  takeFuel()
+  local lava = takeFuel()
   spareBuckets()
+  if not lava and M.cfg.coalReserve > 0 then
+    trimCoal(M.cfg.coalReserve)
+    if not unload(KEEP_COAL) then error("the cargo barrel stays full", 0) end
+    return
+  end
   if not unload(KEEP) then error("the cargo barrel stays full", 0) end
 end
 

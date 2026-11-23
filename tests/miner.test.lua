@@ -131,11 +131,31 @@ test("no lava in the barrel: it burns the coal it brought, then gives the rest u
   world()
   SIM.give(1, "minecraft:coal", 64)
   saved({ phase = "dock" })
-  local m = miner({ fuelTarget = 2000, fuelLow = 50 })
+  local m = miner({ fuelTarget = 2000, fuelLow = 50, coalReserve = 0 })
   start(9, 69, 5)
   m.work(1)
   eq(SIM.t.fuel, 2000, "20 coal burnt")
   eq(droppedDown(), 44, "the rest unloaded")
+end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
+
+test("a berth with no lava feed: it keeps a stack of coal to live on", function()
+  world()
+  SIM.give(1, "minecraft:coal", 64)
+  SIM.give(2, "minecraft:coal", 40)
+  SIM.give(3, "minecraft:cobblestone", 30)
+  saved({ phase = "dock" })
+  local m = miner({ fuelTarget = 2000, fuelLow = 50 })
+  start(9, 69, 5)
+  m.work(1)
+  eq(SIM.t.fuel, 2000, "20 coal burnt")
+  local coal, other = 0, 0
+  for slot = 1, 16 do
+    local it = turtle.getItemDetail(slot)
+    if it and it.name == "minecraft:coal" then coal = coal + it.count elseif it then other = other + it.count end
+  end
+  eq(coal, 64, "one stack of coal stays on board")
+  eq(other, 0, "and nothing else")
+  eq(droppedDown(), 50, "the other 20 coal and the stone went down")
 end, { x = 9, y = 69, z = 5, f = 0, fuel = 400 })
 
 test("lava over or under its path is scooped up and burnt", function()
