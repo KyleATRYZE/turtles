@@ -12,6 +12,22 @@
       "issued": 1795395501000,
       "cmd": "jobs",
       "target": "FoundryBoard"
+    },
+    {
+      "id": 1795395546,
+      "issued": 1795395546000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "mekanism:ultimate_control_circuit",
+      "n": 1,
+      "wait": 30
+    },
+    {
+      "id": 1795395547,
+      "issued": 1795395546000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "mekanism:ultimate_control_circuit,mekanism:robit"
     }
   ]
 }
