@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795471957,
-      "issued": 1795471957000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "alltheores:raw_gold,minecraft:gold_ingot,minecraft:sand,alltheores:raw_iron,minecraft:iron_ingot,alltheores:raw_copper,minecraft:redstone,mekanism:energy_tablet,mekanism:basic_induction_cell,alltheores:salt,mekanism:salt,alltheores:raw_uranium,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,minecraft:netherite_ingot"
+      "id": 1795472704,
+      "issued": 1795472704000,
+      "cmd": "reboot",
+      "target": 7,
+      "rev": "facbf3a65b6e18e73821d3bb281dc6b09513dc40"
     }
   ]
 }
