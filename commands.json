@@ -1,31 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795396367,
-      "issued": 1795396367000,
-      "cmd": "layer",
-      "target": 12,
-      "n": 23
-    },
-    {
-      "id": 1795396368,
-      "issued": 1795396367000,
-      "cmd": "layer",
-      "target": 40,
-      "n": 26
-    },
-    {
-      "id": 1795396427,
-      "issued": 1795396427000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "mekanism:hdpe_sheet,mekanism:hdpe_pellet,mekanism:substrate,mekanism:bio_fuel,minecraft:bamboo,minecraft:rotten_flesh"
-    },
-    {
-      "id": 1795396428,
-      "issued": 1795396427000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
+      "id": 1795434340,
+      "issued": 1795434340000,
+      "cmd": "reboot",
+      "target": 7,
+      "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
     }
   ]
 }
