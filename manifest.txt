@@ -1,15 +1,1 @@
 update.lua
-mirror.lua
-swarm.lua
-miner.lua
-controller.lua
-factory.lua
-builder.lua
-loader.lua
-helper.lua
-foundry.lua
-dash.lua
-sortnado.lua
-screens.lua
-rack.lua
-works.lua
