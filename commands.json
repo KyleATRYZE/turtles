@@ -1,17 +1,38 @@
 {
   "commands": [
     {
-      "id": 1795434340,
-      "issued": 1795434340000,
+      "id": 1795434420,
+      "issued": 1795434420000,
       "cmd": "reboot",
       "target": 7,
       "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
     },
     {
-      "id": 1795434420,
-      "issued": 1795434420000,
+      "id": 1795434510,
+      "issued": 1795434510000,
       "cmd": "reboot",
-      "target": 7,
+      "target": 11,
+      "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
+    },
+    {
+      "id": 1795434511,
+      "issued": 1795434510000,
+      "cmd": "reboot",
+      "target": 12,
+      "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
+    },
+    {
+      "id": 1795434512,
+      "issued": 1795434510000,
+      "cmd": "reboot",
+      "target": 13,
+      "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
+    },
+    {
+      "id": 1795434513,
+      "issued": 1795434510000,
+      "cmd": "reboot",
+      "target": 40,
       "rev": "c0ee0ae6e2c3bf0601c1125a550843cb0e210aff"
     }
   ]
