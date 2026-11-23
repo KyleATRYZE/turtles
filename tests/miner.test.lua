@@ -232,3 +232,18 @@ test("told which layer to carry on from, it skips the ones above", function()
   eq(textutils.unserialize(SIM.files[".miner"]).phase, "finish")
   ok(SIM.t.moves - movesBefore < 40, "did not walk the dug layers: " .. (SIM.t.moves - movesBefore) .. " moves")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("a hunter's pickaxe goes back on, on the side the modem is not", function()
+  world()                                                      -- modem on the right
+  SIM.give(4, "minecraft:diamond_pickaxe", 1)
+  local side
+  turtle.equipLeft = function() side = "left" SIM.t.inv[SIM.t.sel] = { name = "advancedperipherals:geo_scanner", count = 1 } return true end
+  turtle.equipRight = function() side = "right" return true end
+  local m = miner()
+  eq(m.ensureTool(), true)
+  eq(side, "left", "the modem is on the right")
+  eq(turtle.getItemDetail(4).name, "advancedperipherals:geo_scanner", "the scanner came off into the pack")
+  side = nil
+  eq(m.ensureTool(), true, "no pickaxe carried: nothing to do")
+  eq(side, nil)
+end)

@@ -151,6 +151,28 @@ local function checkpoint()
   end
 end
 
+-- ---------------------------------------------------------------- tools
+
+--- A miner needs its pickaxe on. (The old coal hunters wore a scanner in its place and
+-- carried the pickaxe.) Puts on a pickaxe found in the inventory, on the side the modem
+-- is not. Returns false only if that could not be done.
+local function ensureTool()
+  if not turtle.equipRight then return true end
+  local slot = inv.find("*pickaxe*")
+  if not slot then return true end                  -- none carried: it is on already
+  local modemLeft = false
+  for _, t in ipairs({ peripheral.getType("left") }) do
+    if t == "modem" then modemLeft = true end
+  end
+  turtle.select(slot)
+  local ok
+  if modemLeft then ok = turtle.equipRight() else ok = turtle.equipLeft() end
+  turtle.select(1)
+  if ok then log.info("put my pickaxe on") end
+  return ok and true or false
+end
+M.ensureTool = ensureTool
+
 -- ---------------------------------------------------------------- moving
 
 --- Go to x, y, z (x, then z, then y unless `order` says otherwise). Waits out anything that
@@ -168,7 +190,8 @@ local function go(x, y, z, order)
       return true
     end
     why = tostring(why)
-    if why:find("^undiggable") then return false, why end
+    local noTool = why:find("No tool", 1, true) and ensureTool()
+    if why:find("^undiggable") and not noTool then return false, why end
     waits = waits + 1
     if waits > M.cfg.patience then return false, why end
     if why == "no fuel" then inv.refuel(M.cfg.fuelLow) end
@@ -470,6 +493,7 @@ end
 local function main()
   M.setup()
   net.report({ role = "miner", state = "woke up", fuel = turtle.getFuelLevel() })
+  ensureTool()
   locateSelf()
   M.work()
 end
