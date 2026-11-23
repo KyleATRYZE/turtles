@@ -49,6 +49,7 @@ M.cfg = {
   reportEvery = 20,      -- seconds between routine reports
   coalWait = 120,        -- seconds to wait at the berth for fuel, when it has too little to work on
   cellWaits = 3,         -- waits on a protected block in the plot before that cell is left
+  clearZ = { 1522, 1568 }, -- no road runs east-west between these z: the reactor hall is under the building
   patience = math.huge,  -- waits on a blocked path before a leg gives up (tests lower it)
 }
 
@@ -82,6 +83,16 @@ local scooped = 0            -- lava sources scooped up since it started
 
 local function outY() return J.topY + 2 end
 local function inY() return J.topY + 6 end
+
+--- Which way round the two roads go, as axis orders for the out road and the in road. The
+-- east-west leg must stay clear of cfg.clearZ: plots beyond it run along their own row and
+-- the column at the shafts; the others run along the lane at the shafts and their own column.
+local function roadOrders()
+  local c = M.cfg.clearZ
+  if not c then return "xzy", "xzy" end
+  if J.z0 > c[2] then return "zxy", "xzy" end
+  return "xzy", "zxy"
+end
 
 --- The whole way in: foot of the in-shaft, then the job's corners, ending in the berth.
 local function wayIn()
@@ -256,10 +267,10 @@ local function toBerth()
     if inPlot() then
       must(go(J.x0, move.pos.y, J.z0))                -- to the plot's own shaft, on this layer
     elseif move.pos.y == outY() then
-      must(go(J.x0, outY(), J.z0))                    -- along the out road to the plot's shaft
+      must(go(J.x0, outY(), J.z0, (roadOrders())))    -- along the out road to the plot's shaft
     end
     must(go(move.pos.x, inY(), move.pos.z))           -- to the in road
-    must(go(way[1].x, inY(), way[1].z))               -- along it to the foot of the in-shaft
+    must(go(way[1].x, inY(), way[1].z, select(2, roadOrders())))  -- along it to the foot of the in-shaft
     k = 2
   end
   follow(way, k)
@@ -364,7 +375,7 @@ local function toPlot(y)
     service()
     leaveBerth()
   end
-  must(go(J.x0, outY(), J.z0))
+  must(go(J.x0, outY(), J.z0, (roadOrders())))
   must(go(J.x0, y, J.z0))
 end
 

@@ -368,7 +368,7 @@ end, { x = 26, y = 60, z = 9, f = 0, fuel = 5000 })
 
 test("a road pier on the way is never dug: it waits and says why", function()
   world()
-  SIM.block(15, 56, 4, "minecraft:polished_deepslate")        -- on the in road, between plot and base
+  SIM.block(20, 56, 2, "minecraft:polished_deepslate")        -- on the in road, between plot and base
   SIM.receive(99, JOB, "swarm_job")
   local m = miner({ fuelTarget = 100, patience = 1 })
   start(7, 52, 0)
@@ -376,7 +376,21 @@ test("a road pier on the way is never dug: it waits and says why", function()
   local okRun, err = pcall(m.work, 1)                          -- the trip to the base
   eq(okRun, false)
   has(tostring(err), "protected:minecraft:polished_deepslate")
-  eq(SIM.getBlock(15, 56, 4), "minecraft:polished_deepslate", "pier untouched")
+  eq(SIM.getBlock(20, 56, 2), "minecraft:polished_deepslate", "pier untouched")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("a plot beyond the clear band goes round it: no road runs east-west along the lane", function()
+  world()
+  SIM.block(15, 52, 0, "minecraft:stone")                      -- on the lane at the shafts, out road level
+  SIM.block(15, 56, 0, "minecraft:stone")                      -- and in road level
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100, clearZ = { 1, 3 } })     -- the plot is at z 4: beyond the band
+  start(7, 52, 0)
+  m.work(2)                                                    -- take the job, dig the plot
+  m.work(1)                                                    -- the trip to the base
+  ok(plotClear(), "plot dug")
+  eq(SIM.getBlock(15, 52, 0), "minecraft:stone", "out road kept off the lane")
+  eq(SIM.getBlock(15, 56, 0), "minecraft:stone", "in road kept off the lane")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
 
 test("told which layer to carry on from, it skips the ones above", function()
