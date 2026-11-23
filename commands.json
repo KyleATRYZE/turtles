@@ -1,18 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795469144,
-      "issued": 1795469144000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "alltheores:fluorite,alltheores:uranium_ingot,alltheores:raw_uranium,alltheores:sulfur"
-    },
-    {
-      "id": 1795469145,
-      "issued": 1795469144000,
+      "id": 1795469946,
+      "issued": 1795469946000,
       "cmd": "recipes",
       "target": 56,
-      "items": "alltheores:uranium_ingot,alltheores:sulfur"
+      "items": "mekanism:dust_fluorite,alltheores:fluorite_dust,alltheores:uranium_ingot"
+    },
+    {
+      "id": 1795469947,
+      "issued": 1795469946000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:dust_fluorite,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:sulfur,alltheores:fluorite"
     }
   ]
 }
