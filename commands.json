@@ -1,17 +1,20 @@
 {
   "commands": [
     {
-      "id": 1795393254,
-      "issued": 1795393254000,
-      "cmd": "stock",
+      "id": 1795393309,
+      "issued": 1795393309000,
+      "cmd": "craft",
       "target": "FoundryBoard",
-      "items": "mekanism:alloy_reinforced,mekanism:elite_control_circuit,mekanism:advanced_control_circuit,mekanism:enriched_diamond,minecraft:diamond,ad_astra:large_gas_tank,ad_astra_giselle_addon:oxygen_can"
+      "item": "mekanism:elite_control_circuit",
+      "n": 1,
+      "wait": 25
     },
     {
-      "id": 1795393255,
-      "issued": 1795393254000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
+      "id": 1795393310,
+      "issued": 1795393309000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "mekanism:elite_control_circuit,mekanism:alloy_reinforced,mekanism:advanced_control_circuit"
     }
   ]
 }
