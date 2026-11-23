@@ -1,0 +1,15 @@
+# What each kind of machine downloads:  path  role[,role...]
+# roles: all, controller, screen, miner, parked   (see update.lua)
+update.lua        all
+lib/net.lua       miner,parked
+lib/move.lua      miner
+lib/inv.lua       miner
+lib/state.lua     miner
+lib/log.lua       miner
+miner.lua         miner
+parked.lua        parked
+swarm.lua         controller,screen
+dash.lua          controller,screen
+mirror.lua        controller,screen
+controller.lua    controller
+screens.lua       screen

@@ -1,41 +1,59 @@
--- update.lua : download the latest scripts from GitHub.
+-- update.lua : download this machine's scripts from GitHub.
 -- Runs on every boot (from startup.lua). Safe to run by hand: update
+--
+-- Each machine only gets the files its job needs. files.txt lists them:
+--     path  role[,role...]        roles: all, controller, screen, miner, parked
+-- A machine's job is in .role. The old jobs that no longer exist (helper, builder,
+-- loader, factory, storage, rack, works) all become "parked".
 local REPO = "KyleATRYZE/turtles"
+local BRANCH = "main"              -- the branch this copy follows
 
--- Boot heartbeat (turtles): say where we are before the download, which can
--- be slow or fail. See swarm.hello.
-if turtle then
-  pcall(function()
-    local role
-    if fs.exists(".role") then
-      local h = fs.open(".role", "r")
-      role = h.readAll():gsub("%s", "")
-      h.close()
-    end
-    local swarm = require("swarm")
-    if swarm.hello then swarm.hello(role) end
-  end)
+local function readFile(name)
+  if not fs.exists(name) then return nil end
+  local h = fs.open(name, "r")
+  local s = h.readAll()
+  h.close()
+  return s
 end
 
--- Work out exactly which version to download. GitHub's file server can serve
--- a copy up to five minutes old for "main", so we ask for a precise commit.
-local function latestRev()
-  -- 1. pinned by a remote reboot order
-  if fs.exists(".rev") then
-    local h = fs.open(".rev", "r")
-    local rev = h.readAll():gsub("%s", "")
-    h.close()
-    fs.delete(".rev")
-    if #rev == 40 and rev:match("^%x+$") then return rev end
+local function writeFile(name, text)
+  local dir = fs.getDir(name)
+  if dir ~= "" and not fs.exists(dir) then fs.makeDir(dir) end
+  local h = fs.open(name, "w")
+  h.write(text)
+  h.close()
+end
+
+-- What this machine is: remembered in .role; worked out the first time.
+local role = (readFile(".role") or ""):gsub("%s", "")
+if role == "" then
+  role = turtle and "miner" or "controller"
+  writeFile(".role", role)
+end
+local CLASS = { controller = "controller", screen = "screen", miner = "miner" }
+local class = CLASS[role] or "parked"
+local JOB = { controller = "controller", screen = "screens", miner = "miner", parked = "parked" }
+
+-- Boot heartbeat: say we are awake before the download, which can be slow or fail.
+pcall(function()
+  if fs.exists("lib/net.lua") then
+    require("lib.net").report({ role = role, state = "woke up", fuel = turtle and turtle.getFuelLevel() or nil })
   end
-  -- 2. ask GitHub which commit is newest
-  if http then
+end)
+
+-- Which version to download. GitHub's file server can serve a copy up to five minutes
+-- old for a branch name, so ask for the exact commit.
+local function latestRev()
+  local pinned = readFile(".rev")                 -- 1. pinned by a remote reboot order
+  if pinned then
+    fs.delete(".rev")
+    pinned = pinned:gsub("%s", "")
+    if #pinned == 40 and pinned:match("^%x+$") then return pinned end
+  end
+  if http then                                    -- 2. ask GitHub which commit is newest
     local r = http.get({
-      url = "https://api.github.com/repos/" .. REPO .. "/commits/main",
-      headers = {
-        ["Accept"] = "application/vnd.github.sha",
-        ["User-Agent"] = "cc-turtle-updater",
-      },
+      url = "https://api.github.com/repos/" .. REPO .. "/commits/" .. BRANCH,
+      headers = { ["Accept"] = "application/vnd.github.sha", ["User-Agent"] = "cc-turtle-updater" },
     })
     if r then
       local rev = r.readAll():gsub("%s", "")
@@ -43,8 +61,7 @@ local function latestRev()
       if #rev == 40 and rev:match("^%x+$") then return rev end
     end
   end
-  -- 3. fall back to whatever "main" gives us
-  return "main"
+  return BRANCH                                   -- 3. whatever the branch name gives
 end
 
 local REV = latestRev()
@@ -59,149 +76,78 @@ local function get(name)
   return s
 end
 
-local function readFile(name)
-  if not fs.exists(name) then return nil end
-  local h = fs.open(name, "r")
-  local s = h.readAll()
-  h.close()
-  return s
-end
-
--- Turtles have little disk: a helper or miner has no use for the factory's
--- or the controller's programs (a helper ran out of space on factory.lua).
-local early = readFile(".role")
-early = early and early:gsub("%s", "") or nil
-local ONLY = {
-  factory    = { ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true, ["screens.lua"] = true,
-                 ["rack.lua"] = true, ["works.lua"] = true },
-  helper     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true, ["rack.lua"] = true, ["works.lua"] = true },
-  miner      = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true, ["works.lua"] = true },
-  loader     = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["builder.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true, ["works.lua"] = true },
-  builder    = { ["factory.lua"] = true, ["controller.lua"] = true, ["dash.lua"] = true, ["sortnado.lua"] = true,
-                 ["screens.lua"] = true, ["foundry.lua"] = true, ["rack.lua"] = true, ["works.lua"] = true },
-}
-local skipFor = early and ONLY[early] or {}
-local manifest, err = get("manifest.txt")
-if not manifest then
+local list, err = get("files.txt")
+if not list then
   print("Update skipped: " .. tostring(err))
   return
 end
 
-local notes = {}
-for line in manifest:gmatch("[^\r\n]+") do
-  local name = line:match("^%s*(.-)%s*$")
-  if name ~= "" and skipFor[name] then
-    -- not needed here: free its space
-    if fs.exists(name) then fs.delete(name) end
-  elseif name ~= "" then
-    local s = get(name)
-    if not s or #s == 0 then
-      print("Could not download " .. name)
-      notes[#notes + 1] = "no download: " .. name .. " (" .. tostring(s and #s or "nil") .. ")"
-    elseif name:match("%.lua$") and not load(s, name) then
-      -- never replace a working script with one that does not compile
-      print("Skipped " .. name .. " (broken upload)")
-      local _, why = load(s, name)
-      notes[#notes + 1] = "no compile: " .. name .. " " .. #s .. " bytes: " .. tostring(why)
-    elseif readFile(name) ~= s then
-      local ok, why = pcall(function()
-        local h = fs.open(name, "w")
-        h.write(s)
-        h.close()
-      end)
-      if ok and readFile(name) == s then
-        print("Updated " .. name)
-      else
-        print("Could not write " .. name .. ": " .. tostring(why))
-        notes[#notes + 1] = "no write: " .. name .. " " .. #s .. " bytes, free " .. tostring(fs.getFreeSpace("/")) .. ": " .. tostring(why)
+-- Programs of the old plant: removed wherever they are still lying about.
+local RETIRED = { "factory.lua", "helper.lua", "builder.lua", "loader.lua", "foundry.lua", "sortnado.lua",
+  "rack.lua", "works.lua", "chatpc.lua" }
+
+local notes, wanted = {}, {}
+for line in list:gmatch("[^\r\n]+") do
+  local name, roles = line:match("^%s*([^%s#]+)%s+([%w_,]+)%s*$")
+  if name then
+    local mine = false
+    for r in roles:gmatch("[^,]+") do
+      if r == "all" or r == class then mine = true end
+    end
+    if mine then
+      wanted[name] = true
+      local s = get(name)
+      if not s or #s == 0 then
+        print("Could not download " .. name)
+        notes[#notes + 1] = "no download: " .. name
+      elseif name:match("%.lua$") and not load(s, name) then
+        -- never replace a working script with one that does not compile
+        local _, why = load(s, name)
+        print("Skipped " .. name .. " (broken upload)")
+        notes[#notes + 1] = "no compile: " .. name .. ": " .. tostring(why)
+      elseif readFile(name) ~= s then
+        local ok, why = pcall(writeFile, name, s)
+        if ok and readFile(name) == s then
+          print("Updated " .. name)
+        else
+          print("Could not write " .. name .. ": " .. tostring(why))
+          notes[#notes + 1] = "no write: " .. name .. " " .. #s .. " bytes, free " .. tostring(fs.getFreeSpace("/")) .. ": " .. tostring(why)
+        end
       end
+    elseif fs.exists(name) and name ~= "update.lua" then
+      fs.delete(name)                             -- another job's file: free its space
     end
   end
 end
-
-do
-  local h = fs.open(".update_log", "w")
-  h.write(table.concat(notes, "\n"))
-  h.close()
+for _, name in ipairs(RETIRED) do
+  if not wanted[name] and fs.exists(name) then fs.delete(name) end
 end
--- Record which version this machine is running (shown in status reports).
-do
-  local h = fs.open(".version", "w")
-  h.write(REV:sub(1, 7))
-  h.close()
-end
-print("Version " .. REV:sub(1, 7))
-
--- Keep startup.lua correct for this machine's job, so a change of job never
--- needs the installer to be run again.
--- What this machine is: remembered in .role (so it can be renamed freely);
--- worked out from the label the first time.
-local role = readFile(".role")
-if role then role = role:gsub("%s", "") end
-if role ~= "controller" and role ~= "factory" and role ~= "miner" and role ~= "builder"
-  and role ~= "loader" and role ~= "helper" and role ~= "storage" and role ~= "screen" and role ~= "rack"
-  and role ~= "works" then
-  if not turtle and (os.getComputerLabel() or ""):lower():match("^sortnado") then
-    role = "storage"
-  elseif not turtle and (os.getComputerLabel() or ""):lower():match("^rack") then
-    role = "rack"                         -- the rack's panels (docs/rack-build.html)
-  elseif not turtle and (os.getComputerLabel() or ""):lower():match("^works") then
-    role = "works"                        -- the foundry on the cable (docs/foundry-build.html)
-  elseif not turtle then
-    role = "controller"
-  elseif (os.getComputerLabel() or ""):match("^factory") or (os.getComputerLabel() or ""):lower():match("^counter")
-    or (os.getComputerLabel() or ""):lower():match("^crafter%d") then
-    role = "factory"
-  elseif (os.getComputerLabel() or ""):lower():match("^loader") then
-    role = "loader"
-  else
-    role = "miner"
+if class ~= "controller" and class ~= "screen" then
+  for _, name in ipairs({ "swarm.lua", "dash.lua", "mirror.lua" }) do
+    if not wanted[name] and fs.exists(name) then fs.delete(name) end
   end
-  local h = fs.open(".role", "w")
-  h.write(role)
-  h.close()
 end
-local job
-if role == "controller" then
-  job = 'shell.run("controller")'
-elseif role == "factory" then
-  job = 'shell.run("factory")'
-elseif role == "builder" then
-  job = 'shell.run("builder")'
-elseif role == "loader" then
-  job = 'shell.run("loader")'
-elseif role == "helper" then
-  job = 'shell.run("helper")'
-elseif role == "storage" then
-  job = 'shell.run("sortnado")'
-elseif role == "screen" then
-  job = 'shell.run("screens")'
-elseif role == "rack" then
-  job = 'shell.run("rack")'
-elseif role == "works" then
-  job = 'shell.run("works")'
+
+writeFile(".update_log", table.concat(notes, "\n"))
+writeFile(".version", REV:sub(1, 7))
+print("Version " .. REV:sub(1, 7) .. " (" .. class .. ")")
+
+-- Keep startup.lua right for this machine's job. If the job ever stops, wait two minutes
+-- and restart (a crash has already been reported by then).
+local job = JOB[class]
+local startup
+if class == "controller" or class == "screen" then
+  startup = 'pcall(dofile, "mirror.lua")\nshell.run("update")\nshell.run("' .. job .. '")\n'
+    .. 'pcall(function()\n'
+    .. '  require("swarm").report({ role = "' .. role .. '", state = "stopped", screen = _G.SCREEN_MIRROR and _G.SCREEN_MIRROR(16) })\n'
+    .. 'end)\n'
 else
-  job = 'shell.run("miner", "resume")'
+  startup = 'shell.run("update")\nshell.run("' .. job .. '")\n'
+    .. 'pcall(function() require("lib.net").report({ role = "' .. role .. '", state = "stopped" }) end)\n'
 end
--- (mirror.lua keeps a copy of the screen for the status reports; if the
--- job ever stops, what is on the screen goes to the base, then a restart)
-local wanted = 'pcall(dofile, "mirror.lua")\nshell.run("update")\n' .. job .. '\n'
-  .. 'pcall(function()\n'
-  .. '  local r = fs.open(".role", "r")\n'
-  .. '  local role = r and r.readAll() or "?"\n'
-  .. '  if r then r.close() end\n'
-  .. '  require("swarm").report({ role = role, state = "stopped", screen = _G.SCREEN_MIRROR and _G.SCREEN_MIRROR(16) })\n'
-  .. 'end)\n'
-  .. 'print("Stopped. Restarting in 2 minutes (hold Ctrl+T to stay).")\n'
-  .. 'sleep(120)\nos.reboot()\n'
+startup = startup .. 'print("Stopped. Restarting in 2 minutes (hold Ctrl+T to stay).")\nsleep(120)\nos.reboot()\n'
 local current = readFile("startup.lua")
--- never touch a GPS host
-if current ~= wanted and not (current and current:find("gps", 1, true)) then
-  local h = fs.open("startup.lua", "w")
-  h.write(wanted)
-  h.close()
+if current ~= startup and not (current and current:find("gps", 1, true)) then   -- never touch a GPS host
+  writeFile("startup.lua", startup)
   print("Startup set: " .. job)
 end
