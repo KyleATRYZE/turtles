@@ -1,18 +1,19 @@
 {
   "commands": [
     {
-      "id": 1795474034,
-      "issued": 1795474034000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "minecraft:glass_pane,minecraft:glass,minecraft:sand,minecraft:lime_dye,minecraft:yellow_dye,minecraft:light_gray_dye,minecraft:brown_dye,minecraft:orange_dye,minecraft:red_dye,minecraft:light_blue_dye,minecraft:white_dye,minecraft:purple_dye,minecraft:green_dye,minecraft:bone_meal,minecraft:acacia_log,minecraft:oak_log,minecraft:spruce_log,minecraft:birch_log,minecraft:dark_oak_log,minecraft:jungle_log,minecraft:cobblestone"
-    },
-    {
-      "id": 1795474035,
-      "issued": 1795474034000,
+      "id": 1795474415,
+      "issued": 1795474415000,
       "cmd": "recipes",
       "target": 56,
-      "items": "minecraft:glass_pane,minecraft:glass,minecraft:lime_dye,minecraft:yellow_dye,minecraft:light_gray_dye"
+      "items": "industrialforegoing:lime_laser_lens,industrialforegoing:yellow_laser_lens,industrialforegoing:light_gray_laser_lens"
+    },
+    {
+      "id": 1795474416,
+      "issued": 1795474415000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "industrialforegoing:yellow_laser_lens",
+      "n": 2
     }
   ]
 }
