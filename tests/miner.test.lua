@@ -217,3 +217,18 @@ test("a road pier on the way is never dug: it waits and says why", function()
   has(tostring(err), "protected:minecraft:polished_deepslate")
   eq(SIM.getBlock(15, 56, 4), "minecraft:polished_deepslate", "pier untouched")
 end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })
+
+test("told which layer to carry on from, it skips the ones above", function()
+  world()
+  for x = 20, 21 do for z = 4, 5 do for y = 44, 49 do SIM.block(x, y, z, nil) end end end   -- layers 1 and 2 dug before
+  SIM.receive(99, JOB, "swarm_job")
+  local m = miner({ fuelTarget = 100 })
+  start(7, 52, 0)
+  m.work(1)                                                    -- take the job
+  m.order({ cmd = "layer", n = 3 })
+  local movesBefore = SIM.t.moves
+  m.work(1)
+  ok(plotClear(), "plot finished")
+  eq(textutils.unserialize(SIM.files[".miner"]).phase, "finish")
+  ok(SIM.t.moves - movesBefore < 40, "did not walk the dug layers: " .. (SIM.t.moves - movesBefore) .. " moves")
+end, { x = 7, y = 52, z = 0, f = 0, fuel = 5000 })

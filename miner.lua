@@ -19,7 +19,8 @@
 --   * it never digs a protected block (machines, cables, chests, other turtles): it waits
 --   * every wait is reported with its reason; a crash is reported, then startup restarts it
 --
--- Orders (from the controller): stop, resume, newjob, reboot (rev = a commit to load), ping.
+-- Orders (from the controller): stop, resume, newjob, reboot (rev = a commit to load), ping,
+-- and layer n=<number>: carry on from that layer (a plot part-dug before this program took it over).
 
 local log = require("lib.log")
 local move = require("lib.move")
@@ -51,6 +52,7 @@ local DIG_CEILING = 12       -- no digging higher than this above the plot tops 
 
 local J = {}                 -- the job in hand (saved in cfg.jobFile); J.index nil = none
 local parked, abandon, rebootWanted = false, false, false
+local jumpTo = nil           -- a layer to carry on from, by order
 local lastReport, lastState = -1e9, nil
 
 -- ---------------------------------------------------------------- geometry
@@ -128,9 +130,12 @@ function M.order(cmd)
   elseif c == "reboot" then
     net.pinVersion(cmd)
     rebootWanted = true
+  elseif c == "layer" then
+    local n = tonumber(cmd.n)
+    if n and n >= 1 then jumpTo = math.floor(n) end
   elseif c == "ping" then lastReport = -1e9 end
 end
-function M.flags() return { parked = parked, abandon = abandon, reboot = rebootWanted } end
+function M.flags() return { parked = parked, abandon = abandon, reboot = rebootWanted, jumpTo = jumpTo } end
 
 --- Between steps: obey orders.
 local function checkpoint()
@@ -303,6 +308,7 @@ local function mine()
     toPlot(y)
     while J.cell < n do
       if abandon then return "abandon" end
+      if jumpTo then break end
       local x, z = cellPos(J.layer, J.cell + 1)
       local ok, why = go(x, y, z)
       if ok then
@@ -319,9 +325,16 @@ local function mine()
       local need = housekeeping()
       if need then return need end
     end
-    J.layer, J.cell = J.layer + 1, 0
-    save()
-    log.info("plot #%d: layer %d of %d done", J.index, J.layer - 1, layerCount())
+    if jumpTo then
+      -- told the layers above are dug already: carry on from the one named
+      J.layer, J.cell, jumpTo = math.min(jumpTo, layerCount()), 0, nil
+      save()
+      log.info("plot #%d: carrying on from layer %d by order", J.index, J.layer)
+    else
+      J.layer, J.cell = J.layer + 1, 0
+      save()
+      log.info("plot #%d: layer %d of %d done", J.index, J.layer - 1, layerCount())
+    end
   end
   return "finished"
 end
