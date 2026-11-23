@@ -443,7 +443,12 @@ function M.setup()
       net.report({ role = "miner", state = "error", log = { tostring(r.error):sub(1, 300) } })
     end,
   })
-  move.setup({ protect = PROTECT, refuel = function() return inv.refuel(M.cfg.fuelLow) > 0 end })
+  move.setup({
+    protect = PROTECT,
+    refuel = function() return inv.refuel(M.cfg.fuelLow) > 0 end,
+    -- keep reporting on long trips too (report() itself spaces them out)
+    onMove = function() report(lastState or "moving") end,
+  })
   net.open()
   J = state.load(M.cfg.jobFile, {})
   return J
