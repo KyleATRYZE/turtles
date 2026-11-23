@@ -1,44 +1,13 @@
 {
   "commands": [
     {
-      "id": 1795391943,
-      "issued": 1795391943000,
+      "id": 1795392978,
+      "issued": 1795392978000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "mekanism:basic_control_circuit",
-      "n": 2,
+      "item": "mekanism:enriched_diamond",
+      "n": 8,
       "wait": 15
-    },
-    {
-      "id": 1795391944,
-      "issued": 1795391943000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "mekanism:alloy_infused",
-      "n": 2,
-      "wait": 15
-    },
-    {
-      "id": 1795391945,
-      "issued": 1795391943000,
-      "cmd": "craft",
-      "target": "FoundryBoard",
-      "item": "mekanism:advanced_control_circuit",
-      "n": 1,
-      "wait": 20
-    },
-    {
-      "id": 1795391946,
-      "issued": 1795391943000,
-      "cmd": "stock",
-      "target": "FoundryBoard",
-      "items": "mekanism:basic_control_circuit,mekanism:alloy_infused,mekanism:advanced_control_circuit,minecraft:redstone,alltheores:osmium_ingot,minecraft:copper_ingot"
-    },
-    {
-      "id": 1795391947,
-      "issued": 1795391943000,
-      "cmd": "jobs",
-      "target": "FoundryBoard"
     }
   ]
 }
