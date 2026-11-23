@@ -1,18 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795473458,
-      "issued": 1795473458000,
+      "id": 1795473767,
+      "issued": 1795473767000,
       "cmd": "stock",
       "target": 56,
       "items": "alltheores:raw_uranium,alltheores:raw_iridium,alltheores:raw_nickel,alltheores:raw_tin,minecraft:redstone_ore,minecraft:coal_ore,minecraft:lapis_ore,alltheores:raw_osmium,minecraft:raw_gold,minecraft:raw_iron,minecraft:coal"
-    },
-    {
-      "id": 1795473459,
-      "issued": 1795473458000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "industrialforegoing:lime_laser_lens,industrialforegoing:yellow_laser_lens"
     }
   ]
 }
