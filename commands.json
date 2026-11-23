@@ -1,19 +1,19 @@
 {
   "commands": [
     {
-      "id": 1795474415,
-      "issued": 1795474415000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "industrialforegoing:lime_laser_lens,industrialforegoing:yellow_laser_lens,industrialforegoing:light_gray_laser_lens"
-    },
-    {
-      "id": 1795474416,
-      "issued": 1795474415000,
+      "id": 1795474627,
+      "issued": 1795474627000,
       "cmd": "craft",
       "target": 56,
       "item": "industrialforegoing:yellow_laser_lens",
-      "n": 2
+      "n": 4
+    },
+    {
+      "id": 1795474628,
+      "issued": 1795474627000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:green_dye,minecraft:lime_dye,minecraft:cactus"
     }
   ]
 }
