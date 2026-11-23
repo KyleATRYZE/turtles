@@ -1,13 +1,35 @@
 {
   "commands": [
     {
-      "id": 1795392978,
-      "issued": 1795392978000,
+      "id": 1795393090,
+      "issued": 1795393090000,
       "cmd": "craft",
       "target": "FoundryBoard",
-      "item": "mekanism:enriched_diamond",
-      "n": 8,
+      "item": "mekanism:alloy_reinforced",
+      "n": 2,
       "wait": 15
+    },
+    {
+      "id": 1795393091,
+      "issued": 1795393090000,
+      "cmd": "craft",
+      "target": "FoundryBoard",
+      "item": "mekanism:elite_control_circuit",
+      "n": 1,
+      "wait": 25
+    },
+    {
+      "id": 1795393092,
+      "issued": 1795393090000,
+      "cmd": "stock",
+      "target": "FoundryBoard",
+      "items": "mekanism:alloy_reinforced,mekanism:elite_control_circuit,mekanism:enriched_diamond,minecraft:diamond,mekanism:alloy_infused"
+    },
+    {
+      "id": 1795393093,
+      "issued": 1795393090000,
+      "cmd": "jobs",
+      "target": "FoundryBoard"
     }
   ]
 }
