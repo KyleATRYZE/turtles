@@ -1,26 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795476383,
-      "issued": 1795476383000,
+      "id": 1795477027,
+      "issued": 1795477027000,
       "cmd": "stock",
       "target": 56,
-      "items": "minecraft:bucket,minecraft:lava_bucket,minecraft:iron_ingot,minecraft:raw_iron"
-    },
-    {
-      "id": 1795476384,
-      "issued": 1795476383000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "minecraft:bucket,minecraft:iron_ingot"
-    },
-    {
-      "id": 1795476385,
-      "issued": 1795476383000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "minecraft:bucket",
-      "n": 63
+      "items": "mekanism:dust_lithium,minecraft:bucket,minecraft:lava_bucket,alltheores:sulfur,alltheores:sulfur_ore,alltheores:raw_uranium,minecraft:raw_gold,mekanism:ultimate_control_circuit,industrialforegoing:lime_laser_lens,minecraft:lime_dye"
     }
   ]
 }
