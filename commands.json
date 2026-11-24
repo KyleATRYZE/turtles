@@ -1,15 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795543998,
-      "issued": 1795543998000,
+      "id": 1795544577,
+      "issued": 1795544577000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:pellet_antimatter,mekanism:ultimate_induction_cell,mekanism:energy_tablet,minecraft:gold_ingot,minecraft:raw_gold,mekanism:alloy_infused"
+      "items": "minecraft:raw_gold,minecraft:raw_gold_block,minecraft:gold_ingot,minecraft:gold_block,minecraft:gold_nugget,minecraft:gold_ore,minecraft:deepslate_gold_ore,minecraft:nether_gold_ore,alltheores:gold_dust,mekanism:dust_gold,mekanism:enriched_gold,alltheores:sulfur,minecraft:redstone,mekanism:energy_tablet,alltheores:gold_plate"
     },
     {
-      "id": 1795543999,
-      "issued": 1795543998000,
+      "id": 1795544578,
+      "issued": 1795544577000,
       "cmd": "jobs",
       "target": 56
     }
