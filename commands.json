@@ -1,11 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795478263,
-      "issued": 1795478263000,
+      "id": 1795480479,
+      "issued": 1795480479000,
       "cmd": "stock",
       "target": 56,
-      "items": "allthemodium:allthemodium_upgrade_smithing_template,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,allthemodium:raw_allthemodium_block,allthemodium:raw_vibranium_block,allthemodium:raw_unobtainium_block,minecraft:ancient_debris,alltheores:raw_uranium_block,minecraft:raw_gold_block,mekanism:dust_lithium,industrialforegoing:lime_laser_lens,alltheores:uranium_ingot,alltheores:salt_block,minecraft:netherite_upgrade_smithing_template"
+      "items": "allthemodium:raw_allthemodium_block,allthemodium:raw_vibranium_block,allthemodium:raw_unobtainium_block,minecraft:ancient_debris,alltheores:raw_uranium_block,minecraft:raw_gold_block,mekanism:dust_lithium,mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,alltheores:uranium_ingot,alltheores:sulfur,minecraft:bucket"
     }
   ]
 }
