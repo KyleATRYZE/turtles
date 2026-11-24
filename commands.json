@@ -1,17 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795541280,
-      "issued": 1795541280000,
-      "cmd": "stock",
+      "id": 1795542340,
+      "issued": 1795542340000,
+      "cmd": "recipes",
       "target": 56,
-      "items": "minecraft:raw_gold,minecraft:gold_ingot,mekanism:energy_tablet,mekanism:basic_induction_cell,mekanism:pellet_polonium,alltheores:fluorite,alltheores:uranium_ingot"
+      "items": "mekanism:mekasuit_helmet,mekanism:mekasuit_bodyarmor,mekanism:mekasuit_pants,mekanism:mekasuit_boots,mekanism:upgrade_speed"
     },
     {
-      "id": 1795541281,
-      "issued": 1795541280000,
-      "cmd": "jobs",
-      "target": 56
+      "id": 1795542341,
+      "issued": 1795542340000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:upgrade_speed,mekanism:upgrade_energy,mekanism:pellet_antimatter,minecraft:raw_gold,alltheores:fluorite"
     }
   ]
 }
