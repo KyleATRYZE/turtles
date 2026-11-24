@@ -1,42 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795483004,
-      "issued": 1795483004000,
+      "id": 1795483283,
+      "issued": 1795483283000,
       "cmd": "stock",
       "target": 56,
-      "items": "allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,minecraft:netherite_upgrade_smithing_template,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,minecraft:netherite_ingot,minecraft:deepslate,allthemodium:ancient_stone,minecraft:end_stone,minecraft:netherrack,minecraft:diamond,allthemodium:unobtainium_helmet"
+      "items": "allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,minecraft:netherite_ingot,minecraft:deepslate,mekanism:dust_refined_obsidian,mekanism:alloy_reinforced,mekanism:alloy_atomic,minecraft:obsidian"
     },
     {
-      "id": 1795483005,
-      "issued": 1795483004000,
+      "id": 1795483284,
+      "issued": 1795483283000,
       "cmd": "jobs",
       "target": 56
-    },
-    {
-      "id": 1795483109,
-      "issued": 1795483109000,
-      "cmd": "cancel",
-      "target": 56,
-      "item": "mekanism:alloy_atomic"
-    },
-    {
-      "id": 1795483110,
-      "issued": 1795483109000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "minecraft:netherite_ingot",
-      "n": 6,
-      "wait": 15
-    },
-    {
-      "id": 1795483111,
-      "issued": 1795483109000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "minecraft:deepslate",
-      "n": 2,
-      "wait": 10
     }
   ]
 }
