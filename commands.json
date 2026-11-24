@@ -1,25 +1,101 @@
 {
   "commands": [
     {
-      "id": 1795547337,
-      "issued": 1795547337000,
+      "id": 1795547484,
+      "issued": 1795547484000,
       "cmd": "recipes",
       "target": 56,
-      "items": "mekanism:module_energy_unit,mekanism:module_laser_dissipation_unit,mekanism:module_radiation_shielding_unit,mekanism:module_excavation_escalation_unit,mekanism:module_attack_amplification_unit,mekanism:module_farming_unit,mekanism:module_shearing_unit,mekanism:module_silk_touch_unit,mekanism:module_fortune_unit,mekanism:module_blasting_unit,mekanism:module_electrolytic_breathing_unit,mekanism:module_jetpack_unit"
+      "items": "allthemodium:allthemodium_block,allthemodium:allthemodium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:allthemodium_plate,allthemodium:unobtainium_block,allthemodium:unobtainium_plate,allthemodium:vibranium_pickaxe,allthemodium:vibranium_plate,alltheores:bronze_nugget,alltheores:lead_block,alltheores:osmium_plate,alltheores:silver_plate"
     },
     {
-      "id": 1795547338,
-      "issued": 1795547337000,
-      "cmd": "recipes",
+      "id": 1795547485,
+      "issued": 1795547484000,
+      "cmd": "stock",
       "target": 56,
-      "items": "mekanism:module_charge_distribution_unit,mekanism:module_gravitational_modulating_unit,mekanism:module_elytra_unit,mekanism:module_locomotive_boosting_unit,mekanism:module_gyroscopic_stabilization_unit,mekanism:module_motorized_servo_unit,mekanism:module_hydraulic_propulsion_unit,mekanism:module_magnetic_attraction_unit,mekanism:module_frost_walker_unit,mekanism:module_soul_surfer_unit,mekanismgenerators:module_solar_recharging_unit,mekanismgenerators:module_geothermal_generator_unit"
+      "items": "allthemodium:allthemodium_block,allthemodium:allthemodium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:allthemodium_plate,allthemodium:unobtainium_block,allthemodium:unobtainium_plate,allthemodium:vibranium_pickaxe,allthemodium:vibranium_plate,alltheores:bronze_nugget,alltheores:lead_block,alltheores:osmium_plate,alltheores:silver_plate"
     },
     {
-      "id": 1795547339,
-      "issued": 1795547337000,
+      "id": 1795547486,
+      "issued": 1795547484000,
       "cmd": "recipes",
       "target": 56,
-      "items": "mekanism:module_vein_mining_unit,mekanism:module_teleportation_unit,mekanism:module_inhalation_purification_unit,mekanism:module_vision_enhancement_unit,mekanism:module_nutritional_injection_unit,mekanism:module_dosimeter_unit,mekanism:module_geiger_unit,mekanism:module_hydrostatic_repulsor_unit,mekanism:module_color_modulation_unit,mekanism:module_base"
+      "items": "alltheores:steel_plate,alltheores:tin_ingot,mekanism:advanced_induction_provider,mekanism:alloy_atomic,mekanism:alloy_infused,mekanism:alloy_reinforced,mekanism:block_refined_glowstone,mekanism:block_refined_obsidian,mekanism:canteen,mekanism:dosimeter,mekanism:electrolytic_core,mekanism:elite_control_circuit"
+    },
+    {
+      "id": 1795547487,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "alltheores:steel_plate,alltheores:tin_ingot,mekanism:advanced_induction_provider,mekanism:alloy_atomic,mekanism:alloy_infused,mekanism:alloy_reinforced,mekanism:block_refined_glowstone,mekanism:block_refined_obsidian,mekanism:canteen,mekanism:dosimeter,mekanism:electrolytic_core,mekanism:elite_control_circuit"
+    },
+    {
+      "id": 1795547488,
+      "issued": 1795547484000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:elite_induction_cell,mekanism:elite_induction_provider,mekanism:enriched_carbon,mekanism:enriched_diamond,mekanism:enriched_gold,mekanism:enriched_tin,mekanism:free_runners,mekanism:geiger_counter,mekanism:hazmat_mask,mekanism:hdpe_elytra,mekanism:hdpe_sheet,mekanism:hydrogen_bucket"
+    },
+    {
+      "id": 1795547489,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:elite_induction_cell,mekanism:elite_induction_provider,mekanism:enriched_carbon,mekanism:enriched_diamond,mekanism:enriched_gold,mekanism:enriched_tin,mekanism:free_runners,mekanism:geiger_counter,mekanism:hazmat_mask,mekanism:hdpe_elytra,mekanism:hdpe_sheet,mekanism:hydrogen_bucket"
+    },
+    {
+      "id": 1795547490,
+      "issued": 1795547484000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:ingot_refined_glowstone,mekanism:jetpack,mekanism:laser,mekanism:laser_amplifier,mekanism:module_base,mekanism:module_jetpack_unit,mekanism:oxygen_bucket,mekanism:painting_machine,mekanism:pellet_polonium,mekanism:pigment_mixer,mekanism:scuba_mask,mekanism:superheating_element"
+    },
+    {
+      "id": 1795547491,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:ingot_refined_glowstone,mekanism:jetpack,mekanism:laser,mekanism:laser_amplifier,mekanism:module_base,mekanism:module_jetpack_unit,mekanism:oxygen_bucket,mekanism:painting_machine,mekanism:pellet_polonium,mekanism:pigment_mixer,mekanism:scuba_mask,mekanism:superheating_element"
+    },
+    {
+      "id": 1795547492,
+      "issued": 1795547484000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:teleportation_core,mekanism:ultimate_control_circuit,mekanism:ultimate_induction_cell,mekanism:ultimate_induction_provider,mekanismgenerators:advanced_solar_generator,mekanismgenerators:heat_generator,mekanismgenerators:solar_generator,minecraft:blue_ice,minecraft:diamond_axe,minecraft:diamond_hoe,minecraft:diamond_pickaxe,minecraft:diamond_shovel"
+    },
+    {
+      "id": 1795547493,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:teleportation_core,mekanism:ultimate_control_circuit,mekanism:ultimate_induction_cell,mekanism:ultimate_induction_provider,mekanismgenerators:advanced_solar_generator,mekanismgenerators:heat_generator,mekanismgenerators:solar_generator,minecraft:blue_ice,minecraft:diamond_axe,minecraft:diamond_hoe,minecraft:diamond_pickaxe,minecraft:diamond_shovel"
+    },
+    {
+      "id": 1795547494,
+      "issued": 1795547484000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:lightning_rod,minecraft:nether_star,minecraft:netherite_ingot,minecraft:netherite_leggings,minecraft:netherite_sword,minecraft:obsidian,minecraft:redstone_block,minecraft:shears,minecraft:soul_sand,minecraft:tnt,simplemagnets:basicmagnet"
+    },
+    {
+      "id": 1795547495,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "minecraft:lightning_rod,minecraft:nether_star,minecraft:netherite_ingot,minecraft:netherite_leggings,minecraft:netherite_sword,minecraft:obsidian,minecraft:redstone_block,minecraft:shears,minecraft:soul_sand,minecraft:tnt,simplemagnets:basicmagnet"
+    },
+    {
+      "id": 1795547496,
+      "issued": 1795547484000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:ultimate_induction_cell,mekanism:upgrade_speed,mekanism:mekasuit_bodyarmor,minecraft:copper_ingot"
+    },
+    {
+      "id": 1795547497,
+      "issued": 1795547484000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
