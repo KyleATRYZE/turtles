@@ -1,26 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795544704,
-      "issued": 1795544704000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:ultimate_induction_cell",
-      "n": 1,
-      "wait": 5
-    },
-    {
-      "id": 1795544705,
-      "issued": 1795544704000,
-      "cmd": "jobs",
-      "target": 56
-    },
-    {
-      "id": 1795544706,
-      "issued": 1795544704000,
+      "id": 1795544992,
+      "issued": 1795544992000,
       "cmd": "stock",
       "target": 56,
-      "items": "minecraft:raw_gold,minecraft:gold_block,minecraft:gold_ingot"
+      "items": "mekanism:energy_tablet,mekanism:alloy_infused,minecraft:gold_ingot,minecraft:raw_gold,minecraft:iron_ingot,mekanism:basic_induction_cell,mekanism:advanced_induction_cell,mekanism:elite_induction_cell,mekanism:ultimate_induction_cell,mekanism:basic_energy_cube"
+    },
+    {
+      "id": 1795544993,
+      "issued": 1795544992000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
