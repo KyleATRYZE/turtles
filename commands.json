@@ -1,31 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795540385,
-      "issued": 1795540385000,
+      "id": 1795540784,
+      "issued": 1795540784000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:alloy_atomic,mekanism:alloy_reinforced,mekanism:enriched_refined_obsidian,mekanism:enriched_diamond,mekanism:elite_control_circuit"
+      "items": "minecraft:raw_gold,minecraft:gold_ingot,minecraft:gold_ore,minecraft:deepslate_gold_ore,minecraft:nether_gold_ore,mekanism:ultimate_induction_cell,mekanism:elite_induction_cell,mekanism:advanced_induction_cell,mekanism:basic_induction_cell,mekanism:pellet_antimatter,mekanism:energy_tablet,alltheores:lithium_dust,industrialforegoing:laser_lens4"
     },
     {
-      "id": 1795540386,
-      "issued": 1795540385000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:ultimate_control_circuit",
-      "n": 4,
-      "wait": 240
-    },
-    {
-      "id": 1795540387,
-      "issued": 1795540385000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:ultimate_control_circuit,mekanism:alloy_atomic"
-    },
-    {
-      "id": 1795540388,
-      "issued": 1795540385000,
+      "id": 1795540785,
+      "issued": 1795540784000,
       "cmd": "jobs",
       "target": 56
     }
