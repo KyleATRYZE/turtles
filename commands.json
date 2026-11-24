@@ -1,17 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795538770,
-      "issued": 1795538770000,
+      "id": 1795539237,
+      "issued": 1795539237000,
       "cmd": "stock",
       "target": 56,
-      "items": "alltheores:fluorite,alltheores:fluorite_ore,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:raw_uranium,minecraft:raw_gold,minecraft:gold_ingot,mekanism:ultimate_induction_cell"
-    },
-    {
-      "id": 1795538771,
-      "issued": 1795538770000,
-      "cmd": "jobs",
-      "target": 56
+      "items": "mekanism:fluorite_gem,alltheores:fluorite_ore,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:raw_uranium,mekanism:pellet_plutonium,mekanism:pellet_polonium,mekanism:pellet_antimatter,minecraft:raw_gold,minecraft:gold_ingot,mekanism:ultimate_control_circuit,mekanism:ultimate_induction_cell,mekanism:hdpe_sheet"
     }
   ]
 }
