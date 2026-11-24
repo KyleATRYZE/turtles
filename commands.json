@@ -1,27 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795538340,
-      "issued": 1795538340000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "alltheores:uranium_ingot",
-      "n": 1000,
-      "wait": 15
-    },
-    {
-      "id": 1795538341,
-      "issued": 1795538340000,
+      "id": 1795538770,
+      "issued": 1795538770000,
       "cmd": "stock",
       "target": 56,
-      "items": "alltheores:fluorite_ore,alltheores:deepslate_fluorite_ore,alltheores:sulfur_ore,alltheores:fluorite,alltheores:fluorite_dust,alltheores:raw_uranium,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,mekanism:ultimate_induction_cell,minecraft:raw_gold"
+      "items": "alltheores:fluorite,alltheores:fluorite_ore,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:raw_uranium,minecraft:raw_gold,minecraft:gold_ingot,mekanism:ultimate_induction_cell"
     },
     {
-      "id": 1795538342,
-      "issued": 1795538340000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "alltheores:fluorite"
+      "id": 1795538771,
+      "issued": 1795538770000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
