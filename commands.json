@@ -42,6 +42,15 @@
       "cmd": "stock",
       "target": 56,
       "items": "minecraft:bucket,minecraft:lava_bucket,minecraft:coal,alltheores:sulfur,alltheores:fluorite,minecraft:yellow_dye,industrialforegoing:yellow_laser_lens,mekanism:dust_refined_obsidian"
+    },
+    {
+      "id": 1795537945,
+      "issued": 1795537945000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "minecraft:bucket",
+      "n": 120,
+      "wait": 15
     }
   ]
 }
