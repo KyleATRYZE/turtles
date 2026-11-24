@@ -1,15 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795545426,
-      "issued": 1795545426000,
+      "id": 1795546353,
+      "issued": 1795546353000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:upgrade_speed,mekanism:energy_tablet,minecraft:gold_ingot"
+      "items": "mekanism:ultimate_induction_cell,mekanism:elite_induction_cell,mekanism:advanced_induction_cell,mekanism:basic_induction_cell,mekanism:upgrade_speed,mekanism:energy_tablet,minecraft:copper_ingot,minecraft:raw_copper,minecraft:gold_ingot,minecraft:raw_gold,mekanism:alloy_infused,mekanism:mekasuit_bodyarmor"
     },
     {
-      "id": 1795545427,
-      "issued": 1795545426000,
+      "id": 1795546354,
+      "issued": 1795546353000,
       "cmd": "jobs",
       "target": 56
     }
