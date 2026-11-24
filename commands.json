@@ -1,11 +1,24 @@
 {
   "commands": [
     {
-      "id": 1795539237,
-      "issued": 1795539237000,
+      "id": 1795540020,
+      "issued": 1795540020000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:fluorite_gem,alltheores:fluorite_ore,alltheores:fluorite_dust,alltheores:uranium_ingot,alltheores:raw_uranium,mekanism:pellet_plutonium,mekanism:pellet_polonium,mekanism:pellet_antimatter,minecraft:raw_gold,minecraft:gold_ingot,mekanism:ultimate_control_circuit,mekanism:ultimate_induction_cell,mekanism:hdpe_sheet"
+      "items": "mekanism:enriched_refined_obsidian,mekanism:dust_refined_obsidian,mekanism:enriched_diamond,minecraft:diamond,mekanism:enriched_redstone,mekanism:alloy_atomic,mekanism:alloy_reinforced,mekanism:alloy_infused,mekanism:ultimate_control_circuit,mekanism:elite_control_circuit"
+    },
+    {
+      "id": 1795540021,
+      "issued": 1795540020000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:enriched_refined_obsidian,mekanism:dust_refined_obsidian,mekanism:enriched_diamond,mekanism:alloy_atomic,mekanism:ultimate_control_circuit"
+    },
+    {
+      "id": 1795540022,
+      "issued": 1795540020000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
