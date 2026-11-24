@@ -1,18 +1,19 @@
 {
   "commands": [
     {
-      "id": 1795481311,
-      "issued": 1795481311000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "allthemodium:ancient_stone,minecraft:end_stone,minecraft:netherrack,minecraft:deepslate,minecraft:diamond,minecraft:gold_ingot,minecraft:netherite_scrap,minecraft:netherite_ingot,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,allthemodium:raw_allthemodium,minecraft:diamond_helmet,minecraft:netherite_helmet,minecraft:netherite_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template"
-    },
-    {
-      "id": 1795481312,
-      "issued": 1795481311000,
+      "id": 1795481512,
+      "issued": 1795481512000,
       "cmd": "recipes",
       "target": 56,
-      "items": "minecraft:netherite_ingot,minecraft:netherite_scrap,minecraft:diamond_helmet,allthemodium:allthemodium_ingot,minecraft:gold_ingot"
+      "items": "allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,allthemodium:allthemodium_ingot,minecraft:netherite_ingot,minecraft:netherite_helmet,allthemodium:allthemodium_helmet,allthemodium:vibranium_helmet,allthemodium:unobtainium_helmet,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_boots"
+    },
+    {
+      "id": 1795481513,
+      "issued": 1795481512000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_helmet",
+      "n": 1
     }
   ]
 }
