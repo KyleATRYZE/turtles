@@ -1,13 +1,6 @@
 {
   "commands": [
     {
-      "id": 1795548683,
-      "issued": 1795548683000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "alltheores:lead_block,alltheores:bronze_nugget,mekanism:superheating_element"
-    },
-    {
       "id": 1795548744,
       "issued": 1795548744000,
       "cmd": "recipes",
@@ -20,6 +13,15 @@
       "cmd": "recipes",
       "target": 56,
       "items": "alltheores:bronze_nugget"
+    },
+    {
+      "id": 1795548821,
+      "issued": 1795548821000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "mekanism:module_base",
+      "n": 2,
+      "wait": 5
     }
   ]
 }
