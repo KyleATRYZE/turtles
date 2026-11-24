@@ -1,26 +1,6 @@
 {
   "commands": [
     {
-      "id": 1795557115,
-      "issued": 1795557115000,
-      "cmd": "jobs",
-      "target": 56
-    },
-    {
-      "id": 1795557116,
-      "issued": 1795557115000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:ultimate_induction_cell,mekanism:ultimate_control_circuit,mekanism:pellet_antimatter,mekanism:hdpe_sheet,mekanism:pellet_polonium,mekanism:module_base,mekanism:upgrade_speed,mekanism:mekasuit_helmet,mekanism:mekasuit_bodyarmor,mekanism:mekasuit_pants"
-    },
-    {
-      "id": 1795557117,
-      "issued": 1795557115000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:mekasuit_boots,mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:configurator,mekanism:basic_induction_cell,allthemodium:unobtainium_plate,allthemodium:unobtainium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:vibranium_pickaxe,mekanism:alloy_atomic"
-    },
-    {
       "id": 1795557215,
       "issued": 1795557215000,
       "cmd": "recipes",
@@ -33,6 +13,20 @@
       "cmd": "stock",
       "target": 56,
       "items": "mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:configurator,mekanism:basic_induction_cell,allthemodium:unobtainium_plate,allthemodium:allthemodium_pickaxe,minecraft:netherite_pickaxe,minecraft:diamond_pickaxe,mekanism:alloy_reinforced,allthemodium:allthemodium_upgrade_smithing_template"
+    },
+    {
+      "id": 1795557283,
+      "issued": 1795557283000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:netherite_ingot,allthemodium:allthemodium_ingot,minecraft:diamond,minecraft:raw_gold,minecraft:gold_ingot,alltheores:lithium_dust,mekanism:energy_tablet,mekanism:basic_energy_cube,alltheores:steel_ingot,alltheores:osmium_ingot"
+    },
+    {
+      "id": 1795557284,
+      "issued": 1795557283000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "minecraft:netherite_ingot,allthemodium:allthemodium_ingot,minecraft:diamond,minecraft:raw_gold,minecraft:gold_ingot,alltheores:lithium_dust,mekanism:energy_tablet,mekanism:basic_energy_cube,alltheores:steel_ingot,alltheores:osmium_ingot"
     }
   ]
 }
