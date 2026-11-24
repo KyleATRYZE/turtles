@@ -1,22 +1,33 @@
 {
   "commands": [
     {
-      "id": 1795540141,
-      "issued": 1795540141000,
-      "cmd": "craft",
+      "id": 1795540385,
+      "issued": 1795540385000,
+      "cmd": "stock",
       "target": 56,
-      "item": "mekanism:enriched_refined_obsidian",
-      "n": 16,
-      "wait": 5
+      "items": "mekanism:alloy_atomic,mekanism:alloy_reinforced,mekanism:enriched_refined_obsidian,mekanism:enriched_diamond,mekanism:elite_control_circuit"
     },
     {
-      "id": 1795540142,
-      "issued": 1795540141000,
+      "id": 1795540386,
+      "issued": 1795540385000,
       "cmd": "craft",
       "target": 56,
-      "item": "mekanism:enriched_diamond",
-      "n": 16,
-      "wait": 5
+      "item": "mekanism:ultimate_control_circuit",
+      "n": 4,
+      "wait": 240
+    },
+    {
+      "id": 1795540387,
+      "issued": 1795540385000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:ultimate_control_circuit,mekanism:alloy_atomic"
+    },
+    {
+      "id": 1795540388,
+      "issued": 1795540385000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
