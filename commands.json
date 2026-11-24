@@ -1,13 +1,36 @@
 {
   "commands": [
     {
-      "id": 1795481902,
-      "issued": 1795481902000,
+      "id": 1795482079,
+      "issued": 1795482079000,
       "cmd": "craft",
       "target": 56,
-      "item": "allthemodium:unobtainium_chestplate",
+      "item": "allthemodium:unobtainium_leggings",
       "n": 1,
       "wait": 20
+    },
+    {
+      "id": 1795482080,
+      "issued": 1795482079000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_boots",
+      "n": 1,
+      "wait": 20
+    },
+    {
+      "id": 1795482081,
+      "issued": 1795482079000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "industrialforegoing:yellow_laser_lens",
+      "n": 1
+    },
+    {
+      "id": 1795482082,
+      "issued": 1795482079000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
