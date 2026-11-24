@@ -1,10 +1,29 @@
 {
   "commands": [
     {
-      "id": 1795481633,
-      "issued": 1795481633000,
-      "cmd": "jobs",
-      "target": 56
+      "id": 1795481776,
+      "issued": 1795481776000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_helmet",
+      "n": 1,
+      "wait": 20
+    },
+    {
+      "id": 1795481777,
+      "issued": 1795481776000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:sand,minecraft:gravel"
+    },
+    {
+      "id": 1795481778,
+      "issued": 1795481776000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "mekanism:alloy_atomic",
+      "n": 1,
+      "wait": 15
     }
   ]
 }
