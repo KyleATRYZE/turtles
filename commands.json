@@ -1,97 +1,32 @@
 {
   "commands": [
     {
-      "id": 1795548744,
-      "issued": 1795548744000,
+      "id": 1795549116,
+      "issued": 1795549116000,
       "cmd": "recipes",
       "target": 56,
-      "items": "alltheores:lead_block,alltheores:bronze_nugget"
+      "items": "mekanismgenerators:solar_panel,alltheores:iron_ore_hammer,mekanism:ingot_refined_glowstone,mekanism:module_base,mekanism:ultimate_induction_cell,minecraft:glowstone_dust,minecraft:glass_pane,minecraft:stick,minecraft:iron_block,mekanism:module_jetpack_unit"
     },
     {
-      "id": 1795548779,
-      "issued": 1795548779000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "alltheores:bronze_nugget"
-    },
-    {
-      "id": 1795548821,
-      "issued": 1795548821000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:module_base",
-      "n": 2,
-      "wait": 5
-    },
-    {
-      "id": 1795548826,
-      "issued": 1795548826000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "allthemodium:allthemodium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:allthemodium_upgrade_smithing_template,allthemodium:unobtainium_ingot,allthemodium:vibranium_ingot,allthemodium:vibranium_upgrade_smithing_template,alltheores:bronze_dust,alltheores:bronze_ingot,alltheores:copper_dust,alltheores:gold_dust"
-    },
-    {
-      "id": 1795548827,
-      "issued": 1795548826000,
+      "id": 1795549117,
+      "issued": 1795549116000,
       "cmd": "stock",
       "target": 56,
-      "items": "allthemodium:allthemodium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:allthemodium_upgrade_smithing_template,allthemodium:unobtainium_ingot,allthemodium:vibranium_ingot,allthemodium:vibranium_upgrade_smithing_template,alltheores:bronze_dust,alltheores:bronze_ingot,alltheores:copper_dust,alltheores:gold_dust"
+      "items": "mekanismgenerators:solar_panel,alltheores:iron_ore_hammer,mekanism:ingot_refined_glowstone,mekanism:module_base,mekanism:ultimate_induction_cell,minecraft:glowstone_dust,minecraft:glass_pane,minecraft:stick,minecraft:iron_block,mekanism:module_jetpack_unit"
     },
     {
-      "id": 1795548828,
-      "issued": 1795548826000,
+      "id": 1795549118,
+      "issued": 1795549116000,
       "cmd": "recipes",
       "target": 56,
-      "items": "alltheores:iron_ore_hammer,alltheores:lead_ingot,alltheores:osmium_ingot,alltheores:silver_ingot,alltheores:steel_ingot,alltheores:tin_dust,alltheores:tin_ingot,mekanism:alloy_atomic,mekanism:alloy_infused,mekanism:basic_energy_cube"
+      "items": "mekanism:upgrade_speed"
     },
     {
-      "id": 1795548829,
-      "issued": 1795548826000,
+      "id": 1795549119,
+      "issued": 1795549116000,
       "cmd": "stock",
       "target": 56,
-      "items": "alltheores:iron_ore_hammer,alltheores:lead_ingot,alltheores:osmium_ingot,alltheores:silver_ingot,alltheores:steel_ingot,alltheores:tin_dust,alltheores:tin_ingot,mekanism:alloy_atomic,mekanism:alloy_infused,mekanism:basic_energy_cube"
-    },
-    {
-      "id": 1795548830,
-      "issued": 1795548826000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "mekanism:energy_tablet,mekanism:hdpe_sheet,mekanism:ingot_refined_glowstone,mekanism:ingot_refined_obsidian,mekanism:steel_casing,mekanismgenerators:solar_generator,mekanismgenerators:solar_panel,minecraft:bowl,minecraft:coal,minecraft:copper_ingot"
-    },
-    {
-      "id": 1795548831,
-      "issued": 1795548826000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:energy_tablet,mekanism:hdpe_sheet,mekanism:ingot_refined_glowstone,mekanism:ingot_refined_obsidian,mekanism:steel_casing,mekanismgenerators:solar_generator,mekanismgenerators:solar_panel,minecraft:bowl,minecraft:coal,minecraft:copper_ingot"
-    },
-    {
-      "id": 1795548832,
-      "issued": 1795548826000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "minecraft:diamond,minecraft:diamond_pickaxe,minecraft:diamond_sword,minecraft:elytra,minecraft:ender_pearl,minecraft:furnace,minecraft:gold_ingot,minecraft:iron_ingot,minecraft:lapis_lazuli,minecraft:netherite_ingot"
-    },
-    {
-      "id": 1795548833,
-      "issued": 1795548826000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "minecraft:diamond,minecraft:diamond_pickaxe,minecraft:diamond_sword,minecraft:elytra,minecraft:ender_pearl,minecraft:furnace,minecraft:gold_ingot,minecraft:iron_ingot,minecraft:lapis_lazuli,minecraft:netherite_ingot"
-    },
-    {
-      "id": 1795548834,
-      "issued": 1795548826000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "minecraft:netherite_pickaxe,minecraft:netherite_upgrade_smithing_template,minecraft:oak_planks,minecraft:orange_dye,minecraft:packed_ice,minecraft:redstone"
-    },
-    {
-      "id": 1795548835,
-      "issued": 1795548826000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "minecraft:netherite_pickaxe,minecraft:netherite_upgrade_smithing_template,minecraft:oak_planks,minecraft:orange_dye,minecraft:packed_ice,minecraft:redstone"
+      "items": "mekanism:upgrade_speed"
     }
   ]
 }
