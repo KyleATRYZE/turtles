@@ -1,13 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795545245,
-      "issued": 1795545245000,
-      "cmd": "craft",
+      "id": 1795545426,
+      "issued": 1795545426000,
+      "cmd": "stock",
       "target": 56,
-      "item": "mekanism:upgrade_speed",
-      "n": 4,
-      "wait": 5
+      "items": "mekanism:upgrade_speed,mekanism:energy_tablet,minecraft:gold_ingot"
+    },
+    {
+      "id": 1795545427,
+      "issued": 1795545426000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
