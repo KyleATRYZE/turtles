@@ -1,24 +1,22 @@
 {
   "commands": [
     {
-      "id": 1795540020,
-      "issued": 1795540020000,
-      "cmd": "stock",
+      "id": 1795540141,
+      "issued": 1795540141000,
+      "cmd": "craft",
       "target": 56,
-      "items": "mekanism:enriched_refined_obsidian,mekanism:dust_refined_obsidian,mekanism:enriched_diamond,minecraft:diamond,mekanism:enriched_redstone,mekanism:alloy_atomic,mekanism:alloy_reinforced,mekanism:alloy_infused,mekanism:ultimate_control_circuit,mekanism:elite_control_circuit"
+      "item": "mekanism:enriched_refined_obsidian",
+      "n": 16,
+      "wait": 5
     },
     {
-      "id": 1795540021,
-      "issued": 1795540020000,
-      "cmd": "recipes",
+      "id": 1795540142,
+      "issued": 1795540141000,
+      "cmd": "craft",
       "target": 56,
-      "items": "mekanism:enriched_refined_obsidian,mekanism:dust_refined_obsidian,mekanism:enriched_diamond,mekanism:alloy_atomic,mekanism:ultimate_control_circuit"
-    },
-    {
-      "id": 1795540022,
-      "issued": 1795540020000,
-      "cmd": "jobs",
-      "target": 56
+      "item": "mekanism:enriched_diamond",
+      "n": 16,
+      "wait": 5
     }
   ]
 }
