@@ -1,60 +1,11 @@
 {
   "commands": [
     {
-      "id": 1795548408,
-      "issued": 1795548408000,
+      "id": 1795548683,
+      "issued": 1795548683000,
       "cmd": "recipes",
       "target": 56,
-      "items": "alltheores:bronze_dust,alltheores:bronze_nugget,allthemodium:allthemodium_plate,allthemodium:unobtainium_plate,allthemodium:vibranium_plate,alltheores:osmium_plate,alltheores:silver_plate,alltheores:lead_block,allthemodium:allthemodium_block,allthemodium:unobtainium_block"
-    },
-    {
-      "id": 1795548409,
-      "issued": 1795548408000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "alltheores:bronze_dust,alltheores:bronze_nugget,allthemodium:allthemodium_plate,allthemodium:unobtainium_plate,allthemodium:vibranium_plate,alltheores:osmium_plate,alltheores:silver_plate,alltheores:lead_block,allthemodium:allthemodium_block,allthemodium:unobtainium_block"
-    },
-    {
-      "id": 1795548410,
-      "issued": 1795548408000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "mekanism:block_refined_glowstone,mekanism:block_refined_obsidian,mekanism:laser_amplifier,mekanism:hdpe_elytra,mekanism:hazmat_mask,mekanism:canteen,mekanismgenerators:solar_generator,mekanismgenerators:advanced_solar_generator,mekanismgenerators:heat_generator,mekanism:superheating_element"
-    },
-    {
-      "id": 1795548411,
-      "issued": 1795548408000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:block_refined_glowstone,mekanism:block_refined_obsidian,mekanism:laser_amplifier,mekanism:hdpe_elytra,mekanism:hazmat_mask,mekanism:canteen,mekanismgenerators:solar_generator,mekanismgenerators:advanced_solar_generator,mekanismgenerators:heat_generator,mekanism:superheating_element"
-    },
-    {
-      "id": 1795548412,
-      "issued": 1795548408000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "simplemagnets:basicmagnet,minecraft:blue_ice,allthemodium:allthemodium_pickaxe,allthemodium:vibranium_pickaxe,minecraft:netherite_sword,minecraft:netherite_pickaxe,alltheores:bronze_ingot,alltheores:copper_dust,alltheores:gold_dust,alltheores:tin_dust"
-    },
-    {
-      "id": 1795548413,
-      "issued": 1795548408000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "simplemagnets:basicmagnet,minecraft:blue_ice,allthemodium:allthemodium_pickaxe,allthemodium:vibranium_pickaxe,minecraft:netherite_sword,minecraft:netherite_pickaxe,alltheores:bronze_ingot,alltheores:copper_dust,alltheores:gold_dust,alltheores:tin_dust"
-    },
-    {
-      "id": 1795548414,
-      "issued": 1795548408000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "mekanism:enriched_carbon,mekanism:enriched_gold,mekanism:enriched_tin"
-    },
-    {
-      "id": 1795548415,
-      "issued": 1795548408000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:enriched_carbon,mekanism:enriched_gold,mekanism:enriched_tin"
+      "items": "alltheores:lead_block,alltheores:bronze_nugget,mekanism:superheating_element"
     }
   ]
 }
