@@ -1,26 +1,17 @@
 {
   "commands": [
     {
-      "id": 1795558258,
-      "issued": 1795558258000,
+      "id": 1795558563,
+      "issued": 1795558563000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:alloy_reinforced,mekanism:alloy_infused,allthemodium:raw_unobtainium"
+      "items": "mekanism:alloy_reinforced,mekanism:enriched_diamond"
     },
     {
-      "id": 1795558259,
-      "issued": 1795558258000,
+      "id": 1795558564,
+      "issued": 1795558563000,
       "cmd": "jobs",
       "target": 56
-    },
-    {
-      "id": 1795558359,
-      "issued": 1795558359000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:enriched_diamond",
-      "n": 3,
-      "wait": 5
     }
   ]
 }
