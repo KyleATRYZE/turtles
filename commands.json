@@ -13,6 +13,13 @@
       "cmd": "recipes",
       "target": 56,
       "items": "alltheores:lead_block,alltheores:bronze_nugget"
+    },
+    {
+      "id": 1795548779,
+      "issued": 1795548779000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "alltheores:bronze_nugget"
     }
   ]
 }
