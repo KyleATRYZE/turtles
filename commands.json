@@ -1,17 +1,47 @@
 {
   "commands": [
     {
-      "id": 1795537711,
-      "issued": 1795537711000,
-      "cmd": "stock",
+      "id": 1795537899,
+      "issued": 1795537899000,
+      "cmd": "craft",
       "target": 56,
-      "items": "allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,minecraft:netherite_upgrade_smithing_template,allthemodium:unobtainium_helmet,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,mekanism:pellet_antimatter,mekanism:pellet_polonium,mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:ultimate_induction_cell,mekanism:dust_lithium,minecraft:raw_gold,minecraft:gold_ingot,minecraft:netherite_ingot,alltheores:raw_uranium,alltheores:uranium_ingot"
+      "item": "allthemodium:unobtainium_chestplate",
+      "n": 1,
+      "wait": 20
     },
     {
-      "id": 1795537712,
-      "issued": 1795537711000,
-      "cmd": "jobs",
-      "target": 56
+      "id": 1795537900,
+      "issued": 1795537899000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_leggings",
+      "n": 1,
+      "wait": 20
+    },
+    {
+      "id": 1795537901,
+      "issued": 1795537899000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_boots",
+      "n": 1,
+      "wait": 20
+    },
+    {
+      "id": 1795537902,
+      "issued": 1795537899000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "mekanism:ultimate_induction_cell",
+      "n": 1,
+      "wait": 20
+    },
+    {
+      "id": 1795537903,
+      "issued": 1795537899000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "minecraft:bucket,minecraft:lava_bucket,minecraft:coal,alltheores:sulfur,alltheores:fluorite,minecraft:yellow_dye,industrialforegoing:yellow_laser_lens,mekanism:dust_refined_obsidian"
     }
   ]
 }
