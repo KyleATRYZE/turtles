@@ -49,6 +49,7 @@ M.cfg = {
   reportEvery = 20,      -- seconds between routine reports
   coalWait = 120,        -- seconds to wait at the berth for fuel, when it has too little to work on
   coalReserve = 64,      -- coal kept on board when the berth's barrel gave no lava (a berth with no lava feed)
+  leaveWith = 1200,      -- it does not leave its berth with less fuel than this: a miner that runs dry in a shaft blocks everyone
   cellWaits = 3,         -- waits on a protected block in the plot before that cell is left
   clearZ = { 1522, 1568 }, -- no road runs east-west between these z: the reactor hall is under the building
   patience = math.huge,  -- waits on a blocked path before a leg gives up (tests lower it)
@@ -323,7 +324,7 @@ local function takeFuel()
     waited = waited + 5
     if turtle.suckUp and turtle.suckUp() then inv.refuel(M.cfg.fuelTarget) end
   end
-  while low(300) do
+  while low(M.cfg.leaveWith) do
     stuck = stuck + 1
     if stuck > M.cfg.patience then error("no fuel at the base", 0) end
     report("needs fuel", stuck == 1)
