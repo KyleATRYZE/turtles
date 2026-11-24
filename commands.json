@@ -19,6 +19,20 @@
       "cmd": "stock",
       "target": 56,
       "items": "mekanism:mekasuit_boots,mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:configurator,mekanism:basic_induction_cell,allthemodium:unobtainium_plate,allthemodium:unobtainium_ingot,allthemodium:allthemodium_pickaxe,allthemodium:vibranium_pickaxe,mekanism:alloy_atomic"
+    },
+    {
+      "id": 1795557215,
+      "issued": 1795557215000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:configurator,mekanism:basic_induction_cell,allthemodium:unobtainium_plate,allthemodium:allthemodium_pickaxe,minecraft:netherite_pickaxe,minecraft:diamond_pickaxe,mekanism:alloy_reinforced,allthemodium:allthemodium_upgrade_smithing_template"
+    },
+    {
+      "id": 1795557216,
+      "issued": 1795557215000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:configurator,mekanism:basic_induction_cell,allthemodium:unobtainium_plate,allthemodium:allthemodium_pickaxe,minecraft:netherite_pickaxe,minecraft:diamond_pickaxe,mekanism:alloy_reinforced,allthemodium:allthemodium_upgrade_smithing_template"
     }
   ]
 }
