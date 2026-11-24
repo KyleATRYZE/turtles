@@ -1,15 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795558022,
-      "issued": 1795558022000,
+      "id": 1795558258,
+      "issued": 1795558258000,
       "cmd": "stock",
       "target": 56,
-      "items": "mekanism:configurator,allthemodium:unobtainium_plate,mekanism:basic_induction_cell,mekanism:alloy_reinforced,minecraft:netherite_pickaxe,allthemodium:unobtainium_ingot,mekanism:ultimate_induction_cell,mekanism:ultimate_control_circuit"
+      "items": "mekanism:alloy_reinforced,mekanism:alloy_infused,allthemodium:raw_unobtainium"
     },
     {
-      "id": 1795558023,
-      "issued": 1795558022000,
+      "id": 1795558259,
+      "issued": 1795558258000,
       "cmd": "jobs",
       "target": 56
     }
