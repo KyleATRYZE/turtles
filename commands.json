@@ -1,53 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795557721,
-      "issued": 1795557721000,
-      "cmd": "craft",
+      "id": 1795558022,
+      "issued": 1795558022000,
+      "cmd": "stock",
       "target": 56,
-      "item": "mekanism:configurator",
-      "n": 1,
-      "wait": 5
+      "items": "mekanism:configurator,allthemodium:unobtainium_plate,mekanism:basic_induction_cell,mekanism:alloy_reinforced,minecraft:netherite_pickaxe,allthemodium:unobtainium_ingot,mekanism:ultimate_induction_cell,mekanism:ultimate_control_circuit"
     },
     {
-      "id": 1795557722,
-      "issued": 1795557721000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "allthemodium:unobtainium_plate",
-      "n": 2,
-      "wait": 5
-    },
-    {
-      "id": 1795557723,
-      "issued": 1795557721000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:basic_induction_cell",
-      "n": 1,
-      "wait": 5
-    },
-    {
-      "id": 1795557724,
-      "issued": 1795557721000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:alloy_reinforced",
-      "n": 4,
-      "wait": 5
-    },
-    {
-      "id": 1795557725,
-      "issued": 1795557721000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "minecraft:netherite_pickaxe",
-      "n": 1,
-      "wait": 5
-    },
-    {
-      "id": 1795557726,
-      "issued": 1795557721000,
+      "id": 1795558023,
+      "issued": 1795558022000,
       "cmd": "jobs",
       "target": 56
     }
