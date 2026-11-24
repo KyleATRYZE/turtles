@@ -1,20 +1,6 @@
 {
   "commands": [
     {
-      "id": 1795557283,
-      "issued": 1795557283000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "minecraft:netherite_ingot,allthemodium:allthemodium_ingot,minecraft:diamond,minecraft:raw_gold,minecraft:gold_ingot,alltheores:lithium_dust,mekanism:energy_tablet,mekanism:basic_energy_cube,alltheores:steel_ingot,alltheores:osmium_ingot"
-    },
-    {
-      "id": 1795557284,
-      "issued": 1795557283000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "minecraft:netherite_ingot,allthemodium:allthemodium_ingot,minecraft:diamond,minecraft:raw_gold,minecraft:gold_ingot,alltheores:lithium_dust,mekanism:energy_tablet,mekanism:basic_energy_cube,alltheores:steel_ingot,alltheores:osmium_ingot"
-    },
-    {
       "id": 1795557371,
       "issued": 1795557371000,
       "cmd": "recipes",
@@ -27,6 +13,20 @@
       "cmd": "stock",
       "target": 56,
       "items": "mekanism:meka_tool,mekanism:atomic_disassembler,mekanism:dust_lithium,allthemodium:unobtainium_ingot,mekanism:pellet_polonium,mekanism:ultimate_control_circuit,minecraft:deepslate,mekanism:alloy_infused,mekanism:hdpe_sheet,allthemodium:vibranium_ingot"
+    },
+    {
+      "id": 1795557456,
+      "issued": 1795557456000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "allthemodium:raw_unobtainium,minecraft:netherite_scrap,minecraft:ancient_debris,allthemodium:raw_allthemodium,alltheores:raw_osmium,minecraft:redstone,minecraft:raw_iron,minecraft:iron_ingot,mekanism:ultimate_induction_cell,mekanism:alloy_atomic"
+    },
+    {
+      "id": 1795557457,
+      "issued": 1795557456000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "allthemodium:raw_unobtainium,minecraft:netherite_scrap,minecraft:ancient_debris,allthemodium:raw_allthemodium,alltheores:raw_osmium,minecraft:redstone,minecraft:raw_iron,minecraft:iron_ingot,mekanism:ultimate_induction_cell,mekanism:alloy_atomic"
     }
   ]
 }
