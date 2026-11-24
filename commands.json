@@ -1,11 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795480479,
-      "issued": 1795480479000,
+      "id": 1795481311,
+      "issued": 1795481311000,
       "cmd": "stock",
       "target": 56,
-      "items": "allthemodium:raw_allthemodium_block,allthemodium:raw_vibranium_block,allthemodium:raw_unobtainium_block,minecraft:ancient_debris,alltheores:raw_uranium_block,minecraft:raw_gold_block,mekanism:dust_lithium,mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,alltheores:uranium_ingot,alltheores:sulfur,minecraft:bucket"
+      "items": "allthemodium:ancient_stone,minecraft:end_stone,minecraft:netherrack,minecraft:deepslate,minecraft:diamond,minecraft:gold_ingot,minecraft:netherite_scrap,minecraft:netherite_ingot,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,allthemodium:raw_allthemodium,minecraft:diamond_helmet,minecraft:netherite_helmet,minecraft:netherite_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template"
+    },
+    {
+      "id": 1795481312,
+      "issued": 1795481311000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "minecraft:netherite_ingot,minecraft:netherite_scrap,minecraft:diamond_helmet,allthemodium:allthemodium_ingot,minecraft:gold_ingot"
     }
   ]
 }
