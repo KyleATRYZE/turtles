@@ -6,6 +6,13 @@
       "cmd": "recipes",
       "target": 56,
       "items": "alltheores:lead_block,alltheores:bronze_nugget,mekanism:superheating_element"
+    },
+    {
+      "id": 1795548744,
+      "issued": 1795548744000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "alltheores:lead_block,alltheores:bronze_nugget"
     }
   ]
 }
