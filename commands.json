@@ -1,81 +1,27 @@
 {
   "commands": [
     {
-      "id": 1795538084,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 5,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
+      "id": 1795538340,
+      "issued": 1795538340000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "alltheores:uranium_ingot",
+      "n": 1000,
+      "wait": 15
     },
     {
-      "id": 1795538085,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 10,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
+      "id": 1795538341,
+      "issued": 1795538340000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "alltheores:fluorite_ore,alltheores:deepslate_fluorite_ore,alltheores:sulfur_ore,alltheores:fluorite,alltheores:fluorite_dust,alltheores:raw_uranium,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,mekanism:ultimate_induction_cell,minecraft:raw_gold"
     },
     {
-      "id": 1795538086,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 11,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538087,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 12,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538088,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 13,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538089,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 15,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538090,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 16,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538091,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 19,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538092,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 23,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538093,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 39,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
-    },
-    {
-      "id": 1795538094,
-      "issued": 1795538084000,
-      "cmd": "reboot",
-      "target": 40,
-      "rev": "90525cea61c5cb13755addfab511daf8ec3e9e98"
+      "id": 1795538342,
+      "issued": 1795538340000,
+      "cmd": "recipes",
+      "target": 56,
+      "items": "alltheores:fluorite"
     }
   ]
 }
