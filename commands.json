@@ -12,6 +12,31 @@
       "issued": 1795483004000,
       "cmd": "jobs",
       "target": 56
+    },
+    {
+      "id": 1795483109,
+      "issued": 1795483109000,
+      "cmd": "cancel",
+      "target": 56,
+      "item": "mekanism:alloy_atomic"
+    },
+    {
+      "id": 1795483110,
+      "issued": 1795483109000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "minecraft:netherite_ingot",
+      "n": 6,
+      "wait": 15
+    },
+    {
+      "id": 1795483111,
+      "issued": 1795483109000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "minecraft:deepslate",
+      "n": 2,
+      "wait": 10
     }
   ]
 }
