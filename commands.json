@@ -1,38 +1,49 @@
 {
   "commands": [
     {
-      "id": 1795482218,
-      "issued": 1795482218000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "allthemodium:unobtainium_helmet,allthemodium:allthemodium_upgrade_smithing_template,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,minecraft:netherite_upgrade_smithing_template,allthemodium:ancient_stone,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,minecraft:netherite_ingot,mekanism:dust_lithium,minecraft:sand,minecraft:raw_gold,minecraft:gold_ingot"
-    },
-    {
-      "id": 1795482219,
-      "issued": 1795482218000,
+      "id": 1795482842,
+      "issued": 1795482842000,
       "cmd": "craft",
       "target": 56,
-      "item": "allthemodium:allthemodium_upgrade_smithing_template",
+      "item": "allthemodium:allthemodium_ingot",
+      "n": 17,
+      "wait": 15
+    },
+    {
+      "id": 1795482843,
+      "issued": 1795482842000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:vibranium_ingot",
+      "n": 17,
+      "wait": 15
+    },
+    {
+      "id": 1795482844,
+      "issued": 1795482842000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "allthemodium:unobtainium_ingot",
+      "n": 3,
+      "wait": 15
+    },
+    {
+      "id": 1795482845,
+      "issued": 1795482842000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "minecraft:netherite_ingot",
+      "n": 6,
+      "wait": 15
+    },
+    {
+      "id": 1795482846,
+      "issued": 1795482842000,
+      "cmd": "craft",
+      "target": 56,
+      "item": "minecraft:deepslate",
       "n": 2,
-      "wait": 15
-    },
-    {
-      "id": 1795482220,
-      "issued": 1795482218000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "minecraft:netherite_upgrade_smithing_template",
-      "n": 2,
-      "wait": 15
-    },
-    {
-      "id": 1795482221,
-      "issued": 1795482218000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:ultimate_induction_cell",
-      "n": 1,
-      "wait": 15
+      "wait": 10
     }
   ]
 }
