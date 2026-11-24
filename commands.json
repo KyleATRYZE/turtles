@@ -1,15 +1,15 @@
 {
   "commands": [
     {
-      "id": 1795483749,
-      "issued": 1795483749000,
+      "id": 1795537711,
+      "issued": 1795537711000,
       "cmd": "stock",
       "target": 56,
-      "items": "allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,minecraft:netherite_upgrade_smithing_template,allthemodium:allthemodium_ingot,allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,minecraft:netherite_ingot,minecraft:diamond,allthemodium:unobtainium_helmet,minecraft:netherite_chestplate,minecraft:netherite_leggings,minecraft:netherite_boots"
+      "items": "allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_upgrade_smithing_template,allthemodium:allthemodium_upgrade_smithing_template,minecraft:netherite_upgrade_smithing_template,allthemodium:unobtainium_helmet,allthemodium:unobtainium_chestplate,allthemodium:unobtainium_leggings,allthemodium:unobtainium_boots,mekanism:pellet_antimatter,mekanism:pellet_polonium,mekanism:ultimate_control_circuit,mekanism:hdpe_sheet,mekanism:ultimate_induction_cell,mekanism:dust_lithium,minecraft:raw_gold,minecraft:gold_ingot,minecraft:netherite_ingot,alltheores:raw_uranium,alltheores:uranium_ingot"
     },
     {
-      "id": 1795483750,
-      "issued": 1795483749000,
+      "id": 1795537712,
+      "issued": 1795537711000,
       "cmd": "jobs",
       "target": 56
     }
