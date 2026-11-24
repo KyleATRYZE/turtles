@@ -1,34 +1,18 @@
 {
   "commands": [
     {
-      "id": 1795542829,
-      "issued": 1795542829000,
+      "id": 1795543104,
+      "issued": 1795543104000,
+      "cmd": "stock",
+      "target": 56,
+      "items": "mekanism:structural_glass,alltheores:osmium_ingot,alltheores:steel_ingot,mekanism:ingot_steel,alltheores:osmium_dust,minecraft:glass"
+    },
+    {
+      "id": 1795543105,
+      "issued": 1795543104000,
       "cmd": "recipes",
       "target": 56,
-      "items": "mekanism:upgrade_speed,alltheores:osmium_dust,mekanism:alloy_infused,minecraft:glass"
-    },
-    {
-      "id": 1795542830,
-      "issued": 1795542829000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "alltheores:osmium_dust,mekanism:dust_osmium,mekanism:alloy_infused,minecraft:glass,mekanism:enriched_redstone"
-    },
-    {
-      "id": 1795542831,
-      "issued": 1795542829000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "mekanism:upgrade_speed",
-      "n": 2,
-      "wait": 90
-    },
-    {
-      "id": 1795542832,
-      "issued": 1795542829000,
-      "cmd": "stock",
-      "target": 56,
-      "items": "mekanism:upgrade_speed"
+      "items": "mekanism:structural_glass,alltheores:steel_ingot,alltheores:osmium_ingot"
     }
   ]
 }
