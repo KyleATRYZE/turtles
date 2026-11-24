@@ -1,19 +1,10 @@
 {
   "commands": [
     {
-      "id": 1795481512,
-      "issued": 1795481512000,
-      "cmd": "recipes",
-      "target": 56,
-      "items": "allthemodium:vibranium_ingot,allthemodium:unobtainium_ingot,allthemodium:allthemodium_ingot,minecraft:netherite_ingot,minecraft:netherite_helmet,allthemodium:allthemodium_helmet,allthemodium:vibranium_helmet,allthemodium:unobtainium_helmet,allthemodium:vibranium_upgrade_smithing_template,allthemodium:unobtainium_boots"
-    },
-    {
-      "id": 1795481513,
-      "issued": 1795481512000,
-      "cmd": "craft",
-      "target": 56,
-      "item": "allthemodium:unobtainium_helmet",
-      "n": 1
+      "id": 1795481633,
+      "issued": 1795481633000,
+      "cmd": "jobs",
+      "target": 56
     }
   ]
 }
